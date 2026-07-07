@@ -22,7 +22,9 @@ export default defineConfig({
 		tabWidth: 2,
 		trailingComma: 'es5',
 		printWidth: 80,
-		sortPackageJson: true,
+		sortPackageJson: {
+			sortScripts: true,
+		},
 	},
 	lint: {
 		ignorePatterns: [
