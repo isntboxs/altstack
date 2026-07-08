@@ -1,0 +1,55 @@
+{
+	"name": "@cort/api",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./contracts": {
+			"default": "./src/contracts/index.ts"
+		},
+		"./contracts/*": {
+			"default": "./src/contracts/*.ts"
+		},
+		"./routers": {
+			"default": "./src/routers/index.ts"
+		},
+		"./routers/*": {
+			"default": "./src/routers/*.ts"
+		},
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./context": {
+			"default": "./src/context.ts"
+		},
+		"./handler": {
+			"default": "./src/handler.ts"
+		},
+		"./procedure": {
+			"default": "./src/procedure.ts"
+		}
+	},
+	"scripts": {
+		"check": "vp check",
+		"check-types": "tsc -b",
+		"format": "vp fmt",
+		"lint": "vp lint",
+		"lint:fix": "vp lint --fix"
+	},
+	"dependencies": {
+		"@cort/env": "workspace:*",
+		"@orpc/client": "catalog:",
+		"@orpc/contract": "catalog:",
+		"@orpc/json-schema": "catalog:",
+		"@orpc/openapi": "catalog:",
+		"@orpc/server": "catalog:",
+		"@orpc/zod": "catalog:",
+		"evlog": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@cort/config": "workspace:*",
+		"elysia": "catalog:",
+		"typescript": "catalog:"
+	}
+}

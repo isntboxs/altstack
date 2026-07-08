@@ -15,9 +15,12 @@
 		"lint:fix": "vp lint --fix"
 	},
 	"dependencies": {
+		"@cort/api": "workspace:*",
 		"@cort/env": "workspace:*",
+		"@elysia/cors": "^1.4.2",
 		"@elysia/node": "^1.4.6",
-		"elysia": "catalog:"
+		"elysia": "catalog:",
+		"evlog": "catalog:"
 	},
 	"devDependencies": {
 		"@cort/config": "workspace:*",

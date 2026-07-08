@@ -25,6 +25,58 @@ export default defineConfig({
 		sortPackageJson: {
 			sortScripts: true,
 		},
+		sortImports: {
+			newlinesBetween: false,
+			customGroups: [
+				{
+					groupName: 'cort/api',
+					elementNamePattern: ['@cort/api', '@cort/api/**'],
+				},
+				{
+					groupName: 'cort/auth',
+					elementNamePattern: ['@cort/auth', '@cort/auth/**'],
+				},
+				{
+					groupName: 'cort/db',
+					elementNamePattern: ['@cort/db', '@cort/db/**'],
+				},
+				{
+					groupName: 'cort/env',
+					elementNamePattern: ['@cort/env', '@cort/env/**'],
+				},
+				{
+					groupName: 'cort/shared',
+					elementNamePattern: ['@cort/shared', '@cort/shared/**'],
+				},
+				{
+					groupName: 'cort/ui',
+					elementNamePattern: ['@cort/ui', '@cort/ui/**'],
+				},
+				{
+					groupName: 'local-libs',
+					elementNamePattern: ['#/**', '@/**'],
+				},
+			],
+			groups: [
+				'unknown',
+				{ newlinesBetween: true },
+				'cort/api',
+				{ newlinesBetween: true },
+				'cort/auth',
+				{ newlinesBetween: true },
+				'cort/db',
+				{ newlinesBetween: true },
+				'cort/env',
+				{ newlinesBetween: true },
+				'cort/shared',
+				{ newlinesBetween: true },
+				'cort/ui',
+				{ newlinesBetween: true },
+				'local-libs',
+				['value-parent', 'value-sibling', 'value-index'],
+			],
+			internalPattern: ['#/', '@/'],
+		},
 	},
 	lint: {
 		ignorePatterns: [
