@@ -6,7 +6,7 @@ import { evlog } from 'evlog/elysia'
 
 import { createORPCContext } from '@cort/api/context'
 import type { ORPCContext } from '@cort/api/context'
-import { rpcHandler } from '@cort/api/handler'
+import { rpcHandler, openApiHandler } from '@cort/api/handler'
 
 import { env } from '@cort/env/server'
 
@@ -33,6 +33,21 @@ new Elysia({ adapter: node() })
 				prefix: '/api',
 				context: createORPCContext({ context }) as ORPCContext,
 			})
+
+			return matched ? response : new Response('Not Found', { status: 404 })
+		},
+		{ parse: 'none' }
+	)
+	.all(
+		'/reference*',
+		async (context) => {
+			const { matched, response } = await openApiHandler.handle(
+				context.request,
+				{
+					prefix: '/reference',
+					context: createORPCContext({ context }) as ORPCContext,
+				}
+			)
 
 			return matched ? response : new Response('Not Found', { status: 404 })
 		},

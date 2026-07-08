@@ -1,8 +1,12 @@
 import { createEnv } from '@t3-oss/env-core'
 import dotenv from 'dotenv'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 
-dotenv.config({ path: '../../.env' })
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+dotenv.config({ path: join(__dirname, '../../../.env') })
 
 export const env = createEnv({
 	server: {
