@@ -76,6 +76,30 @@ export default defineConfig({
 			],
 			internalPattern: ['#/', '@/'],
 		},
+		overrides: [
+			{
+				files: ['./packages/ui/src/**/*.{tsx,ts}'],
+				options: {
+					sortTailwindcss: {
+						stylesheet: './packages/ui/src/styles/globals.css',
+						functions: ['clsx', 'cn', 'cva', 'tw'],
+						preserveWhitespace: false,
+						preserveDuplicates: false,
+					},
+				},
+			},
+			{
+				files: ['./apps/web/src/**/*.{tsx,ts}'],
+				options: {
+					sortTailwindcss: {
+						stylesheet: './apps/web/src/styles.css',
+						functions: ['clsx', 'cn', 'cva', 'tw'],
+						preserveWhitespace: false,
+						preserveDuplicates: false,
+					},
+				},
+			},
+		],
 	},
 	lint: {
 		ignorePatterns: [
