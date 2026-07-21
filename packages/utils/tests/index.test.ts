@@ -1,7 +1,7 @@
-import { expect, test } from 'vite-plus/test'
+import { expect, it } from 'vite-plus/test'
 
 import { fn } from '../src/index.ts'
 
-test('fn', () => {
+it('fn', () => {
 	expect(fn()).toBe('Hello, tsdown!')
 })

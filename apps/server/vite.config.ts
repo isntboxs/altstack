@@ -5,7 +5,10 @@ export default defineConfig({
 		dts: {
 			tsgo: true,
 		},
-		exports: true,
+		entry: 'src/index.ts',
+		format: 'esm',
+		outDir: 'dist',
+		clean: true,
 	},
 	test: {
 		environment: 'node',
