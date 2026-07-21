@@ -9,7 +9,10 @@
 	],
 	"type": "module",
 	"scripts": {
-		"dev": "vp run website#dev",
+		"build": "vp run -r build",
+		"dev": "vp run -r dev",
+		"dev:server": "vp run server#dev",
+		"dev:web": "vp run web#dev",
 		"prepare": "vp config",
 		"ready": "vp check && vp run -r test && vp run -r build"
 	},
@@ -25,7 +28,8 @@
 		"vite-plus": "catalog:"
 	},
 	"overrides": {
-		"vite": "catalog:"
+		"vite": "catalog:",
+		"vitest": "catalog:"
 	},
 	"devEngines": {
 		"packageManager": {
@@ -42,6 +46,7 @@
 		"elysia": "^1.4.29",
 		"typescript": "^7.0.2",
 		"vite": "npm:@voidzero-dev/vite-plus-core@0.2.5",
-		"vite-plus": "0.2.5"
+		"vite-plus": "0.2.5",
+		"vitest": "4.1.10"
 	}
 }
