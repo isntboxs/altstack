@@ -14,10 +14,6 @@ const config = defineConfig({
 		tanstackStart(),
 		viteReact(),
 	]),
-	test: {
-		environment: 'node',
-		passWithNoTests: true,
-	},
 })
 
 export default config

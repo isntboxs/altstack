@@ -11,8 +11,8 @@
 	"scripts": {
 		"build": "vp run -r build",
 		"dev": "vp run -r dev",
-		"dev:server": "vp run server#dev",
-		"dev:web": "vp run web#dev",
+		"dev:server": "vp run @altstack/server#dev",
+		"dev:web": "vp run @altstack/web#dev",
 		"prepare": "vp config",
 		"ready": "vp check && vp run -r test && vp run -r build"
 	},
