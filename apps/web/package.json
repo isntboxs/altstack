@@ -7,12 +7,13 @@
 	},
 	"scripts": {
 		"build": "vp build",
-		"dev": "vp dev --port 3000",
+		"dev": "vp dev --port 3010",
 		"generate-routes": "tsr generate",
 		"preview": "vp preview",
 		"test": "vp test run"
 	},
 	"dependencies": {
+		"@altstack/env": "workspace:*",
 		"@altstack/ui": "workspace:*",
 		"@tanstack/react-devtools": "^0.10.8",
 		"@tanstack/react-router": "^1.170.18",
@@ -41,8 +42,7 @@
 		"tailwindcss": "catalog:",
 		"typescript": "catalog:",
 		"vite": "catalog:",
-		"vite-plus": "catalog:",
-		"vitest": "catalog:"
+		"vite-plus": "catalog:"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

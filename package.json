@@ -10,7 +10,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "vp run -r build",
-		"dev": "vp run -r dev",
+		"dev": "vp run -r --parallel dev",
 		"dev:server": "vp run @altstack/server#dev",
 		"dev:web": "vp run @altstack/web#dev",
 		"prepare": "vp config",
@@ -28,8 +28,7 @@
 		"vite-plus": "catalog:"
 	},
 	"overrides": {
-		"vite": "catalog:",
-		"vitest": "catalog:"
+		"vite": "catalog:"
 	},
 	"devEngines": {
 		"packageManager": {
@@ -55,8 +54,10 @@
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.3",
+		"bumpp": "^12.0.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"dotenv": "^17.4.2",
 		"elysia": "^1.4.29",
 		"jsdom": "^28.1.0",
 		"lucide-react": "^1.25.0",
@@ -71,7 +72,6 @@
 		"typescript": "^7.0.2",
 		"vite": "npm:@voidzero-dev/vite-plus-core@0.2.5",
 		"vite-plus": "0.2.5",
-		"vitest": "4.1.10",
 		"zod": "^4.4.3"
 	}
 }

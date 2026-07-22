@@ -6,6 +6,12 @@ export default defineConfig({
 			tsgo: true,
 		},
 		exports: true,
+		entry: {
+			'*': 'src/*.ts',
+		},
+		format: 'esm',
+		outDir: 'dist',
+		clean: true,
 	},
 	test: {
 		environment: 'node',
