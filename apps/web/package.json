@@ -6,7 +6,6 @@
 		"#/*": "./src/*"
 	},
 	"scripts": {
-		"build": "vp build",
 		"dev": "vp dev --port 3010",
 		"generate-routes": "tsr generate",
 		"preview": "vp preview",

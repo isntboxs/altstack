@@ -9,11 +9,8 @@
 	],
 	"type": "module",
 	"scripts": {
-		"build": "vp run -r build",
-		"dev": "vp run -r --parallel dev",
 		"dev:web": "vp run @altstack/web#dev",
-		"prepare": "vp config",
-		"ready": "vp check && vp run -r test && vp run -r build"
+		"prepare": "vp config"
 	},
 	"dependencies": {},
 	"devDependencies": {

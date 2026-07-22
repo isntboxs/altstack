@@ -14,6 +14,15 @@ const config = defineConfig({
 		tanstackStart(),
 		viteReact(),
 	]),
+	run: {
+		tasks: {
+			build: {
+				command: 'vp build',
+				input: [{ auto: true }, '!.output/**'],
+				output: ['.output/**'],
+			},
+		},
+	},
 })
 
 export default config

@@ -417,6 +417,26 @@ export default defineConfig({
 		],
 	},
 	run: {
-		cache: true,
+		cache: {
+			scripts: true,
+			tasks: true,
+		},
+		tasks: {
+			lint: 'vp lint',
+			build: {
+				command: 'vp run -r build',
+				dependsOn: [
+					'lint',
+					{ task: 'build', from: ['dependencies', 'devDependencies'] },
+				],
+			},
+			check: {
+				command: ['vp check', 'vp run -r test'],
+			},
+			dev: {
+				command: 'vp run -r --parallel dev',
+				cache: false,
+			},
+		},
 	},
 })
