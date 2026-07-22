@@ -1,0 +1,53 @@
+{
+	"name": "web",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"#/*": "./src/*"
+	},
+	"scripts": {
+		"build": "vp build",
+		"dev": "vp dev --port 3000",
+		"generate-routes": "tsr generate",
+		"preview": "vp preview",
+		"test": "vp test run"
+	},
+	"dependencies": {
+		"@altstack/ui": "workspace:*",
+		"@tanstack/react-devtools": "^0.10.8",
+		"@tanstack/react-router": "^1.170.18",
+		"@tanstack/react-router-devtools": "^1.167.0",
+		"@tanstack/react-router-ssr-query": "^1.167.1",
+		"@tanstack/react-start": "^1.168.32",
+		"@tanstack/router-plugin": "^1.168.23",
+		"lucide-react": "catalog:",
+		"nitro": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@tailwindcss/typography": "catalog:",
+		"@tailwindcss/vite": "catalog:",
+		"@tanstack/devtools-vite": "catalog:",
+		"@tanstack/router-cli": "catalog:",
+		"@testing-library/dom": "catalog:",
+		"@testing-library/react": "catalog:",
+		"@types/node": "catalog:",
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
+		"@vitejs/plugin-react": "catalog:",
+		"jsdom": "catalog:",
+		"tailwindcss": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:",
+		"vitest": "catalog:"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild",
+			"lightningcss"
+		]
+	}
+}
