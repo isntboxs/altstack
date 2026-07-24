@@ -5,7 +5,6 @@ import { RPCHandler } from '@orpc/server/fetch'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
 import { withEvlog } from 'evlog/orpc'
 
-import type { ORPCContext } from '@altstack/api/context'
 import { createORPCContext } from '@altstack/api/context'
 import { routers } from '@altstack/api/routers'
 
@@ -49,12 +48,12 @@ export async function handle({ request }: { request: Request }) {
 	const ctx = createORPCContext(request)
 
 	const rpcResult = await rpcHandler.handle(request, {
-		context: ctx as ORPCContext,
+		context: ctx,
 		prefix: '/api/rpc',
 	})
 
 	const openApiResult = await openApiHandler.handle(request, {
-		context: ctx as ORPCContext,
+		context: ctx,
 		prefix: '/api/rpc/reference',
 	})
 

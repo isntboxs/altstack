@@ -7,4 +7,4 @@ export function createORPCContext(_opts: Request) {
 }
 
 export type ORPCContext = Awaited<ReturnType<typeof createORPCContext>> &
-	EvlogOrpcContext
+	Partial<EvlogOrpcContext>
