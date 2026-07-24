@@ -7,9 +7,16 @@
 	],
 	"type": "module",
 	"exports": {
-		"./server": "./dist/server.mjs",
-		"./web": "./dist/web.mjs",
+		"./server": "./src/server.ts",
+		"./web": "./src/web.ts",
 		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"exports": {
+			"./server": "./dist/server.mjs",
+			"./web": "./dist/web.mjs",
+			"./package.json": "./package.json"
+		}
 	},
 	"scripts": {
 		"build": "vp pack",

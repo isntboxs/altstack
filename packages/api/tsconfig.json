@@ -3,9 +3,9 @@
 	"extends": "@altstack/config/tsconfig.base.json",
 	"compilerOptions": {
 		"declaration": true,
-		"types": ["bun"],
+		"types": ["bun", "vite/client"],
 		"paths": {
-			"@altstack/db/*": ["./src/*"]
+			"@altstack/api/*": ["./src/*"]
 		}
 	}
 }
