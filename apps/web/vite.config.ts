@@ -7,6 +7,7 @@ import { defineConfig, lazyPlugins } from 'vite-plus'
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	server: { port: 3010 },
 	plugins: lazyPlugins(() => [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
