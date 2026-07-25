@@ -18,7 +18,8 @@
 		"db:studio": "vp run --filter @altstack/db db:studio",
 		"db:watch": "docker compose up postgres",
 		"dev:web": "vp run @altstack/web#dev",
-		"prepare": "vp config"
+		"prepare": "vp config",
+		"ready": "vp check && vp run -r test && vp run -r build"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",

@@ -11,6 +11,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
+import { ThemeProvider } from '#/components/theme-provider.tsx'
 import appCss from '#/styles.css?url'
 import type { orpc } from '#/utils/orpc.ts'
 
@@ -23,7 +24,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	server: {
 		middleware: [createMiddleware().server(evlogErrorHandler)],
 	},
-	shellComponent: RootDocument,
 	component: RootComponent,
 	head: () => {
 		return {
@@ -51,7 +51,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html
+			lang="en"
+			className="scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent scrollbar-gutter-stable selection:bg-primary selection:text-primary-foreground"
+			suppressHydrationWarning
+		>
 			<head>
 				<HeadContent />
 			</head>
@@ -80,8 +84,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
 	return (
-		<>
-			<Outlet />
-		</>
+		<RootDocument>
+			<ThemeProvider
+				attribute="class"
+				defaultTheme="system"
+				disableTransitionOnChange
+				storageKey="theme"
+			>
+				<Outlet />
+			</ThemeProvider>
+		</RootDocument>
 	)
 }
