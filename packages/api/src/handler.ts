@@ -17,6 +17,8 @@ export const openApiHandler = withEvlog(
 				schemaConverters: [new ZodToJsonSchemaConverter()],
 			}),
 			new OpenAPIReferencePlugin({
+				docsPath: '/',
+				specPath: '/spec.json',
 				schemaConverters: [new ZodToJsonSchemaConverter()],
 				specGenerateOptions: {
 					info: {

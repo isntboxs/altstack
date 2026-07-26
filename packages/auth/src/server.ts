@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth'
 
-import { createAuthConfig } from '@altstack/auth/config'
+import { createAuthConfig } from '@altstack/auth/server/config'
 
 export function createAuth() {
 	const config = createAuthConfig()

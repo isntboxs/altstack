@@ -7,16 +7,16 @@
 	],
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts",
 		"./client": "./src/client.ts",
-		"./config": "./src/config.ts",
+		"./server": "./src/server.ts",
+		"./server/config": "./src/server/config.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
-			".": "./dist/index.mjs",
 			"./client": "./dist/client.mjs",
-			"./config": "./dist/config.mjs",
+			"./server": "./dist/server.mjs",
+			"./server/config": "./dist/server/config.mjs",
 			"./package.json": "./package.json"
 		}
 	},

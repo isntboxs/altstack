@@ -8,7 +8,7 @@ export const env = createEnv({
 		DATABASE_URL: z.url(),
 		APP_NAME: z.string(),
 		BETTER_AUTH_URL: z.url(),
-		BETTER_AUTH_SECRET: z.string(),
+		BETTER_AUTH_SECRET: z.string().min(32),
 		BETTER_AUTH_TRUSTED_ORIGINS: z
 			.string()
 			.transform((cors) =>

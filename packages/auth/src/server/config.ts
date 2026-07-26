@@ -7,13 +7,11 @@ import {
 } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
-import { createDb } from '@altstack/db'
+import { db } from '@altstack/db'
 
 import { env } from '@altstack/env/server'
 
 export function createAuthConfig() {
-	const db = createDb()
-
 	return {
 		account: {
 			accountLinking: {

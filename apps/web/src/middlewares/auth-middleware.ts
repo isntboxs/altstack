@@ -1,6 +1,6 @@
 import { createMiddleware } from '@tanstack/react-start'
 
-import { auth } from '@altstack/auth'
+import { auth } from '@altstack/auth/server'
 
 export const authMiddleware = createMiddleware().server(
 	async ({ next, request }) => {
