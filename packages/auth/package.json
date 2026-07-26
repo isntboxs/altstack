@@ -1,5 +1,5 @@
 {
-	"name": "@altstack/db",
+	"name": "@altstack/auth",
 	"version": "0.0.0",
 	"private": true,
 	"files": [
@@ -8,43 +8,35 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
-		"./relations": "./src/relations.ts",
-		"./schemas": "./src/schemas.ts",
-		"./schemas/auth": "./src/schemas/auth.ts",
+		"./client": "./src/client.ts",
+		"./config": "./src/config.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
 			".": "./dist/index.mjs",
-			"./relations": "./dist/relations.mjs",
-			"./schemas": "./dist/schemas.mjs",
-			"./schemas/auth": "./dist/schemas/auth.mjs",
+			"./client": "./dist/client.mjs",
+			"./config": "./dist/config.mjs",
 			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {
 		"build": "vp pack",
 		"check": "vp check",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:push": "drizzle-kit push",
-		"db:studio": "drizzle-kit studio",
 		"dev": "vp pack --watch",
 		"test": "vp test"
 	},
 	"dependencies": {
+		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
+		"better-auth": "catalog:",
 		"dotenv": "catalog:",
-		"drizzle-orm": "catalog:",
-		"pg": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
 		"@types/bun": "catalog:",
-		"@types/pg": "catalog:",
 		"bumpp": "catalog:",
-		"drizzle-kit": "catalog:",
 		"typescript": "catalog:",
 		"vite": "catalog:",
 		"vite-plus": "catalog:"

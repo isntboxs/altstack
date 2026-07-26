@@ -39,6 +39,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
+		"@altstack/auth": "workspace:*",
 		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
 		"@orpc/client": "catalog:",

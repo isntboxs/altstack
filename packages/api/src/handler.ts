@@ -45,7 +45,7 @@ export const openApiHandler = withEvlog(
 )
 
 export async function handle({ request }: { request: Request }) {
-	const ctx = createORPCContext(request)
+	const ctx = await createORPCContext(request)
 
 	const rpcResult = await rpcHandler.handle(request, {
 		context: ctx,

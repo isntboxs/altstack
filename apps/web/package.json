@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@altstack/api": "workspace:*",
+		"@altstack/auth": "workspace:*",
 		"@altstack/env": "workspace:*",
 		"@altstack/ui": "workspace:*",
 		"@orpc/client": "catalog:",

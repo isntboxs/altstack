@@ -10,13 +10,11 @@ import { routers as orpcRouters } from '@altstack/api/routers'
 import type { ORPCRouterClient } from '@altstack/api/routers'
 
 const getORPCClient = createIsomorphicFn()
-	.server(() => {
-		const ctx = createORPCContext(getRequest())
-
-		return createRouterClient(orpcRouters, {
-			context: ctx,
+	.server(() =>
+		createRouterClient(orpcRouters, {
+			context: () => createORPCContext(getRequest()),
 		})
-	})
+	)
 	.client((): ORPCRouterClient => {
 		const link = new RPCLink({
 			url: `${window.location.origin}/api/rpc`,

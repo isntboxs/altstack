@@ -12,6 +12,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
 import { ThemeProvider } from '#/components/theme-provider.tsx'
+import { getAuthFn } from '#/functions/get-auth-fn.ts'
 import appCss from '#/styles.css?url'
 import type { orpc } from '#/utils/orpc.ts'
 
@@ -23,6 +24,10 @@ interface RouterAppContext {
 export const Route = createRootRouteWithContext<RouterAppContext>()({
 	server: {
 		middleware: [createMiddleware().server(evlogErrorHandler)],
+	},
+	beforeLoad: async () => {
+		const auth = await getAuthFn()
+		return { auth }
 	},
 	component: RootComponent,
 	head: () => {
