@@ -1,13 +1,7 @@
-import { defineConfig } from 'vite-plus'
+import { defineConfig } from 'vite-plus/test/config'
 
 export default defineConfig({
 	resolve: { tsconfigPaths: true },
-	pack: {
-		dts: {
-			tsgo: true,
-		},
-		exports: true,
-	},
 	test: {
 		environment: 'node',
 		passWithNoTests: true,

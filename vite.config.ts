@@ -10,9 +10,11 @@ export default defineConfig({
 			'**/node_modules/**',
 			'**/dist/**',
 			'**/build/**',
+			'**/.output/**',
+			'**/.nitro/**',
 			'**/.vinxi/**',
 			'**/.tanstack/**',
-			'**/src/routeTree.gen.ts',
+			'**/routeTree.gen.ts',
 		],
 		endOfLine: 'lf',
 		semi: false,
@@ -107,9 +109,11 @@ export default defineConfig({
 			'**/node_modules/**',
 			'**/dist/**',
 			'**/build/**',
+			'**/.output/**',
+			'**/.nitro/**',
 			'**/.vinxi/**',
 			'**/.tanstack/**',
-			'**/src/routeTree.gen.ts',
+			'**/routeTree.gen.ts',
 		],
 		options: { typeAware: true, typeCheck: true },
 		env: {
@@ -413,6 +417,26 @@ export default defineConfig({
 		],
 	},
 	run: {
-		cache: true,
+		cache: {
+			scripts: false,
+			tasks: true,
+		},
+		tasks: {
+			lint: 'vp lint',
+			build: {
+				command: 'vp run -r build',
+				dependsOn: [
+					'lint',
+					{ task: 'build', from: ['dependencies', 'devDependencies'] },
+				],
+			},
+			check: {
+				command: ['vp check', 'vp run -r test'],
+			},
+			dev: {
+				command: 'vp run -r --parallel dev',
+				cache: false,
+			},
+		},
 	},
 })

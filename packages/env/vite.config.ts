@@ -6,7 +6,14 @@ export default defineConfig({
 		dts: {
 			tsgo: true,
 		},
-		exports: true,
+		exports: {
+			enabled: true,
+			devExports: true,
+		},
+		entry: ['./src/**/*.ts', '!./src/**/*.d.ts'],
+		format: 'esm',
+		outDir: 'dist',
+		clean: true,
 	},
 	test: {
 		environment: 'node',

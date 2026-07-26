@@ -7,6 +7,7 @@ import { defineConfig, lazyPlugins } from 'vite-plus'
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	server: { port: 3010 },
 	plugins: lazyPlugins(() => [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
@@ -14,9 +15,14 @@ const config = defineConfig({
 		tanstackStart(),
 		viteReact(),
 	]),
-	test: {
-		environment: 'node',
-		passWithNoTests: true,
+	run: {
+		tasks: {
+			build: {
+				command: 'vp build',
+				input: [{ auto: true }, '!.output/**'],
+				output: ['.output/**'],
+			},
+		},
 	},
 })
 

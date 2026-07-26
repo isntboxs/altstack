@@ -1,10 +1,19 @@
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Button } from '@altstack/ui/components/button'
 
-export const Route = createFileRoute('/')({ component: Home })
+import { orpc } from '#/utils/orpc.ts'
+
+export const Route = createFileRoute('/')({
+	component: Home,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(orpc.health.queryOptions()),
+})
 
 function Home() {
+	const healthQuery = useSuspenseQuery(orpc.health.queryOptions())
+
 	return (
 		<div className="p-8">
 			<h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
@@ -19,6 +28,8 @@ function Home() {
 				<Button variant="destructive">Destructive</Button>
 				<Button variant="link">Link</Button>
 			</div>
+
+			<div>healthy: {healthQuery.data.message}</div>
 		</div>
 	)
 }
