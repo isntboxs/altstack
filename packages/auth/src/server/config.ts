@@ -1,6 +1,7 @@
 import type { BetterAuthOptions } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import {
+	admin as adminPlugin,
 	multiSession as multiSessionPlugin,
 	openAPI as openAPIPlugin,
 	username as usernamePlugin,
@@ -35,6 +36,7 @@ export function createAuthConfig() {
 		},
 		experimental: { joins: true },
 		plugins: [
+			adminPlugin(),
 			multiSessionPlugin(),
 			openAPIPlugin(),
 			usernamePlugin(),
