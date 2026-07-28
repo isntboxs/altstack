@@ -46,21 +46,24 @@ export const openApiHandler = withEvlog(
 	})
 )
 
-export async function handle({ request }: { request: Request }) {
+export async function handleRPC({ request }: { request: Request }) {
 	const ctx = await createORPCContext(request)
 
-	const rpcResult = await rpcHandler.handle(request, {
+	const { matched, response } = await rpcHandler.handle(request, {
 		context: ctx,
 		prefix: '/api/rpc',
 	})
 
-	const openApiResult = await openApiHandler.handle(request, {
+	return matched ? response : new Response('Not Found', { status: 404 })
+}
+
+export async function handleOpenApi({ request }: { request: Request }) {
+	const ctx = await createORPCContext(request)
+
+	const { matched, response } = await openApiHandler.handle(request, {
 		context: ctx,
 		prefix: '/api/rpc/reference',
 	})
 
-	if (rpcResult.response) return rpcResult.response
-	if (openApiResult.response) return openApiResult.response
-
-	return new Response('Not Found', { status: 404 })
+	return matched ? response : new Response('Not Found', { status: 404 })
 }
