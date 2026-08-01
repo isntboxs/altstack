@@ -18,12 +18,12 @@
 		"test": "vp test"
 	},
 	"dependencies": {
+		"@base-ui/react": "catalog:",
 		"@fontsource-variable/inter": "catalog:",
 		"@tabler/icons-react": "catalog:",
 		"class-variance-authority": "catalog:",
 		"clsx": "catalog:",
 		"react": "catalog:",
-		"react-aria-components": "catalog:",
 		"react-dom": "catalog:",
 		"shadcn": "catalog:",
 		"tailwind-merge": "catalog:",

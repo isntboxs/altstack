@@ -1,14 +1,7 @@
+import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { cva } from 'class-variance-authority'
 import type { VariantProps } from 'class-variance-authority'
-import * as React from 'react'
-import {
-	Button as ButtonPrimitive,
-	Link as LinkPrimitive,
-} from 'react-aria-components'
-import type {
-	ButtonProps as ButtonPrimitiveProps,
-	LinkProps as LinkPrimitiveProps,
-} from 'react-aria-components'
+import React from 'react'
 
 import { cn } from '@altstack/ui/lib/utils'
 
@@ -54,41 +47,14 @@ function Button({
 	variant = 'default',
 	size = 'default',
 	...props
-}: Omit<ButtonPrimitiveProps, 'className'> &
-	React.RefAttributes<HTMLButtonElement> &
-	VariantProps<typeof buttonVariants> & {
-		className?: string
-	}) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
 	return (
 		<ButtonPrimitive
 			data-slot="button"
-			data-variant={variant}
-			data-size={size}
 			className={cn(buttonVariants({ variant, size, className }))}
 			{...props}
 		/>
 	)
 }
 
-function LinkButton({
-	className,
-	variant = 'default',
-	size = 'default',
-	...props
-}: Omit<LinkPrimitiveProps, 'className'> &
-	React.RefAttributes<HTMLAnchorElement> &
-	VariantProps<typeof buttonVariants> & {
-		className?: string
-	}) {
-	return (
-		<LinkPrimitive
-			data-slot="button"
-			data-variant={variant}
-			data-size={size}
-			className={cn(buttonVariants({ variant, size, className }))}
-			{...props}
-		/>
-	)
-}
-
-export { Button, LinkButton, buttonVariants }
+export { Button, buttonVariants }
