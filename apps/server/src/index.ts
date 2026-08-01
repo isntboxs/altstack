@@ -45,8 +45,12 @@ const app = new Elysia()
 		}
 		return status(405)
 	})
-	.all('/api/rpc*', async (context) => await handleRPC(context))
-	.all('/api/reference*', async (context) => await handleOpenApi(context))
+	.all('/api/rpc*', async (context) => await handleRPC(context), {
+		parse: 'none',
+	})
+	.all('/api/reference*', async (context) => await handleOpenApi(context), {
+		parse: 'none',
+	})
 	.get('/', () => 'Altstack server is running!')
 	.listen(env.PORT)
 
