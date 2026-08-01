@@ -49,6 +49,7 @@
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
 		"drizzle-orm": "catalog:",
+		"elysia": "catalog:",
 		"evlog": "catalog:",
 		"zod": "catalog:"
 	},

@@ -6,7 +6,6 @@ import {
 	openAPI as openAPIPlugin,
 	username as usernamePlugin,
 } from 'better-auth/plugins'
-import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 import { db } from '@altstack/db'
 
@@ -40,12 +39,11 @@ export function createAuthConfig() {
 			multiSessionPlugin(),
 			openAPIPlugin(),
 			usernamePlugin(),
-			tanstackStartCookies(),
 		],
 		secret: env.BETTER_AUTH_SECRET,
 		session: {
 			expiresIn: 60 * 60 * 24 * 3,
 		},
-		trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS,
+		trustedOrigins: env.CORS_ORIGINS,
 	} satisfies BetterAuthOptions
 }

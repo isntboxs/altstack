@@ -7,7 +7,7 @@ import type { ORPCRouterClient } from '@altstack/api/routers'
 import { env } from '@altstack/env/web'
 
 const link = new RPCLink({
-	url: `${env.VITE_APP_URL}/api/rpc`,
+	url: `${env.VITE_SERVER_URL}/api/rpc`,
 	fetch(url, options) {
 		return fetch(url, {
 			...options,

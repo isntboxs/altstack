@@ -10,7 +10,7 @@ import type { auth } from '@altstack/auth/server'
 import { env } from '@altstack/env/web'
 
 export const authClient = createAuthClient({
-	baseURL: env.VITE_APP_URL,
+	baseURL: env.VITE_SERVER_URL,
 	plugins: [
 		inferAdditionalFields<typeof auth>(),
 		multiSessionClient(),
