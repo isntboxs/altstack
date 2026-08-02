@@ -1,3 +1,4 @@
+import type { Context as ElysiaContext } from 'elysia'
 import type { EvlogOrpcContext } from 'evlog/orpc'
 
 import type { auth } from '@altstack/auth/server'
@@ -9,13 +10,15 @@ export type ORPCContext = {
 	auth: Awaited<ReturnType<typeof auth.api.getSession>>
 } & EvlogOrpcContext
 
-export async function createORPCContext(opts: Request): Promise<ORPCContext> {
+export async function createORPCContext(
+	opts: ElysiaContext
+): Promise<ORPCContext> {
 	const [{ auth }, { db }] = await Promise.all([
 		import('@altstack/auth/server'),
 		import('@altstack/db'),
 	])
 
-	const session = await auth.api.getSession({ headers: opts.headers })
+	const session = await auth.api.getSession({ headers: opts.request.headers })
 
 	return { db, auth: session } as ORPCContext
 }

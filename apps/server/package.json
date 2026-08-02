@@ -1,0 +1,28 @@
+{
+	"name": "server",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "vp pack",
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run dist/index.mjs"
+	},
+	"dependencies": {
+		"@altstack/api": "workspace:*",
+		"@altstack/auth": "workspace:*",
+		"@altstack/db": "workspace:*",
+		"@altstack/env": "workspace:*",
+		"@elysiajs/cors": "^1.4.2",
+		"elysia": "catalog:",
+		"evlog": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"bumpp": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	}
+}
