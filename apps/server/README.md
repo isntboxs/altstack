@@ -2,18 +2,20 @@
 
 ## Getting Started
 
-To get started with this template, simply paste this command into your terminal:
+Install the workspace dependencies:
 
 ```bash
-bun create elysia ./elysia-example
+vp install
+```
+
+Start the server in development mode from the repository root:
+
+```bash
+npm run dev:server
 ```
 
 ## Development
 
-To start the development server run:
+The server runs with watch mode and restarts on file changes.
 
-```bash
-bun run dev
-```
-
-Open http://localhost:3000/ with your browser to see the result.
+Open http://localhost:3009/ with your browser to see the result.
