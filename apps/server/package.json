@@ -4,7 +4,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "bun run --watch src/index.ts"
+		"build": "vp pack",
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run dist/index.mjs"
 	},
 	"dependencies": {
 		"@altstack/api": "workspace:*",

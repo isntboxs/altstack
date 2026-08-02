@@ -6,14 +6,14 @@ import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { nitro } from 'nitro/vite'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, lazyPlugins } from 'vite-plus'
+import { lazyPlugins, defineConfig } from 'vite-plus'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const config = defineConfig({
 	envDir: resolve(__dirname, '../..'),
 	resolve: { tsconfigPaths: true },
-	server: { port: 3010 },
+	server: { port: 3011 },
 	plugins: lazyPlugins(() => [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),

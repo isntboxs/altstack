@@ -1,7 +1,7 @@
 import { IconMoon, IconSun } from '@tabler/icons-react'
-import { useTheme } from 'next-themes'
 
 import { Button } from '@altstack/ui/components/button'
+import { useTheme } from '@altstack/ui/components/customs/theme-provider'
 
 export const ThemeSwitcher = () => {
 	const { resolvedTheme, setTheme } = useTheme()

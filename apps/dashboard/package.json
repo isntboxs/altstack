@@ -1,5 +1,5 @@
 {
-	"name": "web",
+	"name": "dashboard",
 	"private": true,
 	"type": "module",
 	"imports": {
@@ -27,7 +27,6 @@
 		"@tanstack/react-router-devtools": "catalog:",
 		"@tanstack/react-router-ssr-query": "catalog:",
 		"@tanstack/react-start": "catalog:",
-		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
 		"evlog": "catalog:",
 		"nitro": "catalog:",
@@ -38,18 +37,14 @@
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
 		"@rolldown/plugin-babel": "catalog:",
-		"@tailwindcss/typography": "catalog:",
 		"@tailwindcss/vite": "catalog:",
 		"@tanstack/devtools-vite": "catalog:",
 		"@tanstack/router-cli": "catalog:",
-		"@testing-library/dom": "catalog:",
-		"@testing-library/react": "catalog:",
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
 		"babel-plugin-react-compiler": "catalog:",
-		"jsdom": "catalog:",
 		"tailwindcss": "catalog:",
 		"typescript": "catalog:",
 		"vite": "catalog:",
