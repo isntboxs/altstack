@@ -9,7 +9,7 @@ import { Button } from '@altstack/ui/components/button'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 
 export const Header = () => (
-	<header className="fixed top-0 z-50 h-12 w-full border-b bg-background/85 backdrop-blur-sm supports-backdrop-filter:bg-background/80">
+	<header className="fixed top-0 z-50 h-12 w-full bg-background">
 		<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-4 lg:px-16">
 			<div className="flex items-center gap-2">
 				<Button size="icon-sm" variant="ghost" className="lg:hidden">

@@ -13,6 +13,7 @@ import { evlogErrorHandler } from 'evlog/nitro/v3'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 
+import { Header } from '#/components/header'
 import { getAuthFn } from '#/functions/get-auth-fn'
 import appCss from '#/styles.css?url'
 import type { orpc } from '#/utils/orpc'
@@ -97,7 +98,13 @@ function RootComponent() {
 				disableTransitionOnChange
 				storageKey="theme"
 			>
-				<Outlet />
+				<Header />
+
+				<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
+
+				<main>
+					<Outlet />
+				</main>
 			</ThemeProvider>
 		</RootDocument>
 	)

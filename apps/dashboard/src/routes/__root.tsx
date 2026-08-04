@@ -6,10 +6,13 @@ import {
 	Outlet,
 	Scripts,
 	createRootRouteWithContext,
+	redirect,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
+
+import { env } from '@altstack/env/web'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 
@@ -28,6 +31,13 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	},
 	beforeLoad: async () => {
 		const auth = await getAuthFn()
+
+		if (!auth) {
+			throw redirect({
+				href: env.VITE_APP_URL,
+			})
+		}
+
 		return { auth }
 	},
 	component: RootComponent,
