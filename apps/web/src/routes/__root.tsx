@@ -31,6 +31,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		const auth = await getAuthFn()
 		return { auth }
 	},
+	shellComponent: RootDocument,
 	component: RootComponent,
 	head: () => {
 		return {
@@ -91,21 +92,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
 	return (
-		<RootDocument>
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="system"
-				disableTransitionOnChange
-				storageKey="theme"
-			>
-				<Header />
+		<ThemeProvider
+			attribute="class"
+			defaultTheme="system"
+			disableTransitionOnChange
+			storageKey="theme"
+		>
+			<Header />
 
-				<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
+			<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
 
-				<main>
-					<Outlet />
-				</main>
-			</ThemeProvider>
-		</RootDocument>
+			<main>
+				<Outlet />
+			</main>
+		</ThemeProvider>
 	)
 }
