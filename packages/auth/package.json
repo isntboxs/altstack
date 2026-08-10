@@ -1,0 +1,44 @@
+{
+	"name": "@altstack/auth",
+	"version": "0.0.0",
+	"private": true,
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		"./client": "./src/client.ts",
+		"./server": "./src/server.ts",
+		"./server/config": "./src/server/config.ts",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"exports": {
+			"./client": "./dist/client.mjs",
+			"./server": "./dist/server.mjs",
+			"./server/config": "./dist/server/config.mjs",
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "vp pack",
+		"check": "vp check",
+		"dev": "vp pack --watch",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"@altstack/db": "workspace:*",
+		"@altstack/env": "workspace:*",
+		"better-auth": "catalog:",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"bumpp": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	}
+}

@@ -1,0 +1,63 @@
+{
+	"name": "@altstack/api",
+	"version": "0.0.0",
+	"private": true,
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		"./base": "./src/base.ts",
+		"./context": "./src/context.ts",
+		"./contracts": "./src/contracts/index.ts",
+		"./contracts/base": "./src/contracts/base.ts",
+		"./contracts/health": "./src/contracts/health.ts",
+		"./handler": "./src/handler.ts",
+		"./procedures": "./src/procedures.ts",
+		"./routers": "./src/routers/index.ts",
+		"./routers/health": "./src/routers/health.ts",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"exports": {
+			"./base": "./dist/base.mjs",
+			"./context": "./dist/context.mjs",
+			"./contracts": "./dist/contracts/index.mjs",
+			"./contracts/base": "./dist/contracts/base.mjs",
+			"./contracts/health": "./dist/contracts/health.mjs",
+			"./handler": "./dist/handler.mjs",
+			"./procedures": "./dist/procedures.mjs",
+			"./routers": "./dist/routers/index.mjs",
+			"./routers/health": "./dist/routers/health.mjs",
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "vp pack",
+		"check": "vp check",
+		"dev": "vp pack --watch",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"@altstack/auth": "workspace:*",
+		"@altstack/db": "workspace:*",
+		"@altstack/env": "workspace:*",
+		"@orpc/client": "catalog:",
+		"@orpc/contract": "catalog:",
+		"@orpc/json-schema": "catalog:",
+		"@orpc/openapi": "catalog:",
+		"@orpc/server": "catalog:",
+		"@orpc/zod": "catalog:",
+		"drizzle-orm": "catalog:",
+		"evlog": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"bumpp": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	}
+}

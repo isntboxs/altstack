@@ -1,0 +1,40 @@
+{
+	"name": "@altstack/env",
+	"version": "0.0.0",
+	"private": true,
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		"./server": "./src/server.ts",
+		"./web": "./src/web.ts",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"exports": {
+			"./server": "./dist/server.mjs",
+			"./web": "./dist/web.mjs",
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "vp pack",
+		"check": "vp check",
+		"dev": "vp pack --watch",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"@t3-oss/env-core": "^0.13.11",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"bumpp": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:",
+		"vite-plus": "catalog:"
+	}
+}

@@ -2,6 +2,10 @@
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"extends": "@altstack/config/tsconfig.base.json",
 	"compilerOptions": {
-		"types": ["vite/client", "bun"]
+		"declaration": true,
+		"types": ["bun", "vite/client"],
+		"paths": {
+			"@altstack/api/*": ["./src/*"]
+		}
 	}
 }

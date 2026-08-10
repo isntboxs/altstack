@@ -1,0 +1,23 @@
+name: altstack
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: altstack-postgres
+    environment:
+      POSTGRES_DB: altstack
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - altstack_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  altstack_postgres_data:
