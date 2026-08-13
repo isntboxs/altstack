@@ -4,7 +4,8 @@ import { Layers2, Layers } from 'reicon-react'
 
 import { env } from '@altstack/env/web'
 
-import { Button } from '@altstack/ui/components/button'
+import { Button, buttonVariants } from '@altstack/ui/components/button'
+import { cn } from '@altstack/ui/lib/utils.ts'
 
 import { ThemeSwitcher } from '#/components/theme-switcher'
 
@@ -36,9 +37,13 @@ export const Header = () => (
 			<div className="flex items-center gap-2">
 				<ThemeSwitcher />
 
-				<Button variant="outline" size="sm">
+				<Link
+					to="."
+					className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+					viewTransition
+				>
 					<span className="text-muted-foreground">Sign in</span>
-				</Button>
+				</Link>
 			</div>
 		</div>
 	</header>

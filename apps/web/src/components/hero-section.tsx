@@ -25,7 +25,7 @@ export const HeroSection = () => (
 			)}
 		/>
 
-		<div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center justify-center space-y-2 px-4 pt-22 pb-16 lg:px-16">
+		<div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center justify-center space-y-2 px-4 pt-36 pb-10 lg:px-16">
 			<Button
 				size="sm"
 				className={cn('bg-card hover:bg-card hover:text-primary')}
