@@ -44,6 +44,13 @@ export function createAuthConfig() {
 		session: {
 			expiresIn: 60 * 60 * 24 * 3,
 		},
+		socialProviders: {
+			github: {
+				enabled: true,
+				clientId: env.GITHUB_CLIENT_ID,
+				clientSecret: env.GITHUB_CLIENT_SECRET,
+			},
+		},
 		trustedOrigins: env.CORS_ORIGINS,
 	} satisfies BetterAuthOptions
 }

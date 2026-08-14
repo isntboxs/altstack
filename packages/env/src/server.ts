@@ -31,6 +31,8 @@ export const env = createEnv({
 					origins.every((origin) => z.url().safeParse(origin).success),
 				{ message: 'Each origin must be a valid URL' }
 			),
+		GITHUB_CLIENT_ID: z.string(),
+		GITHUB_CLIENT_SECRET: z.string().min(32),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,
