@@ -1,16 +1,31 @@
-import { IconMenu2 } from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
+import { IconLayoutDashboard, IconMenu2 } from '@tabler/icons-react'
+import { Link, useRouter } from '@tanstack/react-router'
+import { log } from 'evlog/client'
 import { useState } from 'react'
-import { Layers2, Layers } from 'reicon-react'
+import { Layers2, Layers, Bookmark2, Logout4 } from 'reicon-react'
+
+import { authClient } from '@altstack/auth/client'
 
 import { env } from '@altstack/env/web'
 
 import { Button } from '@altstack/ui/components/button'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@altstack/ui/components/dropdown-menu'
 
 import { AuthDialog } from '#/components/auth-dialog'
 import { ThemeSwitcher } from '#/components/theme-switcher'
+import { UserAvatar } from '#/components/user-avatar'
 
-export const Header = () => {
+export const Header = ({
+	auth,
+}: {
+	auth: typeof authClient.$Infer.Session | null
+}) => {
 	const [openAuthDialog, setOpenAuthDialog] = useState(false)
 
 	const handleAuthDialog = () => {
@@ -48,12 +63,74 @@ export const Header = () => {
 					<div className="flex items-center gap-2">
 						<ThemeSwitcher />
 
-						<Button variant="outline" size="sm" onClick={handleAuthDialog}>
-							<span className="text-muted-foreground">Sign in</span>
-						</Button>
+						{!auth ? (
+							<Button variant="outline" size="sm" onClick={handleAuthDialog}>
+								<span className="text-muted-foreground">Sign in</span>
+							</Button>
+						) : (
+							<UserButton user={auth.user} />
+						)}
 					</div>
 				</div>
 			</header>
 		</>
+	)
+}
+
+const UserButton = ({
+	user,
+}: {
+	user: typeof authClient.$Infer.Session.user
+}) => {
+	const router = useRouter()
+
+	const handleSignOut = async () => {
+		await authClient.signOut({
+			fetchOptions: {
+				onSuccess: async () => {
+					await router.invalidate({ sync: true })
+				},
+
+				onError: (ctx) => {
+					log.error({ error: ctx.error })
+				},
+			},
+		})
+	}
+
+	const handleNavigate = (path: string) => {
+		void router.navigate({ href: path, viewTransition: true })
+	}
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button size="icon-sm" variant="ghost">
+						<UserAvatar image={user.image} name={user.name} />
+					</Button>
+				}
+			/>
+
+			<DropdownMenuContent align="end">
+				<DropdownMenuItem
+					onClick={() => handleNavigate(env.VITE_DASHBOARD_URL)}
+				>
+					<IconLayoutDashboard />
+					Dashboard
+				</DropdownMenuItem>
+
+				<DropdownMenuItem>
+					<Bookmark2 />
+					Bookmarks
+				</DropdownMenuItem>
+
+				<DropdownMenuSeparator />
+				<DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+					<Logout4 />
+					Sign out
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	)
 }

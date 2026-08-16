@@ -8,6 +8,7 @@ import {
 } from 'better-auth/plugins'
 
 import { db } from '@altstack/db'
+import * as schemas from '@altstack/db/schemas'
 
 import { env } from '@altstack/env/server'
 
@@ -29,11 +30,16 @@ export function createAuthConfig() {
 		baseURL: env.BETTER_AUTH_URL,
 		database: drizzleAdapter(db, {
 			provider: 'pg',
+			schema: {
+				user: schemas.user,
+				account: schemas.account,
+				session: schemas.session,
+				verification: schemas.verification,
+			},
 		}),
 		emailAndPassword: {
 			enabled: true,
 		},
-		experimental: { joins: true },
 		plugins: [
 			adminPlugin(),
 			multiSessionPlugin(),

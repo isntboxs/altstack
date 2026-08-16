@@ -4,6 +4,8 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import { authClient } from '@altstack/auth/client'
 
+import { env } from '@altstack/env/web'
+
 import { Button } from '@altstack/ui/components/button'
 import {
 	Dialog,
@@ -22,6 +24,7 @@ export const AuthDialog = ({ open, onOpenChange }: AuthDialogpros) => {
 	const signIn = async () =>
 		await authClient.signIn.social({
 			provider: 'github',
+			callbackURL: env.VITE_APP_URL,
 			fetchOptions: {
 				onSuccess: () => onOpenChange(false),
 				onError: (ctx) => {

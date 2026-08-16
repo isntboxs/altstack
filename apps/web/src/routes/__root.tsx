@@ -92,6 +92,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+	const { auth } = Route.useRouteContext()
+
 	return (
 		<LogProvider>
 			<ThemeProvider
@@ -100,7 +102,7 @@ function RootComponent() {
 				disableTransitionOnChange
 				storageKey="theme"
 			>
-				<Header />
+				<Header auth={auth} />
 
 				<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
 
