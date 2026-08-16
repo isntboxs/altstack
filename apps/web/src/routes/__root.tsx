@@ -11,10 +11,13 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
-import { ThemeProvider } from '#/components/theme-provider.tsx'
-import { getAuthFn } from '#/functions/get-auth-fn.ts'
+import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
+
+import { Header } from '#/components/header'
+import { LogProvider } from '#/components/log-provider'
+import { getAuthFn } from '#/functions/get-auth-fn'
 import appCss from '#/styles.css?url'
-import type { orpc } from '#/utils/orpc.ts'
+import type { orpc } from '#/utils/orpc'
 
 interface RouterAppContext {
 	orpc: typeof orpc
@@ -29,6 +32,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		const auth = await getAuthFn()
 		return { auth }
 	},
+	shellComponent: RootDocument,
 	component: RootComponent,
 	head: () => {
 		return {
@@ -88,16 +92,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+	const { auth } = Route.useRouteContext()
+
 	return (
-		<RootDocument>
+		<LogProvider>
 			<ThemeProvider
 				attribute="class"
 				defaultTheme="system"
 				disableTransitionOnChange
 				storageKey="theme"
 			>
-				<Outlet />
+				<Header auth={auth} />
+
+				<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
+
+				<main>
+					<Outlet />
+				</main>
 			</ThemeProvider>
-		</RootDocument>
+		</LogProvider>
 	)
 }

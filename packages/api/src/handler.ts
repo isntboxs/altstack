@@ -3,6 +3,7 @@ import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 import { RPCHandler } from '@orpc/server/fetch'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
+import type { Context as ElysiaContext } from 'elysia'
 import { withEvlog } from 'evlog/orpc'
 
 import { createORPCContext } from '@altstack/api/context'
@@ -22,7 +23,7 @@ export const openApiHandler = withEvlog(
 				schemaConverters: [new ZodToJsonSchemaConverter()],
 				specGenerateOptions: {
 					info: {
-						title: 'Altstack RPC API Reference',
+						title: 'Altstack API',
 						version: '0.0.0',
 						description: 'API Reference for Altstack',
 					},
@@ -46,21 +47,24 @@ export const openApiHandler = withEvlog(
 	})
 )
 
-export async function handle({ request }: { request: Request }) {
-	const ctx = await createORPCContext(request)
+export async function handleRPC(opts: ElysiaContext) {
+	const ctx = await createORPCContext(opts)
 
-	const rpcResult = await rpcHandler.handle(request, {
+	const { matched, response } = await rpcHandler.handle(opts.request, {
 		context: ctx,
 		prefix: '/api/rpc',
 	})
 
-	const openApiResult = await openApiHandler.handle(request, {
+	return matched ? response : new Response('Not Found', { status: 404 })
+}
+
+export async function handleOpenApi(opts: ElysiaContext) {
+	const ctx = await createORPCContext(opts)
+
+	const { matched, response } = await openApiHandler.handle(opts.request, {
 		context: ctx,
-		prefix: '/api/rpc/reference',
+		prefix: '/api/reference',
 	})
 
-	if (rpcResult.response) return rpcResult.response
-	if (openApiResult.response) return openApiResult.response
-
-	return new Response('Not Found', { status: 404 })
+	return matched ? response : new Response('Not Found', { status: 404 })
 }

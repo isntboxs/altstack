@@ -1,13 +1,14 @@
 import type { BetterAuthOptions } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import {
+	admin as adminPlugin,
 	multiSession as multiSessionPlugin,
 	openAPI as openAPIPlugin,
 	username as usernamePlugin,
 } from 'better-auth/plugins'
-import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 import { db } from '@altstack/db'
+import * as schemas from '@altstack/db/schemas'
 
 import { env } from '@altstack/env/server'
 
@@ -29,21 +30,33 @@ export function createAuthConfig() {
 		baseURL: env.BETTER_AUTH_URL,
 		database: drizzleAdapter(db, {
 			provider: 'pg',
+			schema: {
+				user: schemas.user,
+				account: schemas.account,
+				session: schemas.session,
+				verification: schemas.verification,
+			},
 		}),
 		emailAndPassword: {
 			enabled: true,
 		},
-		experimental: { joins: true },
 		plugins: [
+			adminPlugin(),
 			multiSessionPlugin(),
 			openAPIPlugin(),
 			usernamePlugin(),
-			tanstackStartCookies(),
 		],
 		secret: env.BETTER_AUTH_SECRET,
 		session: {
 			expiresIn: 60 * 60 * 24 * 3,
 		},
-		trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS,
+		socialProviders: {
+			github: {
+				enabled: true,
+				clientId: env.GITHUB_CLIENT_ID,
+				clientSecret: env.GITHUB_CLIENT_SECRET,
+			},
+		},
+		trustedOrigins: env.CORS_ORIGINS,
 	} satisfies BetterAuthOptions
 }
