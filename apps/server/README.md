@@ -11,11 +11,11 @@ vp install
 Start the server in development mode from the repository root:
 
 ```bash
-npm run dev:server
+vp run dev:server
 ```
 
 ## Development
 
 The server runs with watch mode and restarts on file changes.
 
-Open http://localhost:3009/ with your browser to see the result.
+Open http://localhost:<port>/ with your browser to see the result. The port comes from the `PORT` environment variable (see `.env.example`) and can be overridden.

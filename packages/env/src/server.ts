@@ -28,9 +28,27 @@ export const env = createEnv({
 			})
 			.refine(
 				(origins) =>
-					origins.every((origin) => z.url().safeParse(origin).success),
-				{ message: 'Each origin must be a valid URL' }
-			),
+					origins.every((origin) => {
+						try {
+							const url = new URL(origin)
+							return (
+								(url.protocol === 'http:' || url.protocol === 'https:') &&
+								url.username === '' &&
+								url.password === '' &&
+								url.pathname === '/' &&
+								url.search === '' &&
+								url.hash === ''
+							)
+						} catch {
+							return false
+						}
+					}),
+				{
+					message:
+						'Each origin must be an HTTP(S) origin without path, query, fragment, or credentials',
+				}
+			)
+			.transform((origins) => origins.map((origin) => new URL(origin).origin)),
 		GITHUB_CLIENT_ID: z.string(),
 		GITHUB_CLIENT_SECRET: z.string().min(32),
 	},
