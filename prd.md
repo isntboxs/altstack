@@ -1,8 +1,8 @@
 ---
 # Product Requirements Document
 ## AltStack
-**Version:** 1.0
-**Status:** Draft
+Version: 1.0
+Status: Draft
 ---
 
 # Overview
@@ -54,7 +54,7 @@ The experience is fragmented.
 
 GitHub isn't designed for discovery.
 
-Product Hunt isn't focused on open source.
+Product Hunt isn't focused on open-source software.
 
 Awesome Lists become outdated.
 
@@ -92,7 +92,7 @@ Examples
 
 ## Builder
 
-Open source maintainers.
+Open-source maintainers.
 
 Goals
 
@@ -111,7 +111,7 @@ Examples
 
 Best AI Coding Tools
 
-Best Self Hosted Apps
+Best Self-Hosted Apps
 
 Best React Libraries
 
@@ -201,7 +201,7 @@ Examples
 
 - CMS
 
-- Self Hosted
+- Self-Hosted
 
 - Backend
 
@@ -217,11 +217,11 @@ Examples
 
 Example
 
-Best Open Source AI Apps
+Best Open-Source AI Apps
 
 Best Authentication Solutions
 
-Awesome Self Hosted Apps
+Awesome Self-Hosted Apps
 
 Modern React Ecosystem
 
@@ -344,6 +344,55 @@ System auto-fetches
 - owner
 
 - topics
+
+Authentication
+
+- Authentication is not required to submit (guests may submit without an account)
+- Authenticated submissions are attributed to the account and bypass the unauthenticated rate limit
+
+Unauthenticated submissions
+
+- Rate limit: 10 submissions per IP per hour, beyond which HTTP 429 is returned
+- Deduplication: 1 submission per repository URL, regardless of submitter
+- Moderation: all unauthenticated submissions start in Draft and require moderator approval before public listing
+- Publication states: Draft → Published | Rejected | Removed
+  - Draft: pending moderation review, not listed publicly
+  - Published: approved and publicly listed
+  - Rejected: refused with reason; submitter may edit and resubmit
+  - Removed: delisted for policy violation; re-submission requires fixing the issue
+
+Access matrix
+
+| Action                                | Guest | User | Maintainer | Moderator | Admin |
+| ------------------------------------- | ----- | ---- | ---------- | --------- | ----- |
+| Submit project                        | ✓     | ✓    | ✓          | ✓         | ✓     |
+| Claim ownership                       | ✗     | ✓    | ✓          | ✓         | ✓     |
+| Edit own submission                   | ✗     | ✓    | ✓          | ✓         | ✓     |
+| Approve / reject / remove submissions | ✗     | ✗    | ✗          | ✓         | ✓     |
+| Feature projects                      | ✗     | ✗    | ✗          | ✓         | ✓     |
+| Manage categories / collections       | ✗     | ✗    | ✗          | ✗         | ✓     |
+| Manage roles, bans, sessions          | ✗     | ✗    | ✗          | ✗         | ✓     |
+
+Impersonation
+
+- Restricted to Admin role only
+- Impersonation start and end are written to the audit log with acting admin and target
+- Impersonated sessions are visually flagged and cannot trigger privileged actions (role changes, bans)
+
+Audit log (required events)
+
+- login, logout, failed login
+- submission create / update / approve / reject / remove
+- ownership claim (verified / denied)
+- role change, ban / unban
+- impersonation start / end
+- session revocation
+
+Session termination
+
+- Password change, role change, or ban invalidates all active sessions of the account
+- Admins can revoke any session; revocation is logged
+- Impersonation sessions end immediately when the admin exits impersonation
 
 ---
 
@@ -499,13 +548,19 @@ Analytics
 
 - TailwindCSS v4
 
-- shadcn/ui
+- packages/ui: `@base-ui/react` for runtime components, shadcn for component tooling
 
 ---
 
 ## Backend
 
-- TanStack Start / Nitro (Fetch Handlers)
+Runtime boundaries
+
+- apps/dashboard, apps/web: TanStack Start with Nitro
+
+- apps/server: Elysia
+
+Shared
 
 - oRPC
 
@@ -517,7 +572,7 @@ Analytics
 
 ## Search
 
-- PostgreSQL Full Text Search (MVP)
+- PostgreSQL Full-Text Search (MVP)
 
 - Meilisearch (Future)
 
@@ -555,7 +610,7 @@ Analytics
 
 Core Models
 
-```
+```text
 User
 
 Project

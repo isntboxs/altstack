@@ -5,8 +5,8 @@ Welcome to your new TanStack Start app!
 To run this application:
 
 ```bash
-bun install
-bun --bun run dev
+vp install
+vp run dev
 ```
 
 # Building For Production
@@ -14,7 +14,7 @@ bun --bun run dev
 To build this application for production:
 
 ```bash
-bun --bun run build
+vp build
 ```
 
 ## Styling
@@ -35,11 +35,11 @@ If you prefer not to use Tailwind CSS:
 This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
 
 ```bash
-npm run build
-node dist/server/index.mjs
+vp build
+node .output/server/index.mjs
 ```
 
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
+The build output is a self-contained Node server (Nitro `node-server` preset, the default). To deploy, push the `.output/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above. For a different preset, set it in `nitro.config.ts` and adjust the entry point accordingly.
 
 For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
 
