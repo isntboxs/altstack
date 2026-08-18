@@ -10,11 +10,14 @@
 		"./base": "./src/base.ts",
 		"./context": "./src/context.ts",
 		"./contracts": "./src/contracts/index.ts",
+		"./contracts/altstack": "./src/contracts/altstack.ts",
 		"./contracts/base": "./src/contracts/base.ts",
 		"./contracts/health": "./src/contracts/health.ts",
+		"./github": "./src/github.ts",
 		"./handler": "./src/handler.ts",
 		"./procedures": "./src/procedures.ts",
 		"./routers": "./src/routers/index.ts",
+		"./routers/altstack": "./src/routers/altstack.ts",
 		"./routers/health": "./src/routers/health.ts",
 		"./package.json": "./package.json"
 	},
@@ -23,11 +26,14 @@
 			"./base": "./dist/base.mjs",
 			"./context": "./dist/context.mjs",
 			"./contracts": "./dist/contracts/index.mjs",
+			"./contracts/altstack": "./dist/contracts/altstack.mjs",
 			"./contracts/base": "./dist/contracts/base.mjs",
 			"./contracts/health": "./dist/contracts/health.mjs",
+			"./github": "./dist/github.mjs",
 			"./handler": "./dist/handler.mjs",
 			"./procedures": "./dist/procedures.mjs",
 			"./routers": "./dist/routers/index.mjs",
+			"./routers/altstack": "./dist/routers/altstack.mjs",
 			"./routers/health": "./dist/routers/health.mjs",
 			"./package.json": "./package.json"
 		}
@@ -51,6 +57,7 @@
 		"drizzle-orm": "catalog:",
 		"elysia": "catalog:",
 		"evlog": "catalog:",
+		"octokit": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
