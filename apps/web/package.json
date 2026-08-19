@@ -29,6 +29,7 @@
 		"@tanstack/react-start": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
+		"date-fns": "^4.4.0",
 		"evlog": "catalog:",
 		"nitro": "catalog:",
 		"react": "catalog:",

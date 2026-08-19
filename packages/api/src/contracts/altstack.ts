@@ -19,6 +19,7 @@ const listCommitsContract = baseContract
 				sha: z.string(),
 				htmlUrl: z.url(),
 				message: z.string(),
+				parents: z.array(z.string()),
 				author: z.object({
 					name: z.string().nullish(),
 					email: z.string().nullish(),

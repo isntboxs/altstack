@@ -14,6 +14,7 @@ const listCommitsHandler = publicProcedure.altstack.listCommits.handler(
 				sha: commit.sha,
 				htmlUrl: commit.html_url,
 				message: commit.commit.message,
+				parents: commit.parents.map((parent) => parent.sha),
 				author: {
 					name: commit.commit.author?.name,
 					email: commit.commit.author?.email,
