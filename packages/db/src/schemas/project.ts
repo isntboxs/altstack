@@ -6,7 +6,6 @@ import {
 	uuid,
 	index,
 	varchar,
-	check,
 } from 'drizzle-orm/pg-core'
 
 export const project = pgTable(
@@ -29,12 +28,5 @@ export const project = pgTable(
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
-	(table) => [
-		index('project_slug_idx').on(table.slug),
-		check('tagline_len', sql`char_length(${table.tagline}) BETWEEN 10 AND 80`),
-		check(
-			'short_desc_len',
-			sql`char_length(${table.shortDescription}) BETWEEN 80 AND 280`
-		),
-	]
+	(table) => [index('project_slug_idx').on(table.slug)]
 )
