@@ -22,5 +22,19 @@ export const relations = defineRelations(schemas, (r) => {
 				to: r.user.id,
 			}),
 		},
+
+		project: {
+			githubRepository: r.one.githubRepository({
+				from: r.project.id,
+				to: r.githubRepository.projectId,
+			}),
+		},
+
+		githubRepository: {
+			project: r.one.project({
+				from: r.githubRepository.projectId,
+				to: r.project.id,
+			}),
+		},
 	}
 })

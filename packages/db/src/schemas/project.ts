@@ -9,7 +9,7 @@ import {
 	check,
 } from 'drizzle-orm/pg-core'
 
-export const projectTable = pgTable(
+export const project = pgTable(
 	'projects',
 	{
 		id: uuid('id')
