@@ -160,6 +160,7 @@
       "dependencies": {
         "@altstack/db": "workspace:*",
         "@altstack/env": "workspace:*",
+        "@altstack/shared": "workspace:*",
         "@better-auth/drizzle-adapter": "^1.7.1",
         "better-auth": "catalog:",
         "dotenv": "catalog:",

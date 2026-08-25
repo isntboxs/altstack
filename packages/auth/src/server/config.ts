@@ -12,6 +12,8 @@ import * as schemas from '@altstack/db/schemas'
 
 import { env } from '@altstack/env/server'
 
+import { DEFAULT_ROLE, ROLES } from '@altstack/shared'
+
 export function createAuthConfig() {
 	return {
 		account: {
@@ -41,7 +43,10 @@ export function createAuthConfig() {
 			enabled: true,
 		},
 		plugins: [
-			adminPlugin(),
+			adminPlugin({
+				adminRoles: ['admin'],
+				defaultRole: 'user',
+			}),
 			multiSessionPlugin(),
 			openAPIPlugin(),
 			usernamePlugin(),
@@ -58,5 +63,15 @@ export function createAuthConfig() {
 			},
 		},
 		trustedOrigins: env.CORS_ORIGINS,
+		user: {
+			additionalFields: {
+				role: {
+					type: [...ROLES],
+					defaultValue: DEFAULT_ROLE,
+					input: false,
+					required: true,
+				},
+			},
+		},
 	} satisfies BetterAuthOptions
 }
