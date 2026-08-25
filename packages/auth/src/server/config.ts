@@ -1,5 +1,5 @@
+import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { BetterAuthOptions } from 'better-auth'
-import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import {
 	admin as adminPlugin,
 	multiSession as multiSessionPlugin,
