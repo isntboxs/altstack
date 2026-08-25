@@ -10,6 +10,7 @@
 		"./client": "./src/client.ts",
 		"./server": "./src/server.ts",
 		"./server/config": "./src/server/config.ts",
+		"./server/permissions": "./src/server/permissions.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -17,6 +18,7 @@
 			"./client": "./dist/client.mjs",
 			"./server": "./dist/server.mjs",
 			"./server/config": "./dist/server/config.mjs",
+			"./server/permissions": "./dist/server/permissions.mjs",
 			"./package.json": "./package.json"
 		}
 	},

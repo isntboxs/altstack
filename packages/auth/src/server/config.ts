@@ -7,6 +7,8 @@ import {
 	username as usernamePlugin,
 } from 'better-auth/plugins'
 
+import { ac, roles } from '@altstack/auth/server/permissions'
+
 import { db } from '@altstack/db'
 import * as schemas from '@altstack/db/schemas'
 
@@ -46,6 +48,8 @@ export function createAuthConfig() {
 			adminPlugin({
 				adminRoles: ['admin'],
 				defaultRole: 'user',
+				ac,
+				roles,
 			}),
 			multiSessionPlugin(),
 			openAPIPlugin(),
