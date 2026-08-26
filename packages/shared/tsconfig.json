@@ -1,0 +1,11 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"extends": "@altstack/config/tsconfig.base.json",
+	"compilerOptions": {
+		"declaration": true,
+		"types": ["bun"],
+		"paths": {
+			"@altstack/shared/*": ["./src/*"]
+		}
+	}
+}

@@ -10,6 +10,7 @@
 		"./client": "./src/client.ts",
 		"./server": "./src/server.ts",
 		"./server/config": "./src/server/config.ts",
+		"./server/permissions": "./src/server/permissions.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -17,6 +18,7 @@
 			"./client": "./dist/client.mjs",
 			"./server": "./dist/server.mjs",
 			"./server/config": "./dist/server/config.mjs",
+			"./server/permissions": "./dist/server/permissions.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -29,6 +31,8 @@
 	"dependencies": {
 		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
+		"@altstack/shared": "workspace:*",
+		"@better-auth/drizzle-adapter": "^1.7.1",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",
 		"zod": "catalog:"
