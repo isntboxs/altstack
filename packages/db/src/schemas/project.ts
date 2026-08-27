@@ -6,9 +6,10 @@ import {
 	uuid,
 	index,
 	varchar,
+	boolean,
 } from 'drizzle-orm/pg-core'
 
-import { user } from './auth'
+import { user } from '@altstack/db/schemas/auth'
 
 export const project = pgTable(
 	'projects',
@@ -26,12 +27,16 @@ export const project = pgTable(
 		tagline: varchar('tagline', { length: 80 }).notNull(),
 		shortDescription: varchar('short_description', { length: 280 }).notNull(),
 		logoUrl: text('logo_url').notNull(),
-		content: text('content'),
+		content: text('content').notNull(),
+		featured: boolean('featured').notNull().default(false),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
 			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
-	(table) => [index('project_slug_idx').on(table.slug)]
+	(table) => [
+		index('project_slug_idx').on(table.slug),
+		index('project_featured_idx').on(table.featured),
+	]
 )

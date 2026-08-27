@@ -41,8 +41,8 @@ Each phase is **vertical** (DB → Drizzle → oRPC contract → router → TanS
 
 ### DB (`packages/db`)
 
-- [ ] Fix `packages/db/src/relations.ts:40-54` — `project.submitter` currently `from: r.project.id`, fix to `from: r.project.submitterId → r.user.id`
-- [ ] Migrate `packages/db/src/schemas/project.ts`:
+- [ ] Fix `packages/db/src/relations.ts:40-54` — `project.submitter` currently `from: r.project.id`, fix to `from: r.project.submitterId → r.user.id`; add `project ↔ githubRepository` 1-1 (`project.id → githubRepository.projectId unique`)
+- [ ] Migrate `packages/db/src/schemas/project.ts` (no GitHub columns — stats moved to `githubRepository`):
   ```ts
   status: pgEnum('project_status', [
   	'draft',
@@ -56,32 +56,58 @@ Each phase is **vertical** (DB → Drizzle → oRPC contract → router → TanS
   rejectionReason: text('rejection_reason')
   moderatedAt: timestamp('moderated_at')
   moderatedBy: uuid('moderated_by').references(() => user.id)
-  githubOwner: text('github_owner')
-  githubRepo: text('github_repo')
-  stars: integer('stars').default(0).notNull()
-  forks: integer('forks').default(0).notNull()
   // indexes
   index('project_status_idx').on(table.status)
   index('project_featured_idx').on(table.featured)
   ```
-- [ ] Seed: `packages/db/src/seed.ts` (or `drizzle/seed`) — 15 projects covering categories AI, DevTools, Productivity, etc., all `published`, varied `stars`/`updatedAt` for later feed testing
+- [ ] Create `packages/db/src/schemas/github.ts` — `githubRepository` (1-1 strict `projectId unique`, Phase 1 only `owner/repo/stars/forks`):
+  ```ts
+  export const githubRepository = pgTable(
+  	'github_repositories',
+  	{
+  		id: uuid('id')
+  			.default(sql`gen_random_uuid()`)
+  			.primaryKey(),
+  		projectId: uuid('project_id')
+  			.notNull()
+  			.unique()
+  			.references(() => project.id, { onDelete: 'cascade' }),
+  		owner: text('owner').notNull(),
+  		repo: text('repo').notNull(),
+  		stars: integer('stars').notNull().default(0),
+  		forks: integer('forks').notNull().default(0),
+  		createdAt: timestamp('created_at').notNull().defaultNow(),
+  		updatedAt: timestamp('updated_at')
+  			.notNull()
+  			.defaultNow()
+  			.$onUpdate(() => new Date()),
+  	},
+  	(t) => [
+  		index('github_repo_owner_repo_idx').on(t.owner, t.repo),
+  		index('github_repo_project_idx').on(t.projectId),
+  	]
+  )
+  // v1.1 will add: license, topics text[], watchers, openIssues, lastCommitAt, etc.
+  ```
+- [ ] Update `packages/db/src/schemas.ts` to export `project`, `github`, `auth`; update `packages/db/src/relations.ts` with `project.githubRepository` 1-1 strict
+- [ ] Seed: `packages/db/src/seed.ts` (or `drizzle/seed`) — 15 projects covering categories AI, DevTools, Productivity, etc., all `published`; insert `project` then `githubRepository` (left join) with varied `stars` 50–15000 / `updatedAt` spread for feed testing
 - [ ] Fix `packages/shared/src/schemas/role.ts:3` docs — confirm `ROLES = ['admin','user']` stays (no maintainer/moderator yet)
 
 ### API (`packages/api`)
 
 - [ ] Contract `packages/api/src/contracts/project.ts` (new):
-  - `listProjects`: input `{ page, limit, status? }` → output `Project[]` + `total`
-  - `getProjectBySlug`: input `{ slug }` → output `Project`
+  - `listProjects`: input `{ page, limit, status? }` → output `Project & GithubRepository` flattened (`stars/forks` from `githubRepository` join) + `total`
+  - `getProjectBySlug`: input `{ slug }` → output `Project & GithubRepository` (left join, `stars/forks` nullable if not yet fetched)
 - [ ] Router `packages/api/src/routers/project.ts`:
-  - `list` filters `status = 'published'` by default, `orderBy createdAt desc`, pagination 12/page
-  - `getBySlug` with `404 NOT_FOUND` if draft/rejected for guest
+  - `list` filters `status = 'published'` by default, `orderBy createdAt desc`, pagination 12/page; query via `db.query.project.findMany({ with: { githubRepository: true } })` or explicit `LEFT JOIN github_repositories`
+  - `getBySlug` left join `githubRepository`, with `404 NOT_FOUND` if draft/rejected for guest
 - [ ] Register in `packages/api/src/routers/index.ts` + `contracts/index.ts`
 
 ### UI (`apps/web`)
 
-- [ ] `apps/web/src/routes/index.tsx` — replace static `HeroSection`+`FilterSection` with `ProjectGrid` (uses `orpc.project.list`), `ProjectCard` (logo, name, tagline, stars, categories)
-- [ ] `apps/web/src/routes/projects.$slug.tsx` — new detail route (`createFileRoute('/projects/$slug')`), fetch `getProjectBySlug`, layout: header (logo+name+tagline), links (GitHub/website), markdown `content`, stats (stars/forks)
-- [ ] `apps/web/src/utils/orpc.ts` — add query options helpers for new routes
+- [ ] `apps/web/src/routes/index.tsx` — replace static `HeroSection`+`FilterSection` with `ProjectGrid` (uses `orpc.project.list`), `ProjectCard` (logo, name, tagline, stars/forks from `githubRepository`)
+- [ ] `apps/web/src/routes/projects.$slug.tsx` — new detail route (`createFileRoute('/projects/$slug')`), fetch `getProjectBySlug`, layout: header (logo+name+tagline), links (GitHub/website), markdown `content`, stats (`stars/forks` from `githubRepository` join)
+- [ ] `apps/web/src/utils/orpc.ts` — add query options helpers for new routes (flattened `stars/forks`)
 - [ ] Keep `HeroSection`/`FilterSection` as visual shell but not functional yet (search input disabled with `Coming in Phase 2` tooltip)
 
 ### Acceptance Criteria
@@ -182,7 +208,7 @@ Submit, auth, moderation, GitHub live fetch, pagination beyond 12/page
 
 ### Dependencies
 
-Requires Phase 1 `project` table + seed.
+Requires Phase 1 `project` + `githubRepository` (1-1) tables + seed.
 
 ### Effort
 
@@ -198,14 +224,15 @@ This is the largest MVP phase; it closes the `Goals MVP: Submit project` loop.
 
 ### DB
 
-- [ ] Ensure `project` columns from Phase 1 exist: `submitterId`, `status`, `rejectionReason`, `moderatedAt/By`, `githubOwner/Repo`, `stars/forks`
-- [ ] Add submission metadata:
+- [ ] Ensure `project` columns from Phase 1 exist: `submitterId`, `status`, `rejectionReason`, `moderatedAt/By` (no `githubOwner/Repo/stars/forks` in `project` — moved to `githubRepository`)
+- [ ] Ensure `githubRepository` table exists (Phase 1: `owner`, `repo`, `stars`, `forks`, `projectId unique` 1-1)
+- [ ] Add submission metadata to `project`:
   ```ts
   submitterIp: text('submitter_ip') // for rate limit audit, nullable for authed
   submittedAt: timestamp('submitted_at').defaultNow().notNull()
   // repositoryUrl already unique, ensure index exists
   ```
-- [ ] No new tables yet (audit log in Phase 5)
+- [ ] No new tables yet besides `githubRepository` (audit log in Phase 5)
 
 ### API
 
@@ -227,9 +254,9 @@ This is the largest MVP phase; it closes the `Goals MVP: Submit project` loop.
   1. **Dedup** — `SELECT id FROM projects WHERE repositoryUrl = $1` → if exists, throw `CONFLICT` (`packages/api/src/contracts/base.ts:25-27` already has `CONFLICT`)
   2. **Rate limit** — if `!ctx.user` (guest), check `Map<ip, number[]>` in-memory sliding window (10/hour). If exceeded, throw `TOO_MANY_REQUESTS` (`base.ts:29-31`). Authed bypasses IP limit but still deduped. Future: Redis.
   3. **Parse owner/repo** from `repositoryUrl`
-  4. **Auto-fetch** GitHub: `octokit.rest.repos.get({ owner, repo })` → `stargazers_count`, `forks_count`, `license.spdx_id`, `owner.login`, `topics`. Use `packages/api/src/github.ts` Octokit instance. Wrap in try/catch — if 404 → `BAD_REQUEST` "Repository not found", if 403 rate limited → store without stars (0) and log warning, don't fail submission.
+  4. **Auto-fetch** GitHub: `octokit.rest.repos.get({ owner, repo })` → `stargazers_count`, `forks_count`. Use `packages/api/src/github.ts` Octokit instance. Wrap in try/catch — if 404 → `BAD_REQUEST` "Repository not found", if 403 rate limited → store 0 and log warning, don't fail submission.
   5. **Slug** — `slugify(name)` + check unique, append `-2` if needed
-  6. **Insert** — `status='draft'`, `submitterId = ctx.user?.id ?? null`, `submitterIp = ctx.ip`, `stars/forks` from GitHub or 0, `githubOwner/Repo` parsed
+  6. **Insert** — in transaction: `INSERT project` (`status='draft'`, `submitterId`, `submitterIp`) → `INSERT githubRepository` (`projectId`, `owner`, `repo`, `stars`, `forks` from GitHub or 0) — 1-1 strict `projectId unique`
   7. **Return** `{ id, slug, status: 'draft' }`
 - [ ] Add `getIp` helper in `packages/api/src/context.ts` (from `x-forwarded-for` or `request.ip`)
 - [ ] Add `publicProcedure` variant with optional auth (guest allowed) — check `packages/api/src/procedures.ts` current `publicProcedure` vs `protectedProcedure` split
@@ -313,6 +340,7 @@ Requires P1 DB + P2 categories (or create categories inline if P2 not done — b
 - [ ] `apps/web/src/routes/my.submissions.tsx` — table of user's submissions with status badges (Draft/Published/Rejected/Removed), "Edit" link, "View" link if published
 - [ ] Detail page (`projects.$slug.tsx`) update: if `project.ownerId === session.user.id` show "You own this project — Edit" banner; if guest viewing draft via direct slug, still 404 (no leak)
 - [ ] Claim button on detail page: "Claim ownership" (visible to authed user if `!ownerId`), calls `claimProject`, on success shows confetti/toast + banner
+- [ ] Show stars/forks from `githubRepository` join (not `project` columns)
 
 ### Acceptance Criteria
 
@@ -320,7 +348,7 @@ Requires P1 DB + P2 categories (or create categories inline if P2 not done — b
 - [ ] User A submits repo `X`, User B tries to claim `X` (not owner) → 403
 - [ ] Owner logs in via GitHub, claims `X` → `ownerId` set, now can edit; non-owner edit attempt → 403
 - [ ] Owner edits `tagline` → change visible immediately on detail page
-- [ ] `listMySubmissions` returns drafts for owner, but guest `listProjects` still hides drafts
+- [ ] `listMySubmissions` returns drafts for owner, but guest `listProjects` still hides drafts (both via join to `githubRepository` for stars/forks)
 - [ ] GitHub OAuth flow works end-to-end (test with real GitHub app in dev, mock in CI)
 
 ### Out of Scope

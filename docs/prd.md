@@ -361,13 +361,13 @@ Stats `[P1]` minimal → `[P3]` auto-fetched
 
 ---
 
-GitHub Stats
+GitHub Stats (stored in `GithubRepository` 1-1, Phase 1: `owner/repo/stars/forks` only)
 
-Stars `[P3]` auto-fetch on submit
+Stars `[P1]` seeded, `[P3]` auto-fetch on submit (githubRepository.stars)
 
-Forks `[P3]`
+Forks `[P1]` seeded, `[P3]` (githubRepository.forks)
 
-Watchers `[v1.1]` (cron)
+Watchers `[v1.1]` (cron, githubRepository.watchers)
 
 Issues `[v1.1]`
 
@@ -375,9 +375,9 @@ Contributors `[v1.1]`
 
 Last Commit `[v1.1]` (cron)
 
-License `[P3]`
+License `[v1.1]` (was `[P3]`, deferred — githubRepository.license)
 
-Created `[P3]` (from GitHub `created_at`)
+Created `[P3]` (from GitHub `created_at`, project.createdAt)
 
 Updated `[P3]`
 
@@ -413,16 +413,15 @@ Required
 - Logo (`logoUrl`)
 - Categories
 
-System auto-fetches (on submit, not cron in MVP)
+System auto-fetches to `GithubRepository` (on submit, not cron in MVP)
 
-- stars
-- forks
-- README (stored in `content` if available, else truncated)
-- license
-- owner
-- topics
+- stars → `githubRepository.stars`
+- forks → `githubRepository.forks`
+- owner/repo → `githubRepository.owner`/`repo`
+- README (stored in `project.content` if available, else truncated)
+- license/topics → deferred to v1.1 (`githubRepository.license`, `topics`)
 
-Cron refresh is v1.1.
+Cron refresh is v1.1 (updates `githubRepository.stars/forks` etc.).
 
 Authentication
 
@@ -691,7 +690,8 @@ Core Models
 [MVP — Phase 1-5]
 User              // Better Auth, role admin|user
 Session / Account / Verification // Better Auth
-Project           // + status, featured, stars/forks, submitterId, rejectionReason, moderatedAt/By, githubOwner/Repo
+Project           // + status, featured, submitterId, rejectionReason, moderatedAt/By
+GithubRepository  // 1-1 strict: projectId unique FK → project.id, owner, repo, stars, forks (Phase 1: 4 fields only)
 Category
 ProjectCategory   // join
 Tag (or topics text[] on Project) — P2
@@ -705,11 +705,14 @@ Review
 Vote
 ProjectImage (screenshots gallery, replaces logoUrl string with R2)
 Maintainer (if separate role reintroduced)
-GitHubRepository (if split from Project)
-Release
+Release           // GitHub releases (if split from GithubRepository)
+GithubRepository extra fields: license, topics text[], watchers, openIssues, lastCommitAt, etc.
 ```
 
-Relation fix required in `packages/db/src/relations.ts` (`project.submitter` currently `from: r.project.id` → should be `r.project.submitterId`).
+Relations in `packages/db/src/relations.ts`:
+
+- `project.submitter` currently `from: r.project.id` → must be `from: r.project.submitterId → r.user.id`
+- Add `project.githubRepository` 1-1 strict `from: r.project.id → r.githubRepository.projectId (unique)` and inverse `githubRepository.project`
 
 ---
 
