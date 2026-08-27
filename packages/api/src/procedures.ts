@@ -1,5 +1,3 @@
-import { evlog } from 'evlog/orpc'
-
 import { o } from '@altstack/api/base'
 
 const authMiddleware = o.middleware(async ({ context, next, errors }) => {
@@ -20,6 +18,6 @@ const adminMiddleware = o.middleware(async ({ context, next, errors }) => {
 	return next({ context: { auth } })
 })
 
-export const publicProcedure = o.use(evlog())
-export const protectedProcedure = o.use(evlog()).use(authMiddleware)
-export const adminProcedure = o.use(evlog()).use(adminMiddleware)
+export const publicProcedure = o
+export const protectedProcedure = o.use(authMiddleware)
+export const adminProcedure = o.use(adminMiddleware)

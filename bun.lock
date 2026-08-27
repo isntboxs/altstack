@@ -135,6 +135,7 @@
         "@altstack/env": "workspace:*",
         "@orpc/client": "catalog:",
         "@orpc/contract": "catalog:",
+        "@orpc/evlog": "catalog:",
         "@orpc/json-schema": "catalog:",
         "@orpc/openapi": "catalog:",
         "@orpc/server": "catalog:",
@@ -646,6 +647,8 @@
     "@orpc/client": ["@orpc/client@2.0.0-beta.31", "", { "dependencies": { "@orpc/shared": "2.0.0-beta.31", "@standardserver/core": "^0.8.0", "@standardserver/fetch": "^0.8.0", "@standardserver/peer": "^0.8.0" } }, "sha512-ngyjG9Qv5dO0Iz6WK7CMC7cMUb64c7mG4nliQVZPGOEQaz+EIPWDMYgHXRp+m+q7zWvzpJECH8n9lU/I1hQZeA=="],
 
     "@orpc/contract": ["@orpc/contract@2.0.0-beta.31", "", { "dependencies": { "@orpc/client": "2.0.0-beta.31", "@orpc/shared": "2.0.0-beta.31", "@standard-schema/spec": "^1.1.0" } }, "sha512-Ut+n79Mp2t11GDkXKL34MGDlH2kcp6uTwDekfPxUgFaaSl6B7no4VtIVn9hFFq39lSkGfiTFn8jnaFcm66YYvQ=="],
+
+    "@orpc/evlog": ["@orpc/evlog@2.0.0-beta.31", "", { "dependencies": { "@orpc/client": "2.0.0-beta.31", "@orpc/server": "2.0.0-beta.31", "@orpc/shared": "2.0.0-beta.31", "@standardserver/core": "^0.8.0" }, "peerDependencies": { "evlog": ">=2.18.1" } }, "sha512-5Be3IJ/DzH6Wrm+UCJ7iy2JLYiQiGmPofyIt7BFVZPO07FCelJAU4QjMk9aaaiFWalAQ0g9JYPfvE4IJ92Jhuw=="],
 
     "@orpc/json-schema": ["@orpc/json-schema@2.0.0-beta.31", "", { "dependencies": { "@orpc/client": "2.0.0-beta.31", "@orpc/contract": "2.0.0-beta.31", "@orpc/server": "2.0.0-beta.31", "@orpc/shared": "2.0.0-beta.31", "@standard-schema/spec": "^1.1.0", "json-schema-typed": "^8.0.2" } }, "sha512-h/18XwwbnU3iMcsdOG24sRo7jZDdN9+VTXRGSk0+Qj3oz2N9s6nhGcuig+U1hNjQmiqc2FXgXDjpjjpfzn8irA=="],
 

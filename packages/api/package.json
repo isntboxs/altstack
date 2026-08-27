@@ -54,6 +54,7 @@
 		"@altstack/env": "workspace:*",
 		"@orpc/client": "catalog:",
 		"@orpc/contract": "catalog:",
+		"@orpc/evlog": "catalog:",
 		"@orpc/json-schema": "catalog:",
 		"@orpc/openapi": "catalog:",
 		"@orpc/server": "catalog:",
