@@ -13,12 +13,14 @@
 		"./contracts/altstack": "./src/contracts/altstack.ts",
 		"./contracts/base": "./src/contracts/base.ts",
 		"./contracts/health": "./src/contracts/health.ts",
+		"./contracts/project": "./src/contracts/project.ts",
 		"./github": "./src/github.ts",
 		"./handler": "./src/handler.ts",
 		"./procedures": "./src/procedures.ts",
 		"./routers": "./src/routers/index.ts",
 		"./routers/altstack": "./src/routers/altstack.ts",
 		"./routers/health": "./src/routers/health.ts",
+		"./routers/project": "./src/routers/project.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -29,12 +31,14 @@
 			"./contracts/altstack": "./dist/contracts/altstack.mjs",
 			"./contracts/base": "./dist/contracts/base.mjs",
 			"./contracts/health": "./dist/contracts/health.mjs",
+			"./contracts/project": "./dist/contracts/project.mjs",
 			"./github": "./dist/github.mjs",
 			"./handler": "./dist/handler.mjs",
 			"./procedures": "./dist/procedures.mjs",
 			"./routers": "./dist/routers/index.mjs",
 			"./routers/altstack": "./dist/routers/altstack.mjs",
 			"./routers/health": "./dist/routers/health.mjs",
+			"./routers/project": "./dist/routers/project.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -57,6 +61,7 @@
 		"drizzle-orm": "catalog:",
 		"elysia": "catalog:",
 		"evlog": "catalog:",
+		"limax": "^4.2.3",
 		"octokit": "catalog:",
 		"zod": "catalog:"
 	},
