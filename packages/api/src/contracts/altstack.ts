@@ -7,7 +7,7 @@ const listCommitsContract = baseContract
 	.meta(
 		openapi({
 			path: '/commits',
-			method: 'GET',
+			method: 'QUERY',
 			summary: 'Get commits',
 			description: 'Retrieve a list of commits.',
 			tags: ['Commits'],
