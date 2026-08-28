@@ -60,7 +60,6 @@
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
 		"drizzle-orm": "catalog:",
-		"elysia": "catalog:",
 		"evlog": "catalog:",
 		"limax": "^4.2.3",
 		"octokit": "catalog:",
