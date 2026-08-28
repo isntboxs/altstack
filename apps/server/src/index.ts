@@ -1,11 +1,13 @@
-import { cors } from '@elysiajs/cors'
-import { Elysia } from 'elysia'
 import { initLogger } from 'evlog'
 import { createAuthMiddleware } from 'evlog/better-auth'
-import { evlog } from 'evlog/elysia'
 import { createFsDrain } from 'evlog/fs'
+import { evlog } from 'evlog/hono'
+import type { EvlogVariables } from 'evlog/hono'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 
-import { handleOpenApi, handleRPC } from '@altstack/api/handler'
+import { createORPCContext } from '@altstack/api/context'
+import { rpcHandler, openApiHandler } from '@altstack/api/handler'
 
 import { auth } from '@altstack/auth/server'
 
@@ -20,40 +22,59 @@ const identifyUser = createAuthMiddleware(auth, {
 	maskEmail: true,
 })
 
-const app = new Elysia()
-	.use(
-		evlog({
-			drain: env.NODE_ENV === 'production' ? undefined : createFsDrain(),
-		})
-	)
-	.derive(async ({ request, log }) => {
-		await identifyUser(log, request.headers, new URL(request.url).pathname)
-		return {}
-	})
-	.use(
-		cors({
-			origin: env.CORS_ORIGINS,
-			methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-			allowedHeaders: ['Content-Type', 'Authorization'],
-			credentials: true,
-		})
-	)
-	.all('/api/auth/*', async (context) => {
-		const { request, status } = context
-		if (['POST', 'GET'].includes(request.method)) {
-			return auth.handler(request)
-		}
-		return status(405)
-	})
-	.all('/api/rpc*', async (context) => await handleRPC(context), {
-		parse: 'none',
-	})
-	.all('/api/reference*', async (context) => await handleOpenApi(context), {
-		parse: 'none',
-	})
-	.get('/', () => 'Altstack server is running!')
-	.listen(env.PORT)
+const app = new Hono<EvlogVariables>()
 
-console.debug(
-	`🦊 Altstack server is running at http://${app.server?.hostname}:${app.server?.port}`
+app.use(
+	evlog({
+		drain: env.NODE_ENV === 'production' ? undefined : createFsDrain(),
+	})
 )
+
+app.use('*', async (c, next) => {
+	await identifyUser(c.get('log'), c.req.raw.headers, c.req.path)
+	await next()
+})
+
+app.use(
+	'*',
+	cors({
+		origin: env.CORS_ORIGINS,
+		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'QUERY', 'OPTIONS'],
+		allowHeaders: ['Content-Type', 'Authorization'],
+		credentials: true,
+	})
+)
+
+app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
+
+app.use('/api/rpc*', async (c, next) => {
+	const context = await createORPCContext({ headers: c.req.raw.headers })
+
+	const { matched, response } = await rpcHandler.handle(c.req.raw, {
+		context,
+		prefix: '/api/rpc',
+	})
+
+	if (matched) return c.newResponse(response.body, response)
+
+	await next()
+})
+
+app.all('/api/reference*', async (c, next) => {
+	const context = await createORPCContext({ headers: c.req.raw.headers })
+	const { matched, response } = await openApiHandler.handle(c.req.raw, {
+		context,
+		prefix: '/api/reference',
+	})
+
+	if (matched) return c.newResponse(response.body, response)
+
+	await next()
+})
+
+app.get('/', (c) => c.text('Altstack server is running!'))
+
+export default {
+	port: env.PORT,
+	fetch: app.fetch,
+}
