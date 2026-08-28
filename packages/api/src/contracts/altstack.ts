@@ -6,7 +6,7 @@ import { baseContract } from '@altstack/api/contracts/base'
 const listCommitsContract = baseContract
 	.meta(
 		openapi({
-			path: '/commits',
+			path: '/list-commits',
 			method: 'QUERY',
 			summary: 'Get commits',
 			description: 'Retrieve a list of commits.',
