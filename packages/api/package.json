@@ -59,6 +59,7 @@
 		"@orpc/openapi": "catalog:",
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
+		"@scalar/api-reference": "^1.67.0",
 		"drizzle-orm": "catalog:",
 		"evlog": "catalog:",
 		"limax": "^4.2.3",
