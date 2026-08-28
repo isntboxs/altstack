@@ -7,9 +7,7 @@ import { RPCHandler } from '@orpc/server/fetch'
 import { GetMethodCsrfProtectionHandlerPlugin } from '@orpc/server/plugins'
 import { RPC_DEFAULT_ALLOW_METHODS } from '@orpc/server/standard'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
-import type { Context as ElysiaContext } from 'elysia'
 
-import { createORPCContext } from '@altstack/api/context'
 import { routers } from '@altstack/api/routers'
 
 import { env } from '@altstack/env/server'
@@ -18,6 +16,7 @@ export const rpcHandler = new RPCHandler(routers, {
 	allowMethods: ['GET', 'QUERY', ...RPC_DEFAULT_ALLOW_METHODS],
 	plugins: [
 		new GetMethodCsrfProtectionHandlerPlugin(),
+
 		new EvlogHandlerPlugin({
 			drain: undefined, // <- custom Evlog drain
 			plugins: [], // <- additional Evlog plugins
@@ -32,6 +31,12 @@ const generator = new OpenAPIGenerator({
 
 export const openApiHandler = new OpenAPIHandler(routers, {
 	plugins: [
+		new EvlogHandlerPlugin({
+			drain: undefined, // <- custom Evlog drain
+			plugins: [], // <- additional Evlog plugins
+			logAbort: true, // <- log when requests are aborted
+		}),
+
 		new SmartCoercionHandlerPlugin({
 			converters: [new ZodToJsonSchemaConverter()],
 		}),
@@ -74,25 +79,3 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 		}
 	},
 })
-
-export async function handleRPC(opts: ElysiaContext) {
-	const ctx = await createORPCContext(opts)
-
-	const { matched, response } = await rpcHandler.handle(opts.request, {
-		context: ctx,
-		prefix: '/api/rpc',
-	})
-
-	return matched ? response : new Response('Not Found', { status: 404 })
-}
-
-export async function handleOpenApi(opts: ElysiaContext) {
-	const ctx = await createORPCContext(opts)
-
-	const { matched, response } = await openApiHandler.handle(opts.request, {
-		context: ctx,
-		prefix: '/api/reference',
-	})
-
-	return matched ? response : new Response('Not Found', { status: 404 })
-}

@@ -15,11 +15,11 @@ const link = new RPCLink<ClientContext>({
 	url: `/api/rpc`,
 	method: ({ context }, path) => {
 		if (context.cache) {
-			return 'QUERY'
+			return 'GET'
 		}
 
 		if (path.at(-1)?.match(/^(?:get|find|list|search)(?:[A-Z].*)?$/)) {
-			return 'QUERY'
+			return 'GET'
 		}
 
 		return 'POST'
