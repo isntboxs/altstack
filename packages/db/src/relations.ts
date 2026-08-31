@@ -1,4 +1,4 @@
-import { defineRelations, defineRelationsPart } from 'drizzle-orm'
+import { defineRelationsPart } from 'drizzle-orm'
 
 import * as schemas from '@altstack/db/schemas'
 
@@ -36,33 +36,3 @@ export const authRelations = defineRelationsPart(
 		}
 	}
 )
-
-export const relations = defineRelations(schemas, (r) => {
-	return {
-		user: {
-			projects: r.many.project({
-				from: r.user.id,
-				to: r.project.submitterId,
-			}),
-		},
-
-		project: {
-			submitter: r.one.user({
-				from: r.project.submitterId,
-				to: r.user.id,
-			}),
-
-			githubRepo: r.one.githubRepo({
-				from: r.project.id,
-				to: r.githubRepo.projectId,
-			}),
-		},
-
-		githubRepo: {
-			project: r.one.project({
-				from: r.githubRepo.projectId,
-				to: r.project.id,
-			}),
-		},
-	}
-})

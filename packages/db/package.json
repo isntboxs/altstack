@@ -11,8 +11,6 @@
 		"./relations": "./src/relations.ts",
 		"./schemas": "./src/schemas.ts",
 		"./schemas/auth": "./src/schemas/auth.ts",
-		"./schemas/github": "./src/schemas/github.ts",
-		"./schemas/project": "./src/schemas/project.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -21,8 +19,6 @@
 			"./relations": "./dist/relations.mjs",
 			"./schemas": "./dist/schemas.mjs",
 			"./schemas/auth": "./dist/schemas/auth.mjs",
-			"./schemas/github": "./dist/schemas/github.mjs",
-			"./schemas/project": "./dist/schemas/project.mjs",
 			"./package.json": "./package.json"
 		}
 	},
