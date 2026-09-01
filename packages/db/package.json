@@ -11,6 +11,9 @@
 		"./relations": "./src/relations.ts",
 		"./schemas": "./src/schemas.ts",
 		"./schemas/auth": "./src/schemas/auth.ts",
+		"./schemas/github": "./src/schemas/github.ts",
+		"./schemas/project": "./src/schemas/project.ts",
+		"./seed": "./src/seed.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -19,6 +22,9 @@
 			"./relations": "./dist/relations.mjs",
 			"./schemas": "./dist/schemas.mjs",
 			"./schemas/auth": "./dist/schemas/auth.mjs",
+			"./schemas/github": "./dist/schemas/github.mjs",
+			"./schemas/project": "./dist/schemas/project.mjs",
+			"./seed": "./dist/seed.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -28,6 +34,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
+		"db:seed": "bun run ./src/seed.ts",
 		"db:studio": "drizzle-kit studio",
 		"dev": "vp pack --watch",
 		"test": "vp test"
@@ -36,6 +43,7 @@
 		"@altstack/env": "workspace:*",
 		"dotenv": "catalog:",
 		"drizzle-orm": "catalog:",
+		"octokit": "catalog:",
 		"pg": "catalog:",
 		"zod": "catalog:"
 	},

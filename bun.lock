@@ -187,6 +187,7 @@
         "@altstack/env": "workspace:*",
         "dotenv": "catalog:",
         "drizzle-orm": "catalog:",
+        "octokit": "catalog:",
         "pg": "catalog:",
         "zod": "catalog:",
       },
