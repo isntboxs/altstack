@@ -39,28 +39,17 @@ export const authRelations = defineRelationsPart(
 
 export const relations = defineRelations(schemas, (r) => {
 	return {
-		user: {
-			projects: r.many.project({
-				from: r.user.id,
-				to: r.project.submitterId,
-			}),
-		},
-
 		project: {
-			submitter: r.one.user({
-				from: r.project.submitterId,
-				to: r.user.id,
-			}),
-
-			githubRepo: r.one.githubRepo({
+			githubRepository: r.one.githubRepository({
 				from: r.project.id,
-				to: r.githubRepo.projectId,
+				to: r.githubRepository.projectId,
+				optional: false,
 			}),
 		},
 
-		githubRepo: {
+		githubRepository: {
 			project: r.one.project({
-				from: r.githubRepo.projectId,
+				from: r.githubRepository.projectId,
 				to: r.project.id,
 			}),
 		},

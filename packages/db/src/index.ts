@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
-import { relations, authRelations } from '@altstack/db/relations'
+import { authRelations, relations } from '@altstack/db/relations'
 
 import { env } from '@altstack/env/server'
 

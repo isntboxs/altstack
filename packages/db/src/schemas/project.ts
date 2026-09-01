@@ -1,15 +1,17 @@
 import { sql } from 'drizzle-orm'
 import {
+	index,
+	pgEnum,
 	pgTable,
 	text,
 	timestamp,
 	uuid,
-	index,
 	varchar,
-	boolean,
 } from 'drizzle-orm/pg-core'
 
-import { user } from '@altstack/db/schemas/auth'
+const PROJECT_STATUS = ['draft', 'published', 'rejected', 'removed'] as const
+
+export const projectStatusEnum = pgEnum('project_status', PROJECT_STATUS)
 
 export const project = pgTable(
 	'projects',
@@ -17,26 +19,23 @@ export const project = pgTable(
 		id: uuid('id')
 			.default(sql`pg_catalog.gen_random_uuid()`)
 			.primaryKey(),
-		submitterId: uuid('submitter_id').references(() => user.id, {
-			onDelete: 'cascade',
-		}),
 		name: text('name').notNull(),
 		slug: text('slug').notNull().unique(),
+		tagline: varchar('tagline', { length: 100 }).notNull(),
+		description: varchar('description', { length: 300 }).notNull(),
+		logo: text('logo').notNull(),
 		repositoryUrl: text('repository_url').notNull().unique(),
 		websiteUrl: text('website_url'),
-		tagline: varchar('tagline', { length: 80 }).notNull(),
-		shortDescription: varchar('short_description', { length: 280 }).notNull(),
-		logoUrl: text('logo_url').notNull(),
-		content: text('content').notNull(),
-		featured: boolean('featured').notNull().default(false),
+		content: text('content'),
+		status: projectStatusEnum('status').notNull(),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
 			.defaultNow()
-			.$onUpdate(() => new Date())
+			.$onUpdate(() => /* @__PURE__ */ new Date())
 			.notNull(),
 	},
 	(table) => [
 		index('project_slug_idx').on(table.slug),
-		index('project_featured_idx').on(table.featured),
+		index('project_status_idx').on(table.status),
 	]
 )

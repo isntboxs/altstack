@@ -13,6 +13,7 @@
 		"db:generate": "vp run --filter @altstack/db db:generate",
 		"db:migrate": "vp run --filter @altstack/db db:migrate",
 		"db:push": "vp run --filter @altstack/db db:push",
+		"db:seed": "vp run --filter @altstack/db db:seed",
 		"db:start": "docker compose up -d postgres",
 		"db:stop": "docker compose stop postgres",
 		"db:studio": "vp run --filter @altstack/db db:studio",

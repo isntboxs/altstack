@@ -1,784 +1,195 @@
 ---
-# Product Requirements Document
-## AltStack
-Version: 1.1 (Phased)
-Status: Draft
+title: AltStack Product Requirements
+version: 2.0
+status: Draft — lean delivery plan
+last_updated: 2026-09-01
 ---
 
-# Overview
+# AltStack
 
-## What is AltStack?
+## Product summary
 
-AltStack is a modern platform for discovering, exploring, and showcasing open-source software.
+AltStack is a curated directory for open-source software. It helps developers answer one practical question: **“What open-source tool should I try for this job?”**
 
-It helps developers find quality projects while giving maintainers a place to present their work to thousands of developers.
+The first product is intentionally a small, trustworthy catalogue—not a social network, marketplace, or GitHub replacement.
 
-Unlike traditional directories, AltStack focuses on project discovery, quality, curation, and developer experience.
+## Problem
 
----
+Developers discover tools through GitHub, posts, launch sites, and old “awesome” lists. The result is fragmented and difficult to filter. Maintainers also lack a simple, focused place to present a project.
 
-# Vision
+## Target users
 
-Become the best place to discover modern open-source software.
+- **Explorer:** wants to browse and narrow a set of open-source tools.
+- **Maintainer:** wants a correct public listing for a GitHub repository.
+- **Admin:** keeps the catalogue useful by reviewing submissions.
 
-Think:
+“Curator” is deliberately not an MVP role. Curated collections are a later feature, after the catalogue has enough useful projects.
 
-- GitHub × Product Hunt × OpenAlternative
+## Product principles
 
-without becoming another software listing website.
+1. **One useful loop at a time.** A release must make one user journey complete.
+2. **Manual operations before automation.** Do not introduce jobs, queues, extra search infrastructure, or image storage until usage proves the need.
+3. **Truthful labels.** “Most starred” is not “trending”; a project is not “recently updated” unless its source data is refreshed.
+4. **Server-side authorization is authoritative.** UI route guards improve navigation only; every private or mutating API procedure must enforce its own permission check.
+5. **Measured performance, not speculative infrastructure.** PostgreSQL and its full-text search are the default. Measure production-like data before adding Meilisearch, Redis, or a scheduler.
 
----
+## Launch definition
 
-# Mission
+The first public launch is complete when a visitor can:
 
-Help developers discover software they'll actually use.
+1. Browse a small, curated set of published projects.
+2. Open a project page and reach its GitHub repository or website.
+3. Search by words, filter by category, sort, and share the resulting URL.
+4. Sign in with GitHub and submit a repository for review.
+5. Have an admin approve or reject that submission.
 
-Help maintainers get visibility.
+Claiming ownership, editing, featured projects, and curated feed sections are valuable, but are **MVP+**. They must not block the first launch.
 
-Create an ecosystem around open-source projects.
+## Explicit non-goals for launch
 
----
+- Collections, bookmarks, comparisons, reviews, ratings, follows, profiles, and social activity.
+- “Quality score”, “Hidden gems”, “Fast growing”, or any other derived ranking.
+- Cron-based GitHub refresh, queues, webhooks, or background workers.
+- Guest submission and anonymous-IP rate limiting.
+- File upload, Cloudflare R2, Cloudflare Images, or a gallery.
+- Meilisearch, analytics dashboards, newsletters, extensions, SDKs, or public APIs.
+- A standalone multi-role moderation system. Launch has only `user` and `admin` database roles.
 
-# Problem
+## Release map
 
-Today developers discover software from:
+Each release is independently deployable. Target size is one focused vertical slice (normally 1–3 solo development days), not a sprint-sized bucket.
 
-- GitHub
-- Reddit
-- Twitter/X
-- Hacker News
-- Product Hunt
-- Awesome Lists
+| Release             | User outcome                                                  | Depends on |
+| ------------------- | ------------------------------------------------------------- | ---------- |
+| R0 — Catalogue data | A reliable set of seed projects exists                        | —          |
+| R1 — Browse         | Anyone can list and open published projects                   | R0         |
+| R2 — Find           | Anyone can search, filter, sort, and share results            | R1         |
+| R3 — Sign in        | A GitHub identity is available where needed                   | R1         |
+| R4 — Submit         | Signed-in users can submit a repository as `draft`            | R2, R3     |
+| R5 — Moderate       | An admin can publish or reject drafts                         | R4         |
+| R6 — Own & edit     | Verified maintainers can claim and update a listing           | R5         |
+| R7 — Curate         | Admins can feature projects; public sees simple curated lists | R5         |
 
-The experience is fragmented.
+R0–R5 is the launch scope. R6–R7 should be scheduled only after launch feedback.
 
-GitHub isn't designed for discovery.
+## Functional requirements
 
-Product Hunt isn't focused on open-source software.
+### R0 — Catalogue data
 
-Awesome Lists become outdated.
+- Store 12–20 real, manually curated projects.
+- Every seed project has a name, unique slug, tagline, short description, logo URL, repository URL, optional website URL, Markdown content, and status `published`.
+- Repository metadata consists only of canonical GitHub owner/repository, stars, and forks. It may be seeded manually.
+- Seed data must be safe to run repeatedly and must not overwrite a real user submission.
 
-Most directories are static and ugly.
+### R1 — Browse
 
----
+- `GET /projects` returns only `published` projects, newest first, with pagination.
+- `GET /projects/:slug` returns a published project or a generic `404`.
+- Homepage shows a project grid. Detail shows the project’s identity, description, GitHub link, website link when present, Markdown content, stars, and forks.
+- Draft, rejected, and removed projects never appear in public responses.
 
-# Solution
+### R2 — Find
 
-A beautiful platform where developers can
+- Users can use a text query, one category, a sort order, and pagination together.
+- Supported initial sort orders: newest, oldest, name, most starred, most forked.
+- The home route validates `q`, `category`, `sort`, and `page`. Default values are omitted from shared URLs where practical.
+- Navigating one filter preserves the others and resets `page` to 1. Only these four values are loader dependencies.
+- PostgreSQL full-text search indexes name, tagline, and short description. Topics, maintainer, and company search are deferred until those data models exist.
 
-- discover software
-- compare projects _(v1.1)_
-- browse by category
-- follow trending projects
-- submit their own project
-- save favorites _(v1.1)_
-- build collections _(v1.1)_
+### R3 — Sign in
 
-> Phasing note: `compare`, `favorites`, `collections` are v1.1 (post-MVP) to keep MVP focused. See [Phased MVP Roadmap](#phased-mvp-roadmap) and `docs/roadmap.md`.
+- GitHub OAuth is the only sign-in path required by the product. Existing email/password support may remain available, but it is not a launch requirement.
+- A protected page uses a route guard for UX and a protected server/API procedure for data access. The API is the security boundary.
+- Sign-in return URLs must be validated as local relative paths to prevent open redirects.
 
----
+### R4 — Submit
 
-# Target Users
+- Only a signed-in GitHub user can submit during launch. This avoids anonymous spam, IP storage, and rate-limit infrastructure before there is evidence it is needed.
+- Required input: repository URL, tagline, short description, logo URL, and 1–3 existing categories. Website and Markdown content are optional.
+- Canonical GitHub repository URL is unique. A duplicate returns `409 CONFLICT`.
+- The service looks up the repository once and stores owner, repository, stars, and forks. If GitHub is temporarily unavailable, the submission fails with a retryable message; do not publish incomplete metadata.
+- A submission is created in `draft`, linked to its submitter, and is not public.
+- No README import, license, topics, screenshots, videos, or cron refresh in this release.
 
-## Explorer
+### R5 — Moderate
 
-Developers looking for tools.
+- An admin can list drafts, approve, or reject with a required reason.
+- Moderation may start with a protected internal page or a minimal dashboard route. A full dashboard, category CRUD, and analytics are not requirements.
+- Every moderation mutation writes a minimal audit event: actor, project, action, optional rejection reason, and timestamp.
+- A newly approved project appears in public browse and search immediately.
+- The original submitter can correct a rejected submission through the submission form. That action atomically returns it to `draft`; this is not the general owner-editing feature in R6.
 
-Examples
+### R6 — Own & edit (MVP+)
 
-- "Need auth library"
-- "Need AI framework"
-- "Need deployment platform"
+- A user may claim an unclaimed listing only with a linked GitHub account.
+- Claim verification must use that user’s GitHub access token or another user-specific authorization mechanism. A server token’s repository permissions must never be treated as the user’s permissions.
+- For the first version, accept either GitHub repository owner or an explicitly verified admin collaborator; define one policy and test it.
+- The verified owner can edit approved listing content and categories. An edit to a published listing stays published unless an admin later introduces a re-review policy.
 
----
+### R7 — Curate (MVP+)
 
-## Builder
+- Admin can set `featured` on a published project.
+- Public homepage may show **Most Starred**, **Recently Added**, and **Editor’s Picks**.
+- Do not call any static or one-time-fetched ranking “Trending” or “Recently Updated”. Those require history or a refresh job.
 
-Open-source maintainers.
+## Project lifecycle
 
-Goals
+| State       | Public? | Who can act           | Valid next states                              |
+| ----------- | ------- | --------------------- | ---------------------------------------------- |
+| `draft`     | No      | Admin                 | `published`, `rejected`                        |
+| `published` | Yes     | Admin                 | `removed`                                      |
+| `rejected`  | No      | Submitter, then admin | submitter edits → `draft`; admin may `removed` |
+| `removed`   | No      | Admin                 | none in launch scope                           |
 
-- showcase project
-- get users
-- collect feedback
-- increase GitHub visibility
+The transition from `rejected` to `draft` happens atomically when the submitter makes a valid re-submission. Rejected records retain the prior reason for the submitter until that transition; removed records are immutable to users.
 
-> MVP roles: Builder = `User` who has claimed/submitted a project. No separate `Maintainer` role in MVP (see [Roles](#roles)).
+## Roles and access
 
----
+| Action                           | Visitor | User               | Admin   |
+| -------------------------------- | ------- | ------------------ | ------- |
+| Browse/search published projects | Yes     | Yes                | Yes     |
+| Submit a project                 | No      | Yes, GitHub linked | Yes     |
+| View own draft/rejected project  | No      | Yes                | Yes     |
+| Approve/reject/remove            | No      | No                 | Yes     |
+| Claim/edit listing               | No      | R6 only            | Yes     |
+| Feature a project                | No      | No                 | R7 only |
 
-## Curators _(v1.1)_
+`Maintainer` describes a claimed owner, not a separate database role. `Moderator` is not needed while `admin` handles moderation.
 
-People creating lists. Deferred to v1.1 with Collections.
+## Data model boundaries
 
-Examples
+Keep domain tables small and additive:
 
-Best AI Coding Tools
+- `project`: public copy, canonical repository URL, status, submitter, optional owner, moderation fields, timestamps.
+- `github_repository`: one repository per project; owner, repository name, stars, forks, and fetch timestamps.
+- `category` and `project_category`: reusable category taxonomy and many-to-many membership.
+- `audit_log`: moderation events only in R5.
 
-Best Self-Hosted Apps
+Add a unique database constraint for canonical repository URL and `github_repository.project_id`. Add a unique `(owner, repo)` constraint for the repository identity. Do not introduce a generic tag table, score table, image table, or background-job table before their releases demand them.
 
-Best React Libraries
+## Technology choices
 
----
+- React, TanStack Start/Router/Query, Tailwind, and shared UI package.
+- oRPC contracts and Drizzle with PostgreSQL.
+- PostgreSQL full-text search for launch; add Meilisearch only after measured search quality or latency requires it.
+- Better Auth with GitHub OAuth.
+- Direct image URLs for launch; storage/upload pipeline later.
 
-# Goals
+## Success signals
 
-## Phased MVP Roadmap
+Review signals after R5 rather than pre-optimising them:
 
-Final MVP = Discover + Search + Filter + View project + Submit project (with moderation) + GitHub Auth + Claim/Edit + Admin moderation + Curated Home Feed.
+- At least 20 accurate published listings.
+- A visitor can successfully complete browse, search, and detail-page journeys.
+- All authenticated submissions reach a terminal moderation decision.
+- Moderation takes less than one business day while volume is small.
+- No authorization bypass is found in direct API tests for owner/admin actions.
 
-MVP is split into 5 incremental, shippable phases (Opsi A — ultra-lean). Each phase is independently deployable and ends with a demoable vertical slice (DB → oRPC → UI).
+## Later backlog
 
-Detailed execution plan, DB/API/UI tasks, and acceptance criteria: `docs/roadmap.md`.
+Only prioritise these after observing launch behaviour:
 
-### Phase 1 — Discovery Skeleton (Foundation + Read-Only)
-
-**Goal:** Prove the core value: browse projects.
-
-Included
-
-- Fix baseline schema (`project` status, indexes, relations)
-- Seed data (10-15 projects)
-- `GET /projects` list (only `published`) + pagination
-- `GET /projects/:slug` detail (minimal header + description + links)
-- Public homepage grid + project page read-only (no auth, no search)
-
-Success: Guest can browse list & detail. Build & migration pass.
-
-Out of scope: Search, categories, submit, auth.
-
-### Phase 2 — Search, Filter & Categories
-
-**Goal:** Make discovery usable.
-
-Included
-
-- `category` + `project_category` (many-to-many), optional `tag` / topics array
-- PostgreSQL Full-Text Search (generated `tsvector` on `name`, `tagline`, `shortDescription`)
-- `GET /projects/search?q=&category=&sort=` (instant search, combinable filters)
-- UI: search input (debounced), category chips, sort select (Latest/Oldest/Name/Most Stars etc.), URL-synced search params
-- No Meilisearch yet (Future)
-
-Success: Instant search <300ms, category + sort combinable, shareable URL.
-
-Out of scope: Submit, auth, moderation, cron sync.
-
-### Phase 3 — Submit Project + Moderation States
-
-**Goal:** Allow anyone to add projects, safely.
-
-Included
-
-- `POST /projects/submit` — required: `repositoryUrl`, `tagline`, `shortDescription`, `logoUrl`, `categories`; optional `websiteUrl`, `content`
-- Validation (GitHub URL regex, length 80/280), deduplication `repositoryUrl` unique → `409`, rate limit unauthenticated `10/IP/hour` → `429`
-- Auto-fetch on submit (now, not cron): `stars`, `forks`, `license`, `owner`, `topics` via Octokit; graceful fallback if API limited
-- Publication states: `Draft → Published | Rejected | Removed`
-  - Draft: pending moderation, not listed publicly
-  - Published: approved, publicly listed
-  - Rejected: refused with reason; can edit & resubmit
-  - Removed: delisted for policy violation
-- Unauthenticated submissions → always `Draft`. Authenticated submissions attributed via `submitterId` but still `Draft` until admin approval (admin may bypass in future, not MVP)
-- Guest may submit without account; authenticated bypasses IP rate limit
-
-Success: Guest & User can submit; duplicate & rate-limited requests correctly rejected; Drafts hidden from public list.
-
-Out of scope: Edit/claim (Phase 4), admin UI (Phase 5, but API approve/reject already here for testing), cron sync.
-
-### Phase 4 — Authentication, Claim Ownership & Edit Own Submission
-
-**Goal:** Let maintainers own their listing.
-
-Included
-
-- GitHub OAuth via Better Auth (email+password already enabled, GitHub is MVP auth)
-- `POST /projects/:id/claim` — verify `octokit.rest.repos.get` (`permissions.admin` or `owner === user`)
-- `PATCH /projects/:id` — only `submitterId` or claimed owner (`User` role)
-- Editable fields for owner: `screenshots`, `description`, `links`, `videos`, `categories`
-- Session handling via Better Auth; `User` vs `Admin` only
-
-Success: User logs in with GitHub → claims own repo → edits listing; non-owners get `403`.
-
-Out of scope: Role `Maintainer`/`Moderator` (mapped to `User`/`Admin`), impersonation, collections/bookmark.
-
-### Phase 5 — Curated Home Feed & Admin Moderation (Final MVP Cap)
-
-**Goal:** Close the loop — curation + moderation makes the platform operable.
-
-Included
-
-- Home feed sections: `Trending`, `New`, `Recently Updated`, `Editor's Picks` (featured flag)
-- `Fast Growing` / `Most Starred` = sorted queries over `stars`/`updatedAt` (no Quality Score yet)
-- Admin Dashboard (minimal, `apps/dashboard`):
-  - List `Draft` submissions → Approve / Reject (with reason) / Remove
-  - Feature/unfeature projects (`featured` boolean)
-  - Manage categories (CRUD)
-- Audit log (minimal, append-only): `submission create/update/approve/reject/remove`, `login/logout/failed login` (other events v1.1)
-- Access control final:
-  - Guest: submit, view published
-  - User: submit, claim, edit own
-  - Admin: all above + approve/reject/remove, feature, manage categories, manage roles/bans/sessions
-
-Success: Admin can approve Draft → Published appears in feed; audit log records moderation; homepage shows 4 curated sections.
-
-### After MVP — v1.1 and Beyond
-
-Deferred to keep MVP lean:
-
-- Collections, Bookmark (Favorites/Wishlist/Currently Using/Want To Try), Compare (`Coolify vs Dokploy` etc.)
-- Quality Score / AltStack Score (7 factors)
-- `Hidden Gems`, `Community Picks` feeds
-- Cloudflare R2 / Images full integration (MVP uses `logoUrl` string)
-- Meilisearch
-- Cron GitHub Sync (MVP only auto-fetches on submit; v1.1 adds periodic refresh)
-- Newsletter, RSS, API/SDK, Browser/VSCode/CLI extensions, AI Recommendations
-- Developer Profiles, Follow Maintainers, Reviews/Ratings
-
----
-
-Future (post-Phased MVP)
-
-Become the homepage for discovering open-source software.
-
----
-
-# Core Features (by Phase Tag)
-
-Tags: `[P1]` Phase 1, `[P2]` Phase 2, `[P3]` Phase 3, `[P4]` Phase 4, `[P5]` Phase 5, `[v1.1]` Post-MVP.
-
----
-
-## Discover
-
-Homepage `[P1]` → `[P5]` enriched.
-
-Sections
-
-- Trending `[P5]`
-- New `[P5]` (`[P1]` as simple `Most Recent` list)
-- Editor's Picks `[P5]` (featured flag)
-- Recently Updated `[P5]`
-- Fast Growing `[v1.1]` (needs growth calc; MVP uses `Most Starred` fallback)
-- Most Starred `[P5]`
-
----
-
-## Search
-
-Search by `[P2]`
-
-- project name
-- description
-- tags / topics
-- maintainer (via owner field)
-- company (via owner field, if applicable)
-
-Instant search (debounced, PG FTS). `[v1.1]` Meilisearch.
-
----
-
-## Categories
-
-Examples `[P2]`
-
-- AI
-- Developer Tools
-- Productivity
-- Design
-- Database
-- DevOps
-- Monitoring
-- Security
-- CMS
-- Self-Hosted
-- Backend
-- Frontend
-- Mobile
-- CLI
-
-Implementation: `category` table + `project_category` join. Seed in `[P2]`, Admin CRUD in `[P5]`.
-
----
-
-## Collections `[v1.1]`
-
-Deferred. Example
-
-Best Open-Source AI Apps
-
-Best Authentication Solutions
-
-Awesome Self-Hosted Apps
-
-Modern React Ecosystem
-
----
-
-## Project Page
-
-Contains
-
-Header `[P1]`
-
-Logo
-
-Name
-
-Description (`tagline` + `shortDescription`)
-
-Website
-
-GitHub
-
-License (auto-fetched `[P3]`)
-
-Categories `[P2]`
-
-Tags / Topics (auto-fetched `[P3]`)
-
----
-
-Overview `[P1]` → `[P4]` editable by owner
-
-Screenshots `[P4]` (owner editable, MVP stores URL string)
-
-Video `[P4]`
-
-Features (from `content` markdown) `[P1]`
-
-Installation (from `content`) `[P1]`
-
-Tech Stack (from topics) `[P3]`
-
-Alternatives `[v1.1]`
-
-Similar Projects `[v1.1]`
-
-Maintainer `[P4]` (claimed user)
-
-Contributors `[v1.1]` (needs GitHub contributors fetch)
-
-Stats `[P1]` minimal → `[P3]` auto-fetched
-
----
-
-GitHub Stats (stored in `GithubRepository` 1-1, Phase 1: `owner/repo/stars/forks` only)
-
-Stars `[P1]` seeded, `[P3]` auto-fetch on submit (githubRepository.stars)
-
-Forks `[P1]` seeded, `[P3]` (githubRepository.forks)
-
-Watchers `[v1.1]` (cron, githubRepository.watchers)
-
-Issues `[v1.1]`
-
-Contributors `[v1.1]`
-
-Last Commit `[v1.1]` (cron)
-
-License `[v1.1]` (was `[P3]`, deferred — githubRepository.license)
-
-Created `[P3]` (from GitHub `created_at`, project.createdAt)
-
-Updated `[P3]`
-
----
-
-Links
-
-Website `[P1]`
-
-GitHub `[P1]`
-
-Discord `[P4]` (owner editable)
-
-Docs `[P4]`
-
-Demo `[P4]`
-
-Twitter `[P4]`
-
-Blog `[P4]`
-
----
-
-## Submit Project `[P3]`
-
-Anyone can submit.
-
-Required
-
-- GitHub Repository
-- Website (optional)
-- Description (`tagline` 80 chars, `shortDescription` 280 chars)
-- Logo (`logoUrl`)
-- Categories
-
-System auto-fetches to `GithubRepository` (on submit, not cron in MVP)
-
-- stars → `githubRepository.stars`
-- forks → `githubRepository.forks`
-- owner/repo → `githubRepository.owner`/`repo`
-- README (stored in `project.content` if available, else truncated)
-- license/topics → deferred to v1.1 (`githubRepository.license`, `topics`)
-
-Cron refresh is v1.1 (updates `githubRepository.stars/forks` etc.).
-
-Authentication
-
-- Authentication is not required to submit (guests may submit without an account)
-- Authenticated submissions are attributed to the account (`submitterId`) and bypass the unauthenticated IP rate limit, but still start as `Draft` until admin approval
-
-Unauthenticated submissions
-
-- Rate limit: 10 submissions per IP per hour, beyond which HTTP 429 (`TOO_MANY_REQUESTS` in `packages/api/src/contracts/base.ts`) is returned
-- Deduplication: 1 submission per repository URL, regardless of submitter → `409 CONFLICT`
-- Moderation: all submissions start in Draft and require admin approval before public listing
-- Publication states: Draft → Published | Rejected | Removed
-  - Draft: pending moderation review, not listed publicly
-  - Published: approved and publicly listed
-  - Rejected: refused with reason; submitter may edit and resubmit
-  - Removed: delisted for policy violation; re-submission requires fixing the issue
-
-Access matrix (MVP — only Guest/User/Admin; `User` who claimed = maintainer, `Admin` covers moderator duties)
-
-| Action                                | Guest | User | Admin |
-| ------------------------------------- | ----- | ---- | ----- |
-| Submit project                        | ✓     | ✓    | ✓     |
-| Claim ownership                       | ✗     | ✓    | ✓     |
-| Edit own submission                   | ✗     | ✓    | ✓     |
-| Approve / reject / remove submissions | ✗     | ✗    | ✓     |
-| Feature projects                      | ✗     | ✗    | ✓     |
-| Manage categories                     | ✗     | ✗    | ✓     |
-| Manage roles, bans, sessions          | ✗     | ✗    | ✓     |
-
-> Previous 5-role matrix (Maintainer/Moderator) collapsed to 3 roles for MVP. See [Roles](#roles).
-
-Audit log — minimal MVP (required events) `[P5]`
-
-- login, logout, failed login
-- submission create / update / approve / reject / remove
-
-Full audit (ownership claim, role change, ban/unban, impersonation, session revocation) is v1.1.
-
-Session termination — minimal MVP `[P4]`
-
-- Password change or ban invalidates all active sessions of the account
-
-Full matrix (role change invalidation, admin revoke any session, impersonation flag) is v1.1.
-
-Impersonation is v1.1 (Admin-only, logged, flagged).
-
----
-
-## Claim Ownership `[P4]`
-
-Maintainer (any `User`) logs in with GitHub.
-
-Verifies ownership via GitHub API (`permissions.admin` or `repo owner === user`).
-
-Can edit
-
-- screenshots
-- description
-- links
-- videos
-
----
-
-## Bookmark `[v1.1]`
-
-Deferred to v1.1. Users save favorite software.
-
-Collections
-
-Favorites
-
-Wishlist
-
-Currently Using
-
-Want To Try
-
----
-
-## Compare `[v1.1]`
-
-Deferred to v1.1.
-
-Example
-
-Coolify vs Dokploy
-
-Supabase vs Appwrite
-
-Clerk vs Better Auth
-
-Feature comparison table.
-
----
-
-# Quality Score `[v1.1]`
-
-Deferred. Instead of only GitHub Stars.
-
-AltStack Score
-
-Calculated from
-
-- Stars
-- Growth
-- Recent Releases
-- Issue Activity
-- Documentation
-- Community
-- Contributors
-- Maintenance
-
-MVP uses simple `stars`/`updatedAt` sorting as proxy.
-
----
-
-# Home Feed
-
-MVP `[P5]`: Trending, New, Recently Updated, Editor's Picks.
-
-v1.1 adds: Fast Growing, Community Picks, Hidden Gems.
-
-| Feed             | Phase | Logic (MVP)                       |
-| ---------------- | ----- | --------------------------------- |
-| Trending         | P5    | `stars` desc + `updatedAt` recent |
-| New              | P5    | `createdAt` desc                  |
-| Recently Updated | P5    | `updatedAt` desc                  |
-| Editor's Picks   | P5    | `featured = true` (admin curated) |
-| Fast Growing     | v1.1  | stars growth delta (needs cron)   |
-| Most Starred     | P5    | `stars` desc                      |
-| Community Picks  | v1.1  | votes/bookmarks                   |
-| Hidden Gems      | v1.1  | low stars + high quality score    |
-
----
-
-# Authentication
-
-MVP `[P4]`: GitHub OAuth + Email/Password (already enabled via Better Auth).
-
-Future (v1.1+): Google, etc.
-
-Better Auth config in `packages/auth/src/server/config.ts`. Social provider `github` already enabled.
-
----
-
-# Roles
-
-MVP roles: `Guest`, `User`, `Admin` only.
-
-| Role  | Description                                         | Phase |
-| ----- | --------------------------------------------------- | ----- |
-| Guest | Unauthenticated visitor; can view & submit          | P1-P3 |
-| User  | Authenticated via Better Auth; can claim & edit own | P4    |
-| Admin | Full moderation, featuring, category & user mgmt    | P5    |
-
-Previous `Maintainer` and `Moderator` roles are collapsed:
-
-- `Maintainer` → `User` who has claimed a project (no separate role)
-- `Moderator` → `Admin` (admin covers approval duties in MVP)
-
-Defined in `packages/shared/src/schemas/role.ts` (`ROLES = ['admin','user']`) and `packages/auth/src/server/permissions.ts`. Add `moderator`/`maintainer` in v1.1 if needed.
-
----
-
-# Admin Dashboard `[P5]` (MVP minimal)
-
-Approve submissions
-
-Reject spam (with reason)
-
-Manage categories (CRUD)
-
-Feature projects (`featured` flag)
-
-Audit log (read-only, minimal events)
-
-Analytics `[v1.1]`
-
-Manage collections `[v1.1]`
-
----
-
-# Tech Stack
-
-## Runtime & Toolchain
-
-- Bun
-
-- Vite+ (`vp`)
-
----
-
-## Frontend
-
-- React 19
-
-- TanStack Start & TanStack Router
-
-- TanStack Query
-
-- TailwindCSS v4
-
-- packages/ui: `@base-ui/react` for runtime components, shadcn for component tooling
-
----
-
-## Backend
-
-Runtime boundaries
-
-- apps/dashboard, apps/web: TanStack Start with Nitro
-
-- apps/server: Elysia
-
-Shared
-
-- oRPC
-
-- Drizzle ORM
-
-- PostgreSQL (via `pg`)
-
----
-
-## Search
-
-- PostgreSQL Full-Text Search (MVP `[P2]`)
-
-- Meilisearch (Future `v1.1`)
-
----
-
-## Authentication
-
-- Better Auth
-
----
-
-## File Storage `[v1.1]`
-
-- Cloudflare R2 (MVP uses `logoUrl` string; R2 upload in v1.1)
-
----
-
-## Image Optimization `[v1.1]`
-
-- Cloudflare Images (MVP uses direct URL)
-
----
-
-## Deployment
-
-- Docker
-
-- Coolify
-
-- Dokploy
-
----
-
-# Database
-
-Core Models
-
-```text
-[MVP — Phase 1-5]
-User              // Better Auth, role admin|user
-Session / Account / Verification // Better Auth
-Project           // + status, featured, submitterId, rejectionReason, moderatedAt/By
-GithubRepository  // 1-1 strict: projectId unique FK → project.id, owner, repo, stars, forks (Phase 1: 4 fields only)
-Category
-ProjectCategory   // join
-Tag (or topics text[] on Project) — P2
-AuditLog          // P5 minimal
-
-[v1.1 — Post-MVP]
-Collection
-CollectionProject
-Bookmark
-Review
-Vote
-ProjectImage (screenshots gallery, replaces logoUrl string with R2)
-Maintainer (if separate role reintroduced)
-Release           // GitHub releases (if split from GithubRepository)
-GithubRepository extra fields: license, topics text[], watchers, openIssues, lastCommitAt, etc.
-```
-
-Relations in `packages/db/src/relations.ts`:
-
-- `project.submitter` currently `from: r.project.id` → must be `from: r.project.submitterId → r.user.id`
-- Add `project.githubRepository` 1-1 strict `from: r.project.id → r.githubRepository.projectId (unique)` and inverse `githubRepository.project`
-
----
-
-# Future Features (v1.1+)
-
-Deferred from MVP to reduce overwhelm:
-
-- Collections / Bookmark / Compare
-- Quality Score / AltStack Score
-- Cron GitHub Sync (auto-refresh stars, releases, contributors)
-- Developer Profiles
-- Follow Maintainers
-- Reviews / Ratings
-- Roadmaps
-- API / Public SDK
-- Browser Extension / VSCode Extension / CLI
-- Newsletter / Trending Weekly / Launches / RSS
-- AI Recommendations
-- Analytics (admin)
-- Impersonation (admin, logged & flagged)
-- Full audit log (role change, ban/unban, impersonation, session revocation)
-- Session admin revocation & impersonation-aware termination
-- File Storage (R2) & Image Optimization (Cloudflare Images) full
-
----
-
-# Non Goals
-
-Not another GitHub.
-
-Not another Product Hunt.
-
-Not another package manager.
-
-Not another social media.
-
----
-
-# Success Metrics
-
-Global (final MVP)
-
-- Number of projects (published)
-- Monthly active users
-- Search usage
-- Submitted projects
-- Claimed projects
-- Returning visitors
-- Average session duration
-
-Per-phase (see `docs/roadmap.md` for detailed acceptance):
-
-- P1: list/detail render with seed data, no errors
-- P2: search latency <300ms, 0 empty-state bugs on combinable filters
-- P3: submit success rate, 429/409 correct, auto-fetch coverage >95%
-- P4: claim success, 403 on non-owner edit, GitHub OAuth completion rate
-- P5: moderation throughput (Draft→Published <24h), featured coverage, audit log completeness
-
----
-
-# Long-Term Vision
-
-AltStack becomes the place developers open when they think:
-
-> "i need a tool for this."
-
-Instead of searching Google or GitHub first, they search AltStack.
-
----
+- Claim/edit polish, featured sections, and category management.
+- Guest submission with durable rate limiting and abuse controls.
+- GitHub refresh via scheduler/webhooks, additional repository metadata, and true trending.
+- Images, screenshots, video, collections, bookmarks, compare, quality score, analytics, newsletter/RSS, profiles, reviews, API/SDK, and extensions.
