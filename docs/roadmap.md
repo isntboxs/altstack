@@ -26,7 +26,7 @@ R0 catalogue data
 
 ## Repository conventions
 
-- Use one branch per release: `codex/rN-short-name`.
+- Use one branch per release: `feat/rN-short-name`.
 - Keep a single issue/checklist per release. Do not split database, API, and UI into separate release branches.
 - Run `vp install` before beginning a new release, then run `vp check`, `vp run -r test`, and `vp run -r build` before merging.
 - Existing worktree changes are not part of this roadmap unless explicitly included in the release issue.
