@@ -12,7 +12,7 @@
 
 ## Delivery map
 
-```
+```text
 R0 catalogue data
   └─ R1 browse
        ├─ R2 find

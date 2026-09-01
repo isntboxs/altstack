@@ -54,8 +54,7 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 CREATE TABLE "github_repositories" (
-	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
-	"project_id" uuid NOT NULL UNIQUE,
+	"project_id" uuid PRIMARY KEY,
 	"owner" text NOT NULL,
 	"repo" text NOT NULL,
 	"stars" integer DEFAULT 0 NOT NULL,

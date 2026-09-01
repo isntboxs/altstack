@@ -597,19 +597,6 @@
 			"typeSchema": null,
 			"notNull": true,
 			"dimensions": 0,
-			"default": "pg_catalog.gen_random_uuid()",
-			"generated": null,
-			"identity": null,
-			"name": "id",
-			"entityType": "columns",
-			"schema": "public",
-			"table": "github_repositories"
-		},
-		{
-			"type": "uuid",
-			"typeSchema": null,
-			"notNull": true,
-			"dimensions": 0,
 			"default": null,
 			"generated": null,
 			"identity": null,
@@ -1119,7 +1106,7 @@
 			"entityType": "pks"
 		},
 		{
-			"columns": ["id"],
+			"columns": ["project_id"],
 			"nameExplicit": false,
 			"name": "github_repositories_pkey",
 			"schema": "public",
@@ -1159,15 +1146,6 @@
 			"name": "user_username_key",
 			"schema": "public",
 			"table": "user",
-			"entityType": "uniques"
-		},
-		{
-			"nameExplicit": false,
-			"columns": ["project_id"],
-			"nullsNotDistinct": false,
-			"name": "github_repositories_project_id_key",
-			"schema": "public",
-			"table": "github_repositories",
 			"entityType": "uniques"
 		},
 		{
