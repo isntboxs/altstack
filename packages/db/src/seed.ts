@@ -1,7 +1,16 @@
 import { eq } from 'drizzle-orm'
+import { Octokit } from 'octokit'
 
 import { db } from '@altstack/db'
 import { githubRepository, project } from '@altstack/db/schemas'
+
+import { env } from '@altstack/env/server'
+
+const octokit: Octokit = new Octokit({
+	auth: env.GITHUB_TOKEN,
+	userAgent: env.APP_NAME,
+	timeZone: 'Asia/Jakarta',
+})
 
 interface ProjectItem {
 	name: string
@@ -248,6 +257,24 @@ const seedProjects: Array<ProjectItem> = [
 	},
 ]
 
+const getReadmeFile = async (owner: string, repo: string) => {
+	try {
+		const { data } = await octokit.rest.repos.getReadme({
+			owner,
+			repo,
+		})
+
+		if (data.encoding === 'base64') {
+			return Buffer.from(data.content, 'base64').toString('utf-8')
+		}
+
+		return null
+	} catch (error) {
+		console.debug(`Failed to get README for ${owner}/${repo}`, error)
+		return null
+	}
+}
+
 async function seed() {
 	const failed: Array<string> = []
 
@@ -275,8 +302,9 @@ async function seed() {
 			continue
 		}
 
-		// Use fully checked-in metadata — no live GitHub requests in R0
-		const { stars, forks, content } = projectEntry
+		const content = await getReadmeFile(projectEntry.owner, projectEntry.repo)
+
+		const { stars, forks } = projectEntry
 
 		try {
 			await db.transaction(async (tx) => {

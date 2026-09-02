@@ -19,6 +19,10 @@
 		"@orpc/client": "catalog:",
 		"@orpc/server": "catalog:",
 		"@orpc/tanstack-query": "catalog:",
+		"@streamdown/cjk": "^1.0.3",
+		"@streamdown/code": "^1.1.1",
+		"@streamdown/math": "^1.0.2",
+		"@streamdown/mermaid": "^1.0.2",
 		"@tabler/icons-react": "catalog:",
 		"@tanstack/react-devtools": "catalog:",
 		"@tanstack/react-query": "catalog:",
@@ -34,7 +38,8 @@
 		"nitro": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
-		"reicon-react": "catalog:"
+		"reicon-react": "catalog:",
+		"streamdown": "^2.6.0"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",

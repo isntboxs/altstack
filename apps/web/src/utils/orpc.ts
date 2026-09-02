@@ -38,3 +38,6 @@ const getORPCClient = (): ORPCRouterClient => createORPCClient(link)
 const client: ORPCRouterClient = getORPCClient()
 
 export const orpc = createTanstackQueryUtils(client)
+export const projectORPC = createTanstackQueryUtils(client.project, {
+	prefix: 'project',
+})
