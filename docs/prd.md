@@ -84,7 +84,7 @@ R0–R5 is the launch scope. R6–R7 should be scheduled only after launch feedb
 ### R1 — Browse
 
 - `GET /projects` returns only `published` projects, newest first, with pagination.
-- `GET /projects/:slug` returns a published project or a generic `404`.
+- `GET /:slug` returns a published project or a generic `404`.
 - Homepage shows a project grid. Detail shows the project’s identity, description, GitHub link, website link when present, Markdown content, stars, and forks.
 - Draft, rejected, and removed projects never appear in public responses.
 

@@ -39,7 +39,8 @@
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"reicon-react": "catalog:",
-		"streamdown": "^2.6.0"
+		"streamdown": "^2.6.0",
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
