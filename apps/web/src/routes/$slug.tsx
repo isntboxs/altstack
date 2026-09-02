@@ -2,21 +2,38 @@ import { cjk } from '@streamdown/cjk'
 import { code } from '@streamdown/code'
 import { math } from '@streamdown/math'
 import { mermaid } from '@streamdown/mermaid'
-import { IconBrandGithub } from '@tabler/icons-react'
+import {
+	IconBrandGithub,
+	IconCalendar,
+	IconGitBranch,
+	IconGitCommit,
+	IconGitFork,
+	IconTag,
+} from '@tabler/icons-react'
 import { createFileRoute, notFound } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import {
 	Bookmark,
 	Code,
 	Flag,
 	More,
 	SquareBottomUp,
+	Star,
 	Verified,
 } from 'reicon-react'
-import { Streamdown } from 'streamdown'
 import 'streamdown/styles.css'
+import { Streamdown } from 'streamdown'
+
+import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { Button } from '@altstack/ui/components/button'
 import { ButtonGroup } from '@altstack/ui/components/button-group'
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from '@altstack/ui/components/card'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -25,6 +42,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
+import { Separator } from '@altstack/ui/components/separator'
 import {
 	Tooltip,
 	TooltipContent,
@@ -148,12 +166,115 @@ const MoreActions = ({ websiteUrl }: { websiteUrl: string | null }) => (
 	</div>
 )
 
+const AsideSection = ({
+	github,
+}: {
+	github: ORPCRouterOutputs['project']['getBySlug']['github']
+}) => {
+	// FIXME(#32): wire real GitHub metadata for remaining stats (R5 refresh) — stars/forks is R1 scope, other fields intentionally Unknown for now.
+	const githubStatsItem = [
+		{
+			icon: IconGitFork,
+			label: 'Forks',
+			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
+				github.forks
+			),
+		},
+		{
+			icon: IconGitCommit,
+			label: 'Last commit',
+			value: 'Unknown',
+		},
+		{
+			icon: IconCalendar,
+			label: 'Repository age',
+			value: 'Unknown',
+		},
+		{
+			icon: IconTag,
+			label: 'Version',
+			value: 'Unknown',
+		},
+	]
+
+	const repoFullName = `${github.owner}/${github.repo}`
+
+	return (
+		<div className="space-y-8 py-5">
+			<Card className="sticky top-17 z-50">
+				<CardHeader>
+					<CardTitle className="flex items-center gap-1.5 font-normal">
+						<Star className="size-4 shrink-0 fill-amber-500/20 text-amber-500" />
+						<span className="text-xl font-semibold">
+							{new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
+								github.stars
+							)}
+						</span>
+						<span className="text-sm">Stars</span>
+					</CardTitle>
+				</CardHeader>
+
+				<CardContent className="grid grid-cols-1 gap-2.5">
+					{githubStatsItem.map((item, idx) => (
+						<div key={idx} className="flex items-center justify-between gap-2">
+							<div className="flex shrink-0 items-center gap-1.5">
+								<item.icon className="size-4 shrink-0 text-muted-foreground" />
+								<span className="text-sm whitespace-nowrap text-muted-foreground">
+									{item.label}
+								</span>
+							</div>
+
+							<Separator className="min-w-2 flex-1" />
+
+							<span
+								className="max-w-[50%] min-w-0 truncate text-right text-sm font-medium"
+								title={String(item.value)}
+							>
+								{item.value}
+							</span>
+						</div>
+					))}
+
+					<div className="flex items-center justify-between gap-2">
+						<div className="flex shrink-0 items-center gap-1.5">
+							<IconGitBranch className="size-4 shrink-0 text-muted-foreground" />
+							<span className="text-sm whitespace-nowrap text-muted-foreground">
+								Repository
+							</span>
+						</div>
+						<Separator className="min-w-2 flex-1" />
+						<a
+							href={`https://github.com/${repoFullName}`}
+							target="_blank"
+							rel="noreferrer"
+							title={repoFullName}
+							className="max-w-[55%] min-w-0 truncate text-right text-sm font-medium underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+						>
+							{repoFullName}
+						</a>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	)
+}
+
 function RouteComponent() {
 	const { slug } = Route.useParams()
 	const { data: projectData } = useProjectBySlug(slug)
 
+	const safeWebsiteUrl = useMemo(() => {
+		try {
+			if (!projectData.websiteUrl) return null
+			const u = new URL(projectData.websiteUrl)
+			return u.protocol.startsWith('http') ? u.href : null
+		} catch {
+			return null
+		}
+	}, [projectData.websiteUrl])
+
 	return (
-		<div className="container mx-auto w-full max-w-6xl px-6 pt-36 pb-10 lg:px-16">
+		<div className="container mx-auto w-full max-w-6xl px-6 pt-32 pb-10 lg:px-16">
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<div className="space-y-8">
 					<div className="sticky top-12 z-50 flex items-center justify-between py-4">
@@ -169,7 +290,7 @@ function RouteComponent() {
 							<div className="pointer-events-none absolute inset-0 top-0 -z-10 h-full bg-linear-to-b from-background via-background via-85% to-transparent" />
 						</div>
 
-						<MoreActions websiteUrl={projectData.websiteUrl} />
+						<MoreActions websiteUrl={safeWebsiteUrl} />
 					</div>
 
 					<div className="-mt-8 space-y-8">
@@ -189,11 +310,11 @@ function RouteComponent() {
 								nativeButton={false}
 							/>
 
-							{projectData.websiteUrl && (
+							{safeWebsiteUrl && (
 								<Button
 									size="lg"
 									render={
-										<a href={projectData.websiteUrl} target="_blank">
+										<a href={safeWebsiteUrl} target="_blank">
 											Visit Website <SquareBottomUp />
 										</a>
 									}
@@ -203,12 +324,13 @@ function RouteComponent() {
 						</div>
 					</div>
 
-					{projectData.websiteUrl && (
+					{safeWebsiteUrl && (
 						<a
-							href={projectData.websiteUrl}
+							href={safeWebsiteUrl}
 							target="_blank"
 							className="group/screenshot block h-fit overflow-hidden rounded-lg"
 						>
+							{/* TODO(#32): replace static placeholder with real website screenshot/OG image when available — R1 intentionally uses placeholder + safeWebsiteUrl is already non-fatal (useMemo new URL guard). */}
 							<img
 								src="https://placehold.co/1280x1024"
 								className="aspect-video h-auto object-cover transition-transform duration-300 ease-in-out group-hover/screenshot:scale-105"
@@ -232,7 +354,7 @@ function RouteComponent() {
 					)}
 				</div>
 
-				<div></div>
+				<AsideSection github={projectData.github} />
 			</div>
 		</div>
 	)
