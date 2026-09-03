@@ -30,13 +30,13 @@ vp run dev
 
 ## Deploy image dengan GitHub Actions
 
-Saat ada push ke `main`, workflow `Publish Docker images` membangun tiga image
-dengan `ghcr.io/voidzero-dev/vite-plus:latest` sebagai builder lalu mendorongnya
-ke Docker Hub:
+Saat ada push tag yang diawali `v` (misalnya `v1.0.0`), workflow `Publish Docker
+images` membangun tiga image dengan `ghcr.io/voidzero-dev/vite-plus:latest`
+sebagai builder lalu mendorongnya ke Docker Hub.
 
-- `<DOCKERHUB_USERNAME>/altstack-server:latest`
-- `<DOCKERHUB_USERNAME>/altstack-web:latest`
-- `<DOCKERHUB_USERNAME>/altstack-dashboard:latest`
+- `<DOCKERHUB_USERNAME>/altstack-server:v1.0.0`
+- `<DOCKERHUB_USERNAME>/altstack-web:v1.0.0`
+- `<DOCKERHUB_USERNAME>/altstack-dashboard:v1.0.0`
 
 Sebelum push pertama, buat repository Docker Hub dengan tiga nama tersebut, lalu
 tambahkan konfigurasi berikut pada repository GitHub di **Settings → Secrets and
@@ -54,7 +54,7 @@ URL production, misalnya `https://app.example.com`,
 `https://admin.example.com`, dan `https://api.example.com`. Jangan simpan secret
 di build argument.
 
-Di Dokploy, buat tiga aplikasi dengan source **Docker**, gunakan image `:latest`
-atau, agar deploy dan rollback selalu deterministik, gunakan tag
-`sha-<commit>`. Konfigurasi domain tetap menunjuk ke port internal `3009` untuk
+Setiap image memperoleh tag release yang sama (misalnya `:v1.0.0`) dan tag
+`sha-<commit>`. Di Dokploy, gunakan tag release agar deploy dan rollback selalu
+deterministik. Konfigurasi domain tetap menunjuk ke port internal `3009` untuk
 API serta `3000` untuk Web dan Dashboard.
