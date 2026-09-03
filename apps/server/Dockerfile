@@ -15,33 +15,33 @@
 # DB migrations are NOT run here — run once against the external Postgres:
 #   DATABASE_URL=<prod-url> bun run --filter @altstack/db db:migrate
 
-# --- build stage ---
-FROM oven/bun:1.4 AS build
+# --- build stage: Vite+ provisions the pinned Bun package manager ---
+FROM ghcr.io/voidzero-dev/vite-plus:latest AS build
 WORKDIR /app
 
-# Workspace manifests first so `bun install` stays cached across source changes.
-COPY package.json bun.lock ./
-COPY apps/server/package.json apps/server/package.json
-COPY apps/web/package.json apps/web/package.json
-COPY apps/dashboard/package.json apps/dashboard/package.json
-COPY packages/api/package.json packages/api/package.json
-COPY packages/auth/package.json packages/auth/package.json
-COPY packages/config/package.json packages/config/package.json
-COPY packages/db/package.json packages/db/package.json
-COPY packages/env/package.json packages/env/package.json
-COPY packages/shared/package.json packages/shared/package.json
-COPY packages/ui/package.json packages/ui/package.json
+# Workspace manifests first so `vp install` stays cached across source changes.
+COPY --chown=vp:vp package.json bun.lock ./
+COPY --chown=vp:vp apps/server/package.json apps/server/package.json
+COPY --chown=vp:vp apps/web/package.json apps/web/package.json
+COPY --chown=vp:vp apps/dashboard/package.json apps/dashboard/package.json
+COPY --chown=vp:vp packages/api/package.json packages/api/package.json
+COPY --chown=vp:vp packages/auth/package.json packages/auth/package.json
+COPY --chown=vp:vp packages/config/package.json packages/config/package.json
+COPY --chown=vp:vp packages/db/package.json packages/db/package.json
+COPY --chown=vp:vp packages/env/package.json packages/env/package.json
+COPY --chown=vp:vp packages/shared/package.json packages/shared/package.json
+COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
 # NOTE: `--ignore-scripts` skips the root `prepare` script (`vp config`, which
 # only wires local git hooks and is meaningless in Docker). Verified that no
 # other workspace lifecycle script exists.
-RUN bun install --frozen-lockfile --ignore-scripts
+RUN vp install --frozen-lockfile --ignore-scripts
 
 # Build the server plus its workspace dependencies in topological order
 # (env → shared → db → auth → api → server).
 # NOTE: plain `vp run server#build` does NOT build dependencies — the
 # `...` filter suffix (package + its dependencies) is required.
-COPY . .
-RUN ./node_modules/.bin/vp run --filter 'server...' build
+COPY --chown=vp:vp . .
+RUN vp run --filter 'server...' build
 # Drop workspace-level `node_modules` (isolated-layout symlinks into the build
 # stage's own store). The runtime stage uses the hoisted prod `node_modules`
 # from the `deps` stage instead — leaving these here would create dangling
@@ -49,23 +49,23 @@ RUN ./node_modules/.bin/vp run --filter 'server...' build
 RUN rm -rf apps/*/node_modules packages/*/node_modules
 
 # --- production dependencies only (devDependencies, incl. the toolchain, pruned) ---
-FROM oven/bun:1.4-slim AS deps
+FROM ghcr.io/voidzero-dev/vite-plus:latest AS deps
 WORKDIR /app
-COPY package.json bun.lock ./
-COPY apps/server/package.json apps/server/package.json
-COPY apps/web/package.json apps/web/package.json
-COPY apps/dashboard/package.json apps/dashboard/package.json
-COPY packages/api/package.json packages/api/package.json
-COPY packages/auth/package.json packages/auth/package.json
-COPY packages/config/package.json packages/config/package.json
-COPY packages/db/package.json packages/db/package.json
-COPY packages/env/package.json packages/env/package.json
-COPY packages/shared/package.json packages/shared/package.json
-COPY packages/ui/package.json packages/ui/package.json
+COPY --chown=vp:vp package.json bun.lock ./
+COPY --chown=vp:vp apps/server/package.json apps/server/package.json
+COPY --chown=vp:vp apps/web/package.json apps/web/package.json
+COPY --chown=vp:vp apps/dashboard/package.json apps/dashboard/package.json
+COPY --chown=vp:vp packages/api/package.json packages/api/package.json
+COPY --chown=vp:vp packages/auth/package.json packages/auth/package.json
+COPY --chown=vp:vp packages/config/package.json packages/config/package.json
+COPY --chown=vp:vp packages/db/package.json packages/db/package.json
+COPY --chown=vp:vp packages/env/package.json packages/env/package.json
+COPY --chown=vp:vp packages/shared/package.json packages/shared/package.json
+COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
 # Bun 1.4 defaults to isolated installs (per-workspace `node_modules` plus a
 # `.bun` store). `--linker hoisted` flattens everything into the single
 # top-level `node_modules` below, so the runtime stage can copy just one dir.
-RUN bun install --frozen-lockfile --production --ignore-scripts --linker hoisted
+RUN vp install --frozen-lockfile --prod --ignore-scripts --linker hoisted
 
 # --- runtime stage ---
 FROM oven/bun:1.4-slim AS runtime
