@@ -91,6 +91,7 @@
 		"evlog": "^2.27.1",
 		"hono": "^4.13.5",
 		"jsdom": "^28.1.0",
+		"limax": "^4.2.3",
 		"lucide-react": "^1.25.0",
 		"next-themes": "^0.4.6",
 		"nitro": "^3.0.260610-beta",
@@ -106,6 +107,6 @@
 		"typescript": "^7.0.2",
 		"vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
 		"vite-plus": "0.3.0",
-		"zod": "^4.4.3"
+		"zod": "^4.5.4"
 	}
 }

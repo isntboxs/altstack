@@ -71,18 +71,18 @@ All transitions are server-side checks. `removed` is terminal for users.
 
 ### Work
 
-- [ ] Add the smallest `project` schema required by R1: id, name, slug, tagline, short description, logo URL, repository URL, optional website URL, Markdown content, status, created/updated timestamps.
-- [ ] Add `github_repository` with a one-to-one project relation and only owner, repo, stars, forks, fetched timestamp.
-- [ ] Add unique constraints for project slug, canonical repository URL, project relation, and `(owner, repo)`.
-- [ ] Export schemas and relations from `packages/db/src/schemas.ts` and `packages/db/src/relations.ts`; register relations in `packages/db/src/index.ts`.
-- [ ] Add an idempotent seed path with 12–20 manually curated, `published` projects. Use deterministic identities so re-running does not create duplicates.
-- [ ] Generate and apply a migration; do not use schema push as the only proof of migration safety.
+- [x] Add the smallest `project` schema required by R1: id, name, slug, tagline, short description, logo URL, repository URL, optional website URL, Markdown content, status, created/updated timestamps.
+- [x] Add `github_repository` with a one-to-one project relation and only owner, repo, stars, forks, fetched timestamp.
+- [x] Add unique constraints for project slug, canonical repository URL, project relation, and `(owner, repo)`.
+- [x] Export schemas and relations from `packages/db/src/schemas.ts` and `packages/db/src/relations.ts`; register relations in `packages/db/src/index.ts`.
+- [x] Add an idempotent seed path with 12–20 manually curated, `published` projects. Use deterministic identities so re-running does not create duplicates.
+- [x] Generate and apply a migration; do not use schema push as the only proof of migration safety.
 
 ### Done when
 
-- [ ] A clean database migration plus seed can run twice without duplicate rows.
-- [ ] Each seed project has working GitHub data and a unique slug/repository URL.
-- [ ] No category, owner, audit, feature, guest-submission, or score fields have been added yet.
+- [x] A clean database migration plus seed can run twice without duplicate rows.
+- [x] Each seed project has working GitHub data and a unique slug/repository URL.
+- [x] No category, owner, audit, feature, guest-submission, or score fields have been added yet.
 
 ### Explicitly not in R0
 
@@ -96,18 +96,18 @@ API, routes, search, categories, authentication, GitHub requests, or admin tools
 
 ### Work
 
-- [ ] Add `listProjects({ page, limit })` and `getProjectBySlug({ slug })` contracts and router procedures.
-- [ ] Public procedures filter `published` in the query itself. A non-public slug produces the same generic `404` as a missing slug.
-- [ ] Load stars/forks without N+1 queries.
-- [ ] Replace static homepage content with a paginated project grid and card.
-- [ ] Add `/projects/$slug` with project identity, links, Markdown content, and repository stats.
-- [ ] Add API/route tests for public visibility, pagination, and missing/non-public detail.
+- [x] Add `listProjects({ page, limit })` and `getProjectBySlug({ slug })` contracts and router procedures.
+- [x] Public procedures filter `published` in the query itself. A non-public slug produces the same generic `404` as a missing slug.
+- [x] Load stars/forks without N+1 queries.
+- [x] Replace static homepage content with a paginated project grid and card.
+- [x] Add `/$slug` with project identity, links, Markdown content, and repository stats.
+- [x] Add API/route tests for public visibility, pagination, and missing/non-public detail.
 
 ### Done when
 
-- [ ] A visitor sees published projects only and can move between list and detail pages.
-- [ ] A direct detail request for `draft`, `rejected`, or `removed` does not disclose its existence.
-- [ ] Empty states and broken optional website URLs do not crash the page.
+- [x] A visitor sees published projects only and can move between list and detail pages.
+- [x] A direct detail request for `draft`, `rejected`, or `removed` does not disclose its existence.
+- [x] Empty states and broken optional website URLs do not crash the page.
 
 ### Explicitly not in R1
 

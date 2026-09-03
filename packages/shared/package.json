@@ -9,6 +9,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./schemas": "./src/schemas/index.ts",
+		"./schemas/project": "./src/schemas/project.ts",
 		"./schemas/role": "./src/schemas/role.ts",
 		"./package.json": "./package.json"
 	},
@@ -16,6 +17,7 @@
 		"exports": {
 			".": "./dist/index.mjs",
 			"./schemas": "./dist/schemas/index.mjs",
+			"./schemas/project": "./dist/schemas/project.mjs",
 			"./schemas/role": "./dist/schemas/role.mjs",
 			"./package.json": "./package.json"
 		}
@@ -27,6 +29,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
+		"limax": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

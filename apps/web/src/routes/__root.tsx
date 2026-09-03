@@ -12,6 +12,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
+import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { Header } from '#/components/header'
 import { LogProvider } from '#/components/log-provider'
@@ -102,13 +103,15 @@ function RootComponent() {
 				disableTransitionOnChange
 				storageKey="theme"
 			>
-				<Header auth={auth} />
+				<TooltipProvider>
+					<Header auth={auth} />
 
-				<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
+					<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
 
-				<main>
-					<Outlet />
-				</main>
+					<main>
+						<Outlet />
+					</main>
+				</TooltipProvider>
 			</ThemeProvider>
 		</LogProvider>
 	)
