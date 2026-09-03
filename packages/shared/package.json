@@ -1,0 +1,42 @@
+{
+	"name": "@altstack/shared",
+	"version": "0.0.0",
+	"private": true,
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./schemas": "./src/schemas/index.ts",
+		"./schemas/project": "./src/schemas/project.ts",
+		"./schemas/role": "./src/schemas/role.ts",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"exports": {
+			".": "./dist/index.mjs",
+			"./schemas": "./dist/schemas/index.mjs",
+			"./schemas/project": "./dist/schemas/project.mjs",
+			"./schemas/role": "./dist/schemas/role.mjs",
+			"./package.json": "./package.json"
+		}
+	},
+	"scripts": {
+		"build": "vp pack",
+		"check": "vp check",
+		"dev": "vp pack --watch",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"limax": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@altstack/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"bumpp": "catalog:",
+		"typescript": "catalog:",
+		"vite-plus": "catalog:"
+	}
+}

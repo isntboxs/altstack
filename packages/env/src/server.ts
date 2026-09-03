@@ -51,6 +51,7 @@ export const env = createEnv({
 			.transform((origins) => origins.map((origin) => new URL(origin).origin)),
 		GITHUB_CLIENT_ID: z.string(),
 		GITHUB_CLIENT_SECRET: z.string().min(32),
+		GITHUB_TOKEN: z.string().min(32).optional(),
 	},
 	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,

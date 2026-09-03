@@ -1,0 +1,21 @@
+# Build outputs
+node_modules
+dist
+.output
+.nitro
+.tanstack
+coverage
+
+# VCS
+.git
+
+# Secrets — never bake these into images; inject via Dokploy env / build args
+.env
+.env.*
+!.env.example
+
+# Logs & OS/editor noise
+*.log
+.DS_Store
+.vscode
+.idea

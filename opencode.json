@@ -1,0 +1,15 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"mcp": {
+		"better-auth": {
+			"type": "remote",
+			"url": "https://mcp.better-auth.com/mcp",
+			"enabled": true
+		},
+		"orpc": {
+			"type": "remote",
+			"url": "https://orpc.dev/mcp",
+			"enabled": true
+		}
+	}
+}

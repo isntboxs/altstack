@@ -1,11 +1,12 @@
 import { sql } from 'drizzle-orm'
 import {
+	boolean,
+	index,
 	pgTable,
 	text,
 	timestamp,
-	boolean,
+	uniqueIndex,
 	uuid,
-	index,
 } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
@@ -21,7 +22,7 @@ export const user = pgTable('user', {
 		.defaultNow()
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
-	role: text('role'),
+	role: text('role').notNull(),
 	banned: boolean('banned').default(false),
 	banReason: text('ban_reason'),
 	banExpires: timestamp('ban_expires'),
@@ -57,6 +58,7 @@ export const account = pgTable(
 		id: uuid('id')
 			.default(sql`pg_catalog.gen_random_uuid()`)
 			.primaryKey(),
+		issuer: text('issuer').notNull(),
 		accountId: text('account_id').notNull(),
 		providerId: text('provider_id').notNull(),
 		userId: uuid('user_id')
@@ -74,7 +76,13 @@ export const account = pgTable(
 			.$onUpdate(() => /* @__PURE__ */ new Date())
 			.notNull(),
 	},
-	(table) => [index('account_userId_idx').on(table.userId)]
+	(table) => [
+		uniqueIndex('account_issuer_accountId_uidx').on(
+			table.issuer,
+			table.accountId
+		),
+		index('account_userId_idx').on(table.userId),
+	]
 )
 
 export const verification = pgTable(

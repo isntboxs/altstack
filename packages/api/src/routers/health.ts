@@ -1,7 +1,11 @@
+import { getLogger } from '@orpc/evlog'
+
 import { publicProcedure } from '@altstack/api/procedures'
 
 export const healthRouter = publicProcedure.health.handler(({ context }) => {
-	context.log.set({ route: 'health' })
+	const logger = getLogger(context)
+
+	logger?.set({ route: 'health' })
 
 	return {
 		message: 'OK',
