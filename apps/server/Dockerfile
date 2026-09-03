@@ -1,0 +1,86 @@
+# syntax=docker/dockerfile:1
+#
+# Altstack API server (Hono + Bun).
+#
+# Dokploy settings for this app:
+#   Build Context: / (repo root — required so `workspace:*` deps resolve)
+#   Dockerfile:    apps/server/Dockerfile
+#   Port:          3009
+#   Domain:        https://api.domain.com
+#
+# Runtime env (set in Dokploy, NOT baked into the image):
+#   NODE_ENV, PORT, DATABASE_URL, APP_NAME, BETTER_AUTH_URL,
+#   BETTER_AUTH_SECRET, CORS_ORIGINS, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+#
+# DB migrations are NOT run here — run once against the external Postgres:
+#   DATABASE_URL=<prod-url> bun run --filter @altstack/db db:migrate
+
+# --- build stage ---
+FROM oven/bun:1.4 AS build
+WORKDIR /app
+
+# Workspace manifests first so `bun install` stays cached across source changes.
+COPY package.json bun.lock ./
+COPY apps/server/package.json apps/server/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY packages/api/package.json packages/api/package.json
+COPY packages/auth/package.json packages/auth/package.json
+COPY packages/config/package.json packages/config/package.json
+COPY packages/db/package.json packages/db/package.json
+COPY packages/env/package.json packages/env/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/ui/package.json packages/ui/package.json
+# NOTE: `--ignore-scripts` skips the root `prepare` script (`vp config`, which
+# only wires local git hooks and is meaningless in Docker). Verified that no
+# other workspace lifecycle script exists.
+RUN bun install --frozen-lockfile --ignore-scripts
+
+# Build the server plus its workspace dependencies in topological order
+# (env → shared → db → auth → api → server).
+# NOTE: plain `vp run server#build` does NOT build dependencies — the
+# `...` filter suffix (package + its dependencies) is required.
+COPY . .
+RUN ./node_modules/.bin/vp run --filter 'server...' build
+# Drop workspace-level `node_modules` (isolated-layout symlinks into the build
+# stage's own store). The runtime stage uses the hoisted prod `node_modules`
+# from the `deps` stage instead — leaving these here would create dangling
+# symlinks in the final image.
+RUN rm -rf apps/*/node_modules packages/*/node_modules
+
+# --- production dependencies only (devDependencies, incl. the toolchain, pruned) ---
+FROM oven/bun:1.4-slim AS deps
+WORKDIR /app
+COPY package.json bun.lock ./
+COPY apps/server/package.json apps/server/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY packages/api/package.json packages/api/package.json
+COPY packages/auth/package.json packages/auth/package.json
+COPY packages/config/package.json packages/config/package.json
+COPY packages/db/package.json packages/db/package.json
+COPY packages/env/package.json packages/env/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/ui/package.json packages/ui/package.json
+# Bun 1.4 defaults to isolated installs (per-workspace `node_modules` plus a
+# `.bun` store). `--linker hoisted` flattens everything into the single
+# top-level `node_modules` below, so the runtime stage can copy just one dir.
+RUN bun install --frozen-lockfile --production --ignore-scripts --linker hoisted
+
+# --- runtime stage ---
+FROM oven/bun:1.4-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3009
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/package.json /app/bun.lock /app/tsconfig.json ./
+COPY --from=build /app/apps/server/package.json /app/apps/server/tsconfig.json ./apps/server/
+COPY --from=build /app/apps/server/dist ./apps/server/dist
+# Workspace sources: package `exports` maps resolve to `src/*.ts`,
+# which Bun executes directly — so `src` (not just `dist`) must ship.
+COPY --from=build /app/packages ./packages
+
+USER nobody
+EXPOSE 3009
+CMD ["bun", "run", "apps/server/dist/index.mjs"]
