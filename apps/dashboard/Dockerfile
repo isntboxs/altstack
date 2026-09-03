@@ -69,8 +69,10 @@ COPY --chown=vp:vp packages/db/package.json packages/db/package.json
 COPY --chown=vp:vp packages/env/package.json packages/env/package.json
 COPY --chown=vp:vp packages/shared/package.json packages/shared/package.json
 COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
-# See apps/server/Dockerfile for why `--ignore-scripts` / `--linker` are set.
-RUN vp install --frozen-lockfile --prod --ignore-scripts --linker hoisted
+# See apps/server/Dockerfile for why `--ignore-scripts` is set. `--linker`
+# hoisted is forwarded to Bun after `--` (`vp install` has no `--linker`
+# flag) so the runtime stage can copy a single top-level `node_modules`.
+RUN vp install --frozen-lockfile --prod --ignore-scripts -- --linker hoisted
 
 # --- runtime stage: Nitro `node-server` output + prod `node_modules` ---
 FROM debian:bookworm-slim AS runtime

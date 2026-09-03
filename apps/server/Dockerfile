@@ -65,7 +65,9 @@ COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
 # Bun 1.4 defaults to isolated installs (per-workspace `node_modules` plus a
 # `.bun` store). `--linker hoisted` flattens everything into the single
 # top-level `node_modules` below, so the runtime stage can copy just one dir.
-RUN vp install --frozen-lockfile --prod --ignore-scripts --linker hoisted
+# NOTE: `vp install` has no `--linker` flag — it is forwarded to Bun after
+# `--` (see `vp install --help`).
+RUN vp install --frozen-lockfile --prod --ignore-scripts -- --linker hoisted
 
 # --- runtime stage ---
 FROM oven/bun:1.4-slim AS runtime
