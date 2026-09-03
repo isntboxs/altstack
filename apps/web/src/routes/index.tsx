@@ -7,8 +7,8 @@ import { ProjectListSection } from '#/components/project-list-section'
 import { projectQueries } from '#/features/project/queries'
 
 const searchSchema = z.object({
-	limit: z.coerce.number().min(1).max(50).optional(),
-	page: z.coerce.number().min(1).optional(),
+	limit: z.coerce.number().int().min(1).max(50).optional(),
+	page: z.coerce.number().int().min(1).optional(),
 })
 
 export const Route = createFileRoute('/')({

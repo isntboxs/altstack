@@ -266,14 +266,14 @@ async function seed() {
 			continue
 		}
 
-		const content = await getReadmeFile(projectEntry.owner, projectEntry.repo)
-
-		const { stargazers_count, forks_count } = await getGithubStats(
-			projectEntry.owner,
-			projectEntry.repo
-		)
-
 		try {
+			const content = await getReadmeFile(projectEntry.owner, projectEntry.repo)
+
+			const { stargazers_count, forks_count } = await getGithubStats(
+				projectEntry.owner,
+				projectEntry.repo
+			)
+
 			await db.transaction(async (tx) => {
 				const [newProject] = await tx
 					.insert(project)

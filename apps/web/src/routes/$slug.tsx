@@ -10,7 +10,7 @@ import {
 	IconGitFork,
 	IconTag,
 } from '@tabler/icons-react'
-import { createFileRoute, notFound } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import {
 	Bookmark,
@@ -21,8 +21,8 @@ import {
 	Star,
 	Verified,
 } from 'reicon-react'
-import 'streamdown/styles.css'
 import { Streamdown } from 'streamdown'
+import 'streamdown/styles.css'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -53,13 +53,9 @@ import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 
 export const Route = createFileRoute('/$slug')({
 	loader: async ({ context, params }) => {
-		try {
-			await context.queryClient.ensureQueryData(
-				projectQueries.bySlug(params.slug)
-			)
-		} catch {
-			throw notFound()
-		}
+		await context.queryClient.ensureQueryData(
+			projectQueries.bySlug(params.slug)
+		)
 	},
 	component: RouteComponent,
 })
@@ -267,7 +263,7 @@ function RouteComponent() {
 		try {
 			if (!projectData.websiteUrl) return null
 			const u = new URL(projectData.websiteUrl)
-			return u.protocol.startsWith('http') ? u.href : null
+			return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null
 		} catch {
 			return null
 		}
