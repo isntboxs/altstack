@@ -9,7 +9,15 @@ dotenv.config({ path: resolve(__dirname, '../../../.env') })
 
 export const env = createEnv({
 	server: {
-		NODE_ENV: z.enum(['development', 'production', 'test']),
+		// NOTE: NODE_ENV is intentionally NOT set in `.env` — Vite warns
+		// "NODE_ENV=production is not supported in the .env file" and ignores
+		// it (only NODE_ENV=development is honored for dev builds). Vite sets
+		// process.env.NODE_ENV itself (development for dev, production for
+		// build), Docker sets ENV NODE_ENV=production, so default to
+		// development for plain `bun run` local processes.
+		NODE_ENV: z
+			.enum(['development', 'production', 'test'])
+			.default('development'),
 		PORT: z.coerce.number().int().min(1).max(65535),
 		DATABASE_URL: z.url(),
 		APP_NAME: z.string(),

@@ -3,9 +3,9 @@ import { defineConfig } from 'nitro'
 
 export default defineConfig({
 	// Pin the production output target: without this, Nitro auto-detects the
-	// runtime from the build environment (a Bun-based builder would emit
-	// Bun-specific output that Node cannot run). Our Docker runtime is Node.
-	preset: 'node-server',
+	// runtime from the build environment. Our Docker runtime is Bun
+	// (oven/bun:1.4.1-slim running `.output/server/index.mjs`).
+	preset: 'bun',
 	// Keep exactly ONE copy of React at runtime: resolve it (and its
 	// companion packages) from `node_modules` instead of bundling. Background:
 	// Nitro bundled `react`/`react-dom` into some SSR chunks while the CJS

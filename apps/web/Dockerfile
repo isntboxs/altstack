@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Altstack web client (TanStack Start + Nitro → Node).
+# Altstack web client (TanStack Start + Nitro → Bun).
 #
 # Dokploy settings for this app:
 #   Build Context: / (repo root — required so `workspace:*` deps resolve)
@@ -49,11 +49,8 @@ ENV VITE_APP_NAME=${VITE_APP_NAME} \
 COPY --chown=vp:vp . .
 RUN vp run --filter 'web...' build
 
-# Keep the Node.js binary selected by Vite+ for the final runtime image.
-RUN cp "$(vp env which node | head -1)" /tmp/node
-
 # --- production dependencies only ---
-# Nitro's `node-server` output keeps some imports external (e.g. `react`),
+# Nitro's `bun` output keeps some imports external (e.g. `react`),
 # resolving them from a surrounding `node_modules` — so the runtime stage
 # needs the prod dependency tree next to `.output`.
 FROM ghcr.io/voidzero-dev/vite-plus:latest AS deps
@@ -74,16 +71,15 @@ COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
 # flag) so the runtime stage can copy a single top-level `node_modules`.
 RUN vp install --frozen-lockfile --prod --ignore-scripts -- --linker hoisted
 
-# --- runtime stage: Nitro `node-server` output + prod `node_modules` ---
-FROM debian:bookworm-slim AS runtime
+# --- runtime stage: Nitro `bun` output + prod `node_modules` ---
+FROM oven/bun:1.4.1-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY --from=build /tmp/node /usr/local/bin/node
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/apps/web/.output ./.output
 
 USER nobody
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+CMD ["bun", ".output/server/index.mjs"]

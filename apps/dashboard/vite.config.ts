@@ -16,7 +16,7 @@ const config = defineConfig({
 	server: { port: 3011 },
 	plugins: lazyPlugins(() => [
 		devtools(),
-		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+		nitro({ preset: 'bun', rollupConfig: { external: [/^@sentry\//] } }),
 		tailwindcss(),
 		tanstackStart(),
 		viteReact(),
