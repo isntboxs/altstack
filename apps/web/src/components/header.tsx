@@ -120,8 +120,8 @@ const UserButton = ({
 		})
 	}
 
-	const handleNavigate = (path: string) => {
-		void router.navigate({ href: path, viewTransition: true })
+	const handleNavigateDashboard = () => {
+		void router.navigate({ to: '/dashboard', viewTransition: true })
 	}
 
 	return (
@@ -135,9 +135,7 @@ const UserButton = ({
 			/>
 
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem
-					onClick={() => handleNavigate(env.VITE_DASHBOARD_URL)}
-				>
+				<DropdownMenuItem onClick={handleNavigateDashboard}>
 					<IconLayoutDashboard />
 					Dashboard
 				</DropdownMenuItem>

@@ -23,7 +23,6 @@ WORKDIR /app
 COPY --chown=vp:vp package.json bun.lock ./
 COPY --chown=vp:vp apps/server/package.json apps/server/package.json
 COPY --chown=vp:vp apps/web/package.json apps/web/package.json
-COPY --chown=vp:vp apps/dashboard/package.json apps/dashboard/package.json
 COPY --chown=vp:vp packages/api/package.json packages/api/package.json
 COPY --chown=vp:vp packages/auth/package.json packages/auth/package.json
 COPY --chown=vp:vp packages/config/package.json packages/config/package.json
@@ -54,7 +53,6 @@ WORKDIR /app
 COPY --chown=vp:vp package.json bun.lock ./
 COPY --chown=vp:vp apps/server/package.json apps/server/package.json
 COPY --chown=vp:vp apps/web/package.json apps/web/package.json
-COPY --chown=vp:vp apps/dashboard/package.json apps/dashboard/package.json
 COPY --chown=vp:vp packages/api/package.json packages/api/package.json
 COPY --chown=vp:vp packages/auth/package.json packages/auth/package.json
 COPY --chown=vp:vp packages/config/package.json packages/config/package.json

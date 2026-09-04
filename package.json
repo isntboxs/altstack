@@ -18,7 +18,6 @@
 		"db:stop": "docker compose stop postgres",
 		"db:studio": "vp run --filter @altstack/db db:studio",
 		"db:watch": "docker compose up postgres",
-		"dev:dashboard": "vp run dashboard#dev",
 		"dev:server": "vp run server#dev",
 		"dev:web": "vp run web#dev",
 		"prepare": "vp config",

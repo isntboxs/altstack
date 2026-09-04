@@ -3,23 +3,21 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { orpc } from '#/utils/orpc'
 
-export const Route = createFileRoute('/')({
-	component: Home,
+export const Route = createFileRoute('/dashboard/')({
 	loader: ({ context }) =>
 		context.queryClient.ensureQueryData(orpc.health.queryOptions()),
+	component: DashboardHome,
 })
 
-function Home() {
+function DashboardHome() {
 	const healthQuery = useSuspenseQuery(orpc.health.queryOptions())
 
 	return (
-		<div className="p-8">
-			<h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-			<p className="mt-4 text-lg">
-				Edit <code>src/routes/index.tsx</code> to get started.
+		<div className="space-y-2">
+			<h1 className="text-3xl font-medium">Dashboard</h1>
+			<p className="text-base text-muted-foreground">
+				healthy: {healthQuery.data.message}
 			</p>
-
-			<div>healthy: {healthQuery.data.message}</div>
 		</div>
 	)
 }
