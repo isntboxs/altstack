@@ -11,7 +11,7 @@ const searchSchema = z.object({
 	page: z.coerce.number().int().min(1).optional(),
 })
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_app/')({
 	validateSearch: searchSchema,
 	loaderDeps: ({ search }) => {
 		return { limit: search.limit, page: search.page }

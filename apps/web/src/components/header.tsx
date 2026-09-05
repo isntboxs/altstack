@@ -121,7 +121,7 @@ const UserButton = ({
 	}
 
 	const handleNavigateDashboard = () => {
-		void router.navigate({ to: '/dashboard', viewTransition: true })
+		void router.navigate({ to: '/', viewTransition: true })
 	}
 
 	return (

@@ -111,7 +111,19 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 			viewTransition
 			className="group relative rounded-xl p-0.5 ring-1 ring-border transition-all duration-300 ease-in-out hover:ring-primary/50"
 		>
-			<Card className="size-full ring-0">
+			<Card className="relative size-full overflow-hidden ring-0">
+				{/* Watermark Logo di Pojok Kanan Atas */}
+				<div className="pointer-events-none absolute inset-px z-0 overflow-clip rounded-sm opacity-10 blur-[1px] transition-all duration-500 select-none group-hover:scale-110 group-hover:opacity-20 group-hover:blur-none">
+					<img
+						src={projectData.logo}
+						alt={projectData.name}
+						aria-hidden="true"
+						width={60}
+						height={60}
+						className="absolute -top-20 -right-20 -z-10 size-60 rotate-12 rounded-md mask-b-from-25 mask-l-from-25 p-[0.09375em] mix-blend-multiply dark:mix-blend-normal"
+					/>
+				</div>
+
 				<CardHeader className="gap-4">
 					<CardTitle className="flex items-center gap-2">
 						<img
@@ -237,6 +249,7 @@ export const ProjectListSection = ({
 							}}
 							resetScroll={false}
 							disabled={!pagination.hasPreviousPage}
+							viewTransition
 						/>
 					</PaginationItem>
 
@@ -256,6 +269,7 @@ export const ProjectListSection = ({
 									}}
 									resetScroll={false}
 									isActive={item === currentPage}
+									viewTransition
 								>
 									{item}
 								</CustomPaginationLink>
@@ -275,6 +289,7 @@ export const ProjectListSection = ({
 								}
 							}}
 							resetScroll={false}
+							viewTransition
 						/>
 					</PaginationItem>
 				</PaginationContent>
