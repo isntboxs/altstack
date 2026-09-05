@@ -5,8 +5,12 @@ import { baseContract } from '@altstack/api/contracts/base'
 import {
 	getProjectBySlugInputSchema,
 	getProjectBySlugOutputSchema,
+	listCategoriesInputSchema,
+	listCategoriesOutputSchema,
 	listProjectsInputSchema,
 	listProjectsOutputSchema,
+	searchProjectsInputSchema,
+	searchProjectsOutputSchema,
 } from '@altstack/shared/schemas/project'
 
 const getBySlugContract = baseContract
@@ -41,7 +45,43 @@ const listProjectsContract = baseContract
 	.input(listProjectsInputSchema)
 	.output(listProjectsOutputSchema)
 
+const searchProjectsContract = baseContract
+	.meta(
+		openapi({
+			path: '/projects/search',
+			method: 'GET',
+			summary: 'Search projects',
+			description:
+				'Search published projects by text query, category, sort, and pagination.',
+			tags: ['Projects'],
+			operationId: 'searchProjects',
+			successStatus: 200,
+			successDescription: 'Projects found',
+		})
+	)
+	.input(searchProjectsInputSchema)
+	.output(searchProjectsOutputSchema)
+
+const listCategoriesContract = baseContract
+	.meta(
+		openapi({
+			path: '/categories',
+			method: 'GET',
+			summary: 'List categories',
+			description:
+				'List categories attached to published projects, ordered by name.',
+			tags: ['Projects'],
+			operationId: 'listCategories',
+			successStatus: 200,
+			successDescription: 'Categories listed',
+		})
+	)
+	.input(listCategoriesInputSchema)
+	.output(listCategoriesOutputSchema)
+
 export const projectContract = {
 	getBySlug: getBySlugContract,
 	list: listProjectsContract,
+	search: searchProjectsContract,
+	listCategories: listCategoriesContract,
 }
