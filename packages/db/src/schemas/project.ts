@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+	customType,
 	index,
 	pgEnum,
 	pgTable,
@@ -28,6 +29,11 @@ export const project = pgTable(
 		websiteUrl: text('website_url'),
 		content: text('content'),
 		status: projectStatusEnum('status').notNull(),
+		searchVector: customType<{ data: string }>({
+			dataType: () => 'tsvector',
+		})('search_vector').generatedAlwaysAs(
+			sql`setweight(to_tsvector('english', coalesce("name", '')), 'A') || setweight(to_tsvector('english', coalesce("tagline", '')), 'B') || setweight(to_tsvector('english', coalesce("description", '')), 'C')`
+		),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
 			.defaultNow()
@@ -37,5 +43,6 @@ export const project = pgTable(
 	(table) => [
 		index('project_slug_idx').on(table.slug),
 		index('project_status_idx').on(table.status),
+		index('project_search_vector_idx').using('gin', table.searchVector),
 	]
 )
