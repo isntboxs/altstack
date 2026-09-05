@@ -48,7 +48,7 @@ import { orpc } from '#/utils/orpc'
 const REPO_URL = 'https://github.com/isntboxs/altstack'
 const TREE_URL = `${REPO_URL}/tree/`
 
-export const Route = createFileRoute('/activity')({
+export const Route = createFileRoute('/_app/activity')({
 	component: RouteComponent,
 	loader: ({ context }) =>
 		context.queryClient.prefetchQuery(

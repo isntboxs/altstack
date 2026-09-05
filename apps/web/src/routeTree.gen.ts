@@ -9,86 +9,111 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SlugRouteImport } from './routes/$slug'
-import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppSlugRouteImport } from './routes/_app/$slug'
+import { Route as AppActivityRouteImport } from './routes/_app/activity'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRouteRoute = AppRouteRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const SlugRoute = SlugRouteImport.update({
+const AppSlugRoute = AppSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRouteRoute,
 } as any)
-const ActivityRoute = ActivityRouteImport.update({
+const AppActivityRoute = AppActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/$slug': typeof SlugRoute
-  '/activity': typeof ActivityRoute
+  '/': typeof AppIndexRoute
+  '/$slug': typeof AppSlugRoute
+  '/activity': typeof AppActivityRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/$slug': typeof SlugRoute
-  '/activity': typeof ActivityRoute
+  '/$slug': typeof AppSlugRoute
+  '/activity': typeof AppActivityRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/$slug': typeof SlugRoute
-  '/activity': typeof ActivityRoute
+  '/_app': typeof AppRouteRouteWithChildren
+  '/_app/$slug': typeof AppSlugRoute
+  '/_app/activity': typeof AppActivityRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/$slug' | '/activity'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$slug' | '/activity'
-  id: '__root__' | '/' | '/$slug' | '/activity'
+  to: '/$slug' | '/activity' | '/'
+  id: '__root__' | '/_app' | '/_app/$slug' | '/_app/activity' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  SlugRoute: typeof SlugRoute
-  ActivityRoute: typeof ActivityRoute
+  AppRouteRoute: typeof AppRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/$slug': {
-      id: '/$slug'
+    '/_app/$slug': {
+      id: '/_app/$slug'
       path: '/$slug'
       fullPath: '/$slug'
-      preLoaderRoute: typeof SlugRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppSlugRouteImport
+      parentRoute: typeof AppRouteRoute
     }
-    '/activity': {
-      id: '/activity'
+    '/_app/activity': {
+      id: '/_app/activity'
       path: '/activity'
       fullPath: '/activity'
-      preLoaderRoute: typeof ActivityRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppActivityRouteImport
+      parentRoute: typeof AppRouteRoute
     }
   }
 }
 
+interface AppRouteRouteChildren {
+  AppSlugRoute: typeof AppSlugRoute
+  AppActivityRoute: typeof AppActivityRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppSlugRoute: AppSlugRoute,
+  AppActivityRoute: AppActivityRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  SlugRoute: SlugRoute,
-  ActivityRoute: ActivityRoute,
+  AppRouteRoute: AppRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

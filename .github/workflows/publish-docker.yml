@@ -30,15 +30,6 @@ jobs:
             build_args: |
               VITE_APP_NAME=${{ vars.VITE_APP_NAME }}
               VITE_APP_URL=${{ vars.VITE_APP_URL }}
-              VITE_DASHBOARD_URL=${{ vars.VITE_DASHBOARD_URL }}
-              VITE_SERVER_URL=${{ vars.VITE_SERVER_URL }}
-          - name: dashboard
-            image: altstack-dashboard
-            dockerfile: apps/dashboard/Dockerfile
-            build_args: |
-              VITE_APP_NAME=${{ vars.VITE_APP_NAME }}
-              VITE_APP_URL=${{ vars.VITE_APP_URL }}
-              VITE_DASHBOARD_URL=${{ vars.VITE_DASHBOARD_URL }}
               VITE_SERVER_URL=${{ vars.VITE_SERVER_URL }}
 
     steps:
@@ -47,14 +38,12 @@ jobs:
           DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
           VITE_APP_NAME: ${{ vars.VITE_APP_NAME }}
           VITE_APP_URL: ${{ vars.VITE_APP_URL }}
-          VITE_DASHBOARD_URL: ${{ vars.VITE_DASHBOARD_URL }}
           VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
         run: |
           test -n "$DOCKERHUB_USERNAME"
           if [ "${{ matrix.name }}" != "server" ]; then
             test -n "$VITE_APP_NAME"
             test -n "$VITE_APP_URL"
-            test -n "$VITE_DASHBOARD_URL"
             test -n "$VITE_SERVER_URL"
           fi
 
