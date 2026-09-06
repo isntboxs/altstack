@@ -78,6 +78,8 @@ export const searchSortSchema = z.enum([
 	'most-forks',
 ])
 
+export type SearchSortType = z.infer<typeof searchSortSchema>
+
 export const searchProjectsInputSchema = z.object({
 	q: z
 		.string()

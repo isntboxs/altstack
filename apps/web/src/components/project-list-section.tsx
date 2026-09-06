@@ -28,9 +28,11 @@ import {
 } from '@altstack/ui/components/pagination'
 import { Separator } from '@altstack/ui/components/separator'
 
-import { useProjectList } from '#/features/project/queries'
+import { useProjectSearch } from '#/features/project/queries'
+import type { SearchProjectsParams } from '#/features/project/queries'
 
-type ProjectCardProps = ORPCRouterOutputs['project']['list']['projects'][number]
+type ProjectCardProps =
+	ORPCRouterOutputs['project']['search']['projects'][number]
 
 const CreatedPaginationPrevious = createLink(PaginationPrevious)
 
@@ -189,16 +191,17 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 }
 
 export const ProjectListSection = ({
-	limit,
 	page = 1,
-}: {
-	limit?: number
-	page?: number
-}) => {
-	const { data } = useProjectList({ limit, page })
+	category,
+	q,
+	sort,
+}: SearchProjectsParams) => {
+	const { data } = useProjectSearch({ page, category, q, sort })
 	const { pagination } = data
 	const currentPage = pagination.page || page || 1
 	const totalPages = pagination.totalPages
+	const hasActiveFilters =
+		Boolean(q) || Boolean(category) || (sort !== undefined && sort !== 'newest')
 
 	if (data.projects.length === 0) {
 		return (
@@ -206,7 +209,9 @@ export const ProjectListSection = ({
 				<div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
 					<p className="text-lg font-medium">No projects found</p>
 					<p className="mt-1 text-sm text-muted-foreground">
-						There are no published projects available in the catalogue yet.
+						{hasActiveFilters
+							? 'No projects match your current filters. Try a different search term or clear filters above.'
+							: 'There are no published projects available in the catalogue yet.'}
 					</p>
 				</div>
 			</section>
@@ -217,8 +222,8 @@ export const ProjectListSection = ({
 		return (
 			<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{data.projects.map((project, key) => (
-						<ProjectCard key={key} {...project} />
+					{data.projects.map((project) => (
+						<ProjectCard key={project.slug} {...project} />
 					))}
 				</div>
 			</section>
@@ -230,8 +235,8 @@ export const ProjectListSection = ({
 	return (
 		<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{data.projects.map((project, key) => (
-					<ProjectCard key={key} {...project} />
+				{data.projects.map((project) => (
+					<ProjectCard key={project.slug} {...project} />
 				))}
 			</div>
 
