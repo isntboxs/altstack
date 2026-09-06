@@ -49,21 +49,65 @@ export const listProjectsInputSchema = z.object({
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
 })
 
+const listProjectItemSchema = z
+	.object({
+		...projectField,
+		github: z.object(githubField),
+	})
+	.omit({ content: true })
+
+const paginationOutputSchema = z.object({
+	page: z.number().int().nonnegative(),
+	limit: z.number().int().nonnegative(),
+	totalItems: z.number().int().nonnegative(),
+	totalPages: z.number().int().nonnegative(),
+	hasNextPage: z.boolean(),
+	hasPreviousPage: z.boolean(),
+})
+
 export const listProjectsOutputSchema = z.object({
+	projects: z.array(listProjectItemSchema),
+	pagination: paginationOutputSchema,
+})
+
+export const searchSortSchema = z.enum([
+	'newest',
+	'oldest',
+	'name',
+	'most-stars',
+	'most-forks',
+])
+
+export type SearchSortType = z.infer<typeof searchSortSchema>
+
+export const searchProjectsInputSchema = z.object({
+	q: z
+		.string()
+		.trim()
+		.optional()
+		.transform((value) =>
+			value === undefined || value === '' ? undefined : value
+		),
+	category: z.string().trim().min(1).max(100).optional(),
+	sort: searchSortSchema.optional().default('newest'),
+	page: z.coerce.number().int().min(1).optional().default(1),
+	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const searchProjectsOutputSchema = z.object({
 	projects: z.array(
-		z
-			.object({
-				...projectField,
-				github: z.object(githubField),
-			})
-			.omit({ content: true })
+		listProjectItemSchema.extend({ categories: z.array(z.string()) })
 	),
-	pagination: z.object({
-		page: z.number().int().nonnegative(),
-		limit: z.number().int().nonnegative(),
-		totalItems: z.number().int().nonnegative(),
-		totalPages: z.number().int().nonnegative(),
-		hasNextPage: z.boolean(),
-		hasPreviousPage: z.boolean(),
-	}),
+	pagination: paginationOutputSchema,
+})
+
+export const categoryItemSchema = z.object({
+	slug: z.string(),
+	name: z.string(),
+})
+
+export const listCategoriesInputSchema = z.object({})
+
+export const listCategoriesOutputSchema = z.object({
+	categories: z.array(categoryItemSchema),
 })

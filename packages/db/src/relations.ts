@@ -45,12 +45,34 @@ export const relations = defineRelations(schemas, (r) => {
 				to: r.githubRepository.projectId,
 				optional: false,
 			}),
+			projectCategories: r.many.projectCategory({
+				from: r.project.id,
+				to: r.projectCategory.projectId,
+			}),
 		},
 
 		githubRepository: {
 			project: r.one.project({
 				from: r.githubRepository.projectId,
 				to: r.project.id,
+			}),
+		},
+
+		category: {
+			projectCategories: r.many.projectCategory({
+				from: r.category.id,
+				to: r.projectCategory.categoryId,
+			}),
+		},
+
+		projectCategory: {
+			project: r.one.project({
+				from: r.projectCategory.projectId,
+				to: r.project.id,
+			}),
+			category: r.one.category({
+				from: r.projectCategory.categoryId,
+				to: r.category.id,
 			}),
 		},
 	}

@@ -2,10 +2,10 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import {
-	HeadContent,
-	Scripts,
 	createRootRouteWithContext,
+	HeadContent,
 	Outlet,
+	Scripts,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { createMiddleware } from '@tanstack/react-start'
@@ -14,7 +14,6 @@ import { evlogErrorHandler } from 'evlog/nitro/v3'
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
-import { Header } from '#/components/header'
 import { LogProvider } from '#/components/log-provider'
 import { getAuthFn } from '#/functions/get-auth-fn'
 import appCss from '#/styles.css?url'
@@ -93,8 +92,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-	const { auth } = Route.useRouteContext()
-
 	return (
 		<LogProvider>
 			<ThemeProvider
@@ -104,13 +101,7 @@ function RootComponent() {
 				storageKey="theme"
 			>
 				<TooltipProvider>
-					<Header auth={auth} />
-
-					<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
-
-					<main>
-						<Outlet />
-					</main>
+					<Outlet />
 				</TooltipProvider>
 			</ThemeProvider>
 		</LogProvider>
