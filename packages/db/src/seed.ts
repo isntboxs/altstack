@@ -2,7 +2,12 @@ import { eq } from 'drizzle-orm'
 import { Octokit } from 'octokit'
 
 import { db } from '@altstack/db'
-import { githubRepository, project } from '@altstack/db/schemas'
+import {
+	category,
+	githubRepository,
+	project,
+	projectCategory,
+} from '@altstack/db/schemas'
 
 import { env } from '@altstack/env/server'
 
@@ -239,6 +244,65 @@ const getGithubStats = async (owner: string, repo: string) => {
 	}
 }
 
+interface CategoryItem {
+	name: string
+	slug: string
+	description: string
+}
+
+const seedCategories: Array<CategoryItem> = [
+	{
+		name: 'Frontend',
+		slug: 'frontend',
+		description: 'UI frameworks, client-side routing, and browser tooling.',
+	},
+	{
+		name: 'Backend',
+		slug: 'backend',
+		description: 'Servers, APIs, and server-side frameworks.',
+	},
+	{
+		name: 'Database',
+		slug: 'database',
+		description: 'ORMs, query builders, and database tooling.',
+	},
+	{
+		name: 'Auth',
+		slug: 'auth',
+		description: 'Authentication and authorization libraries.',
+	},
+	{
+		name: 'Devtools',
+		slug: 'devtools',
+		description:
+			'Developer productivity: agents, validators, formatters, linters.',
+	},
+	{
+		name: 'Styling',
+		slug: 'styling',
+		description: 'CSS frameworks and component libraries.',
+	},
+]
+
+// Deterministic assignments: project slug -> category slugs (1-2 each).
+const seedProjectCategories: Record<string, Array<string>> = {
+	opencode: ['devtools'],
+	vite: ['frontend', 'devtools'],
+	'drizzle-orm': ['backend', 'database'],
+	hono: ['backend'],
+	'better-auth': ['backend', 'auth'],
+	'tanstack-router': ['frontend'],
+	zod: ['devtools'],
+	trpc: ['backend'],
+	nextjs: ['frontend', 'backend'],
+	tailwindcss: ['frontend', 'styling'],
+	'shadcn-ui': ['frontend', 'styling'],
+	orpc: ['backend'],
+	prisma: ['backend', 'database'],
+	biome: ['devtools'],
+	prettier: ['devtools'],
+}
+
 async function seed() {
 	const failed: Array<string> = []
 
@@ -315,7 +379,65 @@ async function seed() {
 	}
 }
 
+async function seedCategoryAssignments() {
+	// Idempotent taxonomy: insert missing categories, never update existing rows.
+	await db
+		.insert(category)
+		.values(seedCategories)
+		.onConflictDoNothing({ target: category.slug })
+	console.debug(`Seeded categories: ${seedCategories.length}`)
+
+	// Resolve ids deterministically by slug; skip unknown slugs without failing.
+	const [projects, categories] = await Promise.all([
+		db.select({ id: project.id, slug: project.slug }).from(project),
+		db.select({ id: category.id, slug: category.slug }).from(category),
+	])
+	const projectBySlug = new Map(projects.map((p) => [p.slug, p.id]))
+	const categoryBySlug = new Map(categories.map((c) => [c.slug, c.id]))
+
+	const values: Array<{ projectId: string; categoryId: string }> = []
+	for (const [projectSlug, categorySlugs] of Object.entries(
+		seedProjectCategories
+	)) {
+		const projectId = projectBySlug.get(projectSlug)
+		if (!projectId) {
+			console.debug(`Skipping assignment: unknown project ${projectSlug}`)
+			continue
+		}
+
+		for (const categorySlug of categorySlugs) {
+			const categoryId = categoryBySlug.get(categorySlug)
+			if (!categoryId) {
+				console.debug(`Skipping assignment: unknown category ${categorySlug}`)
+				continue
+			}
+
+			values.push({ projectId, categoryId })
+		}
+	}
+
+	if (values.length === 0) {
+		return
+	}
+
+	// Insert missing links only; reruns create no duplicates, user data untouched.
+	await db
+		.insert(projectCategory)
+		.values(values)
+		.onConflictDoNothing({
+			target: [projectCategory.projectId, projectCategory.categoryId],
+		})
+	console.debug(`Seeded project-category assignments: ${values.length}`)
+}
+
 await seed()
+	.then(() => console.debug('Project seed complete'))
+	.catch((e) => {
+		console.debug(e)
+		process.exitCode = 1
+	})
+
+await seedCategoryAssignments()
 	.then(() => console.debug('Seed complete'))
 	.catch((e) => {
 		console.debug(e)

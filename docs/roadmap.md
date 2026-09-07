@@ -203,7 +203,7 @@ Guest submission, anonymous-IP retention/rate limiting, README import, topics, l
 - [ ] Add minimal `audit_log`: actor ID, action, target project ID, optional metadata/reason, timestamp. It records moderation mutations only.
 - [ ] Add protected admin contracts: list drafts, approve, reject. Keep remove as an internal admin operation if it is needed before launch.
 - [ ] Enforce admin authorization in each mutation. Ensure invalid state transitions return `409`.
-- [ ] Build the smallest usable admin surface: a paginated drafts list, approve, and reject dialog requiring a reason. It can live in the existing dashboard app or a protected internal route; choose one and keep it there.
+- [ ] Build the smallest usable admin surface: a paginated drafts list, approve, and reject dialog requiring a reason. It lives in the protected `/dashboard` route inside the `web` app.
 - [ ] Reuse the submit form for the original submitter’s rejected project. Its narrow `resubmitProject` procedure may update only submission fields, then atomically clears the rejection reason and sets status back to `draft`. General editing of published projects remains R6.
 - [ ] Add moderation and audit tests. Run the complete smoke journey: seed → browse → search → sign in → submit → approve/reject → public/private assertions.
 - [ ] Record deployment notes: required GitHub OAuth callback URL, admin bootstrap process, and known limitations.
