@@ -68,7 +68,7 @@ COPY --chown=vp:vp packages/ui/package.json packages/ui/package.json
 RUN vp install --frozen-lockfile --prod --ignore-scripts -- --linker hoisted
 
 # --- runtime stage ---
-FROM oven/bun:1.4-slim AS runtime
+FROM oven/bun:1.4.2-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3009
