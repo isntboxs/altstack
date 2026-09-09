@@ -121,19 +121,19 @@ Search, categories, sign-in, submit, moderation, home-feed sections.
 
 ### Work
 
-- [ ] Add `category` and `project_category` schemas, relations, migration, and idempotent seed assignments.
-- [ ] Add a PostgreSQL full-text-search migration/index for name, tagline, and short description.
-- [ ] Add `searchProjects` and `listCategories` contracts. `searchProjects` accepts optional query, one category slug, sort, page, and limit.
-- [ ] Enforce `published` in every public search query and whitelist sort mappings rather than accepting a column name from the client.
-- [ ] Add typed, validated URL state to the homepage. Search is debounced; category and sort preserve existing state and reset the page.
-- [ ] Add loading, empty, reset-filter, and pagination states.
-- [ ] Add query-builder tests, plus browser smoke coverage for back/forward and a shared URL.
+- [x] Add `category` and `project_category` schemas, relations, migration, and idempotent seed assignments.
+- [x] Add a PostgreSQL full-text-search migration/index for name, tagline, and short description.
+- [x] Add `searchProjects` and `listCategories` contracts. `searchProjects` accepts optional query, one category slug, sort, page, and limit.
+- [x] Enforce `published` in every public search query and whitelist sort mappings rather than accepting a column name from the client.
+- [x] Add typed, validated URL state to the homepage. Search is debounced; category and sort preserve existing state and reset the page.
+- [x] Add loading, empty, reset-filter, and pagination states.
+- [x] Add query-builder tests, plus browser smoke coverage for back/forward and a shared URL.
 
 ### Done when
 
-- [ ] A URL such as `/?q=auth&category=backend&sort=most-stars&page=2` produces the equivalent result after reload, back/forward, and sharing.
-- [ ] Text, category, sort, and pagination work together.
-- [ ] Explain-plan checks show the intended index at a seed dataset large enough to be meaningful; do not impose a fixed latency target until a production-like data size exists.
+- [x] A URL such as `/?q=auth&category=backend&sort=most-stars&page=2` produces the equivalent result after reload, back/forward, and sharing.
+- [x] Text, category, sort, and pagination work together.
+- [x] Explain-plan checks show the intended index at a seed dataset large enough to be meaningful; do not impose a fixed latency target until a production-like data size exists.
 
 ### Explicitly not in R2
 
