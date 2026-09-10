@@ -1,3 +1,4 @@
+import 'zod/compile'
 import { openapi } from '@orpc/openapi'
 import { z } from 'zod'
 

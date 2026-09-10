@@ -4,9 +4,11 @@ export default defineConfig({
 	resolve: { tsconfigPaths: true },
 	pack: {
 		deps: { resolveDepSubpath: true },
-		dts: {
-			generator: 'tsgo',
-		},
+		// No .d.ts: the oRPC `Implementer` type carries the whole contract map,
+		// so tsgo expands ~25k lines / 1.9 MB of declarations (~20s build) that
+		// nothing consumes — workspace consumers resolve to `src` via
+		// devExports, and typechecking happens in `vp check`.
+		dts: false,
 		exports: {
 			enabled: true,
 			devExports: true,
