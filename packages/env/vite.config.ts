@@ -4,9 +4,10 @@ export default defineConfig({
 	resolve: { tsconfigPaths: true },
 	pack: {
 		deps: { resolveDepSubpath: true },
-		dts: {
-			generator: 'tsgo',
-		},
+		// No .d.ts: workspace consumers resolve to `src` via devExports and
+		// nothing reads `dist` declarations — generating them only costs
+		// build time. Typechecking happens in `vp check`.
+		dts: false,
 		exports: {
 			enabled: true,
 			devExports: true,

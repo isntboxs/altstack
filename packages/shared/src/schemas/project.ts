@@ -1,3 +1,4 @@
+import 'zod/compile'
 import limax from 'limax'
 import { z } from 'zod'
 

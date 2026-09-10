@@ -4,9 +4,9 @@ export default defineConfig({
 	resolve: { tsconfigPaths: true },
 	pack: {
 		deps: { resolveDepSubpath: true },
-		dts: {
-			generator: 'tsgo',
-		},
+		// No .d.ts: nothing imports this app as a library, so declarations
+		// only cost build time. Typechecking happens in `vp check`.
+		dts: false,
 		format: 'esm',
 		outDir: 'dist',
 		clean: true,
