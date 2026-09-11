@@ -16,7 +16,7 @@ import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { LogProvider } from '#/components/log-provider'
 import { getAuthFn } from '#/functions/get-auth-fn'
-import { useAuthIdentity } from '#/hooks/use-auth-identity.tsx'
+import { useAuthIdentity } from '#/hooks/use-auth-identity'
 import appCss from '#/styles.css?url'
 import type { orpc } from '#/utils/orpc'
 

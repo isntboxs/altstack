@@ -1,5 +1,6 @@
 import { IconBrandGithub } from '@tabler/icons-react'
 import { log } from 'evlog/client'
+import { useTransition } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
 import { authClient } from '@altstack/auth/client'
@@ -14,25 +15,43 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@altstack/ui/components/dialog'
+import { Spinner } from '@altstack/ui/components/spinner'
+
+import { resolveReturnTo } from '#/utils/return-to'
 
 interface AuthDialogpros {
 	open: boolean
 	onOpenChange: Dispatch<SetStateAction<boolean>>
+	returnTo?: string
 }
 
-export const AuthDialog = ({ open, onOpenChange }: AuthDialogpros) => {
-	const signIn = async () =>
-		await authClient.signIn.social({
-			provider: 'github',
-			callbackURL: env.VITE_APP_URL,
-			fetchOptions: {
-				onSuccess: () => onOpenChange(false),
-				onError: (ctx) => {
-					onOpenChange(false)
-					log.error({ error: ctx.error })
+export const AuthDialog = ({
+	open,
+	onOpenChange,
+	returnTo,
+}: AuthDialogpros) => {
+	const [isLoading, startTransition] = useTransition()
+
+	const callbackURL = new URL(
+		resolveReturnTo(returnTo, '/'),
+		env.VITE_APP_URL
+	).toString()
+
+	const signIn = () => {
+		startTransition(async () => {
+			await authClient.signIn.social({
+				provider: 'github',
+				callbackURL,
+				fetchOptions: {
+					onSuccess: () => onOpenChange(false),
+					onError: (ctx) => {
+						onOpenChange(false)
+						log.error({ error: ctx.error })
+					},
 				},
-			},
+			})
 		})
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,9 +67,14 @@ export const AuthDialog = ({ open, onOpenChange }: AuthDialogpros) => {
 				</DialogHeader>
 
 				<div className="flex items-center justify-center">
-					<Button variant="outline" className="w-full" onClick={signIn}>
+					<Button
+						variant="outline"
+						className="w-full"
+						onClick={signIn}
+						disabled={isLoading}
+					>
 						<span>Continue with Github</span>
-						<IconBrandGithub />
+						{isLoading ? <Spinner /> : <IconBrandGithub />}
 					</Button>
 				</div>
 			</DialogContent>
