@@ -16,6 +16,7 @@ import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { LogProvider } from '#/components/log-provider'
 import { getAuthFn } from '#/functions/get-auth-fn'
+import { useAuthIdentity } from '#/hooks/use-auth-identity.tsx'
 import appCss from '#/styles.css?url'
 import type { orpc } from '#/utils/orpc'
 
@@ -59,6 +60,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	useAuthIdentity()
+
 	return (
 		<html
 			lang="en"
