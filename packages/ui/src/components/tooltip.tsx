@@ -1,7 +1,8 @@
-import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
-import * as React from 'react'
+'use client'
 
-import { cn } from '@altstack/ui/lib/utils'
+import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
+import { cn } from 'cn'
+import React from 'react'
 
 function TooltipProvider({
 	delay = 0,

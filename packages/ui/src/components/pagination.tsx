@@ -4,10 +4,10 @@ import {
 	IconChevronRight,
 	IconDots,
 } from '@tabler/icons-react'
-import * as React from 'react'
+import { cn } from 'cn'
+import React from 'react'
 
 import { Button } from '@altstack/ui/components/button'
-import { cn } from '@altstack/ui/lib/utils'
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
 	return (

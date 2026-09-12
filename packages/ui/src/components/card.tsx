@@ -1,6 +1,5 @@
-import * as React from 'react'
-
-import { cn } from '@altstack/ui/lib/utils'
+import { cn } from 'cn'
+import React from 'react'
 
 function Card({
 	className,

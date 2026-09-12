@@ -7,6 +7,7 @@ import {
 } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { cn } from 'cn'
 import { formatDate } from 'date-fns'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -41,7 +42,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
-import { cn } from '@altstack/ui/lib/utils'
 
 import { orpc } from '#/utils/orpc'
 
