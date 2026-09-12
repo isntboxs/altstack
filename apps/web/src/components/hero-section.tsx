@@ -1,3 +1,5 @@
+import { cn } from 'cn'
+
 import { env } from '@altstack/env/web'
 
 import { Badge } from '@altstack/ui/components/badge'
@@ -6,7 +8,6 @@ import {
 	DotPattern,
 	GridPattern,
 } from '@altstack/ui/components/customs/grid-dot-pattern'
-import { cn } from '@altstack/ui/lib/utils'
 
 export const HeroSection = () => (
 	<section className="relative mx-auto w-full overflow-hidden border-b border-border">

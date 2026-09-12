@@ -1,12 +1,14 @@
 // oxlint-disable jsx-a11y/prefer-tag-over-role jsx-a11y/no-noninteractive-element-interactions jsx-a11y/click-events-have-key-events
+'use client'
+
 import { cva } from 'class-variance-authority'
 import type { VariantProps } from 'class-variance-authority'
-import * as React from 'react'
+import { cn } from 'cn'
+import React from 'react'
 
 import { Button } from '@altstack/ui/components/button'
 import { Input } from '@altstack/ui/components/input'
 import { Textarea } from '@altstack/ui/components/textarea'
-import { cn } from '@altstack/ui/lib/utils'
 
 function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
@@ -58,9 +60,7 @@ function InputGroupAddon({
 				if ((e.target as HTMLElement).closest('button')) {
 					return
 				}
-				e.currentTarget.parentElement
-					?.querySelector<HTMLElement>('[data-slot="input-group-control"]')
-					?.focus()
+				e.currentTarget.parentElement?.querySelector('input')?.focus()
 			}}
 			{...props}
 		/>
