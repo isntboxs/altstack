@@ -7,7 +7,7 @@ import { resolveReturnTo } from '#/utils/return-to'
 const searchSchema = z.object({
 	returnTo: z
 		.string()
-		.refine((v) => resolveReturnTo(v, '/'))
+		.transform((v) => resolveReturnTo(v, '/'))
 		.optional()
 		.catch(undefined),
 })
