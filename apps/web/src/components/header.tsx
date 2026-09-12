@@ -92,9 +92,10 @@ export const Header = ({
 						<ThemeSwitcher />
 
 						{!auth ? (
-							<Button variant="outline" size="sm" onClick={handleAuthDialog}>
-								<span className="text-muted-foreground">Sign in</span>
-							</Button>
+							<SignInButton
+								pathname={pathname}
+								onClickButton={handleAuthDialog}
+							/>
 						) : (
 							<UserButton user={auth.user} />
 						)}
@@ -158,5 +159,34 @@ const UserButton = ({
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
+	)
+}
+
+const SignInButton = ({
+	pathname,
+	onClickButton,
+}: {
+	pathname: string
+	onClickButton: () => void
+}) => {
+	if (pathname.startsWith('/auth/')) {
+		return (
+			<Button
+				variant="outline"
+				size="sm"
+				nativeButton={false}
+				render={
+					<Link to="/auth/sign-in">
+						<span className="text-muted-foreground">Sign in</span>
+					</Link>
+				}
+			/>
+		)
+	}
+
+	return (
+		<Button variant="outline" size="sm" onClick={onClickButton}>
+			<span className="text-muted-foreground">Sign in</span>
+		</Button>
 	)
 }
