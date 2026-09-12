@@ -1,5 +1,5 @@
 import { IconLayoutDashboard, IconMenu2 } from '@tabler/icons-react'
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link, useLocation, useRouter } from '@tanstack/react-router'
 import { log } from 'evlog/client'
 import { useState } from 'react'
 import { Layers2, Layers, Bookmark2, Logout4 } from 'reicon-react'
@@ -35,13 +35,19 @@ export const Header = ({
 }) => {
 	const [openAuthDialog, setOpenAuthDialog] = useState(false)
 
+	const pathname = useLocation({ select: (location) => location.pathname })
+
 	const handleAuthDialog = () => {
 		setOpenAuthDialog((prev) => !prev)
 	}
 
 	return (
 		<>
-			<AuthDialog open={openAuthDialog} onOpenChange={setOpenAuthDialog} />
+			<AuthDialog
+				open={openAuthDialog}
+				onOpenChange={setOpenAuthDialog}
+				returnTo={pathname}
+			/>
 
 			<header className="fixed top-0 z-50 h-12 w-full bg-background">
 				<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-4 lg:px-16">
@@ -86,9 +92,10 @@ export const Header = ({
 						<ThemeSwitcher />
 
 						{!auth ? (
-							<Button variant="outline" size="sm" onClick={handleAuthDialog}>
-								<span className="text-muted-foreground">Sign in</span>
-							</Button>
+							<SignInButton
+								pathname={pathname}
+								onClickButton={handleAuthDialog}
+							/>
 						) : (
 							<UserButton user={auth.user} />
 						)}
@@ -152,5 +159,34 @@ const UserButton = ({
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
+	)
+}
+
+const SignInButton = ({
+	pathname,
+	onClickButton,
+}: {
+	pathname: string
+	onClickButton: () => void
+}) => {
+	if (pathname.startsWith('/auth/')) {
+		return (
+			<Button
+				variant="outline"
+				size="sm"
+				nativeButton={false}
+				render={
+					<Link to="/auth/sign-in">
+						<span className="text-muted-foreground">Sign in</span>
+					</Link>
+				}
+			/>
+		)
+	}
+
+	return (
+		<Button variant="outline" size="sm" onClick={onClickButton}>
+			<span className="text-muted-foreground">Sign in</span>
+		</Button>
 	)
 }
