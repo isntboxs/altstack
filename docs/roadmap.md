@@ -147,18 +147,18 @@ Tags/topics, maintainer/company search, Meilisearch, submit, and GitHub refresh.
 
 ### Work
 
-- [ ] Verify Better Auth GitHub OAuth configuration in development and production-like environments.
-- [ ] Add a sign-in affordance and session-aware header state.
-- [ ] Add an authenticated layout or per-route `beforeLoad` guard for future private pages, with a sanitized local return URL.
-- [ ] Keep server/API permission checks independent from route guards.
-- [ ] Add a protected “my submissions” shell route with an empty state; no ownership claim yet.
-- [ ] Test successful login, logout, expired session, direct protected API request, and open-redirect rejection.
+- [x] Verify Better Auth GitHub OAuth configuration in development and production-like environments.
+- [x] Add a sign-in affordance and session-aware header state.
+- [x] Add an authenticated layout or per-route `beforeLoad` guard for future private pages, with a sanitized local return URL.
+- [x] Keep server/API permission checks independent from route guards.
+- [x] Add a protected “my submissions” shell route with an empty state; no ownership claim yet.
+- [x] Test successful login, logout, expired session, direct protected API request, and open-redirect rejection.
 
 ### Done when
 
-- [ ] Sign in, refresh, and logout reliably change the visible session state.
-- [ ] Unauthenticated access to the private page redirects without revealing private loader data.
-- [ ] The matching private API procedure returns `401` even if someone bypasses the route UI.
+- [x] Sign in, refresh, and logout reliably change the visible session state.
+- [x] Unauthenticated access to the private page redirects without revealing private loader data.
+- [x] The matching private API procedure returns `401` even if someone bypasses the route UI.
 
 ### Explicitly not in R3
 
