@@ -6,6 +6,19 @@ import {
 	canonicalizeGithubUrl,
 } from '@altstack/shared/lib/github'
 
+const submissionFields = {
+	id: z.uuid(),
+	name: z.string(),
+	repositoryUrl: z.url(),
+	websiteUrl: z.url().nullable(),
+	status: z.enum(['pending', 'approved', 'rejected']),
+	submittedAt: z.coerce.date(),
+	moderatedAt: z.coerce.date().nullable(),
+	moderatedBy: z.uuid().nullable(),
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date(),
+}
+
 const repositoryUrlSchema = z
 	.string()
 	.trim()
@@ -31,3 +44,12 @@ export const createSubmissionInputSchema = z.object({
 	repositoryUrl: repositoryUrlSchema,
 	websiteUrl: z.url({ protocol: /^https$/, error: 'Invalid URL' }).optional(),
 })
+
+export const createSubmissionOutputSchema = z.object(submissionFields).omit({
+	moderatedAt: true,
+	moderatedBy: true,
+	createdAt: true,
+	updatedAt: true,
+})
+
+export const listSubmissionsOutputSchema = z.object(submissionFields).array()
