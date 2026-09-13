@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
-import { authRelations, relations } from '@altstack/db/relations'
+import { relations } from '@altstack/db/relations'
 
 import { env } from '@altstack/env/server'
 
@@ -10,10 +10,7 @@ export function createDb() {
 		connectionString: env.DATABASE_URL,
 	})
 
-	return drizzle({
-		client: pool,
-		relations: { ...relations, ...authRelations },
-	})
+	return drizzle({ client: pool, relations })
 }
 
 export const db = createDb()
