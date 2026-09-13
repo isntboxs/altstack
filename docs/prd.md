@@ -59,16 +59,16 @@ Claiming ownership, editing, featured projects, and curated feed sections are va
 
 Each release is independently deployable. Target size is one focused vertical slice (normally 1–3 solo development days), not a sprint-sized bucket.
 
-| Release             | User outcome                                                  | Depends on |
-| ------------------- | ------------------------------------------------------------- | ---------- |
-| R0 — Catalogue data | A reliable set of seed projects exists                        | —          |
-| R1 — Browse         | Anyone can list and open published projects                   | R0         |
-| R2 — Find           | Anyone can search, filter, sort, and share results            | R1         |
-| R3 — Sign in        | A GitHub identity is available where needed                   | R1         |
-| R4 — Submit         | Signed-in users can submit a repository as `draft`            | R2, R3     |
-| R5 — Moderate       | An admin can publish or reject drafts                         | R4         |
-| R6 — Own & edit     | Verified maintainers can claim and update a listing           | R5         |
-| R7 — Curate         | Admins can feature projects; public sees simple curated lists | R5         |
+| Release                | User outcome                                                                               | Depends on |
+| ---------------------- | ------------------------------------------------------------------------------------------ | ---------- |
+| R0 — Catalogue data    | A reliable set of seed projects exists                                                     | —          |
+| R1 — Browse            | Anyone can list and open published projects                                                | R0         |
+| R2 — Find              | Anyone can search, filter, sort, and share results                                         | R1         |
+| R3 — Sign in           | A GitHub identity is available where needed                                                | R1         |
+| R4 — Submit intake     | Signed-in users can suggest a repository with name + URL (+ optional website) as `pending` | R2, R3     |
+| R5 — Moderate + enrich | An admin enriches and publishes pending submissions                                        | R4         |
+| R6 — Own & edit        | Verified maintainers can claim and update a listing                                        | R5         |
+| R7 — Curate            | Admins can feature projects; public sees simple curated lists                              | R5         |
 
 R0–R5 is the launch scope. R6–R7 should be scheduled only after launch feedback.
 
@@ -102,22 +102,23 @@ R0–R5 is the launch scope. R6–R7 should be scheduled only after launch feedb
 - A protected page uses a route guard for UX and a protected server/API procedure for data access. The API is the security boundary.
 - Sign-in return URLs must be validated as local relative paths to prevent open redirects.
 
-### R4 — Submit
+### R4 — Submit intake (minimal)
 
 - Only a signed-in GitHub user can submit during launch. This avoids anonymous spam, IP storage, and rate-limit infrastructure before there is evidence it is needed.
-- Required input: repository URL, tagline, short description, logo URL, and 1–3 existing categories. Website and Markdown content are optional.
-- Canonical GitHub repository URL is unique. A duplicate returns `409 CONFLICT`.
-- The service looks up the repository once and stores owner, repository, stars, and forks. If GitHub is temporarily unavailable, the submission fails with a retryable message; do not publish incomplete metadata.
-- A submission is created in `draft`, linked to its submitter, and is not public.
-- No README import, license, topics, screenshots, videos, or cron refresh in this release.
+- Required input: project name, repository URL. Website URL is optional. Tagline, short description, logo URL, Markdown content, and categories are **not** collected here — they are completed by the admin during R5 enrich.
+- Canonical GitHub repository URL is unique across both submissions and projects. A duplicate returns `409 CONFLICT`.
+- The service looks up the repository once to validate existence and snapshot owner/repository/stars/forks. If GitHub is temporarily unavailable, the submission fails with a retryable message; do not create a half-complete record.
+- A submission is created as `pending` in `project_submission`, linked to its submitter, and creates no public listing.
+- No README import, license, topics, screenshots, videos, slug editing, or cron refresh in this release.
 
-### R5 — Moderate
+### R5 — Moderate + enrich
 
-- An admin can list drafts, approve, or reject with a required reason.
+- An admin can list pending submissions, enrich + approve, or reject with a required reason.
+- Approve requires the admin to complete the listing: tagline, short description, logo URL, 1–3 existing categories, slug (prefilled, editable), plus optional website override and Markdown content. Fresh GitHub metadata is refetched at approval time.
 - Moderation may start with a protected internal page or a minimal dashboard route. A full dashboard, category CRUD, and analytics are not requirements.
-- Every moderation mutation writes a minimal audit event: actor, project, action, optional rejection reason, and timestamp.
-- A newly approved project appears in public browse and search immediately.
-- The original submitter can correct a rejected submission through the submission form. That action atomically returns it to `draft`; this is not the general owner-editing feature in R6.
+- Every moderation mutation writes a minimal audit event: actor, submission/project, action, optional rejection reason, and timestamp.
+- A newly approved submission creates a `published` project that appears in public browse and search immediately.
+- The original submitter can correct a rejected submission by editing only name/repository/website. That action atomically returns it to `pending`; this is not the general owner-editing feature in R6.
 
 ### R6 — Own & edit (MVP+)
 
@@ -132,27 +133,27 @@ R0–R5 is the launch scope. R6–R7 should be scheduled only after launch feedb
 - Public homepage may show **Most Starred**, **Recently Added**, and **Editor’s Picks**.
 - Do not call any static or one-time-fetched ranking “Trending” or “Recently Updated”. Those require history or a refresh job.
 
-## Project lifecycle
+## Project lifecycle (R4 intake + R5 enrich)
 
-| State       | Public? | Who can act           | Valid next states                              |
-| ----------- | ------- | --------------------- | ---------------------------------------------- |
-| `draft`     | No      | Admin                 | `published`, `rejected`                        |
-| `published` | Yes     | Admin                 | `removed`                                      |
-| `rejected`  | No      | Submitter, then admin | submitter edits → `draft`; admin may `removed` |
-| `removed`   | No      | Admin                 | none in launch scope                           |
+| State                   | Public? | Who can act           | Valid next states                                    |
+| ----------------------- | ------- | --------------------- | ---------------------------------------------------- |
+| `pending` (submission)  | No      | Admin                 | `approved` → creates `published` project, `rejected` |
+| `published` (project)   | Yes     | Admin                 | `removed`                                            |
+| `rejected` (submission) | No      | Submitter, then admin | submitter edits name/repo/website → `pending`        |
+| `removed` (project)     | No      | Admin                 | none in launch scope                                 |
 
-The transition from `rejected` to `draft` happens atomically when the submitter makes a valid re-submission. Rejected records retain the prior reason for the submitter until that transition; removed records are immutable to users.
+The transition from `rejected` to `pending` happens atomically when the submitter makes a valid re-submission. Rejected records retain the prior reason for the submitter until that transition; removed records are immutable to users. `project.status = draft` is unused for user submissions in R4/R5.
 
 ## Roles and access
 
-| Action                           | Visitor | User               | Admin   |
-| -------------------------------- | ------- | ------------------ | ------- |
-| Browse/search published projects | Yes     | Yes                | Yes     |
-| Submit a project                 | No      | Yes, GitHub linked | Yes     |
-| View own draft/rejected project  | No      | Yes                | Yes     |
-| Approve/reject/remove            | No      | No                 | Yes     |
-| Claim/edit listing               | No      | R6 only            | Yes     |
-| Feature a project                | No      | No                 | R7 only |
+| Action                               | Visitor | User               | Admin   |
+| ------------------------------------ | ------- | ------------------ | ------- |
+| Browse/search published projects     | Yes     | Yes                | Yes     |
+| Submit a project (minimal intake)    | No      | Yes, GitHub linked | Yes     |
+| View own pending/rejected submission | No      | Yes                | Yes     |
+| Approve/reject/remove                | No      | No                 | Yes     |
+| Claim/edit listing                   | No      | R6 only            | Yes     |
+| Feature a project                    | No      | No                 | R7 only |
 
 `Maintainer` describes a claimed owner, not a separate database role. `Moderator` is not needed while `admin` handles moderation.
 
@@ -160,12 +161,13 @@ The transition from `rejected` to `draft` happens atomically when the submitter 
 
 Keep domain tables small and additive:
 
-- `project`: public copy, canonical repository URL, status, submitter, optional owner, moderation fields, timestamps.
+- `project`: public copy, canonical repository URL, status, optional owner, moderation fields for direct admin ops, timestamps. No `submitterId` needed for launch — submitter lives on `project_submission`.
+- `project_submission`: minimal intake — submitter, project name, canonical repository URL (unique), optional website URL, `pending`/`approved`/`rejected` status, moderation fields, timestamps.
 - `github_repository`: one repository per project; owner, repository name, stars, forks, and fetch timestamps.
 - `category` and `project_category`: reusable category taxonomy and many-to-many membership.
 - `audit_log`: moderation events only in R5.
 
-Add a unique database constraint for canonical repository URL and `github_repository.project_id`. Add a unique `(owner, repo)` constraint for the repository identity. Do not introduce a generic tag table, score table, image table, or background-job table before their releases demand them.
+Add a unique database constraint for canonical repository URL on both `project` and `project_submission`, plus `github_repository.project_id`. Add a unique `(owner, repo)` constraint for the repository identity. Enforce cross-table duplicate (submission vs project) in the handler and return `409`. Do not introduce a generic tag table, score table, image table, or background-job table before their releases demand them.
 
 ## Technology choices
 

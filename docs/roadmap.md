@@ -17,8 +17,8 @@ R0 catalogue data
   └─ R1 browse
        ├─ R2 find
        └─ R3 sign in
-            └─ R4 submit draft
-                 └─ R5 moderate ───► LAUNCH
+            └─ R4 submit intake (minimal)
+                 └─ R5 moderate + enrich ───► LAUNCH
                       ├─ R6 own & edit
                       └─ R7 curate
                            └─ later: automation and expansion
@@ -53,15 +53,17 @@ R0 catalogue data
 - Store only owner, repo, stars, forks, and `fetchedAt` through R5.
 - A service token can fetch public metadata. It cannot verify that a user has permission to claim a repository.
 
-### Lifecycle
+### Lifecycle (R4 minimal intake + R5 enrich)
 
 ```text
-draft ──approve──► published ──remove──► removed
+submission: pending ──approve (admin enrich)──► project published
   │
-  └─reject──► rejected ──valid edit/resubmit──► draft
+  └─reject──► rejected ──valid resubmit──► pending
+
+project: published ──remove──► removed (terminal)
 ```
 
-All transitions are server-side checks. `removed` is terminal for users.
+`project.status = draft/rejected` is not used for user submissions in R4/R5; new projects are inserted as `published` on approval. All transitions are server-side checks. `removed` is terminal for users.
 
 ---
 
@@ -166,53 +168,55 @@ Email/password product work, roles beyond `user`/`admin`, claiming, editing, or 
 
 ---
 
-## R4 — Submit draft
+## R4 — Submit intake (minimal)
 
-**Outcome:** a signed-in developer can add a repository for review without creating a public listing automatically.
+**Outcome:** a signed-in developer can suggest a repository for review with minimal friction, without creating a public listing automatically.
 
 ### Work
 
-- [ ] Add `submitterId`, `submittedAt`, and `status` to `project`; default new submissions to `draft`.
-- [ ] Add `category` selection to the submit form: minimum 1, maximum 3 existing slugs.
-- [ ] Add `submitProject` contract and a protected router handler.
-- [ ] Validate and canonicalise GitHub URLs, then check the unique canonical repository constraint. Return `409` for an existing submission.
-- [ ] Fetch public repository metadata once before transaction completion. On GitHub availability/rate-limit failure, return a retryable error; do not make a half-complete listing.
-- [ ] In one transaction insert the project, repository metadata, and category links.
-- [ ] Add a “submitted for review” confirmation and show the user’s own draft in My Submissions.
-- [ ] Test input validation, duplicate behaviour, GitHub not found, fetch failure, atomic insert, and private draft visibility.
+- [ ] Add `project_submission` table: id, `submitterId` (FK `user.id`), `projectName`, canonical `repositoryUrl` unique, optional `websiteUrl`, `status` (`pending`/`approved`/`rejected`), `submittedAt`, `moderatedAt`, `moderatedBy`, `rejectionReason`, timestamps. No tagline/description/logo/category columns here — enrichment is R5.
+- [ ] Add `submitSubmission` contract and a protected router handler.
+- [ ] Validate `projectName` (2–100 chars), canonicalise GitHub URLs to `https://github.com/<owner>/<repo>` (lowercased owner/repo, strip trailing slash/`.git`/extra path), and accept optional `websiteUrl` only as valid `http(s)` URL.
+- [ ] Check the canonical repository URL against **both** `project.repositoryUrl` and `project_submission.repositoryUrl`. Return `409` for an existing project or submission. Rely on the DB unique constraints for races.
+- [ ] Fetch public repository metadata once to validate existence and snapshot owner/repo/stars/forks. On not-found return a validation error; on GitHub availability/rate-limit failure return a retryable error and insert nothing. Do not hold a DB transaction open during the fetch.
+- [ ] Insert the submission row only. Do not create `project`, `github_repository`, or `project_category` rows yet. Slug, tagline, description, logo, content, and categories are deferred to admin enrich in R5.
+- [ ] Add a “submitted for review” confirmation and show the user’s own submissions with status in My Submissions (reads `project_submission`, not `project`).
+- [ ] Test input validation, canonicalisation variants, duplicate in each table, GitHub not found, fetch failure inserts nothing, and absence from public browse/search.
 
 ### Done when
 
-- [ ] A signed-in GitHub user submits a valid repository and receives a draft confirmation.
-- [ ] The draft is visible only to its submitter/admin and is absent from public browse/search.
-- [ ] A duplicate canonical repository cannot be submitted by another user.
+- [ ] A signed-in GitHub user submits name + repository URL (+ optional website) and receives a pending confirmation.
+- [ ] The submission is visible only to its submitter/admin and creates no public listing.
+- [ ] A duplicate canonical repository cannot be submitted by another user (`409`).
 
 ### Explicitly not in R4
 
-Guest submission, anonymous-IP retention/rate limiting, README import, topics, license, screenshots, or cron refresh.
+Guest submission, anonymous-IP retention/rate limiting, tagline/description/logo/category input, slug editing, README import, topics, license, screenshots, or cron refresh.
 
 ---
 
-## R5 — Moderate and launch
+## R5 — Moderate, enrich, and launch
 
-**Outcome:** one admin can safely operate the catalogue. This is the launch gate.
+**Outcome:** one admin can turn minimal submissions into complete published listings. This is the launch gate.
 
 ### Work
 
-- [ ] Add `rejectionReason`, `moderatedAt`, and `moderatedBy` to `project`.
-- [ ] Add minimal `audit_log`: actor ID, action, target project ID, optional metadata/reason, timestamp. It records moderation mutations only.
-- [ ] Add protected admin contracts: list drafts, approve, reject. Keep remove as an internal admin operation if it is needed before launch.
+- [ ] Keep moderation fields on `project_submission` (`rejectionReason`, `moderatedAt`, `moderatedBy`); do not add them to `project` for launch.
+- [ ] Add minimal `audit_log`: actor ID, action, target submission/project ID, optional metadata/reason, timestamp. It records moderation mutations only.
+- [ ] Add protected admin contracts: list pending submissions, `approveSubmission`, `rejectSubmission`. Keep remove as an internal admin operation on `project` if needed before launch.
+- [ ] `approveSubmission` input is the admin enrich step: tagline, short description, logo URL, optional website (prefilled from submission, editable), optional Markdown content, slug (prefilled from `projectName`, editable), and 1–3 existing category slugs.
+- [ ] `approveSubmission` handler re-checks canonical duplicate, refetches fresh GitHub metadata, then in one transaction inserts the `published` project + repository metadata + category links, marks the submission `approved`, and writes exactly one audit event. Slug collision resolves with a numeric suffix or `409` if unresolvable; document the choice in the issue.
 - [ ] Enforce admin authorization in each mutation. Ensure invalid state transitions return `409`.
-- [ ] Build the smallest usable admin surface: a paginated drafts list, approve, and reject dialog requiring a reason. It lives in the protected `/dashboard` route inside the `web` app.
-- [ ] Reuse the submit form for the original submitter’s rejected project. Its narrow `resubmitProject` procedure may update only submission fields, then atomically clears the rejection reason and sets status back to `draft`. General editing of published projects remains R6.
-- [ ] Add moderation and audit tests. Run the complete smoke journey: seed → browse → search → sign in → submit → approve/reject → public/private assertions.
+- [ ] Build the smallest usable admin surface: a paginated pending-submissions list, approve form (enrich fields), and reject dialog requiring a reason. It lives in the protected `/dashboard` route inside the `web` app.
+- [ ] Let the original submitter correct a rejected submission by editing only name/repository/website. Its narrow `resubmitSubmission` procedure atomically clears the rejection reason and sets status back to `pending`. General editing of published projects remains R6.
+- [ ] Add moderation and audit tests. Run the complete smoke journey: seed → browse → search → sign in → submit (3 fields) → enrich/approve/reject → public/private assertions.
 - [ ] Record deployment notes: required GitHub OAuth callback URL, admin bootstrap process, and known limitations.
 
 ### Done when
 
-- [ ] An admin approves a draft and it immediately appears in browse/search.
+- [ ] An admin enriches + approves a submission and it immediately appears in browse/search as a complete listing.
 - [ ] An admin rejects with a reason; the submitter sees it privately.
-- [ ] A valid re-submission moves `rejected` back to `draft` for another review.
+- [ ] A valid re-submission moves `rejected` back to `pending` for another review.
 - [ ] Every moderation mutation creates exactly one audit event in the same transaction.
 - [ ] `vp check`, `vp run -r test`, and `vp run -r build` pass on the release branch.
 
