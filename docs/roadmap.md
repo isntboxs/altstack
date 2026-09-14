@@ -174,20 +174,20 @@ Email/password product work, roles beyond `user`/`admin`, claiming, editing, or 
 
 ### Work
 
-- [ ] Add `project_submission` table: id, `submitterId` (FK `user.id`), `projectName`, canonical `repositoryUrl` unique, optional `websiteUrl`, `status` (`pending`/`approved`/`rejected`), `submittedAt`, `moderatedAt`, `moderatedBy`, `rejectionReason`, timestamps. No tagline/description/logo/category columns here — enrichment is R5.
-- [ ] Add `submitSubmission` contract and a protected router handler.
-- [ ] Validate `projectName` (2–100 chars), canonicalise GitHub URLs to `https://github.com/<owner>/<repo>` (lowercased owner/repo, strip trailing slash/`.git`/extra path), and accept optional `websiteUrl` only as valid `http(s)` URL.
-- [ ] Check the canonical repository URL against **both** `project.repositoryUrl` and `project_submission.repositoryUrl`. Return `409` for an existing project or submission. Rely on the DB unique constraints for races.
-- [ ] Fetch public repository metadata once to validate existence and snapshot owner/repo/stars/forks. On not-found return a validation error; on GitHub availability/rate-limit failure return a retryable error and insert nothing. Do not hold a DB transaction open during the fetch.
-- [ ] Insert the submission row only. Do not create `project`, `github_repository`, or `project_category` rows yet. Slug, tagline, description, logo, content, and categories are deferred to admin enrich in R5.
-- [ ] Add a “submitted for review” confirmation and show the user’s own submissions with status in My Submissions (reads `project_submission`, not `project`).
-- [ ] Test input validation, canonicalisation variants, duplicate in each table, GitHub not found, fetch failure inserts nothing, and absence from public browse/search.
+- [x] Add `project_submission` table: id, `submitterId` (FK `user.id`), `projectName`, canonical `repositoryUrl` unique, optional `websiteUrl`, `status` (`pending`/`approved`/`rejected`), `submittedAt`, `moderatedAt`, `moderatedBy`, `rejectionReason`, timestamps. No tagline/description/logo/category columns here — enrichment is R5.
+- [x] Add `submitSubmission` contract and a protected router handler.
+- [x] Validate `projectName` (2–100 chars), canonicalise GitHub URLs to `https://github.com/<owner>/<repo>` (lowercased owner/repo, strip trailing slash/`.git`/extra path), and accept optional `websiteUrl` only as valid `http(s)` URL.
+- [x] Check the canonical repository URL against **both** `project.repositoryUrl` and `project_submission.repositoryUrl`. Return `409` for an existing project or submission. Rely on the DB unique constraints for races.
+- [x] Fetch public repository metadata once to validate existence and snapshot owner/repo/stars/forks. On not-found return a validation error; on GitHub availability/rate-limit failure return a retryable error and insert nothing. Do not hold a DB transaction open during the fetch.
+- [x] Insert the submission row only. Do not create `project`, `github_repository`, or `project_category` rows yet. Slug, tagline, description, logo, content, and categories are deferred to admin enrich in R5.
+- [x] Add a “submitted for review” confirmation and show the user’s own submissions with status in My Submissions (reads `project_submission`, not `project`).
+- [x] Test input validation, canonicalisation variants, duplicate in each table, GitHub not found, fetch failure inserts nothing, and absence from public browse/search.
 
 ### Done when
 
-- [ ] A signed-in GitHub user submits name + repository URL (+ optional website) and receives a pending confirmation.
-- [ ] The submission is visible only to its submitter/admin and creates no public listing.
-- [ ] A duplicate canonical repository cannot be submitted by another user (`409`).
+- [x] A signed-in GitHub user submits name + repository URL (+ optional website) and receives a pending confirmation.
+- [x] The submission is visible only to its submitter/admin and creates no public listing.
+- [x] A duplicate canonical repository cannot be submitted by another user (`409`).
 
 ### Explicitly not in R4
 
