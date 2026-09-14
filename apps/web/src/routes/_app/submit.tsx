@@ -57,7 +57,10 @@ function RouteComponent() {
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink render={<Link to="/" viewTransition />}>
+						<BreadcrumbLink
+							aria-label="Home"
+							render={<Link to="/" viewTransition />}
+						>
 							<IconHome className="size-4" />
 						</BreadcrumbLink>
 					</BreadcrumbItem>
@@ -99,7 +102,10 @@ function RouteComponent() {
 const submissionFormSchema = createSubmissionInputSchema
 	.omit({ websiteUrl: true })
 	.extend({
-		websiteUrl: z.string(),
+		websiteUrl: z
+			.string()
+			.transform((value) => value.trim() || undefined)
+			.pipe(createSubmissionInputSchema.shape.websiteUrl),
 	})
 
 const SubmissionForm = () => {
@@ -116,7 +122,7 @@ const SubmissionForm = () => {
 			onSubmit: z.compile(submissionFormSchema),
 		},
 		onSubmit: async ({ formApi, value }) => {
-			await createSubmission.mutateAsync(value)
+			await createSubmission.mutateAsync(submissionFormSchema.parse(value))
 
 			formApi.reset()
 		},
