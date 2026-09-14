@@ -14,6 +14,7 @@
 		"./schemas/category": "./src/schemas/category.ts",
 		"./schemas/github": "./src/schemas/github.ts",
 		"./schemas/project": "./src/schemas/project.ts",
+		"./schemas/submission": "./src/schemas/submission.ts",
 		"./seed": "./src/seed.ts",
 		"./package.json": "./package.json"
 	},
@@ -26,6 +27,7 @@
 			"./schemas/category": "./dist/schemas/category.mjs",
 			"./schemas/github": "./dist/schemas/github.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
+			"./schemas/submission": "./dist/schemas/submission.mjs",
 			"./seed": "./dist/seed.mjs",
 			"./package.json": "./package.json"
 		}

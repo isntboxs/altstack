@@ -1,4 +1,5 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { FormDevtoolsPanel } from '@tanstack/react-form-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import {
@@ -12,6 +13,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
+import { Toaster } from '@altstack/ui/components/toast'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { LogProvider } from '#/components/log-provider'
@@ -86,6 +88,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							name: 'Tanstack Query',
 							render: <ReactQueryDevtoolsPanel />,
 						},
+						{
+							name: 'Tanstack Form',
+							render: <FormDevtoolsPanel />,
+						},
 					]}
 				/>
 				<Scripts />
@@ -106,6 +112,7 @@ function RootComponent() {
 				<TooltipProvider>
 					<Outlet />
 				</TooltipProvider>
+				<Toaster />
 			</ThemeProvider>
 		</LogProvider>
 	)

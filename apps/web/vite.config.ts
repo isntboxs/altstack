@@ -14,6 +14,9 @@ const config = defineConfig({
 	envDir: resolve(__dirname, '../..'),
 	resolve: { tsconfigPaths: true },
 	server: { port: 3010 },
+	optimizeDeps: {
+		include: ['@tanstack/react-form-start'],
+	},
 	plugins: lazyPlugins(() => [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
