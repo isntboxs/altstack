@@ -91,6 +91,15 @@ export const Header = ({
 					<div className="flex items-center gap-2">
 						<ThemeSwitcher />
 
+						<Button
+							variant="outline"
+							size="xs"
+							render={<Link to="/submit" viewTransition />}
+							nativeButton={false}
+						>
+							Submit
+						</Button>
+
 						{!auth ? (
 							<SignInButton
 								pathname={pathname}
