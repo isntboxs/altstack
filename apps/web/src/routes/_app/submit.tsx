@@ -43,6 +43,7 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
+import { Spinner } from '@altstack/ui/components/spinner'
 
 import { useCreateSubmission } from '#/features/submissions/queries'
 
@@ -229,9 +230,30 @@ const SubmissionForm = () => {
 					</div>
 
 					<Field orientation="horizontal" className="mt-auto pt-4">
-						<Button type="submit" className="h-10">
-							Submit your Project
-						</Button>
+						<form.Subscribe
+							selector={(state) => [
+								state.canSubmit,
+								state.isPristine,
+								state.isSubmitting,
+							]}
+							children={([canSubmit, isPristine, isSubmitting]) => (
+								<Button
+									type="submit"
+									form="project-submission-form"
+									disabled={!canSubmit || isPristine}
+									className="h-10"
+								>
+									{isSubmitting ? (
+										<>
+											<Spinner />
+											Submitting...
+										</>
+									) : (
+										'Submit'
+									)}
+								</Button>
+							)}
+						/>
 					</Field>
 				</FieldGroup>
 			</form>
