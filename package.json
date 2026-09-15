@@ -99,8 +99,8 @@
 		"reicon-react": "^1.1.302",
 		"tailwindcss": "^4.3.3",
 		"typescript": "^7.0.2",
-		"vite": "npm:@voidzero-dev/vite-plus-core@0.3.1",
-		"vite-plus": "0.3.1",
+		"vite": "npm:@voidzero-dev/vite-plus-core@0.3.2",
+		"vite-plus": "0.3.2",
 		"zod": "^4.6.4"
 	}
 }
