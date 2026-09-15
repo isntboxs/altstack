@@ -1,5 +1,5 @@
-import { IconDots, IconLogout2 } from '@tabler/icons-react'
-import { useRouteContext, useRouter } from '@tanstack/react-router'
+import { IconBrowserPlus, IconDots, IconLogout2 } from '@tabler/icons-react'
+import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 import type { ComponentProps, FC } from 'react'
 
 import { authClient } from '@altstack/auth/client'
@@ -44,8 +44,18 @@ export const PanelSidebarFooter: FC<PanelSidebarFooterProps> = ({
 }) => (
 	<SidebarFooter {...props}>
 		<SidebarGroup>
-			<SidebarGroupContent className="space-y-2">
-				<SidebarMenu>
+			<SidebarGroupContent>
+				<SidebarMenu className="space-y-2">
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							render={
+								<Link to="/" target="_blank">
+									<IconBrowserPlus /> Visit Site
+								</Link>
+							}
+						/>
+					</SidebarMenuItem>
+
 					<SidebarMenuItem>
 						<UserButton />
 					</SidebarMenuItem>
@@ -90,7 +100,7 @@ const UserButton = () => {
 							<UserAvatar image={auth.user.image} name={auth.user.name} />
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-semibold">{auth.user.name}</span>
-								<span className="truncate text-xs">@{auth.user.username}</span>
+								<span className="truncate text-xs">{auth.user.email}</span>
 							</div>
 							<IconDots className="ml-auto size-4" />
 						</SidebarMenuButton>
@@ -106,7 +116,7 @@ const UserButton = () => {
 									{auth.user.name}
 								</DrawerTitle>
 								<DrawerDescription className="truncate text-xs">
-									@{auth.user.username}
+									{auth.user.email}
 								</DrawerDescription>
 							</div>
 						</div>
@@ -143,7 +153,7 @@ const UserButton = () => {
 						<div className="grid flex-1 text-left text-sm leading-tight">
 							<span className="truncate font-medium">{auth.user.name}</span>
 							<span className="truncate text-xs text-muted-foreground">
-								@{auth.user.username}
+								{auth.user.email}
 							</span>
 						</div>
 						<IconDots className="ml-auto size-4" />
@@ -164,7 +174,7 @@ const UserButton = () => {
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">{auth.user.name}</span>
 								<span className="truncate text-xs text-muted-foreground">
-									@{auth.user.username}
+									{auth.user.email}
 								</span>
 							</div>
 						</div>

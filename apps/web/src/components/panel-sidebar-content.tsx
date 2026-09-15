@@ -1,9 +1,60 @@
+import { IconSend } from '@tabler/icons-react'
+import { Link, linkOptions, useMatchRoute } from '@tanstack/react-router'
 import type { ComponentProps, FC } from 'react'
 
-import { SidebarContent } from '@altstack/ui/components/sidebar'
+import {
+	SidebarContent,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+} from '@altstack/ui/components/sidebar'
 
 type PanelSidebarContentProps = ComponentProps<typeof SidebarContent>
 
+const navLinks = linkOptions([
+	{
+		to: '/my-submissions',
+		icon: IconSend,
+		label: 'My Submissions',
+	},
+])
+
 export const PanelSidebarContent: FC<PanelSidebarContentProps> = ({
 	...props
-}) => <SidebarContent {...props}></SidebarContent>
+}) => {
+	const matchRoute = useMatchRoute()
+
+	return (
+		<SidebarContent {...props}>
+			<SidebarGroup>
+				<SidebarGroupContent>
+					<SidebarMenu>
+						{navLinks.map((link) => {
+							const isActiveRoute = !!matchRoute({ to: link.to })
+
+							return (
+								<SidebarMenuItem key={link.to}>
+									<SidebarMenuButton
+										render={
+											<Link
+												{...link}
+												activeOptions={{ exact: true }}
+												viewTransition
+											>
+												<link.icon />
+												<span>{link.label}</span>
+											</Link>
+										}
+										isActive={isActiveRoute}
+									/>
+								</SidebarMenuItem>
+							)
+						})}
+					</SidebarMenu>
+				</SidebarGroupContent>
+			</SidebarGroup>
+		</SidebarContent>
+	)
+}
