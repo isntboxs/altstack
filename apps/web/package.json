@@ -33,6 +33,8 @@
 		"@tanstack/react-router-devtools": "catalog:",
 		"@tanstack/react-router-ssr-query": "catalog:",
 		"@tanstack/react-start": "catalog:",
+		"@tanstack/react-table": "^9.2.4",
+		"@tanstack/react-table-devtools": "^9.2.0",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
 		"cn": "catalog:",

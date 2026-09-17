@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 
 import { toast } from '@altstack/ui/components/toast'
 
@@ -25,6 +25,11 @@ export const submissionQueries = {
 				})
 			},
 		}),
+
+	list: () => submissionORPC.list.queryOptions(),
 }
 
 export const useCreateSubmission = () => useMutation(submissionQueries.create())
+
+export const useListSubmissions = () =>
+	useSuspenseQuery(submissionQueries.list())
