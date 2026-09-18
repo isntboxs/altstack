@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { createMiddleware } from '@tanstack/react-start'
+import { TableDevtoolsPanel } from '@tanstack/react-table-devtools'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
@@ -91,6 +92,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 						{
 							name: 'Tanstack Form',
 							render: <FormDevtoolsPanel />,
+						},
+						{
+							name: 'Tanstack Table',
+							render: <TableDevtoolsPanel />,
 						},
 					]}
 				/>

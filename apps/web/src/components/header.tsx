@@ -136,10 +136,6 @@ const UserButton = ({
 		})
 	}
 
-	const handleNavigateDashboard = () => {
-		void router.navigate({ to: '/', viewTransition: true })
-	}
-
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
@@ -150,10 +146,13 @@ const UserButton = ({
 				}
 			/>
 
-			<DropdownMenuContent align="end">
-				<DropdownMenuItem onClick={handleNavigateDashboard}>
+			<DropdownMenuContent className="w-40" align="end">
+				<DropdownMenuItem
+					render={<Link to="/my-submissions" viewTransition />}
+					nativeButton={false}
+				>
 					<IconLayoutDashboard />
-					Dashboard
+					My Submissions
 				</DropdownMenuItem>
 
 				<DropdownMenuItem>
