@@ -1,4 +1,8 @@
-import { IconArrowsUpDown, IconDots } from '@tabler/icons-react'
+import {
+	IconArrowsUpDown,
+	IconDots,
+	IconExternalLink,
+} from '@tabler/icons-react'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -60,10 +64,54 @@ export const submissionColumns = columnHelper.columns([
 
 	columnHelper.accessor('repositoryUrl', {
 		header: 'Repository',
+		cell: ({ row }) => {
+			const submission = row.original
+
+			return (
+				<Button
+					variant="link"
+					render={
+						<a
+							href={submission.repositoryUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="github link"
+						/>
+					}
+					nativeButton={false}
+					className="p-0"
+				>
+					{submission.repositoryUrl} <IconExternalLink />
+				</Button>
+			)
+		},
 	}),
 
 	columnHelper.accessor('websiteUrl', {
 		header: 'Website',
+		cell: ({ row }) => {
+			const submission = row.original
+
+			if (!submission.websiteUrl) return null
+
+			return (
+				<Button
+					variant="link"
+					render={
+						<a
+							href={submission.websiteUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="website link"
+						/>
+					}
+					nativeButton={false}
+					className="p-0"
+				>
+					{submission.websiteUrl} <IconExternalLink />
+				</Button>
+			)
+		},
 	}),
 
 	columnHelper.accessor('status', {
