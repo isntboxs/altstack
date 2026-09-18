@@ -18,7 +18,7 @@ function RouteComponent() {
 
 	return (
 		<div>
-			<div>
+			<div className="mx-auto w-full px-4">
 				<SubmissionDataTable columns={submissionColumns} data={data} />
 			</div>
 		</div>

@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Checkbox } from '@altstack/ui/components/checkbox'
 import {
@@ -66,38 +67,49 @@ export const submissionColumns = columnHelper.columns([
 	}),
 
 	columnHelper.accessor('status', {
-		header: 'Status',
-	}),
-
-	columnHelper.display({
-		id: 'actions',
-		header: 'Actions',
+		header: () => <div className="text-center">Status</div>,
 		cell: ({ row }) => {
 			const submission = row.original
 
 			return (
-				<DropdownMenu>
-					<DropdownMenuTrigger
-						render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-					>
-						<span className="sr-only">Open menu</span>
-						<IconDots className="h-4 w-4" />
-					</DropdownMenuTrigger>
+				<div className="flex justify-center">
+					<Badge variant="default">{submission.status}</Badge>
+				</div>
+			)
+		},
+	}),
 
-					<DropdownMenuContent align="end">
-						<DropdownMenuGroup>
-							<DropdownMenuLabel>Actions</DropdownMenuLabel>
-						</DropdownMenuGroup>
+	columnHelper.display({
+		id: 'actions',
+		header: () => <div className="text-center">Actions</div>,
+		cell: ({ row }) => {
+			const submission = row.original
 
-						<DropdownMenuGroup>
-							<DropdownMenuItem
-								onClick={() => navigator.clipboard.writeText(submission.id)}
-							>
-								Copy ID
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-					</DropdownMenuContent>
-				</DropdownMenu>
+			return (
+				<div className="flex justify-center">
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							render={<Button variant="ghost" className="h-8 w-8 p-0" />}
+						>
+							<span className="sr-only">Open menu</span>
+							<IconDots className="h-4 w-4" />
+						</DropdownMenuTrigger>
+
+						<DropdownMenuContent align="end">
+							<DropdownMenuGroup>
+								<DropdownMenuLabel>Actions</DropdownMenuLabel>
+							</DropdownMenuGroup>
+
+							<DropdownMenuGroup>
+								<DropdownMenuItem
+									onClick={() => navigator.clipboard.writeText(submission.id)}
+								>
+									Copy ID
+								</DropdownMenuItem>
+							</DropdownMenuGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			)
 		},
 	}),

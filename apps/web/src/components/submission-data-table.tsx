@@ -37,7 +37,9 @@ export const SubmissionDataTable = <TData extends RowData>({
 	columns,
 	data,
 }: DataTableProps<TData>) => {
-	const [sorting, setSorting] = useState<SortingState>([])
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: 'name', desc: false },
+	])
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [columnVisibility, setColumnVisibility] =
 		useState<ColumnVisibilityState>({})
@@ -54,15 +56,16 @@ export const SubmissionDataTable = <TData extends RowData>({
 		state: { sorting, columnFilters, columnVisibility, rowSelection },
 	})
 
+	const nameColumn = table.getColumn('name')
+	const nameFilter = nameColumn?.getFilterValue()
+
 	return (
 		<>
 			<div className="flex items-center py-4">
 				<Input
 					placeholder="Filter names..."
-					value={table.getColumn('name')?.getFilterValue() as string}
-					onChange={(event) =>
-						table.getColumn('name')?.setFilterValue(event.target.value)
-					}
+					value={typeof nameFilter === 'string' ? nameFilter : ''}
+					onChange={(event) => nameColumn?.setFilterValue(event.target.value)}
 					className="max-w-sm"
 				/>
 
