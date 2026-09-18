@@ -6,6 +6,7 @@ import type {
 	ColumnFiltersState,
 	ColumnVisibilityState,
 } from '@tanstack/react-table'
+import { useTanStackTableDevtools } from '@tanstack/react-table-devtools'
 import { useState } from 'react'
 
 import { Button } from '@altstack/ui/components/button'
@@ -54,7 +55,10 @@ export const SubmissionDataTable = <TData extends RowData>({
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
 		state: { sorting, columnFilters, columnVisibility, rowSelection },
+		key: 'submissions',
 	})
+
+	useTanStackTableDevtools(table)
 
 	const nameColumn = table.getColumn('name')
 	const nameFilter = nameColumn?.getFilterValue()

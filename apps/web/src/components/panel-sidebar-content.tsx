@@ -9,6 +9,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
 type PanelSidebarContentProps = ComponentProps<typeof SidebarContent>
@@ -25,6 +26,7 @@ export const PanelSidebarContent: FC<PanelSidebarContentProps> = ({
 	...props
 }) => {
 	const matchRoute = useMatchRoute()
+	const { isMobile, setOpenMobile } = useSidebar()
 
 	return (
 		<SidebarContent {...props}>
@@ -41,7 +43,10 @@ export const PanelSidebarContent: FC<PanelSidebarContentProps> = ({
 											<Link
 												{...link}
 												activeOptions={{ exact: true }}
-												viewTransition
+												viewTransition={true}
+												onClick={() => {
+													if (isMobile) setOpenMobile(false)
+												}}
 											>
 												<link.icon />
 												<span>{link.label}</span>

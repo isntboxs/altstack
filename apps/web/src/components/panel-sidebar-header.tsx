@@ -21,7 +21,8 @@ type PanelSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
 export const PanelSidebarHeader: FC<PanelSidebarHeaderProps> = ({
 	...props
 }) => {
-	const { isMobile, state, toggleSidebar } = useSidebar()
+	const { isMobile, openMobile, state, toggleSidebar } = useSidebar()
+	const isExpanded = isMobile ? openMobile : state === 'expanded'
 
 	return (
 		<SidebarHeader {...props}>
@@ -52,17 +53,13 @@ export const PanelSidebarHeader: FC<PanelSidebarHeaderProps> = ({
 				<SidebarMenuItem>
 					<SidebarMenuButton
 						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
-						aria-label={
-							state === 'collapsed' || isMobile
-								? 'Expand sidebar'
-								: 'Collapse sidebar'
-						}
+						aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
 						onClick={toggleSidebar}
 					>
-						{state === 'collapsed' || isMobile ? (
-							<IconLayoutSidebarRightCollapse />
-						) : (
+						{isExpanded ? (
 							<IconLayoutSidebarLeftCollapse />
+						) : (
+							<IconLayoutSidebarRightCollapse />
 						)}
 					</SidebarMenuButton>
 				</SidebarMenuItem>
