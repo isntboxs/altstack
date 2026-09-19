@@ -77,5 +77,20 @@ export const relations = defineRelations(schemas, (r) => {
 				to: r.user.id,
 			}),
 		},
+
+		auditLog: {
+			actor: r.one.user({
+				from: r.auditLog.actorId,
+				to: r.user.id,
+			}),
+			submission: r.one.submission({
+				from: r.auditLog.submissionId,
+				to: r.submission.id,
+			}),
+			project: r.one.project({
+				from: r.auditLog.projectId,
+				to: r.project.id,
+			}),
+		},
 	}
 })
