@@ -11,14 +11,8 @@ import {
 
 import { user } from '@altstack/db/schemas/auth'
 import { project } from '@altstack/db/schemas/project'
-import { submission } from '@altstack/db/schemas/submission'
 
-const AUDIT_STATUS = [
-	'submission_approved',
-	'submission_rejected',
-	'submission_resubmitted',
-	'project_removed',
-] as const
+const AUDIT_STATUS = ['project_removed'] as const
 
 export const auditStatusEnum = pgEnum('audit_status', AUDIT_STATUS)
 
@@ -32,9 +26,6 @@ export const auditLog = pgTable(
 			onDelete: 'set null',
 		}),
 		action: auditStatusEnum('action').notNull(),
-		submissionId: uuid('submission_id').references(() => submission.id, {
-			onDelete: 'set null',
-		}),
 		projectId: uuid('project_id').references(() => project.id, {
 			onDelete: 'set null',
 		}),
@@ -44,7 +35,6 @@ export const auditLog = pgTable(
 	},
 	(table) => [
 		index('audit_log_actorId_idx').on(table.actorId),
-		index('audit_log_submissionId_idx').on(table.submissionId),
 		index('audit_log_projectId_idx').on(table.projectId),
 		index('audit_log_createdAt_idx').on(table.createdAt),
 	]

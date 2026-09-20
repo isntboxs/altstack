@@ -10,21 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
-import { Route as PanelRouteRouteImport } from './routes/_panel/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
-import { Route as AppSubmitRouteImport } from './routes/_app/submit'
-import { Route as PanelMySubmissionsRouteImport } from './routes/_panel/my-submissions'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PanelRouteRoute = PanelRouteRouteImport.update({
-  id: '/_panel',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -47,16 +40,6 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppSubmitRoute = AppSubmitRouteImport.update({
-  id: '/submit',
-  path: '/submit',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const PanelMySubmissionsRoute = PanelMySubmissionsRouteImport.update({
-  id: '/my-submissions',
-  path: '/my-submissions',
-  getParentRoute: () => PanelRouteRoute,
-} as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -68,66 +51,41 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
-  '/submit': typeof AppSubmitRoute
-  '/my-submissions': typeof PanelMySubmissionsRoute
   '/auth/sign-in': typeof AuthSignInRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AppIndexRoute
   '/auth': typeof AuthRouteRouteWithChildren
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
-  '/submit': typeof AppSubmitRoute
-  '/my-submissions': typeof PanelMySubmissionsRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
-  '/_panel': typeof PanelRouteRouteWithChildren
   '/auth': typeof AuthRouteRouteWithChildren
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
-  '/_app/submit': typeof AppSubmitRoute
-  '/_panel/my-submissions': typeof PanelMySubmissionsRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/$slug'
-    | '/activity'
-    | '/submit'
-    | '/my-submissions'
-    | '/auth/sign-in'
+  fullPaths: '/' | '/auth' | '/$slug' | '/activity' | '/auth/sign-in'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/$slug'
-    | '/activity'
-    | '/submit'
-    | '/my-submissions'
-    | '/auth/sign-in'
+  to: '/auth' | '/$slug' | '/activity' | '/auth/sign-in' | '/'
   id:
     | '__root__'
     | '/_app'
-    | '/_panel'
     | '/auth'
     | '/_app/$slug'
     | '/_app/activity'
-    | '/_app/submit'
-    | '/_panel/my-submissions'
     | '/auth/sign-in'
     | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
-  PanelRouteRoute: typeof PanelRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
 }
 
@@ -138,13 +96,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_panel': {
-      id: '/_panel'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof PanelRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -175,20 +126,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_app/submit': {
-      id: '/_app/submit'
-      path: '/submit'
-      fullPath: '/submit'
-      preLoaderRoute: typeof AppSubmitRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_panel/my-submissions': {
-      id: '/_panel/my-submissions'
-      path: '/my-submissions'
-      fullPath: '/my-submissions'
-      preLoaderRoute: typeof PanelMySubmissionsRouteImport
-      parentRoute: typeof PanelRouteRoute
-    }
     '/auth/sign-in': {
       id: '/auth/sign-in'
       path: '/sign-in'
@@ -202,31 +139,17 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppSlugRoute: typeof AppSlugRoute
   AppActivityRoute: typeof AppActivityRoute
-  AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSlugRoute: AppSlugRoute,
   AppActivityRoute: AppActivityRoute,
-  AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
-)
-
-interface PanelRouteRouteChildren {
-  PanelMySubmissionsRoute: typeof PanelMySubmissionsRoute
-}
-
-const PanelRouteRouteChildren: PanelRouteRouteChildren = {
-  PanelMySubmissionsRoute: PanelMySubmissionsRoute,
-}
-
-const PanelRouteRouteWithChildren = PanelRouteRoute._addFileChildren(
-  PanelRouteRouteChildren,
 )
 
 interface AuthRouteRouteChildren {
@@ -243,7 +166,6 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
-  PanelRouteRoute: PanelRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport

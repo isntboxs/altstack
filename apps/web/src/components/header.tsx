@@ -1,4 +1,4 @@
-import { IconLayoutDashboard, IconMenu2 } from '@tabler/icons-react'
+import { IconMenu2 } from '@tabler/icons-react'
 import { Link, useLocation, useRouter } from '@tanstack/react-router'
 import { log } from 'evlog/client'
 import { useState } from 'react'
@@ -91,15 +91,6 @@ export const Header = ({
 					<div className="flex items-center gap-2">
 						<ThemeSwitcher />
 
-						<Button
-							variant="outline"
-							size="xs"
-							render={<Link to="/submit" viewTransition />}
-							nativeButton={false}
-						>
-							Submit
-						</Button>
-
 						{!auth ? (
 							<SignInButton
 								pathname={pathname}
@@ -147,14 +138,6 @@ const UserButton = ({
 			/>
 
 			<DropdownMenuContent className="w-40" align="end">
-				<DropdownMenuItem
-					render={<Link to="/my-submissions" viewTransition />}
-					nativeButton={false}
-				>
-					<IconLayoutDashboard />
-					My Submissions
-				</DropdownMenuItem>
-
 				<DropdownMenuItem>
 					<Bookmark2 />
 					Bookmarks

@@ -5,7 +5,6 @@ import {
 	UNSUPPORTED_GITHUB_HOST_MESSAGE,
 	canonicalizeGithubUrl,
 } from '@altstack/shared/lib/github'
-import { createSubmissionInputSchema } from '@altstack/shared/schemas/submission'
 
 interface ValidCase {
 	name: string
@@ -416,57 +415,5 @@ describe('canonicalizeGithubUrl', () => {
 		expect(() => canonicalizeGithubUrl(input as unknown as string)).toThrow(
 			INVALID_REPOSITORY_URL_MESSAGE
 		)
-	})
-})
-
-describe('createSubmissionInputSchema', () => {
-	it('canonicalizes shorthand repository url', () => {
-		expect(
-			createSubmissionInputSchema.parse({
-				name: 'Router',
-				repositoryUrl: 'TanStack/Router',
-			})
-		).toEqual({
-			name: 'Router',
-			repositoryUrl: 'https://github.com/tanstack/router',
-		})
-	})
-
-	it('canonicalizes full url with subpath and keeps website', () => {
-		expect(
-			createSubmissionInputSchema.parse({
-				name: 'React',
-				repositoryUrl: 'https://github.com/facebook/react/tree/main',
-				websiteUrl: 'https://react.dev',
-			})
-		).toEqual({
-			name: 'React',
-			repositoryUrl: 'https://github.com/facebook/react',
-			websiteUrl: 'https://react.dev',
-		})
-	})
-
-	it('surfaces unsupported host message', () => {
-		const result = createSubmissionInputSchema.safeParse({
-			name: 'React',
-			repositoryUrl: 'https://gitlab.com/facebook/react',
-		})
-		expect(result.success).toBe(false)
-		const messages = !result.success
-			? result.error.issues.map((issue) => issue.message)
-			: []
-		expect(messages).toContain(UNSUPPORTED_GITHUB_HOST_MESSAGE)
-	})
-
-	it('surfaces invalid url message for owner-only input', () => {
-		const result = createSubmissionInputSchema.safeParse({
-			name: 'React',
-			repositoryUrl: 'https://github.com/cuma-owner',
-		})
-		expect(result.success).toBe(false)
-		const messages = !result.success
-			? result.error.issues.map((issue) => issue.message)
-			: []
-		expect(messages).toContain(INVALID_REPOSITORY_URL_MESSAGE)
 	})
 })

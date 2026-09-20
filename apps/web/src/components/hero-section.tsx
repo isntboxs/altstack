@@ -52,10 +52,6 @@ export const HeroSection = () => (
 					<Button>
 						<span>Explore Projects</span>
 					</Button>
-
-					<Button variant="secondary">
-						<span>Submit Project</span>
-					</Button>
 				</div>
 			</div>
 		</div>
