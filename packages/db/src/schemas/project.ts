@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 import {
 	customType,
 	index,
-	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -10,9 +9,14 @@ import {
 	varchar,
 } from 'drizzle-orm/pg-core'
 
-const PROJECT_STATUS = ['draft', 'published', 'rejected', 'removed'] as const
+export const PROJECT_STATUS = [
+	'draft',
+	'published',
+	'rejected',
+	'removed',
+] as const
 
-export const projectStatusEnum = pgEnum('project_status', PROJECT_STATUS)
+export type ProjectStatus = (typeof PROJECT_STATUS)[number]
 
 export const project = pgTable(
 	'projects',
@@ -28,7 +32,7 @@ export const project = pgTable(
 		repositoryUrl: text('repository_url').notNull().unique(),
 		websiteUrl: text('website_url'),
 		content: text('content'),
-		status: projectStatusEnum('status').notNull(),
+		status: text('status').$type<ProjectStatus>().notNull(),
 		searchVector: customType<{ data: string }>({
 			dataType: () => 'tsvector',
 		})('search_vector').generatedAlwaysAs(

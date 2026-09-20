@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 import {
 	index,
 	jsonb,
-	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -12,9 +11,9 @@ import {
 import { user } from '@altstack/db/schemas/auth'
 import { project } from '@altstack/db/schemas/project'
 
-const AUDIT_STATUS = ['project_removed'] as const
+export const AUDIT_STATUS = ['project_removed'] as const
 
-export const auditStatusEnum = pgEnum('audit_status', AUDIT_STATUS)
+export type AuditAction = (typeof AUDIT_STATUS)[number]
 
 export const auditLog = pgTable(
 	'audit_log',
@@ -25,7 +24,7 @@ export const auditLog = pgTable(
 		actorId: uuid('actor_id').references(() => user.id, {
 			onDelete: 'set null',
 		}),
-		action: auditStatusEnum('action').notNull(),
+		action: text('action').$type<AuditAction>().notNull(),
 		projectId: uuid('project_id').references(() => project.id, {
 			onDelete: 'set null',
 		}),

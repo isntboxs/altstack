@@ -11,6 +11,7 @@
 		"./lib": "./src/lib/index.ts",
 		"./lib/github": "./src/lib/github.ts",
 		"./schemas": "./src/schemas/index.ts",
+		"./schemas/audit": "./src/schemas/audit.ts",
 		"./schemas/project": "./src/schemas/project.ts",
 		"./schemas/role": "./src/schemas/role.ts",
 		"./package.json": "./package.json"
@@ -21,6 +22,7 @@
 			"./lib": "./dist/lib/index.mjs",
 			"./lib/github": "./dist/lib/github.mjs",
 			"./schemas": "./dist/schemas/index.mjs",
+			"./schemas/audit": "./dist/schemas/audit.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
 			"./schemas/role": "./dist/schemas/role.mjs",
 			"./package.json": "./package.json"
