@@ -14,7 +14,6 @@
 		"./contracts/base": "./src/contracts/base.ts",
 		"./contracts/health": "./src/contracts/health.ts",
 		"./contracts/project": "./src/contracts/project.ts",
-		"./contracts/submission": "./src/contracts/submission.ts",
 		"./github": "./src/github.ts",
 		"./handler": "./src/handler.ts",
 		"./procedures": "./src/procedures.ts",
@@ -22,7 +21,6 @@
 		"./routers/altstack": "./src/routers/altstack.ts",
 		"./routers/health": "./src/routers/health.ts",
 		"./routers/project": "./src/routers/project.ts",
-		"./routers/submission": "./src/routers/submission.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -34,7 +32,6 @@
 			"./contracts/base": "./dist/contracts/base.mjs",
 			"./contracts/health": "./dist/contracts/health.mjs",
 			"./contracts/project": "./dist/contracts/project.mjs",
-			"./contracts/submission": "./dist/contracts/submission.mjs",
 			"./github": "./dist/github.mjs",
 			"./handler": "./dist/handler.mjs",
 			"./procedures": "./dist/procedures.mjs",
@@ -42,7 +39,6 @@
 			"./routers/altstack": "./dist/routers/altstack.mjs",
 			"./routers/health": "./dist/routers/health.mjs",
 			"./routers/project": "./dist/routers/project.mjs",
-			"./routers/submission": "./dist/routers/submission.mjs",
 			"./package.json": "./package.json"
 		}
 	},
