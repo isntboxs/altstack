@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+	check,
 	customType,
 	index,
 	pgTable,
@@ -9,14 +10,8 @@ import {
 	varchar,
 } from 'drizzle-orm/pg-core'
 
-export const PROJECT_STATUS = [
-	'draft',
-	'published',
-	'rejected',
-	'removed',
-] as const
-
-export type ProjectStatus = (typeof PROJECT_STATUS)[number]
+import { PROJECT_STATUS } from '@altstack/shared/constants'
+import type { ProjectStatus } from '@altstack/shared/constants'
 
 export const project = pgTable(
 	'projects',
@@ -48,5 +43,14 @@ export const project = pgTable(
 		index('project_slug_idx').on(table.slug),
 		index('project_status_idx').on(table.status),
 		index('project_search_vector_idx').using('gin', table.searchVector),
+		check(
+			'projects_status_check',
+			sql`${table.status} in (${sql.join(
+				PROJECT_STATUS.map((status) =>
+					sql.raw(`'${status.replaceAll("'", "''")}'`)
+				),
+				sql.raw(', ')
+			)})`
+		),
 	]
 )

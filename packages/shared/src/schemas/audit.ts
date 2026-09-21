@@ -1,6 +1,6 @@
 import 'zod/compile'
 import { z } from 'zod'
 
-export const auditActionSchema = z.enum(['project_removed'])
+import { AUDIT_ACTIONS } from '@altstack/shared/constants'
 
-export type AuditActionType = z.infer<typeof auditActionSchema>
+export const auditActionSchema = z.enum(AUDIT_ACTIONS)

@@ -8,6 +8,7 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
+		"./constants": "./src/constants/index.ts",
 		"./lib": "./src/lib/index.ts",
 		"./lib/github": "./src/lib/github.ts",
 		"./schemas": "./src/schemas/index.ts",
@@ -19,6 +20,7 @@
 	"publishConfig": {
 		"exports": {
 			".": "./dist/index.mjs",
+			"./constants": "./dist/constants/index.mjs",
 			"./lib": "./dist/lib/index.mjs",
 			"./lib/github": "./dist/lib/github.mjs",
 			"./schemas": "./dist/schemas/index.mjs",

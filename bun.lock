@@ -156,6 +156,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@altstack/env": "workspace:*",
+        "@altstack/shared": "workspace:*",
         "dotenv": "catalog:",
         "drizzle-orm": "catalog:",
         "octokit": "catalog:",

@@ -2,6 +2,8 @@ import 'zod/compile'
 import limax from 'limax'
 import { z } from 'zod'
 
+import { PROJECT_STATUS } from '@altstack/shared/constants'
+
 const slugSchema = z
 	.string()
 	.nonempty()
@@ -21,9 +23,7 @@ const projectField = {
 	repositoryUrl: z.url(),
 	websiteUrl: z.url().nullable(),
 	content: z.string().nullable(),
-	status: z
-		.enum(['draft', 'published', 'rejected', 'removed'])
-		.default('published'),
+	status: z.enum(PROJECT_STATUS).default('published'),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
 }
