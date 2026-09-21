@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm'
 import {
+	check,
 	customType,
 	index,
-	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -10,9 +10,8 @@ import {
 	varchar,
 } from 'drizzle-orm/pg-core'
 
-const PROJECT_STATUS = ['draft', 'published', 'rejected', 'removed'] as const
-
-export const projectStatusEnum = pgEnum('project_status', PROJECT_STATUS)
+import { PROJECT_STATUS } from '@altstack/shared/constants'
+import type { ProjectStatus } from '@altstack/shared/constants'
 
 export const project = pgTable(
 	'projects',
@@ -28,7 +27,7 @@ export const project = pgTable(
 		repositoryUrl: text('repository_url').notNull().unique(),
 		websiteUrl: text('website_url'),
 		content: text('content'),
-		status: projectStatusEnum('status').notNull(),
+		status: text('status').$type<ProjectStatus>().notNull(),
 		searchVector: customType<{ data: string }>({
 			dataType: () => 'tsvector',
 		})('search_vector').generatedAlwaysAs(
@@ -44,5 +43,14 @@ export const project = pgTable(
 		index('project_slug_idx').on(table.slug),
 		index('project_status_idx').on(table.status),
 		index('project_search_vector_idx').using('gin', table.searchVector),
+		check(
+			'projects_status_check',
+			sql`${table.status} in (${sql.join(
+				PROJECT_STATUS.map((status) =>
+					sql.raw(`'${status.replaceAll("'", "''")}'`)
+				),
+				sql.raw(', ')
+			)})`
+		),
 	]
 )

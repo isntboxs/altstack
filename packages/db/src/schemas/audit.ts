@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm'
 import {
+	check,
 	index,
 	jsonb,
-	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -12,9 +12,8 @@ import {
 import { user } from '@altstack/db/schemas/auth'
 import { project } from '@altstack/db/schemas/project'
 
-const AUDIT_STATUS = ['project_removed'] as const
-
-export const auditStatusEnum = pgEnum('audit_status', AUDIT_STATUS)
+import { AUDIT_ACTIONS } from '@altstack/shared/constants'
+import type { AuditAction } from '@altstack/shared/constants'
 
 export const auditLog = pgTable(
 	'audit_log',
@@ -25,7 +24,7 @@ export const auditLog = pgTable(
 		actorId: uuid('actor_id').references(() => user.id, {
 			onDelete: 'set null',
 		}),
-		action: auditStatusEnum('action').notNull(),
+		action: text('action').$type<AuditAction>().notNull(),
 		projectId: uuid('project_id').references(() => project.id, {
 			onDelete: 'set null',
 		}),
@@ -37,5 +36,14 @@ export const auditLog = pgTable(
 		index('audit_log_actorId_idx').on(table.actorId),
 		index('audit_log_projectId_idx').on(table.projectId),
 		index('audit_log_createdAt_idx').on(table.createdAt),
+		check(
+			'audit_log_action_check',
+			sql`${table.action} in (${sql.join(
+				AUDIT_ACTIONS.map((action) =>
+					sql.raw(`'${action.replaceAll("'", "''")}'`)
+				),
+				sql.raw(', ')
+			)})`
+		),
 	]
 )
