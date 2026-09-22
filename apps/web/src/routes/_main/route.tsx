@@ -12,6 +12,8 @@ import {
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
+import { MainSidebar } from '#/components/main-sidebar'
+
 export const Route = createFileRoute('/_main')({
 	beforeLoad: ({ context: { auth }, location }) => {
 		if (!auth) {
@@ -31,6 +33,8 @@ export const Route = createFileRoute('/_main')({
 function RouteComponent() {
 	return (
 		<SidebarProvider>
+			<MainSidebar variant="floating" />
+
 			<SidebarInset>
 				<Wrapper>
 					<Outlet />
