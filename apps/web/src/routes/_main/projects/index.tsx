@@ -10,6 +10,7 @@ export const Route = createFileRoute('/_main/projects/')({
 
 function RouteComponent() {
 	const { data } = useAdminProjectList()
+
 	return (
 		<div className="mx-auto w-full px-4">
 			<AdminProjectDataTable

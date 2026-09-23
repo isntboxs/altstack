@@ -29,7 +29,11 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				.offset(offset)
 				.orderBy(desc(project.createdAt), desc(project.id)),
 
-			db.select({ total: count() }).from(project).where(where),
+			db
+				.select({ total: count() })
+				.from(project)
+				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.where(where),
 		])
 
 		const ids = rows.map((row) => row.projects.id)
