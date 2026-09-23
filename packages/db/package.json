@@ -10,11 +10,11 @@
 		".": "./src/index.ts",
 		"./relations": "./src/relations.ts",
 		"./schemas": "./src/schemas.ts",
+		"./schemas/audit": "./src/schemas/audit.ts",
 		"./schemas/auth": "./src/schemas/auth.ts",
 		"./schemas/category": "./src/schemas/category.ts",
 		"./schemas/github": "./src/schemas/github.ts",
 		"./schemas/project": "./src/schemas/project.ts",
-		"./schemas/submission": "./src/schemas/submission.ts",
 		"./seed": "./src/seed.ts",
 		"./package.json": "./package.json"
 	},
@@ -23,11 +23,11 @@
 			".": "./dist/index.mjs",
 			"./relations": "./dist/relations.mjs",
 			"./schemas": "./dist/schemas.mjs",
+			"./schemas/audit": "./dist/schemas/audit.mjs",
 			"./schemas/auth": "./dist/schemas/auth.mjs",
 			"./schemas/category": "./dist/schemas/category.mjs",
 			"./schemas/github": "./dist/schemas/github.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
-			"./schemas/submission": "./dist/schemas/submission.mjs",
 			"./seed": "./dist/seed.mjs",
 			"./package.json": "./package.json"
 		}
@@ -45,6 +45,7 @@
 	},
 	"dependencies": {
 		"@altstack/env": "workspace:*",
+		"@altstack/shared": "workspace:*",
 		"dotenv": "catalog:",
 		"drizzle-orm": "catalog:",
 		"octokit": "catalog:",

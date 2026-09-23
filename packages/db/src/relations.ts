@@ -67,25 +67,10 @@ export const relations = defineRelations(schemas, (r) => {
 			}),
 		},
 
-		submission: {
-			submitter: r.one.user({
-				from: r.submission.submitterId,
-				to: r.user.id,
-			}),
-			moderator: r.one.user({
-				from: r.submission.moderatedBy,
-				to: r.user.id,
-			}),
-		},
-
 		auditLog: {
 			actor: r.one.user({
 				from: r.auditLog.actorId,
 				to: r.user.id,
-			}),
-			submission: r.one.submission({
-				from: r.auditLog.submissionId,
-				to: r.submission.id,
 			}),
 			project: r.one.project({
 				from: r.auditLog.projectId,

@@ -5,16 +5,18 @@ import type {
 } from '@orpc/server'
 
 import { o } from '@altstack/api/base'
+import { adminProjectRouter } from '@altstack/api/routers/admin-project'
 import { altstackRouter } from '@altstack/api/routers/altstack'
 import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
-import { submissionRouter } from '@altstack/api/routers/submission'
 
 export const routers = o.router({
+	admin: {
+		project: adminProjectRouter,
+	},
 	altstack: altstackRouter,
 	health: healthRouter,
 	project: projectRouter,
-	submission: submissionRouter,
 })
 
 export type ORPCRouterClient = RouterClient<typeof routers>

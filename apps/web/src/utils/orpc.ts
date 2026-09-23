@@ -54,6 +54,9 @@ export const orpc = createTanstackQueryUtils(client)
 export const projectORPC = createTanstackQueryUtils(client.project, {
 	prefix: 'project',
 })
-export const submissionORPC = createTanstackQueryUtils(client.submission, {
-	prefix: 'submission',
-})
+
+export const adminORPC = {
+	project: createTanstackQueryUtils(client.admin.project, {
+		prefix: 'admin/project',
+	}),
+}

@@ -21,11 +21,12 @@ import {
 
 import type { DataTableFeatures } from '#/utils/data-table-features'
 
-export type Submission = ORPCRouterOutputs['submission']['list'][number]
+export type AdminProject =
+	ORPCRouterOutputs['admin']['project']['list']['projects'][number]
 
-const columnHelper = createColumnHelper<DataTableFeatures, Submission>()
+const columnHelper = createColumnHelper<DataTableFeatures, AdminProject>()
 
-export const submissionColumns = columnHelper.columns([
+export const adminProjectColumns = columnHelper.columns([
 	columnHelper.display({
 		id: 'select',
 		header: ({ table }) => (
@@ -57,7 +58,7 @@ export const submissionColumns = columnHelper.columns([
 				onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
 			>
 				Name
-				<IconArrowsUpDown className="ml-2 h-4 w-4" />
+				<IconArrowsUpDown className="size-4" />
 			</Button>
 		),
 	}),

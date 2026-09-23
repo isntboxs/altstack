@@ -12,9 +12,9 @@ import {
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
-import { PanelSidebar } from '#/components/panel-sidebar'
+import { MainSidebar } from '#/components/main-sidebar'
 
-export const Route = createFileRoute('/_panel')({
+export const Route = createFileRoute('/_main')({
 	beforeLoad: ({ context: { auth }, location }) => {
 		if (!auth) {
 			throw redirect({
@@ -33,7 +33,7 @@ export const Route = createFileRoute('/_panel')({
 function RouteComponent() {
 	return (
 		<SidebarProvider>
-			<PanelSidebar variant="floating" />
+			<MainSidebar variant="floating" />
 
 			<SidebarInset>
 				<Wrapper>

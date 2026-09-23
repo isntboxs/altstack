@@ -16,11 +16,9 @@ import {
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
-type PanelSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
+type MainSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
 
-export const PanelSidebarHeader: FC<PanelSidebarHeaderProps> = ({
-	...props
-}) => {
+export const MainSidebarHeader: FC<MainSidebarHeaderProps> = ({ ...props }) => {
 	const { isMobile, openMobile, state, toggleSidebar } = useSidebar()
 	const isExpanded = isMobile ? openMobile : state === 'expanded'
 

@@ -34,7 +34,7 @@ interface DataTableProps<TData extends RowData> {
 	data: Array<TData>
 }
 
-export const SubmissionDataTable = <TData extends RowData>({
+export const AdminProjectDataTable = <TData extends RowData>({
 	columns,
 	data,
 }: DataTableProps<TData>) => {

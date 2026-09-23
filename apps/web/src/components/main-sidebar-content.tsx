@@ -1,4 +1,4 @@
-import { IconSend } from '@tabler/icons-react'
+import { IconPackage } from '@tabler/icons-react'
 import { Link, linkOptions, useMatchRoute } from '@tanstack/react-router'
 import type { ComponentProps, FC } from 'react'
 
@@ -12,17 +12,17 @@ import {
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
-type PanelSidebarContentProps = ComponentProps<typeof SidebarContent>
+type MainSidebarContentProps = ComponentProps<typeof SidebarContent>
 
 const navLinks = linkOptions([
 	{
-		to: '/my-submissions',
-		icon: IconSend,
-		label: 'My Submissions',
+		to: '/projects',
+		icon: IconPackage,
+		label: 'Projects',
 	},
 ])
 
-export const PanelSidebarContent: FC<PanelSidebarContentProps> = ({
+export const MainSidebarContent: FC<MainSidebarContentProps> = ({
 	...props
 }) => {
 	const matchRoute = useMatchRoute()

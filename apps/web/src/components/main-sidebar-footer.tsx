@@ -37,11 +37,9 @@ import { toast } from '@altstack/ui/components/toast'
 
 import { UserAvatar } from '#/components/user-avatar'
 
-type PanelSidebarFooterProps = ComponentProps<typeof SidebarFooter>
+type MainSidebarFooterProps = ComponentProps<typeof SidebarFooter>
 
-export const PanelSidebarFooter: FC<PanelSidebarFooterProps> = ({
-	...props
-}) => (
+export const MainSidebarFooter: FC<MainSidebarFooterProps> = ({ ...props }) => (
 	<SidebarFooter {...props}>
 		<SidebarGroup>
 			<SidebarGroupContent>
@@ -66,7 +64,7 @@ export const PanelSidebarFooter: FC<PanelSidebarFooterProps> = ({
 )
 
 const UserButton = () => {
-	const { auth } = useRouteContext({ from: '/_panel' })
+	const { auth } = useRouteContext({ from: '/_main' })
 	const router = useRouter()
 
 	const { isMobile } = useSidebar()
