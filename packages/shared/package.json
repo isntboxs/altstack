@@ -9,6 +9,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./constants": "./src/constants/index.ts",
+		"./constants/orpc-errors": "./src/constants/orpc-errors.ts",
 		"./lib": "./src/lib/index.ts",
 		"./lib/github": "./src/lib/github.ts",
 		"./schemas": "./src/schemas/index.ts",
@@ -23,6 +24,7 @@
 		"exports": {
 			".": "./dist/index.mjs",
 			"./constants": "./dist/constants/index.mjs",
+			"./constants/orpc-errors": "./dist/constants/orpc-errors.mjs",
 			"./lib": "./dist/lib/index.mjs",
 			"./lib/github": "./dist/lib/github.mjs",
 			"./schemas": "./dist/schemas/index.mjs",

@@ -3,6 +3,10 @@ import limax from 'limax'
 import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
+import {
+	canonicalizeGithubUrl,
+	INVALID_REPOSITORY_URL_MESSAGE,
+} from '@altstack/shared/lib'
 
 export const slugSchema = z
 	.string()
@@ -37,3 +41,23 @@ export const paginationSchema = z.object({
 	hasNextPage: z.boolean(),
 	hasPreviousPage: z.boolean(),
 })
+
+export const repositoryUrlSchema = z
+	.string()
+	.trim()
+	.min(1, { error: INVALID_REPOSITORY_URL_MESSAGE })
+	.transform((value, ctx) => {
+		try {
+			return canonicalizeGithubUrl(value).canonicalUrl
+		} catch (error) {
+			ctx.addIssue({
+				code: 'custom',
+				message:
+					error instanceof Error
+						? error.message
+						: INVALID_REPOSITORY_URL_MESSAGE,
+			})
+
+			return z.NEVER
+		}
+	})
