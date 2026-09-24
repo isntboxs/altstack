@@ -1,6 +1,6 @@
 import { useForm } from '@tanstack/react-form-start'
 import { ClientOnly, createFileRoute } from '@tanstack/react-router'
-import { useRef } from 'react'
+import { Suspense, useRef } from 'react'
 import type { z } from 'zod'
 
 import { slugify } from '@altstack/shared/lib/slug'
@@ -20,9 +20,11 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
+import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 
 import BlockNoteEditor from '#/components/block-note/editor'
+import { CategoryCombobox } from '#/components/category-combobox'
 
 const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	name: '',
@@ -301,6 +303,31 @@ function RouteComponent() {
 										aria-invalid={isInvalid}
 										placeholder="Logo"
 									/>
+
+									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+								</Field>
+							)
+						}}
+					/>
+
+					<form.Field
+						name="categorySlugs"
+						children={(field) => {
+							const isInvalid =
+								field.state.meta.isTouched && !field.state.meta.isValid
+
+							return (
+								<Field data-invalid={isInvalid}>
+									<FieldLabel htmlFor={field.name}>Category</FieldLabel>
+
+									<Suspense fallback={<Skeleton className="h-10 w-full" />}>
+										<CategoryCombobox
+											value={field.state.value}
+											onValueChange={(next) => field.handleChange(next)}
+										/>
+									</Suspense>
+
+									<FieldDescription>Pick 1–3 categories.</FieldDescription>
 
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
 								</Field>
