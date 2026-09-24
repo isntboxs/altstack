@@ -8,6 +8,10 @@ import {
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
 } from '@altstack/shared'
+import {
+	listCategoriesInputSchema,
+	listCategoriesOutputSchema,
+} from '@altstack/shared/schemas/project'
 
 const createAdminProjectContract = baseContract
 	.meta(
@@ -42,7 +46,25 @@ const listAdminProjectsContract = baseContract
 	.input(adminListProjectInputSchema)
 	.output(adminListProjectOutputSchema)
 
+const listAdminCategoriesContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/categories',
+			method: 'GET',
+			summary: 'Admin list categories',
+			description:
+				'List all categories ordered by name, including ones with no published projects. For the admin creation form.',
+			tags: ['AdminProjects'],
+			operationId: 'listAdminCategories',
+			successStatus: 200,
+			successDescription: 'Categories listed',
+		})
+	)
+	.input(listCategoriesInputSchema)
+	.output(listCategoriesOutputSchema)
+
 export const adminProjectContract = {
 	create: createAdminProjectContract,
 	list: listAdminProjectsContract,
+	listCategories: listAdminCategoriesContract,
 } as const

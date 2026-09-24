@@ -322,6 +322,7 @@ function RouteComponent() {
 
 									<Suspense fallback={<Skeleton className="h-10 w-full" />}>
 										<CategoryCombobox
+											id={field.name}
 											value={field.state.value}
 											onValueChange={(next) => field.handleChange(next)}
 										/>
