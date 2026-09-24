@@ -14,6 +14,7 @@ import {
 import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
+import { useTheme } from '@altstack/ui/components/customs/theme-provider'
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -90,6 +91,7 @@ export default function BlockNoteEditor({
 	onBlur,
 	className,
 }: Props) {
+	const { resolvedTheme } = useTheme()
 	const editor = useCreateBlockNote({
 		schema,
 		extensions: [
@@ -130,6 +132,7 @@ export default function BlockNoteEditor({
 			sideMenu={false}
 			onBlur={onBlur}
 			onChange={handleMarkdownChange}
+			theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
 			shadCNComponents={{
 				Avatar: {
 					Avatar,

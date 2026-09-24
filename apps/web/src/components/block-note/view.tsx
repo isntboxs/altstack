@@ -5,6 +5,8 @@ import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/shadcn'
 import { useEffect } from 'react'
 
+import { useTheme } from '@altstack/ui/components/customs/theme-provider'
+
 import {
 	BNCustomCodeBlock,
 	DEFAULT_CODE_BLOCK_LANGUAGE,
@@ -31,6 +33,7 @@ const schema = BlockNoteSchema.create().extend({
 })
 
 export const BlockNoteViewBlocks = ({ content }: BlockNoteViewProps) => {
+	const { resolvedTheme } = useTheme()
 	const editor = useCreateBlockNote({
 		schema,
 		extensions: [
@@ -51,10 +54,11 @@ export const BlockNoteViewBlocks = ({ content }: BlockNoteViewProps) => {
 
 	return (
 		<BlockNoteView
-			className="[&_.bn-container]:p-0! [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!"
+			className="altstack-block-note-editor [&_.bn-container]:p-0! [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!"
 			editor={editor}
 			editable={false}
 			sideMenu={false}
+			theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
 		/>
 	)
 }
