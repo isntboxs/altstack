@@ -1,7 +1,3 @@
-import { cjk } from '@streamdown/cjk'
-import { code } from '@streamdown/code'
-import { math } from '@streamdown/math'
-import { mermaid } from '@streamdown/mermaid'
 import {
 	IconBrandGithub,
 	IconCalendar,
@@ -10,7 +6,7 @@ import {
 	IconGitFork,
 	IconTag,
 } from '@tabler/icons-react'
-import { createFileRoute } from '@tanstack/react-router'
+import { ClientOnly, createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import {
 	Bookmark,
@@ -21,8 +17,6 @@ import {
 	Star,
 	Verified,
 } from 'reicon-react'
-import { Streamdown } from 'streamdown'
-import 'streamdown/styles.css'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -49,6 +43,7 @@ import {
 	TooltipTrigger,
 } from '@altstack/ui/components/tooltip'
 
+import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 
 export const Route = createFileRoute('/_app/$slug')({
@@ -336,17 +331,9 @@ function RouteComponent() {
 					)}
 
 					{projectData.content && (
-						<Streamdown
-							mode="static"
-							plugins={{
-								code: code,
-								mermaid: mermaid,
-								math: math,
-								cjk: cjk,
-							}}
-						>
-							{projectData.content}
-						</Streamdown>
+						<ClientOnly>
+							<BlockNoteViewBlocks content={projectData.content} />
+						</ClientOnly>
 					)}
 				</div>
 

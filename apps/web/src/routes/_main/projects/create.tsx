@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form-start'
-import { createFileRoute } from '@tanstack/react-router'
+import { ClientOnly, createFileRoute } from '@tanstack/react-router'
 import { useRef } from 'react'
 import type { z } from 'zod'
 
@@ -21,6 +21,8 @@ import {
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
 import { Textarea } from '@altstack/ui/components/textarea'
+
+import BlockNoteEditor from '#/components/block-note/editor'
 
 const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	name: '',
@@ -265,18 +267,14 @@ function RouteComponent() {
 								<Field data-invalid={isInvalid}>
 									<FieldLabel htmlFor={field.name}>Content</FieldLabel>
 
-									<Textarea
-										id={field.name}
-										name={field.name}
-										value={field.state.value ?? ''}
-										onBlur={field.handleBlur}
-										onChange={(e) => {
-											const next = e.target.value
-											field.handleChange(next === '' ? undefined : next)
-										}}
-										aria-invalid={isInvalid}
-										placeholder="Content"
-									/>
+									<ClientOnly>
+										<BlockNoteEditor
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e)}
+											className="min-h-64 rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+										/>
+									</ClientOnly>
 
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
 								</Field>

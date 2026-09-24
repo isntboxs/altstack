@@ -1,6 +1,80 @@
 @import '@altstack/ui/globals.css';
-@source "../node_modules/streamdown/dist/*.js";
-@source "../node_modules/@streamdown/code/dist/*.js";
-@source "../node_modules/@streamdown/cjk/dist/*.js";
-@source "../node_modules/@streamdown/math/dist/*.js";
-@source "../node_modules/@streamdown/mermaid/dist/*.js";
+@source "../node_modules/@blocknote/shadcn";
+
+.bn-block-content[data-content-type='codeBlock'] {
+	background: transparent !important;
+}
+
+.altstack-block-note-editor {
+	--block-note-body-font: var(--font-sans);
+	--block-note-heading-font: var(--font-heading);
+	--block-note-body-size: 1.0625rem;
+	--block-note-body-line-height: 1.85;
+	--block-note-block-padding: 0.375rem;
+	--block-note-heading-line-height: 1.2;
+}
+
+.altstack-block-note-editor .bn-editor {
+	color: var(--primary);
+	font-family: var(--block-note-body-font);
+	font-size: var(--block-note-body-size);
+	line-height: var(--block-note-body-line-height);
+}
+
+.altstack-block-note-editor
+	.bn-block-content:not([data-content-type='codeBlock']) {
+	color: var(--primary);
+	padding-block: var(--block-note-block-padding);
+}
+
+.altstack-block-note-editor
+	.bn-block-content:not([data-content-type='codeBlock'])
+	.bn-inline-content {
+	line-height: inherit;
+}
+
+.altstack-block-note-editor [data-content-type='heading'] {
+	color: var(--primary);
+	font-family: var(--block-note-heading-font);
+	letter-spacing: 0;
+	line-height: var(--block-note-heading-line-height);
+	padding-top: 1.25rem;
+}
+
+.altstack-block-note-editor [data-content-type='paragraph'] {
+	font-weight: 400;
+}
+
+.altstack-block-note-editor
+	.bn-block-content[data-content-type='bulletListItem']::before,
+.altstack-block-note-editor
+	.bn-block-content[data-content-type='numberedListItem']::before {
+	color: var(--primary);
+}
+
+.altstack-block-note-editor
+	.bn-block-content[data-content-type='checkListItem']
+	> div:has(> input) {
+	padding-top: 0.35em;
+}
+
+.altstack-block-note-editor [data-content-type='quote'] blockquote {
+	border-left-color: color-mix(in oklch, var(--primary) 35%, transparent);
+	color: var(--primary);
+	line-height: inherit;
+	padding-left: 1rem;
+}
+
+.altstack-block-note-editor .bn-inline-content code {
+	border-radius: calc(var(--radius) * 0.5);
+	background: var(--muted);
+	color: var(--primary);
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	padding: 0.1rem 0.3rem;
+}
+
+.altstack-block-note-editor .bn-editor a {
+	color: var(--primary);
+	text-underline-offset: 0.2em;
+}
