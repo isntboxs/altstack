@@ -10,7 +10,6 @@ import {
 import { FilterSection } from '#/components/filter-section'
 import { HeroSection } from '#/components/hero-section'
 import { ProjectListSection } from '#/components/project-list-section'
-import { projectQueries } from '#/features/project/queries'
 
 const searchSchema = searchProjectsInputSchema
 	.pick({ category: true, q: true })
@@ -30,7 +29,12 @@ export const Route = createFileRoute('/_app/')({
 		}
 	},
 	loader: ({ context, deps }) =>
-		context.queryClient.ensureQueryData(projectQueries.search(deps)),
+		context.queryClient.query(
+			context.orpc.project.search.queryOptions({
+				input: deps,
+				staleTime: 'static',
+			})
+		),
 	component: Home,
 })
 
