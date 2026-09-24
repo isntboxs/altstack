@@ -1,5 +1,5 @@
 import type { ORPCErrorConstructorMap } from '@orpc/server'
-import { count, desc, eq, inArray } from 'drizzle-orm'
+import { asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
@@ -253,7 +253,22 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 	}
 )
 
+const adminListCategoriesHandler =
+	adminProcedure.admin.project.listCategories.handler(async ({ context }) => {
+		const { db } = context
+
+		// No published-project join here: the creation form must offer every
+		// category, including ones with no published projects yet.
+		const rows = await db
+			.select({ slug: category.slug, name: category.name })
+			.from(category)
+			.orderBy(asc(category.name))
+
+		return { categories: rows }
+	})
+
 export const adminProjectRouter = {
 	create: adminCreateProjectHandler,
 	list: adminListProjectHandler,
+	listCategories: adminListCategoriesHandler,
 }
