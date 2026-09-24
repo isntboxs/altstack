@@ -9,8 +9,10 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./constants": "./src/constants/index.ts",
+		"./constants/orpc-errors": "./src/constants/orpc-errors.ts",
 		"./lib": "./src/lib/index.ts",
 		"./lib/github": "./src/lib/github.ts",
+		"./lib/slug": "./src/lib/slug.ts",
 		"./schemas": "./src/schemas/index.ts",
 		"./schemas/admin-project": "./src/schemas/admin-project.ts",
 		"./schemas/audit": "./src/schemas/audit.ts",
@@ -23,8 +25,10 @@
 		"exports": {
 			".": "./dist/index.mjs",
 			"./constants": "./dist/constants/index.mjs",
+			"./constants/orpc-errors": "./dist/constants/orpc-errors.mjs",
 			"./lib": "./dist/lib/index.mjs",
 			"./lib/github": "./dist/lib/github.mjs",
+			"./lib/slug": "./dist/lib/slug.mjs",
 			"./schemas": "./dist/schemas/index.mjs",
 			"./schemas/admin-project": "./dist/schemas/admin-project.mjs",
 			"./schemas/audit": "./dist/schemas/audit.mjs",

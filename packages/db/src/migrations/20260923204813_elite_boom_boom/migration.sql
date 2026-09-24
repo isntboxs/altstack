@@ -1,0 +1,1 @@
+ALTER TABLE "audit_log" DROP CONSTRAINT "audit_log_action_check", ADD CONSTRAINT "audit_log_action_check" CHECK ("action" in ('project_created', 'project_removed'));

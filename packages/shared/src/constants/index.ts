@@ -1,3 +1,5 @@
+export * from '@altstack/shared/constants/orpc-errors'
+
 export const PROJECT_STATUS = [
 	'draft',
 	'published',
@@ -5,7 +7,7 @@ export const PROJECT_STATUS = [
 	'removed',
 ] as const
 
-export const AUDIT_ACTIONS = ['project_removed'] as const
+export const AUDIT_ACTIONS = ['project_created', 'project_removed'] as const
 
 export type ProjectStatus = (typeof PROJECT_STATUS)[number]
 
