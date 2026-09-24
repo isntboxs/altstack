@@ -1,7 +1,9 @@
 import { useForm } from '@tanstack/react-form-start'
 import { createFileRoute } from '@tanstack/react-router'
+import { useRef } from 'react'
 import type { z } from 'zod'
 
+import { slugify } from '@altstack/shared/lib/slug'
 import { adminCreateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
 
 import {
@@ -45,6 +47,9 @@ function RouteComponent() {
 		},
 	})
 
+	// Once the user edits the slug by hand, auto-fill from name stops.
+	const isSlugCustomized = useRef(false)
+
 	return (
 		<div className="mx-auto grid w-full grid-cols-2 gap-4 p-4">
 			<form
@@ -58,13 +63,22 @@ function RouteComponent() {
 					<div className="grid grid-cols-2 gap-4">
 						<form.Field
 							name="name"
+							listeners={{
+								onChange: ({ value }) => {
+									if (!isSlugCustomized.current) {
+										form.setFieldValue('slug', slugify(value), {
+											dontUpdateMeta: true,
+										})
+									}
+								},
+							}}
 							children={(field) => {
 								const isInvalid =
 									field.state.meta.isTouched && !field.state.meta.isValid
 
 								return (
 									<Field data-invalid={isInvalid}>
-										<FieldLabel htmlFor={field.name}>Name Project</FieldLabel>
+										<FieldLabel htmlFor={field.name}>Name</FieldLabel>
 
 										<Input
 											id={field.name}
@@ -99,10 +113,17 @@ function RouteComponent() {
 											name={field.name}
 											value={field.state.value}
 											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
+											onChange={(e) => {
+												isSlugCustomized.current = true
+												field.handleChange(e.target.value)
+											}}
 											aria-invalid={isInvalid}
-											placeholder="Slug"
+											placeholder="my-project"
 										/>
+
+										<FieldDescription>
+											Auto-filled from the name. Edit to customize.
+										</FieldDescription>
 
 										{isInvalid && (
 											<FieldError errors={field.state.meta.errors} />
@@ -163,9 +184,12 @@ function RouteComponent() {
 										<Input
 											id={field.name}
 											name={field.name}
-											value={field.state.value}
+											value={field.state.value ?? ''}
 											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
+											onChange={(e) => {
+												const next = e.target.value
+												field.handleChange(next === '' ? undefined : next)
+											}}
 											aria-invalid={isInvalid}
 											placeholder="Website URL"
 										/>
@@ -197,32 +221,6 @@ function RouteComponent() {
 										onChange={(e) => field.handleChange(e.target.value)}
 										aria-invalid={isInvalid}
 										placeholder="Tagline"
-									/>
-
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
-								</Field>
-							)
-						}}
-					/>
-
-					<form.Field
-						name="logo"
-						children={(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid
-
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
-
-									<Input
-										id={field.name}
-										name={field.name}
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-										aria-invalid={isInvalid}
-										placeholder="Logo"
 									/>
 
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -270,11 +268,40 @@ function RouteComponent() {
 									<Textarea
 										id={field.name}
 										name={field.name}
+										value={field.state.value ?? ''}
+										onBlur={field.handleBlur}
+										onChange={(e) => {
+											const next = e.target.value
+											field.handleChange(next === '' ? undefined : next)
+										}}
+										aria-invalid={isInvalid}
+										placeholder="Content"
+									/>
+
+									{isInvalid && <FieldError errors={field.state.meta.errors} />}
+								</Field>
+							)
+						}}
+					/>
+
+					<form.Field
+						name="logo"
+						children={(field) => {
+							const isInvalid =
+								field.state.meta.isTouched && !field.state.meta.isValid
+
+							return (
+								<Field data-invalid={isInvalid}>
+									<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
+
+									<Input
+										id={field.name}
+										name={field.name}
 										value={field.state.value}
 										onBlur={field.handleBlur}
 										onChange={(e) => field.handleChange(e.target.value)}
 										aria-invalid={isInvalid}
-										placeholder="Content"
+										placeholder="Logo"
 									/>
 
 									{isInvalid && <FieldError errors={field.state.meta.errors} />}
