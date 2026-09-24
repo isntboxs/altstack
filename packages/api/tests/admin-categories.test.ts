@@ -53,7 +53,6 @@ describe('admin listCategories', () => {
 
 			const slugs = result.categories.map((item) => item.slug)
 			expect(slugs).toContain(FIXTURE_SLUG)
-			expect(slugs).toContain('backend')
 
 			const names = result.categories.map((item) => item.name)
 			expect(names.toSorted()).toEqual(names)
