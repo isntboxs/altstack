@@ -27,11 +27,11 @@ const getORPCClient = createIsomorphicFn()
 			url: `/api/rpc`,
 			method: ({ context }, path) => {
 				if (context.cache) {
-					return 'GET'
+					return 'QUERY'
 				}
 
 				if (path.at(-1)?.match(/^(?:get|find|list|search)(?:[A-Z].*)?$/)) {
-					return 'GET'
+					return 'QUERY'
 				}
 
 				return 'POST'
