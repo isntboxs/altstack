@@ -48,9 +48,10 @@ import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 
 export const Route = createFileRoute('/_app/$slug')({
 	loader: async ({ context, params }) => {
-		await context.queryClient.ensureQueryData(
-			projectQueries.bySlug(params.slug)
-		)
+		await context.queryClient.query({
+			...projectQueries.bySlug(params.slug),
+			staleTime: 'static',
+		})
 	},
 	component: RouteComponent,
 })

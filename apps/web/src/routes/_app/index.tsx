@@ -30,7 +30,10 @@ export const Route = createFileRoute('/_app/')({
 		}
 	},
 	loader: ({ context, deps }) =>
-		context.queryClient.ensureQueryData(projectQueries.search(deps)),
+		context.queryClient.query({
+			...projectQueries.search(deps),
+			staleTime: 'static',
+		}),
 	component: Home,
 })
 

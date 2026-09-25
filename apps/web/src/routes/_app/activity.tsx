@@ -5,7 +5,7 @@ import {
 	IconGitMerge,
 	IconHome,
 } from '@tabler/icons-react'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { noop, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { formatDate } from 'date-fns'
@@ -51,9 +51,9 @@ const TREE_URL = `${REPO_URL}/tree/`
 export const Route = createFileRoute('/_app/activity')({
 	component: RouteComponent,
 	loader: ({ context }) =>
-		context.queryClient.prefetchQuery(
-			context.orpc.altstack.listCommits.queryOptions()
-		),
+		context.queryClient
+			.query(context.orpc.altstack.listCommits.queryOptions())
+			.catch(noop),
 })
 
 function RouteComponent() {

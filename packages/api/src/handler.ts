@@ -46,7 +46,6 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 			spec: () =>
 				generator.generate(routers, {
 					base: {
-						openapi: '3.2.0',
 						info: {
 							title: 'Altstack API',
 							version: '0.0.0',
