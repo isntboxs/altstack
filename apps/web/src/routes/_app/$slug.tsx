@@ -44,16 +44,14 @@ import {
 } from '@altstack/ui/components/tooltip'
 
 import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
-import { useProjectBySlug } from '#/features/project/queries'
+import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 
 export const Route = createFileRoute('/_app/$slug')({
 	loader: async ({ context, params }) => {
-		await context.queryClient.query(
-			context.orpc.project.getBySlug.queryOptions({
-				input: { slug: params.slug },
-				staleTime: 'static',
-			})
-		)
+		await context.queryClient.query({
+			...projectQueries.bySlug(params.slug),
+			staleTime: 'static',
+		})
 	},
 	component: RouteComponent,
 })
