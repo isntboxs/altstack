@@ -47,6 +47,8 @@
 		"nitro": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
+		"react-dropzone": "^20.1.2",
+		"react-easy-crop": "^6.2.3",
 		"reicon-react": "catalog:",
 		"zod": "catalog:"
 	},

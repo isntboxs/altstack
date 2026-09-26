@@ -4,6 +4,7 @@ import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
+import { resolveLogoUrl } from '@altstack/api/s3'
 
 import {
 	auditLog,
@@ -159,6 +160,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				return {
 					...rest,
+					logo: resolveLogoUrl(rest.logo),
 					categories: uniqueCategorySlugs,
 					github: { owner, repo, stars, forks, fetchedAt },
 				}
@@ -231,6 +233,7 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				void _searchVector
 				return {
 					...rest,
+					logo: resolveLogoUrl(rest.logo),
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,
