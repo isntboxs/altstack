@@ -322,9 +322,8 @@ function RouteComponent() {
 							target="_blank"
 							className="group/screenshot block h-fit overflow-hidden rounded-lg"
 						>
-							{/* TODO(#32): replace static placeholder with real website screenshot/OG image when available — R1 intentionally uses placeholder + safeWebsiteUrl is already non-fatal (useMemo new URL guard). */}
 							<img
-								src="https://placehold.co/1280x1024"
+								src={projectData.screenshot ?? 'https://placehold.co/1280x1024'}
 								className="aspect-video h-auto object-cover transition-transform duration-300 ease-in-out group-hover/screenshot:scale-105"
 								alt={`Screenshot of ${projectData.name} website`}
 							/>

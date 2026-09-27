@@ -22,6 +22,8 @@ interface ImageCropDialogProps {
 	fileName: string
 	mimeType: string
 	aspectRatio?: number
+	title?: string
+	description?: string
 	onCancel: () => void
 	onConfirm: (file: File) => void
 }
@@ -34,6 +36,8 @@ export const ImageCropDialog: FC<ImageCropDialogProps> = ({
 	onConfirm,
 	open,
 	aspectRatio = 1,
+	title = 'Crop cover image',
+	description = 'Drag to reposition and use the slider to zoom. The highlighted area is what gets uploaded.',
 }) => {
 	const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
 	const [zoom, setZoom] = useState(1)
@@ -82,11 +86,8 @@ export const ImageCropDialog: FC<ImageCropDialogProps> = ({
 		>
 			<DialogContent className="sm:max-w-xl">
 				<DialogHeader>
-					<DialogTitle>Crop cover image</DialogTitle>
-					<DialogDescription>
-						Drag to reposition and use the slider to zoom. The highlighted area
-						is what gets uploaded.
-					</DialogDescription>
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
 
 				<div className="relative h-72 w-full overflow-hidden rounded-md bg-muted">

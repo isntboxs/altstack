@@ -121,6 +121,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 						tagline: input.tagline,
 						description: input.description,
 						logo: input.logo,
+						screenshot: input.screenshot ?? null,
 						websiteUrl: input.websiteUrl ?? null,
 						content: input.content ?? null,
 						status: 'published',
@@ -161,6 +162,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 				return {
 					...rest,
 					logo: resolveLogoUrl(rest.logo),
+					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
 					categories: uniqueCategorySlugs,
 					github: { owner, repo, stars, forks, fetchedAt },
 				}
@@ -234,6 +236,7 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				return {
 					...rest,
 					logo: resolveLogoUrl(rest.logo),
+					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,

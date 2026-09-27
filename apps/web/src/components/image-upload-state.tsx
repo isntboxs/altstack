@@ -8,9 +8,11 @@ import { Spinner } from '@altstack/ui/components/spinner'
 export const ImageDropzoneEmptyState = ({
 	isDragActive,
 	onSelect,
+	hint = 'PNG, JPG, GIF, or WEBP up to 3MB.',
 }: {
 	isDragActive: boolean
 	onSelect: () => void
+	hint?: string
 }) => (
 	<div className="p-6 text-center">
 		<div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-muted">
@@ -35,9 +37,7 @@ export const ImageDropzoneEmptyState = ({
 			</Button>
 		</p>
 
-		<p className="mt-1 text-xs text-muted-foreground">
-			PNG, JPG, GIF, or WEBP up to 3MB.
-		</p>
+		<p className="mt-1 text-xs text-muted-foreground">{hint}</p>
 
 		<Button
 			type="button"
@@ -121,11 +121,13 @@ export const ImageDropzoneUploadingState = ({
 	progress,
 	file,
 	isReplacing,
+	itemNoun = 'cover',
 }: {
 	previewUrl?: string
 	progress: number
 	file: File
 	isReplacing: boolean
+	itemNoun?: string
 }) => {
 	if (previewUrl) {
 		return (
@@ -139,7 +141,9 @@ export const ImageDropzoneUploadingState = ({
 				<div className="absolute inset-0 flex flex-col items-center justify-center bg-background/75 px-4 backdrop-blur-sm">
 					<Progress value={progress} className="w-full" />
 					<p className="mt-3 text-sm font-medium text-foreground">
-						{isReplacing ? 'Replacing cover...' : 'Uploading cover...'}
+						{isReplacing
+							? `Replacing ${itemNoun}...`
+							: `Uploading ${itemNoun}...`}
 					</p>
 					<p className="mt-1 max-w-full truncate text-xs text-muted-foreground">
 						{file.name}

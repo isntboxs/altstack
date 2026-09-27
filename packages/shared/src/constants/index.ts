@@ -23,3 +23,14 @@ export const LOGO_MIME = [
 ] as const
 
 export const LOGO_MAX_SIZE = 3 * 1024 * 1024
+
+export const SCREENSHOT_PREFIX = 'projects/screenshots/' as const
+
+export const SCREENSHOT_MIME = [
+	'image/png',
+	'image/jpeg',
+	'image/webp',
+	'image/gif',
+] as const
+
+export const SCREENSHOT_MAX_SIZE = 5 * 1024 * 1024
