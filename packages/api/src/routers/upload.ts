@@ -1,4 +1,4 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import { adminProcedure } from '@altstack/api/procedures'
@@ -39,8 +39,26 @@ const requestLogoUploadHandler =
 		return { key, presignedUrl, publicUrl: publicUrlForKey(key) }
 	})
 
+const removeLogoUploadHandler = adminProcedure.admin.upload.logo.remove.handler(
+	async ({ errors, input }) => {
+		try {
+			await s3.send(
+				new DeleteObjectCommand({
+					Bucket: S3_BUCKET,
+					Key: input.key,
+				})
+			)
+		} catch {
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
+
+		return { success: true as const }
+	}
+)
+
 export const uploadRouter = {
 	logo: {
 		request: requestLogoUploadHandler,
+		remove: removeLogoUploadHandler,
 	},
 }

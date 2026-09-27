@@ -21,3 +21,11 @@ export const requestLogoUploadOutputSchema = z.object({
 	presignedUrl: z.url(),
 	publicUrl: z.url(),
 })
+
+export const removeLogoUploadInputSchema = z.object({
+	key: logoKeySchema,
+})
+
+export const removeLogoUploadOutputSchema = z.object({
+	success: z.literal(true),
+})

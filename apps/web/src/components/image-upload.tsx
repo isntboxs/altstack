@@ -80,36 +80,22 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 		cropSourceRef.current = cropSource
 	}, [cropSource])
 
-	// TODO: create actual endpoint for this
 	const deleteManagedFile = useCallback(async (fileKey: string) => {
 		const abortController = new AbortController()
 		deleteAbortRef.current?.abort()
 		deleteAbortRef.current = abortController
 
-		const deleteResponse = await fetch('/api/s3/cover-image', {
-			method: 'DELETE',
-			signal: abortController.signal,
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				fileKey,
-			}),
-		})
-
-		if (!deleteResponse.ok) {
-			let deleteErrorMessage = 'Failed to delete file from storage'
-
-			try {
-				const responseBody = (await deleteResponse.json()) as {
-					error?: string
-				}
-				deleteErrorMessage = responseBody.error ?? deleteErrorMessage
-			} catch {
-				// Ignore invalid JSON response bodies and fall back to generic copy.
-			}
-
-			throw new Error(deleteErrorMessage)
+		try {
+			await client.admin.upload.logo.remove(
+				{ key: fileKey },
+				{ signal: abortController.signal }
+			)
+		} catch (error) {
+			throw new Error(
+				error instanceof Error
+					? error.message
+					: 'Failed to delete file from storage'
+			)
 		}
 	}, [])
 
@@ -472,7 +458,7 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 			<Card
 				{...getRootProps({ ...props })}
 				className={cn(
-					'aspect-square size-32! border border-dashed ring-0 transition-all duration-300 ease-in-out',
+					'aspect-square size-56! gap-0 border border-dashed py-0 ring-0 transition-all duration-300 ease-in-out',
 					isDragActive
 						? 'border-solid border-primary bg-primary/10'
 						: 'border-border hover:border-primary',
@@ -480,7 +466,7 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 					className
 				)}
 			>
-				<CardContent className="flex size-full items-center justify-center">
+				<CardContent className="flex size-full items-center justify-center p-0">
 					<input {...getInputProps()} />
 					{renderContent()}
 				</CardContent>
