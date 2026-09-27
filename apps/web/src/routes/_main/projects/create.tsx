@@ -297,13 +297,8 @@ function RouteComponent() {
 										<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
 										<LogoUploader
-										// id={field.name}
-										// name={field.name}
-										// value={field.state.value}
-										// onBlur={field.handleBlur}
-										// onChange={(e) => field.handleChange(e.target.value)}
-										// aria-invalid={isInvalid}
-										// placeholder="Logo"
+											value={field.state.value}
+											onChange={(next) => field.handleChange(next)}
 										/>
 
 										{isInvalid && (
