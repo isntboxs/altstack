@@ -1,4 +1,8 @@
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import {
+	DeleteObjectCommand,
+	HeadObjectCommand,
+	PutObjectCommand,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import { adminProcedure } from '@altstack/api/procedures'
@@ -56,9 +60,59 @@ const removeLogoUploadHandler = adminProcedure.admin.upload.logo.remove.handler(
 	}
 )
 
+function isNotFoundError(error: unknown): boolean {
+	if (typeof error !== 'object' || error === null) return false
+
+	if ('$metadata' in error) {
+		const metadata = (error as { $metadata?: { httpStatusCode?: number } })
+			.$metadata
+		if (metadata?.httpStatusCode === 404) return true
+	}
+
+	return (
+		'code' in error &&
+		((error as { code?: unknown }).code === 'NotFound' ||
+			(error as { code?: unknown }).code === 'NoSuchKey')
+	)
+}
+
+const changeLogoUploadHandler = adminProcedure.admin.upload.logo.change.handler(
+	async ({ errors, input }) => {
+		if (input.oldKey === input.newKey) {
+			return { success: true as const }
+		}
+
+		try {
+			await s3.send(
+				new HeadObjectCommand({
+					Bucket: S3_BUCKET,
+					Key: input.newKey,
+				})
+			)
+		} catch (error) {
+			if (isNotFoundError(error)) throw errors.NOT_FOUND()
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
+
+		try {
+			await s3.send(
+				new DeleteObjectCommand({
+					Bucket: S3_BUCKET,
+					Key: input.oldKey,
+				})
+			)
+		} catch {
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
+
+		return { success: true as const }
+	}
+)
+
 export const uploadRouter = {
 	logo: {
 		request: requestLogoUploadHandler,
 		remove: removeLogoUploadHandler,
+		change: changeLogoUploadHandler,
 	},
 }

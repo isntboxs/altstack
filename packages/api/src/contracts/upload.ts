@@ -3,6 +3,8 @@ import { openapi } from '@orpc/openapi'
 import { baseContract } from '@altstack/api/contracts/base'
 
 import {
+	changeLogoUploadInputSchema,
+	changeLogoUploadOutputSchema,
 	removeLogoUploadInputSchema,
 	removeLogoUploadOutputSchema,
 	requestLogoUploadInputSchema,
@@ -39,9 +41,25 @@ const removeLogoUploadContract = baseContract
 	.input(removeLogoUploadInputSchema)
 	.output(removeLogoUploadOutputSchema)
 
+const changeLogoUploadContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/uploads/logo/change',
+			method: 'POST',
+			summary: 'Change logo upload',
+			tags: ['AdminUploads'],
+			operationId: 'changeLogoUpload',
+			successStatus: 200,
+			successDescription: 'Logo changed',
+		})
+	)
+	.input(changeLogoUploadInputSchema)
+	.output(changeLogoUploadOutputSchema)
+
 export const uploadContract = {
 	logo: {
 		request: requestLogoUploadContract,
 		remove: removeLogoUploadContract,
+		change: changeLogoUploadContract,
 	},
 } as const

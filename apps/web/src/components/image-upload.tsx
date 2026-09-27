@@ -100,30 +100,24 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 	}, [])
 
 	const uploadFile = useCallback(
-		async (file: File) => {
-			const previousLogoFile = logoFile
-			const temporaryPreviewUrl = URL.createObjectURL(file)
+		async (
+			file: File
+		): Promise<{ fileKey: string; publicUrl: string } | null> => {
+			if (!isLogoMimeType(file.type)) {
+				throw new Error(
+					'Unsupported file type, use PNG, JPG, JPEG, GIF, or WEBP'
+				)
+			}
 
-			setLogoFile({
-				fileKey: previousLogoFile?.fileKey ?? null,
-				previewUrl: temporaryPreviewUrl,
-			})
-			setPendingFile(file)
+			const abortController = new AbortController()
+			uploadAbortRef.current?.abort()
+			uploadAbortRef.current = abortController
+
 			setUploading(true)
 			setProgress(0)
 			setErrorMessage(null)
 
 			try {
-				if (!isLogoMimeType(file.type)) {
-					throw new Error(
-						'Unsupported file type, use PNG, JPG, JPEG, GIF, or WEBP'
-					)
-				}
-
-				const abortController = new AbortController()
-				uploadAbortRef.current?.abort()
-				uploadAbortRef.current = abortController
-
 				const {
 					key: fileKey,
 					presignedUrl,
@@ -138,8 +132,7 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 				)
 
 				if (!isMounted()) {
-					revokeObjectUrl(temporaryPreviewUrl)
-					return
+					return null
 				}
 
 				await new Promise<void>((resolve, reject) => {
@@ -183,6 +176,41 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 					xhr.send(file)
 				})
 
+				if (!isMounted()) {
+					return null
+				}
+
+				return { fileKey, publicUrl }
+			} catch (error) {
+				if (!isMounted()) {
+					return null
+				}
+
+				throw error
+			}
+		},
+		[isMounted]
+	)
+
+	const handleNewLogo = useCallback(
+		async (file: File) => {
+			const previousLogoFile = logoFile
+			const temporaryPreviewUrl = URL.createObjectURL(file)
+
+			setLogoFile({
+				fileKey: previousLogoFile?.fileKey ?? null,
+				previewUrl: temporaryPreviewUrl,
+			})
+			setPendingFile(file)
+
+			try {
+				const uploaded = await uploadFile(file)
+
+				if (!uploaded) {
+					revokeObjectUrl(temporaryPreviewUrl)
+					return
+				}
+
 				// Only revoke once we know the upload actually resolved — no more
 				// double-revoke on the mounted vs unmounted branches below.
 				revokeObjectUrl(temporaryPreviewUrl)
@@ -192,26 +220,98 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 				}
 
 				setLogoFile({
-					fileKey,
-					previewUrl: publicUrl,
+					fileKey: uploaded.fileKey,
+					previewUrl: uploaded.publicUrl,
 				})
 				setPendingFile(null)
 				setUploading(false)
 				setProgress(100)
 				setErrorMessage(null)
-				onChange?.(fileKey)
+				onChange?.(uploaded.fileKey)
 
 				toast.add({
 					type: 'success',
 					title: 'File uploaded successfully',
-					description: previousLogoFile
-						? 'Logo image replaced successfully'
-						: 'File uploaded successfully',
+					description: 'File uploaded successfully',
+				})
+			} catch (error) {
+				revokeObjectUrl(temporaryPreviewUrl)
+
+				if (!isMounted()) {
+					return
+				}
+
+				setLogoFile(previousLogoFile ?? null)
+				setPendingFile(null)
+				setUploading(false)
+				setProgress(0)
+				setErrorMessage(
+					error instanceof Error ? error.message : 'Failed to upload file'
+				)
+
+				toast.add({
+					type: 'error',
+					title: 'Upload failed',
+					description:
+						error instanceof Error ? error.message : 'Failed to upload file',
+				})
+			}
+		},
+		[logoFile, uploadFile, isMounted, onChange]
+	)
+
+	const handleChangedLogo = useCallback(
+		async (file: File) => {
+			const previousLogoFile = logoFile
+			const temporaryPreviewUrl = URL.createObjectURL(file)
+
+			setLogoFile({
+				fileKey: previousLogoFile?.fileKey ?? null,
+				previewUrl: temporaryPreviewUrl,
+			})
+			setPendingFile(file)
+
+			try {
+				const uploaded = await uploadFile(file)
+
+				if (!uploaded) {
+					revokeObjectUrl(temporaryPreviewUrl)
+					return
+				}
+
+				// Only revoke once we know the upload actually resolved — no more
+				// double-revoke on the mounted vs unmounted branches below.
+				revokeObjectUrl(temporaryPreviewUrl)
+
+				if (!isMounted()) {
+					return
+				}
+
+				setLogoFile({
+					fileKey: uploaded.fileKey,
+					previewUrl: uploaded.publicUrl,
+				})
+				setPendingFile(null)
+				setUploading(false)
+				setProgress(100)
+				setErrorMessage(null)
+				onChange?.(uploaded.fileKey)
+
+				toast.add({
+					type: 'success',
+					title: 'File uploaded successfully',
+					description: 'Logo image replaced successfully',
 				})
 
-				if (previousLogoFile?.fileKey && previousLogoFile.fileKey !== fileKey) {
+				if (
+					previousLogoFile?.fileKey &&
+					previousLogoFile.fileKey !== uploaded.fileKey
+				) {
 					try {
-						await deleteManagedFile(previousLogoFile.fileKey)
+						await client.admin.upload.logo.change({
+							oldKey: previousLogoFile.fileKey,
+							newKey: uploaded.fileKey,
+						})
 					} catch (error) {
 						toast.add({
 							type: 'warning',
@@ -246,7 +346,7 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 				})
 			}
 		},
-		[logoFile, deleteManagedFile, isMounted, onChange]
+		[logoFile, uploadFile, isMounted, onChange]
 	)
 
 	const onDrop = useCallback(
@@ -255,17 +355,19 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 
 			if (!file) return
 
+			const submitLogo = logoFile?.fileKey ? handleChangedLogo : handleNewLogo
+
 			// Animated GIFs get flattened to a single frame the moment they touch
 			// a <canvas>, so skip the crop step for them and upload as-is.
 			if (file.type === 'image/gif') {
-				void uploadFile(file)
+				void submitLogo(file)
 				return
 			}
 
 			const objectUrl = URL.createObjectURL(file)
 			setCropSource({ file, objectUrl })
 		},
-		[uploadFile]
+		[logoFile, handleChangedLogo, handleNewLogo]
 	)
 
 	const handleCropCancel = useCallback(() => {
@@ -285,9 +387,13 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 				}
 				return null
 			})
-			void uploadFile(croppedFile)
+			if (logoFile?.fileKey) {
+				void handleChangedLogo(croppedFile)
+			} else {
+				void handleNewLogo(croppedFile)
+			}
 		},
-		[uploadFile]
+		[logoFile, handleChangedLogo, handleNewLogo]
 	)
 
 	const handleRemoveFile = async () => {

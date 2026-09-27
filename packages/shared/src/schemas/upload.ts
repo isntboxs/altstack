@@ -29,3 +29,12 @@ export const removeLogoUploadInputSchema = z.object({
 export const removeLogoUploadOutputSchema = z.object({
 	success: z.literal(true),
 })
+
+export const changeLogoUploadInputSchema = z.object({
+	oldKey: logoKeySchema,
+	newKey: logoKeySchema,
+})
+
+export const changeLogoUploadOutputSchema = z.object({
+	success: z.literal(true),
+})
