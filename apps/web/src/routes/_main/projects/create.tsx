@@ -25,6 +25,7 @@ import { Textarea } from '@altstack/ui/components/textarea'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
+import { LogoUploader } from '#/components/image-upload'
 
 const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	name: '',
@@ -284,31 +285,35 @@ function RouteComponent() {
 						}}
 					/>
 
-					<form.Field
-						name="logo"
-						children={(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid
+					<div className="grid grid-cols-2 gap-4">
+						<form.Field
+							name="logo"
+							children={(field) => {
+								const isInvalid =
+									field.state.meta.isTouched && !field.state.meta.isValid
 
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
+								return (
+									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
-									<Input
-										id={field.name}
-										name={field.name}
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-										aria-invalid={isInvalid}
-										placeholder="Logo"
-									/>
+										<LogoUploader
+										// id={field.name}
+										// name={field.name}
+										// value={field.state.value}
+										// onBlur={field.handleBlur}
+										// onChange={(e) => field.handleChange(e.target.value)}
+										// aria-invalid={isInvalid}
+										// placeholder="Logo"
+										/>
 
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
-								</Field>
-							)
-						}}
-					/>
+										{isInvalid && (
+											<FieldError errors={field.state.meta.errors} />
+										)}
+									</Field>
+								)
+							}}
+						/>
+					</div>
 
 					<form.Field
 						name="categorySlugs"

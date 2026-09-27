@@ -29,6 +29,8 @@ export async function getCroppedImageFile({
 }: getCroppedImageFileOptions): Promise<File> {
 	const image = await createImage(imageSrc)
 	const canvas = document.createElement('canvas')
+	canvas.width = Math.round(crop.width)
+	canvas.height = Math.round(crop.height)
 	const context = canvas.getContext('2d')
 
 	if (!context) {

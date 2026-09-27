@@ -15,10 +15,18 @@ const EXT_BY_MIME = {
 
 const requestLogoUploadHandler =
 	adminProcedure.admin.upload.logo.request.handler(async ({ input }) => {
-		const base =
+		const rawBase =
 			slugify(input.filename.replace(/\.[^.]+$/, '').slice(0, 50)) || 'logo'
+		// logoKeySchema only allows [a-z0-9-], but slugify keeps characters
+		// like "_" (e.g. "foto_profil"), so normalize here to guarantee the
+		// generated key always validates.
+		const base =
+			rawBase
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-+|-+$/g, '') || 'logo'
 		const ext = EXT_BY_MIME[input.contentType]
-		const key = `projects/logos/${base}-${Date.now()}${crypto.randomUUID().slice(0, 8)}.${ext}`
+		const key = `projects/logos/${base}-${Date.now()}.${ext}`
 
 		const cmd = new PutObjectCommand({
 			Bucket: S3_BUCKET,

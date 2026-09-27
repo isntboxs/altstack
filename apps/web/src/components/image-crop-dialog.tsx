@@ -14,7 +14,7 @@ import {
 } from '@altstack/ui/components/dialog'
 import { Slider } from '@altstack/ui/components/slider'
 
-import { getCroppedImageFile } from '#/utils/crop-image.ts'
+import { getCroppedImageFile } from '#/utils/crop-image'
 
 interface ImageCropDialogProps {
 	open: boolean
@@ -36,7 +36,7 @@ export const ImageCropDialog: FC<ImageCropDialogProps> = ({
 	aspectRatio = 1,
 }) => {
 	const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
-	const [zoom, setZoom] = useState(0)
+	const [zoom, setZoom] = useState(1)
 	const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
 	const [isProcessing, setIsProcessing] = useState(false)
 
@@ -105,9 +105,9 @@ export const ImageCropDialog: FC<ImageCropDialogProps> = ({
 					<span className="text-sm text-muted-foreground">Zoom</span>
 					<Slider
 						max={3}
-						min={0}
+						min={1}
 						onValueChange={(next) =>
-							setZoom(typeof next === 'number' ? next : (next[0] ?? 0))
+							setZoom(typeof next === 'number' ? next : (next[0] ?? 1))
 						}
 						step={0.1}
 						value={[zoom]}
