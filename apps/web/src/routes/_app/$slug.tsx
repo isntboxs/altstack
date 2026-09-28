@@ -265,6 +265,14 @@ function RouteComponent() {
 		}
 	}, [projectData.websiteUrl])
 
+	const screenshotImg = (
+		<img
+			src={projectData.screenshot ?? 'https://placehold.co/1280x1024'}
+			className="aspect-video h-auto object-cover transition-transform duration-300 ease-in-out group-hover/screenshot:scale-105"
+			alt={`Screenshot of ${projectData.name} website`}
+		/>
+	)
+
 	return (
 		<div className="container mx-auto w-full max-w-6xl px-6 pt-32 pb-10 lg:px-16">
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -316,19 +324,20 @@ function RouteComponent() {
 						</div>
 					</div>
 
-					{safeWebsiteUrl && (
-						<a
-							href={safeWebsiteUrl}
-							target="_blank"
-							className="group/screenshot block h-fit overflow-hidden rounded-lg"
-						>
-							<img
-								src={projectData.screenshot ?? 'https://placehold.co/1280x1024'}
-								className="aspect-video h-auto object-cover transition-transform duration-300 ease-in-out group-hover/screenshot:scale-105"
-								alt={`Screenshot of ${projectData.name} website`}
-							/>
-						</a>
-					)}
+					{(safeWebsiteUrl ?? projectData.screenshot) &&
+						(safeWebsiteUrl ? (
+							<a
+								href={safeWebsiteUrl}
+								target="_blank"
+								className="group/screenshot block h-fit overflow-hidden rounded-lg"
+							>
+								{screenshotImg}
+							</a>
+						) : (
+							<div className="block h-fit overflow-hidden rounded-lg">
+								{screenshotImg}
+							</div>
+						))}
 
 					{projectData.content && (
 						<ClientOnly>
