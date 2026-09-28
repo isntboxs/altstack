@@ -25,6 +25,7 @@ import { Textarea } from '@altstack/ui/components/textarea'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
+import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 
 const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	name: '',
@@ -33,6 +34,7 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	tagline: '',
 	description: '',
 	logo: '',
+	screenshot: undefined,
 	websiteUrl: undefined,
 	content: undefined,
 	categorySlugs: [],
@@ -284,31 +286,59 @@ function RouteComponent() {
 						}}
 					/>
 
-					<form.Field
-						name="logo"
-						children={(field) => {
-							const isInvalid =
-								field.state.meta.isTouched && !field.state.meta.isValid
+					<div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4">
+						<form.Field
+							name="logo"
+							children={(field) => {
+								const isInvalid =
+									field.state.meta.isTouched && !field.state.meta.isValid
 
-							return (
-								<Field data-invalid={isInvalid}>
-									<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
+								return (
+									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
-									<Input
-										id={field.name}
-										name={field.name}
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-										aria-invalid={isInvalid}
-										placeholder="Logo"
-									/>
+										<LogoUploader
+											value={field.state.value}
+											onChange={(next) => field.handleChange(next)}
+										/>
 
-									{isInvalid && <FieldError errors={field.state.meta.errors} />}
-								</Field>
-							)
-						}}
-					/>
+										{isInvalid && (
+											<FieldError errors={field.state.meta.errors} />
+										)}
+									</Field>
+								)
+							}}
+						/>
+
+						<form.Field
+							name="screenshot"
+							children={(field) => {
+								const isInvalid =
+									field.state.meta.isTouched && !field.state.meta.isValid
+
+								return (
+									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
+
+										<ScreenshotUploader
+											value={field.state.value}
+											onChange={(next) =>
+												field.handleChange(next === '' ? undefined : next)
+											}
+										/>
+
+										<FieldDescription>
+											Optional landing page capture in 16:9.
+										</FieldDescription>
+
+										{isInvalid && (
+											<FieldError errors={field.state.meta.errors} />
+										)}
+									</Field>
+								)
+							}}
+						/>
+					</div>
 
 					<form.Field
 						name="categorySlugs"

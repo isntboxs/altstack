@@ -15,6 +15,7 @@
 		"./contracts/base": "./src/contracts/base.ts",
 		"./contracts/health": "./src/contracts/health.ts",
 		"./contracts/project": "./src/contracts/project.ts",
+		"./contracts/upload": "./src/contracts/upload.ts",
 		"./github": "./src/github.ts",
 		"./handler": "./src/handler.ts",
 		"./procedures": "./src/procedures.ts",
@@ -23,6 +24,8 @@
 		"./routers/altstack": "./src/routers/altstack.ts",
 		"./routers/health": "./src/routers/health.ts",
 		"./routers/project": "./src/routers/project.ts",
+		"./routers/upload": "./src/routers/upload.ts",
+		"./s3": "./src/s3.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -35,6 +38,7 @@
 			"./contracts/base": "./dist/contracts/base.mjs",
 			"./contracts/health": "./dist/contracts/health.mjs",
 			"./contracts/project": "./dist/contracts/project.mjs",
+			"./contracts/upload": "./dist/contracts/upload.mjs",
 			"./github": "./dist/github.mjs",
 			"./handler": "./dist/handler.mjs",
 			"./procedures": "./dist/procedures.mjs",
@@ -43,6 +47,8 @@
 			"./routers/altstack": "./dist/routers/altstack.mjs",
 			"./routers/health": "./dist/routers/health.mjs",
 			"./routers/project": "./dist/routers/project.mjs",
+			"./routers/upload": "./dist/routers/upload.mjs",
+			"./s3": "./dist/s3.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -57,6 +63,8 @@
 		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
 		"@altstack/shared": "workspace:*",
+		"@aws-sdk/client-s3": "^3.1141.0",
+		"@aws-sdk/s3-request-presigner": "^3.1141.0",
 		"@orpc/client": "catalog:",
 		"@orpc/contract": "catalog:",
 		"@orpc/evlog": "catalog:",

@@ -9,10 +9,12 @@ import { adminProjectRouter } from '@altstack/api/routers/admin-project'
 import { altstackRouter } from '@altstack/api/routers/altstack'
 import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
+import { uploadRouter } from '@altstack/api/routers/upload'
 
 export const routers = o.router({
 	admin: {
 		project: adminProjectRouter,
+		upload: uploadRouter,
 	},
 	altstack: altstackRouter,
 	health: healthRouter,
