@@ -30,6 +30,7 @@ interface ImageUploaderProps extends Omit<
 > {
 	value?: string
 	onChange?: (value: string) => void
+	onDisplayUrlChange?: (url: string | null) => void
 	aspectRatio: number
 	accept: Record<string, Array<string>>
 	maxSize: number
@@ -63,6 +64,7 @@ const SCREENSHOT_COPY: ImageUploadCopy = {
 export const ImageUploader: FC<ImageUploaderProps> = ({
 	className,
 	onChange,
+	onDisplayUrlChange,
 	value,
 	aspectRatio,
 	accept,
@@ -87,6 +89,7 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 	} = useImageUpload({
 		value,
 		onChange,
+		onDisplayUrlChange,
 		accept,
 		maxSize,
 		mimeTypes,
@@ -173,6 +176,7 @@ export interface LogoUploaderProps extends Omit<
 > {
 	value?: string
 	onChange?: (value: string) => void
+	onDisplayUrlChange?: (url: string | null) => void
 }
 
 export const LogoUploader: FC<LogoUploaderProps> = ({
@@ -197,6 +201,7 @@ export interface ScreenshotUploaderProps extends Omit<
 > {
 	value?: string
 	onChange?: (value: string) => void
+	onDisplayUrlChange?: (url: string | null) => void
 }
 
 export const ScreenshotUploader: FC<ScreenshotUploaderProps> = ({

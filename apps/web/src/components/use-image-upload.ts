@@ -23,6 +23,9 @@ export interface ImageUploadCopy {
 export interface UseImageUploadOptions {
 	value?: string
 	onChange?: (value: string) => void
+	// Notified with the displayable image URL on upload success (`null` on
+	// remove) so parents can preview the image without resolving the file key.
+	onDisplayUrlChange?: (url: string | null) => void
 	accept: Record<string, Array<string>>
 	maxSize: number
 	mimeTypes: ReadonlyArray<string>
@@ -58,6 +61,7 @@ const isSupportedImageMime = (
 export const useImageUpload = ({
 	value,
 	onChange,
+	onDisplayUrlChange,
 	accept,
 	maxSize,
 	mimeTypes,
@@ -238,6 +242,7 @@ export const useImageUpload = ({
 				setProgress(100)
 				setErrorMessage(null)
 				onChange?.(uploaded.fileKey)
+				onDisplayUrlChange?.(uploaded.publicUrl)
 
 				return uploaded
 			} catch (error) {
@@ -258,7 +263,7 @@ export const useImageUpload = ({
 				throw error
 			}
 		},
-		[uploadFile, isMounted, onChange]
+		[uploadFile, isMounted, onChange, onDisplayUrlChange]
 	)
 
 	const notifyUploadFailed = useCallback((error: unknown) => {
@@ -394,6 +399,7 @@ export const useImageUpload = ({
 			}
 
 			onChange?.('')
+			onDisplayUrlChange?.(null)
 			setManagedFile(null)
 			setPendingFile(null)
 			setProgress(0)
