@@ -28,6 +28,9 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 		return {
 			...row.projects,
 			logo: resolveLogoUrl(row.projects.logo),
+			screenshot: row.projects.screenshot
+				? resolveLogoUrl(row.projects.screenshot)
+				: null,
 			github: {
 				owner: row.github_repositories.owner,
 				repo: row.github_repositories.repo,

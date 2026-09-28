@@ -24,6 +24,7 @@ export const project = pgTable(
 		tagline: varchar('tagline', { length: 100 }).notNull(),
 		description: varchar('description', { length: 300 }).notNull(),
 		logo: text('logo').notNull(),
+		screenshot: text('screenshot'),
 		repositoryUrl: text('repository_url').notNull().unique(),
 		websiteUrl: text('website_url'),
 		content: text('content'),

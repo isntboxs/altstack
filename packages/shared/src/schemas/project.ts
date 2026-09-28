@@ -20,6 +20,7 @@ const projectField = {
 	tagline: z.string(),
 	description: z.string(),
 	logo: z.url(),
+	screenshot: z.url().nullable(),
 	repositoryUrl: z.url(),
 	websiteUrl: z.url().nullable(),
 	content: z.string().nullable(),
