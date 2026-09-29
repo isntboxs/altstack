@@ -8,6 +8,10 @@ import {
 	repositoryUrlSchema,
 	slugSchema,
 } from '@altstack/shared/schemas/common'
+import {
+	logoKeySchema,
+	screenshotKeySchema,
+} from '@altstack/shared/schemas/upload'
 
 export const adminCreateProjectInputSchema = z.object({
 	name: z.string().trim().min(2).max(100),
@@ -15,7 +19,8 @@ export const adminCreateProjectInputSchema = z.object({
 	repositoryUrl: repositoryUrlSchema,
 	tagline: z.string().trim().nonempty().max(100),
 	description: z.string().trim().nonempty().max(300),
-	logo: z.url(),
+	logo: logoKeySchema,
+	screenshot: screenshotKeySchema.optional(),
 	websiteUrl: z.url({ protocol: /^https?$/ }).optional(),
 	content: z
 		.string()

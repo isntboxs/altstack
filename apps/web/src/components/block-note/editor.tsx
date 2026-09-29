@@ -125,7 +125,7 @@ export default function BlockNoteEditor({
 	return (
 		<BlockNoteView
 			className={cn(
-				'altstack-block-note-editor [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!',
+				'altstack-block-note-editor min-h-64 [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!',
 				className
 			)}
 			editor={editor}

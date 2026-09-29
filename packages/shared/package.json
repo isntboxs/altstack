@@ -19,6 +19,7 @@
 		"./schemas/common": "./src/schemas/common.ts",
 		"./schemas/project": "./src/schemas/project.ts",
 		"./schemas/role": "./src/schemas/role.ts",
+		"./schemas/upload": "./src/schemas/upload.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -35,6 +36,7 @@
 			"./schemas/common": "./dist/schemas/common.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
 			"./schemas/role": "./dist/schemas/role.mjs",
+			"./schemas/upload": "./dist/schemas/upload.mjs",
 			"./package.json": "./package.json"
 		}
 	},
