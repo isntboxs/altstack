@@ -581,29 +581,43 @@ function RouteComponent() {
 
 						<FieldGroup>
 							<Field orientation="horizontal">
-								<form.Subscribe
-									selector={(state) => [
-										state.canSubmit,
-										state.isPristine,
-										state.isSubmitting,
-									]}
-									children={([canSubmit, isPristine, isSubmitting]) => (
-										<Button
-											type="submit"
-											disabled={!canSubmit || isPristine}
-											className="w-full"
-										>
-											{isSubmitting ? (
-												<>
-													<Spinner />
-													Submitting...
-												</>
-											) : (
-												'Submit'
-											)}
+								{/* canSubmit/isPristine/isSubmitting live in the form store
+									(useSyncExternalStore). Async validation can settle them
+									during SSR streaming, so the server snapshot diverges from
+									the client's first render (hydration mismatch on `disabled`
+									and button content). Render a static fallback until
+									hydrated, same as the editor above. */}
+								<ClientOnly
+									fallback={
+										<Button type="submit" disabled className="w-full">
+											Submit
 										</Button>
-									)}
-								/>
+									}
+								>
+									<form.Subscribe
+										selector={(state) => [
+											state.canSubmit,
+											state.isPristine,
+											state.isSubmitting,
+										]}
+										children={([canSubmit, isPristine, isSubmitting]) => (
+											<Button
+												type="submit"
+												disabled={!canSubmit || isPristine}
+												className="w-full"
+											>
+												{isSubmitting ? (
+													<>
+														<Spinner />
+														Submitting...
+													</>
+												) : (
+													'Submit'
+												)}
+											</Button>
+										)}
+									/>
+								</ClientOnly>
 							</Field>
 						</FieldGroup>
 					</div>
