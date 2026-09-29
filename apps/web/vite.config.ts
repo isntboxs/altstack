@@ -36,8 +36,10 @@ const config = defineConfig({
 		tasks: {
 			build: {
 				command: 'vp build',
-				input: [{ auto: true }, '!.output/**'],
-				output: ['.output/**'],
+				cache: {
+					input: [{ auto: true }, '!.output/**'],
+					output: ['.output/**'],
+				},
 			},
 		},
 	},
