@@ -7,6 +7,10 @@ export const ORPC_ERRORS = {
 		message: `Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again.`,
 		status: 400,
 	},
+	UPLOAD_CONSUMED: {
+		message: `Upload consumed. The request failed after the uploaded images were already consumed. Please upload the images again and retry.`,
+		status: 500,
+	},
 	UNAUTHORIZED: {
 		message: `Unauthorized. Due to missing or invalid authentication.`,
 		status: 401,

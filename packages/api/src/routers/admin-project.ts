@@ -149,6 +149,9 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			) {
 				throw errors.UPLOAD_EXPIRED()
 			}
+			// A non-empty promotedKeys means at least one tmp key was already
+			// deleted, so retrying with the same keys cannot succeed.
+			if (promotedKeys.length > 0) throw errors.UPLOAD_CONSUMED()
 			throw errors.INTERNAL_SERVER_ERROR()
 		}
 
@@ -219,7 +222,10 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			// deleted), so use a distinct code from the preflight CONFLICT
 			// above where the uploads are still alive.
 			if (isUniqueViolation(error)) throw errors.CONFLICT_AFTER_PROMOTE()
-			throw error
+			// Any other failure here is also post-promote: the tmp uploads
+			// are already consumed, so report that instead of a generic
+			// 500 the form would retry with dead keys.
+			throw errors.UPLOAD_CONSUMED()
 		}
 	}
 )
