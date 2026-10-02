@@ -62,12 +62,12 @@ function isUploadExpiredError(error: unknown): boolean {
 	)
 }
 
-function isConflictError(error: unknown): boolean {
+function isPromotionConflictError(error: unknown): boolean {
 	return (
 		typeof error === 'object' &&
 		error !== null &&
 		'code' in error &&
-		(error as { code?: unknown }).code === 'CONFLICT'
+		(error as { code?: unknown }).code === 'CONFLICT_AFTER_PROMOTE'
 	)
 }
 
@@ -206,13 +206,14 @@ function RouteComponent() {
 			try {
 				await createProject.mutateAsync(value)
 			} catch (error) {
-				if (isUploadExpiredError(error) || isConflictError(error)) {
+				if (isUploadExpiredError(error) || isPromotionConflictError(error)) {
 					// Promote deletes tmp keys before the DB insert, so a failed
 					// submit leaves the form holding dead keys — clear them so
 					// retry starts from re-upload instead of failing again.
-					// This covers post-promote CONFLICT (e.g. slug race) as well
-					// as UPLOAD_EXPIRED. Plain BAD_REQUEST (repository URL,
-					// category validation) keeps the uploaded images.
+					// This covers UPLOAD_EXPIRED and post-promote conflict
+					// (e.g. slug race). Preflight CONFLICT and plain
+					// BAD_REQUEST (repository URL, category validation) keep
+					// the uploaded images.
 					formApi.setFieldValue('logo', '')
 					formApi.setFieldValue('screenshot', undefined)
 					setLogoDisplayUrl(null)

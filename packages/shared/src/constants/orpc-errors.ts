@@ -23,6 +23,10 @@ export const ORPC_ERRORS = {
 		message: `Conflict. The request could not be completed due to a conflict with the current state of the resource.`,
 		status: 409,
 	},
+	CONFLICT_AFTER_PROMOTE: {
+		message: `Conflict after image promotion. The project slug or repository is already taken, and the uploaded images were already consumed. Please adjust and upload the images again.`,
+		status: 409,
+	},
 	UNPROCESSABLE_CONTENT: {
 		message: `Unprocessable Content. The request was well-formed but was unable to be followed due to semantic errors.`,
 		status: 422,

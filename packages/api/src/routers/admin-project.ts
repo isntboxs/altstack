@@ -215,7 +215,10 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			await deleteFinalKeysBestEffort(
 				finalScreenshotKey ? [finalLogoKey, finalScreenshotKey] : [finalLogoKey]
 			)
-			if (isUniqueViolation(error)) throw errors.CONFLICT()
+			// Unique violation here is always post-promote (tmp keys already
+			// deleted), so use a distinct code from the preflight CONFLICT
+			// above where the uploads are still alive.
+			if (isUniqueViolation(error)) throw errors.CONFLICT_AFTER_PROMOTE()
 			throw error
 		}
 	}
