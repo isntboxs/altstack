@@ -9,7 +9,10 @@ import type { ORPCErrorConstructorMap } from '@orpc/server'
 import { adminProcedure } from '@altstack/api/procedures'
 import { s3, S3_BUCKET, publicUrlForKey } from '@altstack/api/s3'
 
-import { LOGO_PREFIX, SCREENSHOT_PREFIX } from '@altstack/shared/constants'
+import {
+	TMP_LOGO_PREFIX,
+	TMP_SCREENSHOT_PREFIX,
+} from '@altstack/shared/constants'
 import type { ORPC_ERRORS } from '@altstack/shared/constants/orpc-errors'
 import { slugify } from '@altstack/shared/lib/slug'
 
@@ -33,9 +36,9 @@ interface ImageUploadRequestInput {
 	size: number
 }
 
-const LOGO_KIND = { prefix: LOGO_PREFIX, fallbackBase: 'logo' } as const
+const LOGO_KIND = { prefix: TMP_LOGO_PREFIX, fallbackBase: 'logo' } as const
 const SCREENSHOT_KIND = {
-	prefix: SCREENSHOT_PREFIX,
+	prefix: TMP_SCREENSHOT_PREFIX,
 	fallbackBase: 'screenshot',
 } as const
 

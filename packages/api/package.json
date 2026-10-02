@@ -26,6 +26,7 @@
 		"./routers/project": "./src/routers/project.ts",
 		"./routers/upload": "./src/routers/upload.ts",
 		"./s3": "./src/s3.ts",
+		"./storage": "./src/storage.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -49,6 +50,7 @@
 			"./routers/project": "./dist/routers/project.mjs",
 			"./routers/upload": "./dist/routers/upload.mjs",
 			"./s3": "./dist/s3.mjs",
+			"./storage": "./dist/storage.mjs",
 			"./package.json": "./package.json"
 		}
 	},

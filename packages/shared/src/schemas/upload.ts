@@ -11,8 +11,17 @@ import {
 export const logoKeySchema = z
 	.string()
 	.regex(
-		/^projects\/logos\/[a-z0-9-]+-[0-9]+\.(png|jpe?g|webp|gif)$/,
+		/^tmp\/logos\/[a-z0-9-]+-[0-9]+\.(png|jpe?g|webp|gif)$/,
 		'Invalid logo key'
+	)
+
+// Final keys stored in DB after promote on project submit:
+// projects/{slug}/logo-{uuid}.ext
+export const projectLogoKeySchema = z
+	.string()
+	.regex(
+		/^projects\/[a-z0-9]+(?:-[a-z0-9]+)*\/logo-[0-9a-f-]{36}\.(png|jpe?g|webp|gif)$/,
+		'Invalid project logo key'
 	)
 
 export const requestLogoUploadInputSchema = z.object({
@@ -47,8 +56,17 @@ export const changeLogoUploadOutputSchema = z.object({
 export const screenshotKeySchema = z
 	.string()
 	.regex(
-		/^projects\/screenshots\/[a-z0-9-]+-[0-9]+\.(png|jpe?g|webp|gif)$/,
+		/^tmp\/screenshots\/[a-z0-9-]+-[0-9]+\.(png|jpe?g|webp|gif)$/,
 		'Invalid screenshot key'
+	)
+
+// Final keys stored in DB after promote on project submit:
+// projects/{slug}/screenshot-{uuid}.ext
+export const projectScreenshotKeySchema = z
+	.string()
+	.regex(
+		/^projects\/[a-z0-9]+(?:-[a-z0-9]+)*\/screenshot-[0-9a-f-]{36}\.(png|jpe?g|webp|gif)$/,
+		'Invalid project screenshot key'
 	)
 
 export const requestScreenshotUploadInputSchema = z.object({

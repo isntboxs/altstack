@@ -10,6 +10,20 @@ export const adminProjectQueries = {
 	create: () =>
 		adminORPC.project.create.mutationOptions({
 			onError: (error) => {
+				// UPLOAD_EXPIRED / CONFLICT_AFTER_PROMOTE / UPLOAD_CONSUMED
+				// from a failed submit means the tmp upload keys are dead —
+				// the create form handles those with a re-upload prompt.
+				// Preflight CONFLICT and plain BAD_REQUEST (validation) keep
+				// the normal error toast and preserve the uploaded images.
+				if (
+					typeof error === 'object' &&
+					'code' in error &&
+					((error as { code?: unknown }).code === 'UPLOAD_EXPIRED' ||
+						(error as { code?: unknown }).code === 'CONFLICT_AFTER_PROMOTE' ||
+						(error as { code?: unknown }).code === 'UPLOAD_CONSUMED')
+				) {
+					return
+				}
 				toast.add({
 					type: 'error',
 					title: 'Create Project Failed',
