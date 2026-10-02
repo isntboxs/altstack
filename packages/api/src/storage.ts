@@ -234,6 +234,33 @@ export async function deleteFinalKeysBestEffort(
 	)
 }
 
+/**
+ * Copy one object to another key, preserving its content type.
+ * Used for slug-rename copies where the source must stay until the DB
+ * update succeeds (unlike moveProjectFolder which deletes immediately).
+ */
+export async function copyS3Object(
+	sourceKey: string,
+	destKey: string
+): Promise<void> {
+	try {
+		const head = await s3.send(
+			new HeadObjectCommand({ Bucket: S3_BUCKET, Key: sourceKey })
+		)
+		await s3.send(
+			new CopyObjectCommand({
+				Bucket: S3_BUCKET,
+				Key: destKey,
+				CopySource: `${S3_BUCKET}/${sourceKey}`,
+				ContentType: head.ContentType,
+				MetadataDirective: 'REPLACE',
+			})
+		)
+	} catch {
+		throw new StorageError(`Failed to copy ${sourceKey}`)
+	}
+}
+
 interface MoveProjectFolderInput {
 	oldSlug: string
 	newSlug: string
