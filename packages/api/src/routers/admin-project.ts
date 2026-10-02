@@ -232,6 +232,51 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 	}
 )
 
+const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
+	async ({ context, errors, input }) => {
+		const { db } = context
+
+		const [row] = await db
+			.select()
+			.from(project)
+			.where(eq(project.id, input.id))
+			.limit(1)
+
+		if (!row) throw errors.NOT_FOUND()
+
+		const [githubRow] = await db
+			.select()
+			.from(githubRepository)
+			.where(eq(githubRepository.projectId, input.id))
+			.limit(1)
+
+		if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
+
+		const categoryRows = await db
+			.select({ slug: category.slug })
+			.from(projectCategory)
+			.innerJoin(category, eq(projectCategory.categoryId, category.id))
+			.where(eq(projectCategory.projectId, input.id))
+
+		const { searchVector: _searchVector, ...rest } = row
+		void _searchVector
+
+		return {
+			...rest,
+			logo: resolveLogoUrl(rest.logo),
+			screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+			categories: categoryRows.map((categoryRow) => categoryRow.slug),
+			github: {
+				owner: githubRow.owner,
+				repo: githubRow.repo,
+				stars: githubRow.stars,
+				forks: githubRow.forks,
+				fetchedAt: githubRow.fetchedAt,
+			},
+		}
+	}
+)
+
 const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 	async ({ context, errors, input }) => {
 		const { auth, db } = context
@@ -635,6 +680,7 @@ const adminListCategoriesHandler =
 
 export const adminProjectRouter = {
 	create: adminCreateProjectHandler,
+	getById: adminGetProjectByIdHandler,
 	update: adminUpdateProjectHandler,
 	remove: adminDeleteProjectHandler,
 	list: adminListProjectHandler,
