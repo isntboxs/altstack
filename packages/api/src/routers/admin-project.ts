@@ -7,6 +7,7 @@ import { adminProcedure } from '@altstack/api/procedures'
 import { resolveLogoUrl } from '@altstack/api/s3'
 import {
 	deleteFinalKeysBestEffort,
+	InvalidTempUploadError,
 	promoteTempImageToProject,
 	TempUploadMissingError,
 } from '@altstack/api/storage'
@@ -120,12 +121,14 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		// the final key. Temp orphans expire via S3 lifecycle on tmp/*.
 		let finalLogoKey: string
 		let finalScreenshotKey: string | null = null
+		const promotedKeys: Array<string> = []
 		try {
 			finalLogoKey = await promoteTempImageToProject({
 				tmpKey: input.logo,
 				slug: input.slug,
 				kind: 'logo',
 			})
+			promotedKeys.push(finalLogoKey)
 
 			if (input.screenshot) {
 				finalScreenshotKey = await promoteTempImageToProject({
@@ -133,9 +136,19 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					slug: input.slug,
 					kind: 'screenshot',
 				})
+				promotedKeys.push(finalScreenshotKey)
 			}
 		} catch (error) {
-			if (error instanceof TempUploadMissingError) throw errors.BAD_REQUEST()
+			// A later promote can fail after an earlier one succeeded (e.g.
+			// screenshot tmp missing) — clean up what was already promoted
+			// so no orphan final objects are left without a DB row.
+			await deleteFinalKeysBestEffort(promotedKeys)
+			if (
+				error instanceof TempUploadMissingError ||
+				error instanceof InvalidTempUploadError
+			) {
+				throw errors.BAD_REQUEST()
+			}
 			throw errors.INTERNAL_SERVER_ERROR()
 		}
 

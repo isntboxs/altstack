@@ -8,12 +8,30 @@ import { randomUUID } from 'node:crypto'
 
 import { s3, S3_BUCKET } from '@altstack/api/s3'
 
+import {
+	LOGO_MAX_SIZE,
+	LOGO_MIME,
+	SCREENSHOT_MAX_SIZE,
+	SCREENSHOT_MIME,
+} from '@altstack/shared/constants'
+import {
+	projectLogoKeySchema,
+	projectScreenshotKeySchema,
+} from '@altstack/shared/schemas/upload'
+
 export type ProjectImageKind = 'logo' | 'screenshot'
 
 export class TempUploadMissingError extends Error {
 	constructor(message = 'Temporary upload not found') {
 		super(message)
 		this.name = 'TempUploadMissingError'
+	}
+}
+
+export class InvalidTempUploadError extends Error {
+	constructor(message = 'Temporary upload is invalid') {
+		super(message)
+		this.name = 'InvalidTempUploadError'
 	}
 }
 
@@ -39,6 +57,16 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
 	webp: 'image/webp',
 	gif: 'image/gif',
 }
+
+const MAX_SIZE_BY_KIND = {
+	logo: LOGO_MAX_SIZE,
+	screenshot: SCREENSHOT_MAX_SIZE,
+} as const
+
+const ALLOWED_MIME_BY_KIND = {
+	logo: LOGO_MIME,
+	screenshot: SCREENSHOT_MIME,
+} as const
 
 export function isS3NotFoundError(error: unknown): boolean {
 	if (typeof error !== 'object' || error === null) return false
@@ -120,14 +148,48 @@ export async function promoteTempImageToProject({
 			? buildFinalLogoKey(slug, ext)
 			: buildFinalScreenshotKey(slug, ext)
 
+	// Guard against builder regressions — final keys must always satisfy
+	// the schemas the DB rows are validated against downstream.
+	const finalKeySchema =
+		kind === 'logo' ? projectLogoKeySchema : projectScreenshotKeySchema
+	if (!finalKeySchema.safeParse(finalKey).success) {
+		throw new StorageError(`Built invalid final ${kind} key`)
+	}
+
 	let contentType: string | undefined
 	try {
 		const head = await s3.send(
 			new HeadObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey })
 		)
+
+		// The size/type declared at request time is client-controlled, so
+		// verify the stored object before promoting it to a final key.
+		const maxSize = MAX_SIZE_BY_KIND[kind]
+		const allowedMime = ALLOWED_MIME_BY_KIND[kind] as ReadonlyArray<string>
+		const storedSize = head.ContentLength
+		const storedType = head.ContentType
+		const sizeOk = storedSize == null || storedSize <= maxSize
+		const typeOk = !storedType || allowedMime.includes(storedType)
+		if (!sizeOk || !typeOk) {
+			await s3
+				.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey }))
+				.catch(() => {
+					// ignore — lifecycle on tmp/* cleans up leftovers
+				})
+			throw new InvalidTempUploadError(
+				`Temporary ${kind} failed size/type verification`
+			)
+		}
+
 		contentType =
-			head.ContentType ?? CONTENT_TYPE_BY_EXT[ext] ?? 'application/octet-stream'
+			storedType ?? CONTENT_TYPE_BY_EXT[ext] ?? 'application/octet-stream'
 	} catch (error) {
+		if (
+			error instanceof TempUploadMissingError ||
+			error instanceof InvalidTempUploadError
+		) {
+			throw error
+		}
 		if (isS3NotFoundError(error)) {
 			throw new TempUploadMissingError(`Temporary ${kind} not found: ${tmpKey}`)
 		}

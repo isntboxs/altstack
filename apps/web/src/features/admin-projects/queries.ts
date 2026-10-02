@@ -10,6 +10,15 @@ export const adminProjectQueries = {
 	create: () =>
 		adminORPC.project.create.mutationOptions({
 			onError: (error) => {
+				// BAD_REQUEST from a failed submit means the tmp upload keys are
+				// dead — the create form handles it with a re-upload prompt.
+				if (
+					typeof error === 'object' &&
+					'code' in error &&
+					(error as { code?: unknown }).code === 'BAD_REQUEST'
+				) {
+					return
+				}
 				toast.add({
 					type: 'error',
 					title: 'Create Project Failed',

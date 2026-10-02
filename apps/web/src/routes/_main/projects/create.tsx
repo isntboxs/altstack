@@ -27,6 +27,7 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
+import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
@@ -51,6 +52,15 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 }
 
 type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
+
+function isBadRequestError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'BAD_REQUEST'
+	)
+}
 
 export const Route = createFileRoute('/_main/projects/create')({
 	component: RouteComponent,
@@ -184,7 +194,26 @@ function RouteComponent() {
 			onSubmit: adminCreateProjectInputSchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
-			await createProject.mutateAsync(value)
+			try {
+				await createProject.mutateAsync(value)
+			} catch (error) {
+				if (isBadRequestError(error)) {
+					// Promote deletes tmp keys before the DB insert, so a failed
+					// submit leaves the form holding dead keys — clear them so
+					// retry starts from re-upload instead of failing again.
+					formApi.setFieldValue('logo', '')
+					formApi.setFieldValue('screenshot', undefined)
+					setLogoDisplayUrl(null)
+					setScreenshotDisplayUrl(null)
+					toast.add({
+						type: 'warning',
+						title: 'Images need re-upload',
+						description:
+							'The uploaded images expired when the submit failed. Please upload them again and retry.',
+					})
+				}
+				return
+			}
 			formApi.reset()
 			isSlugCustomized.current = false
 			setLogoDisplayUrl(null)
