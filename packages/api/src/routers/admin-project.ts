@@ -1,11 +1,15 @@
-import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import type { ORPCErrorConstructorMap } from '@orpc/server'
 import { asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
-import { resolveLogoUrl, s3, S3_BUCKET } from '@altstack/api/s3'
+import { resolveLogoUrl } from '@altstack/api/s3'
+import {
+	deleteFinalKeysBestEffort,
+	promoteTempImageToProject,
+	TempUploadMissingError,
+} from '@altstack/api/storage'
 
 import {
 	auditLog,
@@ -60,41 +64,6 @@ async function fetchGithub(
 	}
 }
 
-function isS3NotFoundError(error: unknown): boolean {
-	if (typeof error !== 'object' || error === null) return false
-
-	if ('$metadata' in error) {
-		const metadata = (error as { $metadata?: { httpStatusCode?: number } })
-			.$metadata
-		if (metadata?.httpStatusCode === 404) return true
-	}
-
-	return (
-		'code' in error &&
-		((error as { code?: unknown }).code === 'NotFound' ||
-			(error as { code?: unknown }).code === 'NoSuchKey')
-	)
-}
-
-// Rejects keys whose upload never completed (presigned URL issued but PUT
-// abandoned) so project records never point at non-existent objects.
-async function assertUploadExists(
-	key: string,
-	errors: ORPCErrorConstructorMap<typeof ORPC_ERRORS>
-) {
-	try {
-		await s3.send(
-			new HeadObjectCommand({
-				Bucket: S3_BUCKET,
-				Key: key,
-			})
-		)
-	} catch (error) {
-		if (isS3NotFoundError(error)) throw errors.BAD_REQUEST()
-		throw errors.INTERNAL_SERVER_ERROR()
-	}
-}
-
 const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 	async ({ context, errors, input }) => {
 		const { auth, db } = context
@@ -146,12 +115,29 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 		const { forks, stars } = await fetchGithub(owner, repo, errors)
 
-		await Promise.all([
-			assertUploadExists(input.logo, errors),
-			...(input.screenshot
-				? [assertUploadExists(input.screenshot, errors)]
-				: []),
-		])
+		// Uploads land in tmp/logos|tmp/screenshots first. Only on real submit
+		// do we copy to projects/{slug}/logo|screenshot-{uuid}.ext and store
+		// the final key. Temp orphans expire via S3 lifecycle on tmp/*.
+		let finalLogoKey: string
+		let finalScreenshotKey: string | null = null
+		try {
+			finalLogoKey = await promoteTempImageToProject({
+				tmpKey: input.logo,
+				slug: input.slug,
+				kind: 'logo',
+			})
+
+			if (input.screenshot) {
+				finalScreenshotKey = await promoteTempImageToProject({
+					tmpKey: input.screenshot,
+					slug: input.slug,
+					kind: 'screenshot',
+				})
+			}
+		} catch (error) {
+			if (error instanceof TempUploadMissingError) throw errors.BAD_REQUEST()
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
 
 		try {
 			return await db.transaction(async (tx) => {
@@ -163,8 +149,8 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 						repositoryUrl: canonicalUrl,
 						tagline: input.tagline,
 						description: input.description,
-						logo: input.logo,
-						screenshot: input.screenshot ?? null,
+						logo: finalLogoKey,
+						screenshot: finalScreenshotKey,
 						websiteUrl: input.websiteUrl ?? null,
 						content: input.content ?? null,
 						status: 'published',
@@ -211,6 +197,11 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 				}
 			})
 		} catch (error) {
+			// Promote already copied to final keys; clean them up so a failed
+			// insert (e.g. slug race → 409) doesn't leave orphan finals.
+			await deleteFinalKeysBestEffort(
+				finalScreenshotKey ? [finalLogoKey, finalScreenshotKey] : [finalLogoKey]
+			)
 			if (isUniqueViolation(error)) throw errors.CONFLICT()
 			throw error
 		}
