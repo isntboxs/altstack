@@ -5,8 +5,12 @@ import { baseContract } from '@altstack/api/contracts/base'
 import {
 	adminCreateProjectInputSchema,
 	adminCreateProjectOutputSchema,
+	adminDeleteProjectInputSchema,
+	adminDeleteProjectOutputSchema,
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
+	adminUpdateProjectInputSchema,
+	adminUpdateProjectOutputSchema,
 } from '@altstack/shared'
 import {
 	listCategoriesInputSchema,
@@ -29,6 +33,40 @@ const createAdminProjectContract = baseContract
 	)
 	.input(adminCreateProjectInputSchema)
 	.output(adminCreateProjectOutputSchema)
+
+const updateAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/{id}',
+			method: 'PATCH',
+			summary: 'Admin update project',
+			description:
+				'Partial update. New logo/screenshot arrive as tmp keys and are promoted to projects/{slug}/. Slug rename moves the folder. Duplicate repo/slug → 409.',
+			tags: ['AdminProjects'],
+			operationId: 'updateAdminProject',
+			successStatus: 200,
+			successDescription: 'Project updated',
+		})
+	)
+	.input(adminUpdateProjectInputSchema)
+	.output(adminUpdateProjectOutputSchema)
+
+const deleteAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/{id}',
+			method: 'DELETE',
+			summary: 'Admin delete project',
+			description:
+				'Hard delete project with its images. Missing project → 404.',
+			tags: ['AdminProjects'],
+			operationId: 'deleteAdminProject',
+			successStatus: 200,
+			successDescription: 'Project deleted',
+		})
+	)
+	.input(adminDeleteProjectInputSchema)
+	.output(adminDeleteProjectOutputSchema)
 
 const listAdminProjectsContract = baseContract
 	.meta(
@@ -65,6 +103,8 @@ const listAdminCategoriesContract = baseContract
 
 export const adminProjectContract = {
 	create: createAdminProjectContract,
+	update: updateAdminProjectContract,
+	remove: deleteAdminProjectContract,
 	list: listAdminProjectsContract,
 	listCategories: listAdminCategoriesContract,
 } as const

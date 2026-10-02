@@ -6,9 +6,11 @@ import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
 import { resolveLogoUrl } from '@altstack/api/s3'
 import {
+	copyS3Object,
 	deleteFinalKeysBestEffort,
 	InvalidTempUploadError,
 	promoteTempImageToProject,
+	StorageError,
 	TempUploadMissingError,
 } from '@altstack/api/storage'
 
@@ -230,6 +232,294 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 	}
 )
 
+const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
+	async ({ context, errors, input }) => {
+		const { auth, db } = context
+
+		const [existing] = await db
+			.select()
+			.from(project)
+			.where(eq(project.id, input.id))
+			.limit(1)
+
+		if (!existing) throw errors.NOT_FOUND()
+
+		let canonicalUrl: string | undefined
+		let nextGithub: { owner: string; repo: string } | undefined
+		if (input.repositoryUrl !== undefined) {
+			let parsed: { canonicalUrl: string; owner: string; repo: string }
+			try {
+				parsed = canonicalizeGithubUrl(input.repositoryUrl)
+			} catch {
+				throw errors.BAD_REQUEST()
+			}
+			canonicalUrl = parsed.canonicalUrl
+			if (canonicalUrl !== existing.repositoryUrl) {
+				const [repoOwner] = await db
+					.select({ id: project.id })
+					.from(project)
+					.where(eq(project.repositoryUrl, canonicalUrl))
+					.limit(1)
+				if (repoOwner) throw errors.CONFLICT()
+				nextGithub = { owner: parsed.owner, repo: parsed.repo }
+			}
+		}
+
+		const targetSlug = input.slug ?? existing.slug
+		if (input.slug !== undefined && input.slug !== existing.slug) {
+			const [slugOwner] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(eq(project.slug, input.slug))
+				.limit(1)
+			if (slugOwner) throw errors.CONFLICT()
+		}
+
+		let categoryIds: Array<string> | undefined
+		let uniqueCategorySlugs: Array<string> | undefined
+		if (input.categorySlugs !== undefined) {
+			uniqueCategorySlugs = [...new Set(input.categorySlugs)]
+
+			const categoryRows = await db
+				.select({ id: category.id, slug: category.slug })
+				.from(category)
+				.where(inArray(category.slug, uniqueCategorySlugs))
+
+			const categoryIdBySlug = new Map(
+				categoryRows.map((row) => [row.slug, row.id])
+			)
+
+			categoryIds = []
+			for (const slug of uniqueCategorySlugs) {
+				const categoryId = categoryIdBySlug.get(slug)
+				if (!categoryId) throw errors.BAD_REQUEST()
+				categoryIds.push(categoryId)
+			}
+		}
+
+		let refreshedGithub:
+			| { owner: string; repo: string; stars: number; forks: number }
+			| undefined
+		if (nextGithub) {
+			const { forks, stars } = await fetchGithub(
+				nextGithub.owner,
+				nextGithub.repo,
+				errors
+			)
+			refreshedGithub = { ...nextGithub, stars, forks }
+		}
+
+		// New images arrive as tmp keys and are promoted straight into the
+		// target slug folder. Kept images move along on slug rename via
+		// copy (source deleted only after the DB update succeeds).
+		let finalLogoKey = existing.logo
+		let finalScreenshotKey = existing.screenshot
+		const promotedKeys: Array<string> = []
+		const staleKeys: Array<string> = []
+		try {
+			if (input.logo !== undefined) {
+				finalLogoKey = await promoteTempImageToProject({
+					tmpKey: input.logo,
+					slug: targetSlug,
+					kind: 'logo',
+				})
+				promotedKeys.push(finalLogoKey)
+				staleKeys.push(existing.logo)
+			}
+
+			if (input.screenshot !== undefined) {
+				if (input.screenshot === null) {
+					if (existing.screenshot) staleKeys.push(existing.screenshot)
+					finalScreenshotKey = null
+				} else {
+					finalScreenshotKey = await promoteTempImageToProject({
+						tmpKey: input.screenshot,
+						slug: targetSlug,
+						kind: 'screenshot',
+					})
+					promotedKeys.push(finalScreenshotKey)
+					if (existing.screenshot) staleKeys.push(existing.screenshot)
+				}
+			}
+
+			if (targetSlug !== existing.slug) {
+				const oldPrefix = `projects/${existing.slug}/`
+				const copyIntoSlug = async (oldKey: string): Promise<string> => {
+					if (!oldKey.startsWith(oldPrefix)) {
+						throw new StorageError(`Expected key under ${oldPrefix}`)
+					}
+					const destKey = `projects/${targetSlug}/${oldKey.slice(oldPrefix.length)}`
+					await copyS3Object(oldKey, destKey)
+					promotedKeys.push(destKey)
+					staleKeys.push(oldKey)
+					return destKey
+				}
+
+				if (input.logo === undefined) {
+					finalLogoKey = await copyIntoSlug(existing.logo)
+				}
+				if (input.screenshot === undefined && existing.screenshot) {
+					finalScreenshotKey = await copyIntoSlug(existing.screenshot)
+				}
+			}
+		} catch (error) {
+			await deleteFinalKeysBestEffort(promotedKeys)
+			if (
+				error instanceof TempUploadMissingError ||
+				error instanceof InvalidTempUploadError
+			) {
+				throw errors.UPLOAD_EXPIRED()
+			}
+			if (promotedKeys.length > 0) throw errors.UPLOAD_CONSUMED()
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
+
+		const patch: Partial<typeof project.$inferInsert> = {
+			logo: finalLogoKey,
+			screenshot: finalScreenshotKey,
+		}
+		if (input.name !== undefined) patch.name = input.name
+		if (input.slug !== undefined) patch.slug = input.slug
+		if (canonicalUrl !== undefined) patch.repositoryUrl = canonicalUrl
+		if (input.tagline !== undefined) patch.tagline = input.tagline
+		if (input.description !== undefined) patch.description = input.description
+		if (input.websiteUrl !== undefined) patch.websiteUrl = input.websiteUrl
+		if (input.content !== undefined) patch.content = input.content
+		if (input.status !== undefined) patch.status = input.status
+
+		try {
+			const result = await db.transaction(async (tx) => {
+				const [updated] = await tx
+					.update(project)
+					.set(patch)
+					.where(eq(project.id, input.id))
+					.returning()
+
+				if (!updated) throw errors.INTERNAL_SERVER_ERROR()
+
+				if (categoryIds !== undefined) {
+					await tx
+						.delete(projectCategory)
+						.where(eq(projectCategory.projectId, input.id))
+					if (categoryIds.length > 0) {
+						await tx.insert(projectCategory).values(
+							categoryIds.map((categoryId) => {
+								return {
+									projectId: input.id,
+									categoryId,
+								}
+							})
+						)
+					}
+				}
+
+				if (refreshedGithub) {
+					const fetchedAt = new Date()
+					await tx
+						.update(githubRepository)
+						.set({ ...refreshedGithub, fetchedAt })
+						.where(eq(githubRepository.projectId, input.id))
+				}
+
+				await tx.insert(auditLog).values({
+					actorId: auth.user.id,
+					action: 'project_updated',
+					projectId: input.id,
+				})
+
+				const [githubRow] = await tx
+					.select()
+					.from(githubRepository)
+					.where(eq(githubRepository.projectId, input.id))
+					.limit(1)
+
+				if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
+
+				let categorySlugsOut: Array<string>
+				if (uniqueCategorySlugs !== undefined) {
+					categorySlugsOut = uniqueCategorySlugs
+				} else {
+					const rows = await tx
+						.select({ slug: category.slug })
+						.from(projectCategory)
+						.innerJoin(category, eq(projectCategory.categoryId, category.id))
+						.where(eq(projectCategory.projectId, input.id))
+					categorySlugsOut = rows.map((row) => row.slug)
+				}
+
+				const { searchVector: _searchVector, ...rest } = updated
+				void _searchVector
+
+				return {
+					...rest,
+					logo: resolveLogoUrl(rest.logo),
+					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					categories: categorySlugsOut,
+					github: {
+						owner: githubRow.owner,
+						repo: githubRow.repo,
+						stars: githubRow.stars,
+						forks: githubRow.forks,
+						fetchedAt: githubRow.fetchedAt,
+					},
+				}
+			})
+
+			// DB now points at the new finals — the replaced and moved-from
+			// keys are safe to delete. Best-effort: projects/* has no lifecycle.
+			await deleteFinalKeysBestEffort(staleKeys)
+
+			return result
+		} catch (error) {
+			await deleteFinalKeysBestEffort(promotedKeys)
+			if (isUniqueViolation(error)) throw errors.CONFLICT_AFTER_PROMOTE()
+			throw errors.UPLOAD_CONSUMED()
+		}
+	}
+)
+
+const adminDeleteProjectHandler = adminProcedure.admin.project.remove.handler(
+	async ({ context, errors, input }) => {
+		const { auth, db } = context
+
+		const [existing] = await db
+			.select({
+				id: project.id,
+				logo: project.logo,
+				screenshot: project.screenshot,
+			})
+			.from(project)
+			.where(eq(project.id, input.id))
+			.limit(1)
+
+		if (!existing) throw errors.NOT_FOUND()
+
+		try {
+			await db.transaction(async (tx) => {
+				await tx.insert(auditLog).values({
+					actorId: auth.user.id,
+					action: 'project_removed',
+					projectId: existing.id,
+				})
+				// githubRepository and projectCategory rows cascade.
+				await tx.delete(project).where(eq(project.id, existing.id))
+			})
+		} catch {
+			throw errors.INTERNAL_SERVER_ERROR()
+		}
+
+		// Best-effort: the DB row is gone, so leftover finals would be
+		// orphans with no lifecycle covering projects/*.
+		await deleteFinalKeysBestEffort(
+			existing.screenshot
+				? [existing.logo, existing.screenshot]
+				: [existing.logo]
+		)
+
+		return { success: true as const }
+	}
+)
+
 const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 	async ({ context, input }) => {
 		const { db } = context
@@ -331,6 +621,8 @@ const adminListCategoriesHandler =
 
 export const adminProjectRouter = {
 	create: adminCreateProjectHandler,
+	update: adminUpdateProjectHandler,
+	remove: adminDeleteProjectHandler,
 	list: adminListProjectHandler,
 	listCategories: adminListCategoriesHandler,
 }
