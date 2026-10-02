@@ -316,6 +316,10 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 		let finalScreenshotKey = existing.screenshot
 		const promotedKeys: Array<string> = []
 		const staleKeys: Array<string> = []
+		// True once a tmp upload was promoted (its tmp key is deleted).
+		// Slug-rename copies below also land in promotedKeys for rollback
+		// cleanup, but they consume no tmp upload — retry stays possible.
+		let promotedTmp = false
 		try {
 			if (input.logo !== undefined) {
 				finalLogoKey = await promoteTempImageToProject({
@@ -324,6 +328,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					kind: 'logo',
 				})
 				promotedKeys.push(finalLogoKey)
+				promotedTmp = true
 				staleKeys.push(existing.logo)
 			}
 
@@ -338,6 +343,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 						kind: 'screenshot',
 					})
 					promotedKeys.push(finalScreenshotKey)
+					promotedTmp = true
 					if (existing.screenshot) staleKeys.push(existing.screenshot)
 				}
 			}
@@ -370,7 +376,9 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			) {
 				throw errors.UPLOAD_EXPIRED()
 			}
-			if (promotedKeys.length > 0) throw errors.UPLOAD_CONSUMED()
+			// Only a promoted tmp upload deletes its tmp key; slug-rename
+			// copies alone leave retry possible.
+			if (promotedTmp) throw errors.UPLOAD_CONSUMED()
 			throw errors.INTERNAL_SERVER_ERROR()
 		}
 
@@ -472,8 +480,14 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			return result
 		} catch (error) {
 			await deleteFinalKeysBestEffort(promotedKeys)
-			if (isUniqueViolation(error)) throw errors.CONFLICT_AFTER_PROMOTE()
-			throw errors.UPLOAD_CONSUMED()
+			// Without a promoted tmp upload the submitted keys are still
+			// alive, so report preflight-style codes that preserve them.
+			if (isUniqueViolation(error)) {
+				throw promotedTmp ? errors.CONFLICT_AFTER_PROMOTE() : errors.CONFLICT()
+			}
+			throw promotedTmp
+				? errors.UPLOAD_CONSUMED()
+				: errors.INTERNAL_SERVER_ERROR()
 		}
 	}
 )
