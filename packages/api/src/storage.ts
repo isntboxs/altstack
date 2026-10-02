@@ -50,14 +50,6 @@ const TMP_PREFIX_BY_KIND = {
 	screenshot: 'tmp/screenshots/',
 } as const
 
-const CONTENT_TYPE_BY_EXT: Record<string, string> = {
-	png: 'image/png',
-	jpg: 'image/jpeg',
-	jpeg: 'image/jpeg',
-	webp: 'image/webp',
-	gif: 'image/gif',
-}
-
 const MAX_SIZE_BY_KIND = {
 	logo: LOGO_MAX_SIZE,
 	screenshot: SCREENSHOT_MAX_SIZE,
@@ -168,8 +160,8 @@ export async function promoteTempImageToProject({
 		const allowedMime = ALLOWED_MIME_BY_KIND[kind] as ReadonlyArray<string>
 		const storedSize = head.ContentLength
 		const storedType = head.ContentType
-		const sizeOk = storedSize == null || storedSize <= maxSize
-		const typeOk = !storedType || allowedMime.includes(storedType)
+		const sizeOk = storedSize != null && storedSize <= maxSize
+		const typeOk = !!storedType && allowedMime.includes(storedType)
 		if (!sizeOk || !typeOk) {
 			await s3
 				.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey }))
@@ -181,8 +173,8 @@ export async function promoteTempImageToProject({
 			)
 		}
 
-		contentType =
-			storedType ?? CONTENT_TYPE_BY_EXT[ext] ?? 'application/octet-stream'
+		// storedType is verified non-empty by typeOk above.
+		contentType = storedType
 	} catch (error) {
 		if (
 			error instanceof TempUploadMissingError ||
@@ -209,20 +201,18 @@ export async function promoteTempImageToProject({
 	} catch {
 		throw new StorageError(`Failed to promote temporary ${kind}`)
 	}
-
 	try {
 		await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: finalKey }))
 	} catch {
+		await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to verify promoted ${kind}`)
 	}
-
 	try {
 		await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey }))
 	} catch {
 		// Copy already succeeded and is verified; a leftover tmp object will
 		// expire via lifecycle, so don't fail the whole operation.
 	}
-
 	return finalKey
 }
 

@@ -147,7 +147,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 				error instanceof TempUploadMissingError ||
 				error instanceof InvalidTempUploadError
 			) {
-				throw errors.BAD_REQUEST()
+				throw errors.UPLOAD_EXPIRED()
 			}
 			throw errors.INTERNAL_SERVER_ERROR()
 		}

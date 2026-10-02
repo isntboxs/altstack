@@ -53,12 +53,21 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 
 type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
 
-function isBadRequestError(error: unknown): boolean {
+function isUploadExpiredError(error: unknown): boolean {
 	return (
 		typeof error === 'object' &&
 		error !== null &&
 		'code' in error &&
-		(error as { code?: unknown }).code === 'BAD_REQUEST'
+		(error as { code?: unknown }).code === 'UPLOAD_EXPIRED'
+	)
+}
+
+function isConflictError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'CONFLICT'
 	)
 }
 
@@ -197,10 +206,13 @@ function RouteComponent() {
 			try {
 				await createProject.mutateAsync(value)
 			} catch (error) {
-				if (isBadRequestError(error)) {
+				if (isUploadExpiredError(error) || isConflictError(error)) {
 					// Promote deletes tmp keys before the DB insert, so a failed
 					// submit leaves the form holding dead keys — clear them so
 					// retry starts from re-upload instead of failing again.
+					// This covers post-promote CONFLICT (e.g. slug race) as well
+					// as UPLOAD_EXPIRED. Plain BAD_REQUEST (repository URL,
+					// category validation) keeps the uploaded images.
 					formApi.setFieldValue('logo', '')
 					formApi.setFieldValue('screenshot', undefined)
 					setLogoDisplayUrl(null)

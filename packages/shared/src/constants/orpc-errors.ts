@@ -3,6 +3,10 @@ export const ORPC_ERRORS = {
 		message: `Bad Request. Usually due to missing parameters, or invalid parameters.`,
 		status: 400,
 	},
+	UPLOAD_EXPIRED: {
+		message: `Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again.`,
+		status: 400,
+	},
 	UNAUTHORIZED: {
 		message: `Unauthorized. Due to missing or invalid authentication.`,
 		status: 401,

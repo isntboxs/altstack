@@ -10,12 +10,15 @@ export const adminProjectQueries = {
 	create: () =>
 		adminORPC.project.create.mutationOptions({
 			onError: (error) => {
-				// BAD_REQUEST from a failed submit means the tmp upload keys are
-				// dead — the create form handles it with a re-upload prompt.
+				// UPLOAD_EXPIRED / CONFLICT from a failed submit means the tmp
+				// upload keys are dead — the create form handles those with a
+				// re-upload prompt. Plain BAD_REQUEST (validation) keeps the
+				// normal error toast and preserves the uploaded images.
 				if (
 					typeof error === 'object' &&
 					'code' in error &&
-					(error as { code?: unknown }).code === 'BAD_REQUEST'
+					((error as { code?: unknown }).code === 'UPLOAD_EXPIRED' ||
+						(error as { code?: unknown }).code === 'CONFLICT')
 				) {
 					return
 				}
