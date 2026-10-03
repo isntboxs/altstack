@@ -17,6 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
 
+import { useAdminProjectDelete } from '#/features/admin-projects/queries'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 import { resolveFileUrl } from '#/utils/storage'
 
@@ -172,6 +173,8 @@ export const adminProjectColumns = columnHelper.columns([
 								>
 									Edit
 								</DropdownMenuItem>
+
+								<DeleteProjectButton id={project.id} />
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -180,3 +183,17 @@ export const adminProjectColumns = columnHelper.columns([
 		},
 	}),
 ])
+
+const DeleteProjectButton = ({ id }: { id: string }) => {
+	const deleteMutation = useAdminProjectDelete()
+
+	const handleClick = () => {
+		deleteMutation.mutate({ id })
+	}
+
+	return (
+		<DropdownMenuItem variant="destructive" onClick={handleClick}>
+			Delete
+		</DropdownMenuItem>
+	)
+}
