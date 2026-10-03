@@ -117,9 +117,36 @@ export default function BlockNoteEditor({
 		editor.replaceBlocks(editor.document, blocks)
 	}, [editor, value])
 
+	// Latest onChange without resubscribing the deferred export below.
+	const onChangeRef = useRef(onChange)
+
+	useEffect(() => {
+		onChangeRef.current = onChange
+	})
+
+	const pendingExportRef = useRef<number | null>(null)
+
+	useEffect(
+		() => () => {
+			if (pendingExportRef.current !== null) {
+				clearTimeout(pendingExportRef.current)
+			}
+		},
+		[]
+	)
+
 	const handleMarkdownChange = () => {
-		const markdown = editor.blocksToMarkdownLossy(editor.document)
-		onChange?.(markdown)
+		// Exporting renders blocks to HTML through React (elementRenderer +
+		// flushSync), which React forbids while it is already rendering. The
+		// change callback fires mid-commit, so defer to a macrotask where
+		// React is idle — otherwise the render no-ops, warns, and silently
+		// drops content (e.g. code blocks) from the markdown.
+		// Coalesced: rapid changes export only the latest document state.
+		if (pendingExportRef.current !== null) return
+		pendingExportRef.current = window.setTimeout(() => {
+			pendingExportRef.current = null
+			onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
+		}, 0)
 	}
 
 	return (
