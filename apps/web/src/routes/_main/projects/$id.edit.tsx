@@ -1,6 +1,5 @@
 import { IconArrowLeft, IconBrandGithub, IconPhoto } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form-start'
-import { useQueryClient } from '@tanstack/react-query'
 import { ClientOnly, createFileRoute, Link } from '@tanstack/react-router'
 import { Suspense, useRef, useState } from 'react'
 import type { z } from 'zod'
@@ -32,8 +31,8 @@ import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
-import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
+import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import {
@@ -241,8 +240,7 @@ function RouteComponent() {
 }
 
 function EditProjectForm({ project }: { project: AdminProject }) {
-	const updateProject = useAdminProjectUpdate()
-	const queryClient = useQueryClient()
+	const updateProject = useAdminProjectUpdate({ id: project.id })
 	// Form image fields hold tmp keys only (undefined = keep,
 	// screenshot null = remove). The existing file keys are resolved to
 	// display URLs here so the preview keeps showing them until replaced.
@@ -292,9 +290,6 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 				})
 				setLogoDisplayUrl(resolveFileUrl(updated.logo))
 				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
-				await queryClient.invalidateQueries({
-					queryKey: adminProjectQueries.get({ id: project.id }).queryKey,
-				})
 			} catch (error) {
 				if (
 					isUploadExpiredError(error) ||
