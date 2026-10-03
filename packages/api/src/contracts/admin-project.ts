@@ -76,7 +76,7 @@ const getAdminProjectByIdContract = baseContract
 			method: 'GET',
 			summary: 'Admin get project by id',
 			description:
-				'Get a single project with resolved image URLs, for the admin edit form. Any status.',
+				'Get a single project (image fields are storage keys), for the admin edit form. Any status.',
 			tags: ['AdminProjects'],
 			operationId: 'getAdminProjectById',
 			successStatus: 200,

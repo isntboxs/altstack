@@ -33,6 +33,7 @@ import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
+import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import {
@@ -277,11 +278,18 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 					id: project.id,
 					...value,
 				})
-				// Tmp keys are consumed by promote — drop them so a second
-				// submit doesn't retry with dead keys. Other fields already
-				// match the server state.
-				form.setFieldValue('logo', undefined)
-				form.setFieldValue('screenshot', undefined)
+				form.reset({
+					name: updated.name,
+					slug: updated.slug,
+					repositoryUrl: toRepositoryShortForm(updated.repositoryUrl),
+					tagline: updated.tagline,
+					description: updated.description,
+					logo: undefined,
+					screenshot: undefined,
+					websiteUrl: updated.websiteUrl ?? undefined,
+					content: updated.content ?? undefined,
+					categorySlugs: updated.categories,
+				})
 				setLogoDisplayUrl(resolveFileUrl(updated.logo))
 				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
 				await queryClient.invalidateQueries({
@@ -318,6 +326,11 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 	// create, opposite starting flag).
 	const isSlugCustomized = useRef(true)
 
+	// Flushes the editor's deferred markdown export so handleSubmit below
+	// reads the latest content even when submit lands in the same task as
+	// the last keystroke.
+	const editorRef = useRef<BlockNoteEditorHandle | null>(null)
+
 	return (
 		<div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
 			<form
@@ -325,6 +338,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 				className="min-w-0"
 				onSubmit={(e) => {
 					e.preventDefault()
+					editorRef.current?.flush()
 					void form.handleSubmit()
 				}}
 			>
@@ -570,6 +584,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 									<Field data-invalid={isInvalid}>
 										<ClientOnly>
 											<BlockNoteEditor
+												ref={editorRef}
 												value={field.state.value ?? undefined}
 												onBlur={field.handleBlur}
 												onChange={(next) =>

@@ -4,7 +4,8 @@ import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/shadcn/style.css'
 import { BlockNoteView } from '@blocknote/shadcn'
 import { cn } from 'cn'
-import { useEffect, useRef } from 'react'
+import { useEffect, useImperativeHandle, useRef } from 'react'
+import type { Ref } from 'react'
 
 import {
 	Avatar,
@@ -83,6 +84,14 @@ interface Props {
 	onChange?: (value: string) => void
 	onBlur?: () => void
 	className?: string
+	ref?: Ref<BlockNoteEditorHandle>
+}
+
+export interface BlockNoteEditorHandle {
+	// Runs the scheduled markdown export immediately. Call before reading
+	// the field value (e.g. form submit) so the latest edits are included.
+	// Safe outside BlockNote's change callback, where React is idle.
+	flush: () => void
 }
 
 export default function BlockNoteEditor({
@@ -90,6 +99,7 @@ export default function BlockNoteEditor({
 	onChange,
 	onBlur,
 	className,
+	ref,
 }: Props) {
 	const { resolvedTheme } = useTheme()
 	const editor = useCreateBlockNote({
@@ -148,6 +158,20 @@ export default function BlockNoteEditor({
 			onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
 		}, 0)
 	}
+
+	// Flushes a pending scheduled export synchronously. A submit in the same
+	// task as the last keystroke would otherwise read the field before the
+	// macrotask above runs and silently drop the latest edits.
+	useImperativeHandle(ref, () => {
+		return {
+			flush: () => {
+				if (pendingExportRef.current === null) return
+				window.clearTimeout(pendingExportRef.current)
+				pendingExportRef.current = null
+				onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
+			},
+		}
+	}, [editor])
 
 	return (
 		<BlockNoteView
