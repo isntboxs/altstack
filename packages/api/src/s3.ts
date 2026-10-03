@@ -15,8 +15,3 @@ export const s3 = new S3Client({
 export const S3_BUCKET = env.S3_BUCKET
 export const S3_PUBLIC_URL = env.S3_PUBLIC_URL
 export const publicUrlForKey = (key: string) => `${S3_PUBLIC_URL}/${key}`
-
-export function resolveLogoUrl(logo: string): string {
-	if (logo.startsWith('http://') || logo.startsWith('https://')) return logo
-	return publicUrlForKey(logo)
-}

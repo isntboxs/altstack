@@ -7,7 +7,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { ORPCErrorConstructorMap } from '@orpc/server'
 
 import { adminProcedure } from '@altstack/api/procedures'
-import { s3, S3_BUCKET, publicUrlForKey } from '@altstack/api/s3'
+import { s3, S3_BUCKET } from '@altstack/api/s3'
 
 import {
 	TMP_LOGO_PREFIX,
@@ -75,7 +75,7 @@ async function requestImageUpload(
 	})
 	const presignedUrl = await getSignedUrl(s3, cmd, { expiresIn: 600 })
 
-	return { key, presignedUrl, publicUrl: publicUrlForKey(key) }
+	return { key, presignedUrl }
 }
 
 async function removeImageUpload(key: string, errors: ImageUploadErrors) {

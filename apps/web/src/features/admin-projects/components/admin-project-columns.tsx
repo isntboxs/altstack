@@ -18,6 +18,7 @@ import {
 } from '@altstack/ui/components/dropdown-menu'
 
 import type { DataTableFeatures } from '#/utils/data-table-features'
+import { resolveFileUrl } from '#/utils/storage'
 
 export type AdminProject =
 	ORPCRouterOutputs['admin']['project']['list']['projects'][number]
@@ -76,7 +77,7 @@ export const adminProjectColumns = columnHelper.columns([
 					nativeButton={false}
 				>
 					<img
-						src={project.logo}
+						src={resolveFileUrl(project.logo)}
 						alt={`${project.name} logo`}
 						className="size-4 rounded"
 					/>

@@ -40,6 +40,7 @@ import {
 	useAdminProjectGet,
 	useAdminProjectUpdate,
 } from '#/features/admin-projects/queries'
+import { resolveFileUrl } from '#/utils/storage'
 
 // Same form as create, minus the id. Every field is optional: omitted image
 // fields keep the current image, `screenshot: null` removes it.
@@ -242,14 +243,14 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 	const updateProject = useAdminProjectUpdate()
 	const queryClient = useQueryClient()
 	// Form image fields hold tmp keys only (undefined = keep,
-	// screenshot null = remove). The existing final URLs live here so the
-	// preview keeps showing them until replaced.
+	// screenshot null = remove). The existing file keys are resolved to
+	// display URLs here so the preview keeps showing them until replaced.
 	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(
-		project.logo
+		resolveFileUrl(project.logo)
 	)
 	const [screenshotDisplayUrl, setScreenshotDisplayUrl] = useState<
 		string | null
-	>(project.screenshot)
+	>(resolveFileUrl(project.screenshot))
 
 	const defaultValues: EditProjectValues = {
 		name: project.name,
@@ -281,8 +282,8 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 				// match the server state.
 				form.setFieldValue('logo', undefined)
 				form.setFieldValue('screenshot', undefined)
-				setLogoDisplayUrl(updated.logo)
-				setScreenshotDisplayUrl(updated.screenshot)
+				setLogoDisplayUrl(resolveFileUrl(updated.logo))
+				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
 				await queryClient.invalidateQueries({
 					queryKey: adminProjectQueries.get({ id: project.id }).queryKey,
 				})
@@ -298,8 +299,8 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 					// from re-upload instead of failing again.
 					form.setFieldValue('logo', undefined)
 					form.setFieldValue('screenshot', undefined)
-					setLogoDisplayUrl(project.logo)
-					setScreenshotDisplayUrl(project.screenshot)
+					setLogoDisplayUrl(resolveFileUrl(project.logo))
+					setScreenshotDisplayUrl(resolveFileUrl(project.screenshot))
 					toast.add({
 						type: 'warning',
 						title: 'Images need re-upload',
@@ -603,6 +604,15 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 									return (
 										<Field data-invalid={isInvalid}>
 											<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
+
+											{!field.state.value && logoDisplayUrl ? (
+												<img
+													src={logoDisplayUrl}
+													alt="Current logo"
+													className="aspect-square w-28 rounded-md border object-cover"
+												/>
+											) : null}
+
 											<LogoUploader
 												value={field.state.value ?? ''}
 												onChange={(next) => {
@@ -610,7 +620,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 														// New upload removed — revert to keeping the
 														// current logo.
 														field.handleChange(undefined)
-														setLogoDisplayUrl(project.logo)
+														setLogoDisplayUrl(resolveFileUrl(project.logo))
 														return
 													}
 													field.handleChange(next)
@@ -619,7 +629,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 													// The uploader reports null when a new upload is
 													// removed — restore the current logo instead of
 													// blanking the preview.
-													setLogoDisplayUrl(url ?? project.logo)
+													setLogoDisplayUrl(url ?? resolveFileUrl(project.logo))
 												}}
 											/>
 
@@ -681,7 +691,9 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 														// New upload removed — revert to keeping the
 														// current screenshot.
 														field.handleChange(undefined)
-														setScreenshotDisplayUrl(project.screenshot)
+														setScreenshotDisplayUrl(
+															resolveFileUrl(project.screenshot)
+														)
 														return
 													}
 													field.handleChange(next)
@@ -689,7 +701,9 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 												onDisplayUrlChange={(url) => {
 													// Null here means a new upload was removed —
 													// restore the current screenshot.
-													setScreenshotDisplayUrl(url ?? project.screenshot)
+													setScreenshotDisplayUrl(
+														url ?? resolveFileUrl(project.screenshot)
+													)
 												}}
 											/>
 

@@ -45,6 +45,7 @@ import {
 
 import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
+import { resolveFileUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$slug')({
 	loader: async ({ context, params }) => {
@@ -267,7 +268,11 @@ function RouteComponent() {
 
 	const screenshotImg = (
 		<img
-			src={projectData.screenshot ?? 'https://placehold.co/1280x1024'}
+			src={
+				projectData.screenshot
+					? resolveFileUrl(projectData.screenshot)
+					: 'https://placehold.co/1280x1024'
+			}
 			className="aspect-video h-auto object-cover transition-transform duration-300 ease-in-out group-hover/screenshot:scale-105"
 			alt={`Screenshot of ${projectData.name} website`}
 		/>
@@ -280,7 +285,7 @@ function RouteComponent() {
 					<div className="sticky top-12 z-50 flex items-center justify-between py-4">
 						<div className="flex items-center gap-2">
 							<img
-								src={projectData.logo}
+								src={resolveFileUrl(projectData.logo)}
 								alt={projectData.name}
 								className="size-8 rounded-md"
 							/>

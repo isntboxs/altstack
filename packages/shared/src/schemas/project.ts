@@ -19,8 +19,10 @@ const projectField = {
 	slug: z.string(),
 	tagline: z.string(),
 	description: z.string(),
-	logo: z.url(),
-	screenshot: z.url().nullable(),
+	// Storage file key (e.g. projects/{slug}/logo-{uuid}.png), never a URL.
+	// The client resolves it to a displayable URL.
+	logo: z.string(),
+	screenshot: z.string().nullable(),
 	repositoryUrl: z.url(),
 	websiteUrl: z.url().nullable(),
 	content: z.string().nullable(),

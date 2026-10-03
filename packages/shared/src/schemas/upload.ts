@@ -33,7 +33,6 @@ export const requestLogoUploadInputSchema = z.object({
 export const requestLogoUploadOutputSchema = z.object({
 	key: logoKeySchema,
 	presignedUrl: z.url(),
-	publicUrl: z.url(),
 })
 
 export const removeLogoUploadInputSchema = z.object({
@@ -78,7 +77,6 @@ export const requestScreenshotUploadInputSchema = z.object({
 export const requestScreenshotUploadOutputSchema = z.object({
 	key: screenshotKeySchema,
 	presignedUrl: z.url(),
-	publicUrl: z.url(),
 })
 
 export const removeScreenshotUploadInputSchema = z.object({

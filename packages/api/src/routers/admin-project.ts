@@ -4,7 +4,6 @@ import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
-import { resolveLogoUrl } from '@altstack/api/s3'
 import {
 	copyS3Object,
 	deleteFinalKeysBestEffort,
@@ -208,8 +207,8 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					categories: uniqueCategorySlugs,
 					github: { owner, repo, stars, forks, fetchedAt },
 				}
@@ -263,8 +262,8 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 
 		return {
 			...rest,
-			logo: resolveLogoUrl(rest.logo),
-			screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+			logo: rest.logo,
+			screenshot: rest.screenshot,
 			categories: categoryRows.map((categoryRow) => categoryRow.slug),
 			github: {
 				owner: githubRow.owner,
@@ -505,8 +504,8 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					categories: categorySlugsOut,
 					github: {
 						owner: githubRow.owner,
@@ -640,8 +639,8 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				void _searchVector
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,
