@@ -117,6 +117,10 @@ export const useAdminProjectUpdate = ({ id }: { id: string }) => {
 				queryKey: adminProjectQueries.get({ id }).queryKey,
 			})
 
+			await queryClient.invalidateQueries({
+				queryKey: adminProjectQueries.list().queryKey,
+			})
+
 			await router.navigate({
 				to: '/projects',
 				replace: true,
@@ -132,11 +136,15 @@ export const useAdminProjectDelete = () => {
 
 	return useMutation({
 		...adminProjectQueries.delete(),
-		onSuccess: async () => {
+		onSuccess: async (_, variables) => {
 			toast.add({
 				type: 'success',
 				title: 'Project deleted successfully',
 				description: 'Project deleted successfully',
+			})
+
+			queryClient.removeQueries({
+				queryKey: adminProjectQueries.get({ id: variables.id }).queryKey,
 			})
 
 			await queryClient.invalidateQueries({
