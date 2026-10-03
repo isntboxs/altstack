@@ -103,3 +103,7 @@ export const adminDeleteProjectInputSchema = z.object({
 export const adminDeleteProjectOutputSchema = z.object({
 	success: z.literal(true),
 })
+
+export const adminGetProjectByIdInputSchema = z.object({
+	id: z.uuid(),
+})

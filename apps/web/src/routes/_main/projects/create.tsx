@@ -30,6 +30,7 @@ import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
+import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
@@ -250,6 +251,11 @@ function RouteComponent() {
 	// Once the user edits the slug by hand, auto-fill from name stops.
 	const isSlugCustomized = useRef(false)
 
+	// Flushes the editor's deferred markdown export so handleSubmit below
+	// reads the latest content even when submit lands in the same task as
+	// the last keystroke.
+	const editorRef = useRef<BlockNoteEditorHandle | null>(null)
+
 	return (
 		<div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
 			<div className="space-y-3">
@@ -277,6 +283,7 @@ function RouteComponent() {
 					className="min-w-0"
 					onSubmit={(e) => {
 						e.preventDefault()
+						editorRef.current?.flush()
 						void form.handleSubmit()
 					}}
 				>
@@ -525,6 +532,7 @@ function RouteComponent() {
 										<Field data-invalid={isInvalid}>
 											<ClientOnly>
 												<BlockNoteEditor
+													ref={editorRef}
 													value={field.state.value}
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e)}

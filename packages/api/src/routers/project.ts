@@ -1,7 +1,6 @@
 import { and, asc, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
 
 import { publicProcedure } from '@altstack/api/procedures'
-import { resolveLogoUrl } from '@altstack/api/s3'
 
 import {
 	category,
@@ -27,10 +26,8 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 
 		return {
 			...row.projects,
-			logo: resolveLogoUrl(row.projects.logo),
-			screenshot: row.projects.screenshot
-				? resolveLogoUrl(row.projects.screenshot)
-				: null,
+			logo: row.projects.logo,
+			screenshot: row.projects.screenshot,
 			github: {
 				owner: row.github_repositories.owner,
 				repo: row.github_repositories.repo,
@@ -75,10 +72,8 @@ const listHandler = publicProcedure.project.list.handler(
 			projects: rows.map((row) => {
 				return {
 					...row.projects,
-					logo: resolveLogoUrl(row.projects.logo),
-					screenshot: row.projects.screenshot
-						? resolveLogoUrl(row.projects.screenshot)
-						: null,
+					logo: row.projects.logo,
+					screenshot: row.projects.screenshot,
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,
@@ -217,7 +212,7 @@ const searchHandler = publicProcedure.project.search.handler(
 			projects: rows.map((row) => {
 				return {
 					...row.projects,
-					logo: resolveLogoUrl(row.projects.logo),
+					logo: row.projects.logo,
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,

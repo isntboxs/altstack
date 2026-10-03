@@ -19,6 +19,7 @@ import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
+import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -68,6 +69,11 @@ const MainProjectsCreateRoute = MainProjectsCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => MainProjectsRoute,
 } as any)
+const MainProjectsIdEditRoute = MainProjectsIdEditRouteImport.update({
+  id: '/$id/edit',
+  path: '/$id/edit',
+  getParentRoute: () => MainProjectsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/projects/': typeof MainProjectsIndexRoute
+  '/projects/$id/edit': typeof MainProjectsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/projects': typeof MainProjectsIndexRoute
+  '/projects/$id/edit': typeof MainProjectsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
+  '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/projects/create'
     | '/projects/'
+    | '/projects/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/projects/create'
     | '/projects'
+    | '/projects/$id/edit'
   id:
     | '__root__'
     | '/_app'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_main/projects/create'
     | '/_main/projects/'
+    | '/_main/projects/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainProjectsCreateRouteImport
       parentRoute: typeof MainProjectsRoute
     }
+    '/_main/projects/$id/edit': {
+      id: '/_main/projects/$id/edit'
+      path: '/$id/edit'
+      fullPath: '/projects/$id/edit'
+      preLoaderRoute: typeof MainProjectsIdEditRouteImport
+      parentRoute: typeof MainProjectsRoute
+    }
   }
 }
 
@@ -235,11 +254,13 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 interface MainProjectsRouteChildren {
   MainProjectsCreateRoute: typeof MainProjectsCreateRoute
   MainProjectsIndexRoute: typeof MainProjectsIndexRoute
+  MainProjectsIdEditRoute: typeof MainProjectsIdEditRoute
 }
 
 const MainProjectsRouteChildren: MainProjectsRouteChildren = {
   MainProjectsCreateRoute: MainProjectsCreateRoute,
   MainProjectsIndexRoute: MainProjectsIndexRoute,
+  MainProjectsIdEditRoute: MainProjectsIdEditRoute,
 }
 
 const MainProjectsRouteWithChildren = MainProjectsRoute._addFileChildren(

@@ -4,7 +4,6 @@ import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
-import { resolveLogoUrl } from '@altstack/api/s3'
 import {
 	copyS3Object,
 	deleteFinalKeysBestEffort,
@@ -208,8 +207,8 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					categories: uniqueCategorySlugs,
 					github: { owner, repo, stars, forks, fetchedAt },
 				}
@@ -228,6 +227,51 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			// are already consumed, so report that instead of a generic
 			// 500 the form would retry with dead keys.
 			throw errors.UPLOAD_CONSUMED()
+		}
+	}
+)
+
+const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
+	async ({ context, errors, input }) => {
+		const { db } = context
+
+		const [row] = await db
+			.select()
+			.from(project)
+			.where(eq(project.id, input.id))
+			.limit(1)
+
+		if (!row) throw errors.NOT_FOUND()
+
+		const [githubRow] = await db
+			.select()
+			.from(githubRepository)
+			.where(eq(githubRepository.projectId, input.id))
+			.limit(1)
+
+		if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
+
+		const categoryRows = await db
+			.select({ slug: category.slug })
+			.from(projectCategory)
+			.innerJoin(category, eq(projectCategory.categoryId, category.id))
+			.where(eq(projectCategory.projectId, input.id))
+
+		const { searchVector: _searchVector, ...rest } = row
+		void _searchVector
+
+		return {
+			...rest,
+			logo: rest.logo,
+			screenshot: rest.screenshot,
+			categories: categoryRows.map((categoryRow) => categoryRow.slug),
+			github: {
+				owner: githubRow.owner,
+				repo: githubRow.repo,
+				stars: githubRow.stars,
+				forks: githubRow.forks,
+				fetchedAt: githubRow.fetchedAt,
+			},
 		}
 	}
 )
@@ -460,8 +504,8 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					categories: categorySlugsOut,
 					github: {
 						owner: githubRow.owner,
@@ -595,8 +639,8 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				void _searchVector
 				return {
 					...rest,
-					logo: resolveLogoUrl(rest.logo),
-					screenshot: rest.screenshot ? resolveLogoUrl(rest.screenshot) : null,
+					logo: rest.logo,
+					screenshot: rest.screenshot,
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,
@@ -635,6 +679,7 @@ const adminListCategoriesHandler =
 
 export const adminProjectRouter = {
 	create: adminCreateProjectHandler,
+	getById: adminGetProjectByIdHandler,
 	update: adminUpdateProjectHandler,
 	remove: adminDeleteProjectHandler,
 	list: adminListProjectHandler,

@@ -7,6 +7,7 @@ import {
 	adminCreateProjectOutputSchema,
 	adminDeleteProjectInputSchema,
 	adminDeleteProjectOutputSchema,
+	adminGetProjectByIdInputSchema,
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
 	adminUpdateProjectInputSchema,
@@ -68,6 +69,23 @@ const deleteAdminProjectContract = baseContract
 	.input(adminDeleteProjectInputSchema)
 	.output(adminDeleteProjectOutputSchema)
 
+const getAdminProjectByIdContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/{id}',
+			method: 'GET',
+			summary: 'Admin get project by id',
+			description:
+				'Get a single project (image fields are storage keys), for the admin edit form. Any status.',
+			tags: ['AdminProjects'],
+			operationId: 'getAdminProjectById',
+			successStatus: 200,
+			successDescription: 'Project found',
+		})
+	)
+	.input(adminGetProjectByIdInputSchema)
+	.output(adminUpdateProjectOutputSchema)
+
 const listAdminProjectsContract = baseContract
 	.meta(
 		openapi({
@@ -103,6 +121,7 @@ const listAdminCategoriesContract = baseContract
 
 export const adminProjectContract = {
 	create: createAdminProjectContract,
+	getById: getAdminProjectByIdContract,
 	update: updateAdminProjectContract,
 	remove: deleteAdminProjectContract,
 	list: listAdminProjectsContract,
