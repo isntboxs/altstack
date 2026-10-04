@@ -1,25 +1,17 @@
-import {
-	IconArrowsUpDown,
-	IconDots,
-	IconExternalLink,
-} from '@tabler/icons-react'
+import { IconArrowsUpDown } from '@tabler/icons-react'
+import { Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
+import { formatDate } from 'date-fns'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Checkbox } from '@altstack/ui/components/checkbox'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@altstack/ui/components/dropdown-menu'
 
+import { ProjectCellActions } from '#/features/admin-projects/components/project-cell'
 import type { DataTableFeatures } from '#/utils/data-table-features'
+import { resolveFileUrl } from '#/utils/storage'
 
 export type AdminProject =
 	ORPCRouterOutputs['admin']['project']['list']['projects'][number]
@@ -61,69 +53,73 @@ export const adminProjectColumns = columnHelper.columns([
 				<IconArrowsUpDown className="size-4" />
 			</Button>
 		),
-	}),
-
-	columnHelper.accessor('repositoryUrl', {
-		header: 'Repository',
 		cell: ({ row }) => {
-			const submission = row.original
+			const project = row.original
 
 			return (
 				<Button
 					variant="link"
 					render={
-						<a
-							href={submission.repositoryUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="github link"
+						<Link
+							from="/projects"
+							to="/$slug"
+							params={{ slug: project.slug }}
+							viewTransition
 						/>
 					}
 					nativeButton={false}
-					className="p-0"
 				>
-					{submission.repositoryUrl} <IconExternalLink />
+					<img
+						src={resolveFileUrl(project.logo)}
+						alt={`${project.name} logo`}
+						className="size-4 rounded"
+					/>
+					{project.name}
 				</Button>
 			)
 		},
 	}),
 
-	columnHelper.accessor('websiteUrl', {
-		header: 'Website',
+	columnHelper.accessor('tagline', {
+		header: 'Tagline',
 		cell: ({ row }) => {
-			const submission = row.original
+			const project = row.original
 
-			if (!submission.websiteUrl) return null
-
-			return (
-				<Button
-					variant="link"
-					render={
-						<a
-							href={submission.websiteUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="website link"
-						/>
-					}
-					nativeButton={false}
-					className="p-0"
-				>
-					{submission.websiteUrl} <IconExternalLink />
-				</Button>
-			)
+			return <p className="w-full max-w-xs truncate">{project.tagline}</p>
 		},
 	}),
 
 	columnHelper.accessor('status', {
 		header: () => <div className="text-center">Status</div>,
 		cell: ({ row }) => {
-			const submission = row.original
+			const project = row.original
 
 			return (
 				<div className="flex justify-center">
-					<Badge variant="default">{submission.status}</Badge>
+					<Badge variant="default">{project.status}</Badge>
 				</div>
+			)
+		},
+	}),
+
+	columnHelper.accessor('createdAt', {
+		header: () => <p className="text-center">Created At</p>,
+		cell: ({ row }) => {
+			const project = row.original
+
+			return (
+				<p className="text-center">{formatDate(project.createdAt, 'PPP')}</p>
+			)
+		},
+	}),
+
+	columnHelper.accessor('updatedAt', {
+		header: () => <p className="text-center">Updated At</p>,
+		cell: ({ row }) => {
+			const project = row.original
+
+			return (
+				<p className="text-center">{formatDate(project.updatedAt, 'PPP')}</p>
 			)
 		},
 	}),
@@ -132,34 +128,9 @@ export const adminProjectColumns = columnHelper.columns([
 		id: 'actions',
 		header: () => <div className="text-center">Actions</div>,
 		cell: ({ row }) => {
-			const submission = row.original
+			const project = row.original
 
-			return (
-				<div className="flex justify-center">
-					<DropdownMenu>
-						<DropdownMenuTrigger
-							render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-						>
-							<span className="sr-only">Open menu</span>
-							<IconDots className="h-4 w-4" />
-						</DropdownMenuTrigger>
-
-						<DropdownMenuContent align="end">
-							<DropdownMenuGroup>
-								<DropdownMenuLabel>Actions</DropdownMenuLabel>
-							</DropdownMenuGroup>
-
-							<DropdownMenuGroup>
-								<DropdownMenuItem
-									onClick={() => navigator.clipboard.writeText(submission.id)}
-								>
-									Copy ID
-								</DropdownMenuItem>
-							</DropdownMenuGroup>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			)
+			return <ProjectCellActions project={project} />
 		},
 	}),
 ])

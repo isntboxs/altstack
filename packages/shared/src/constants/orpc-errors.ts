@@ -3,6 +3,14 @@ export const ORPC_ERRORS = {
 		message: `Bad Request. Usually due to missing parameters, or invalid parameters.`,
 		status: 400,
 	},
+	UPLOAD_EXPIRED: {
+		message: `Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again.`,
+		status: 400,
+	},
+	UPLOAD_CONSUMED: {
+		message: `Upload consumed. The request failed after the uploaded images were already consumed. Please upload the images again and retry.`,
+		status: 500,
+	},
 	UNAUTHORIZED: {
 		message: `Unauthorized. Due to missing or invalid authentication.`,
 		status: 401,
@@ -17,6 +25,10 @@ export const ORPC_ERRORS = {
 	},
 	CONFLICT: {
 		message: `Conflict. The request could not be completed due to a conflict with the current state of the resource.`,
+		status: 409,
+	},
+	CONFLICT_AFTER_PROMOTE: {
+		message: `Conflict after image promotion. The project slug or repository is already taken, and the uploaded images were already consumed. Please adjust and upload the images again.`,
 		status: 409,
 	},
 	UNPROCESSABLE_CONTENT: {

@@ -8,6 +8,8 @@ import type { LOGO_MIME } from '@altstack/shared/constants'
 
 import { toast } from '@altstack/ui/components/toast'
 
+import { publicUrlForKey } from '#/utils/storage'
+
 export type ImageUploadEndpoints =
 	| ORPCRouterClient['admin']['upload']['logo']
 	| ORPCRouterClient['admin']['upload']['screenshot']
@@ -133,11 +135,7 @@ export const useImageUpload = ({
 			setErrorMessage(null)
 
 			try {
-				const {
-					key: fileKey,
-					presignedUrl,
-					publicUrl,
-				} = await api.request(
+				const { key: fileKey, presignedUrl } = await api.request(
 					{
 						contentType: file.type,
 						filename: file.name,
@@ -145,6 +143,10 @@ export const useImageUpload = ({
 					},
 					{ signal: abortController.signal }
 				)
+
+				// The API returns the file key only — resolve the preview URL
+				// client-side.
+				const publicUrl = publicUrlForKey(fileKey)
 
 				if (!isMounted()) {
 					return null

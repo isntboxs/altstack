@@ -60,3 +60,50 @@ export const adminListProjectOutputSchema = z.object({
 	),
 	pagination: paginationSchema,
 })
+
+// Partial update: every field except id is optional. Image fields accept
+// tmp/* keys only — omit to keep the current image, pass a new tmp key to
+// replace it. `screenshot: null` removes the screenshot.
+export const adminUpdateProjectInputSchema = z.object({
+	id: z.uuid(),
+	name: z.string().trim().min(2).max(100).optional(),
+	slug: slugSchema.optional(),
+	repositoryUrl: repositoryUrlSchema.optional(),
+	tagline: z.string().trim().nonempty().max(100).optional(),
+	description: z.string().trim().nonempty().max(300).optional(),
+	logo: logoKeySchema.optional(),
+	screenshot: screenshotKeySchema.nullable().optional(),
+	websiteUrl: z
+		.url({ protocol: /^https?$/ })
+		.nullable()
+		.optional(),
+	content: z.string().trim().nullable().optional(),
+	categorySlugs: z
+		.array(z.string().trim().min(1).max(100))
+		.min(1)
+		.max(3)
+		.optional(),
+	status: z.enum(PROJECT_STATUS).optional(),
+})
+
+export const adminUpdateProjectOutputSchema = projectSchema.extend({
+	github: z.object({
+		owner: z.string(),
+		repo: z.string(),
+		stars: z.number().int().nonnegative(),
+		forks: z.number().int().nonnegative(),
+		fetchedAt: z.coerce.date(),
+	}),
+})
+
+export const adminDeleteProjectInputSchema = z.object({
+	id: z.uuid(),
+})
+
+export const adminDeleteProjectOutputSchema = z.object({
+	success: z.literal(true),
+})
+
+export const adminGetProjectByIdInputSchema = z.object({
+	id: z.uuid(),
+})

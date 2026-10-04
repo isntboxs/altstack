@@ -30,6 +30,7 @@ import { Separator } from '@altstack/ui/components/separator'
 
 import { useProjectSearch } from '#/features/project/queries'
 import type { SearchProjectsParams } from '#/features/project/queries'
+import { resolveFileUrl } from '#/utils/storage'
 
 type ProjectCardProps =
 	ORPCRouterOutputs['project']['search']['projects'][number]
@@ -117,7 +118,7 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 				{/* Watermark Logo di Pojok Kanan Atas */}
 				<div className="pointer-events-none absolute inset-px z-0 overflow-clip rounded-sm opacity-10 blur-[1px] transition-all duration-500 select-none group-hover:scale-110 group-hover:opacity-20 group-hover:blur-none">
 					<img
-						src={projectData.logo}
+						src={resolveFileUrl(projectData.logo)}
 						alt={projectData.name}
 						aria-hidden="true"
 						width={60}
@@ -129,7 +130,7 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 				<CardHeader className="gap-4">
 					<CardTitle className="flex items-center gap-2">
 						<img
-							src={projectData.logo}
+							src={resolveFileUrl(projectData.logo)}
 							alt={projectData.name}
 							className="size-7 rounded-sm"
 						/>

@@ -1,0 +1,100 @@
+import { describe, expect, it } from 'vite-plus/test'
+
+import {
+	adminDeleteProjectInputSchema,
+	adminUpdateProjectInputSchema,
+} from '@altstack/shared/schemas/admin-project'
+import {
+	projectLogoKeySchema,
+	projectScreenshotKeySchema,
+} from '@altstack/shared/schemas/upload'
+
+const PROJECT_ID = '550e8400-e29b-41d4-a716-446655440000'
+const TMP_LOGO = 'tmp/logos/my-logo-1759380000000.png'
+const TMP_SCREENSHOT = 'tmp/screenshots/landing-1759380000000.webp'
+const FINAL_LOGO = `projects/my-project/logo-${PROJECT_ID}.png`
+const FINAL_SCREENSHOT = `projects/my-project/screenshot-${PROJECT_ID}.jpg`
+
+describe('project final key schemas', () => {
+	it('accepts keys under projects/{slug}/', () => {
+		expect(projectLogoKeySchema.safeParse(FINAL_LOGO).success).toBe(true)
+		expect(projectScreenshotKeySchema.safeParse(FINAL_SCREENSHOT).success).toBe(
+			true
+		)
+	})
+
+	it('rejects tmp keys and malformed finals', () => {
+		expect(projectLogoKeySchema.safeParse(TMP_LOGO).success).toBe(false)
+		expect(projectScreenshotKeySchema.safeParse(TMP_SCREENSHOT).success).toBe(
+			false
+		)
+		expect(
+			projectLogoKeySchema.safeParse('projects/my-project/logo-123.png').success
+		).toBe(false)
+	})
+})
+
+describe('adminUpdateProjectInputSchema', () => {
+	it('accepts id alone (no-op patch)', () => {
+		const parsed = adminUpdateProjectInputSchema.parse({ id: PROJECT_ID })
+		expect(parsed.id).toBe(PROJECT_ID)
+		expect(parsed.logo).toBeUndefined()
+	})
+
+	it('accepts tmp keys for replacement', () => {
+		const parsed = adminUpdateProjectInputSchema.parse({
+			id: PROJECT_ID,
+			logo: TMP_LOGO,
+			screenshot: TMP_SCREENSHOT,
+		})
+		expect(parsed.logo).toBe(TMP_LOGO)
+		expect(parsed.screenshot).toBe(TMP_SCREENSHOT)
+	})
+
+	it('accepts screenshot: null for removal', () => {
+		const parsed = adminUpdateProjectInputSchema.parse({
+			id: PROJECT_ID,
+			screenshot: null,
+		})
+		expect(parsed.screenshot).toBeNull()
+	})
+
+	it('rejects final keys (only tmp keys may be submitted)', () => {
+		expect(
+			adminUpdateProjectInputSchema.safeParse({
+				id: PROJECT_ID,
+				logo: FINAL_LOGO,
+			}).success
+		).toBe(false)
+		expect(
+			adminUpdateProjectInputSchema.safeParse({
+				id: PROJECT_ID,
+				screenshot: FINAL_SCREENSHOT,
+			}).success
+		).toBe(false)
+	})
+
+	it('rejects invalid id and empty categorySlugs', () => {
+		expect(
+			adminUpdateProjectInputSchema.safeParse({ id: 'not-a-uuid' }).success
+		).toBe(false)
+		expect(
+			adminUpdateProjectInputSchema.safeParse({
+				id: PROJECT_ID,
+				categorySlugs: [],
+			}).success
+		).toBe(false)
+	})
+})
+
+describe('adminDeleteProjectInputSchema', () => {
+	it('accepts a uuid and rejects anything else', () => {
+		expect(adminDeleteProjectInputSchema.parse({ id: PROJECT_ID })).toEqual({
+			id: PROJECT_ID,
+		})
+		expect(
+			adminDeleteProjectInputSchema.safeParse({ id: 'not-a-uuid' }).success
+		).toBe(false)
+		expect(adminDeleteProjectInputSchema.safeParse({}).success).toBe(false)
+	})
+})

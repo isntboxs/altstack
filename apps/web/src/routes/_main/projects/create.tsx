@@ -27,8 +27,10 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
+import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
+import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
@@ -51,6 +53,33 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 }
 
 type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
+
+function isUploadExpiredError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'UPLOAD_EXPIRED'
+	)
+}
+
+function isPromotionConflictError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'CONFLICT_AFTER_PROMOTE'
+	)
+}
+
+function isUploadConsumedError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'UPLOAD_CONSUMED'
+	)
+}
 
 export const Route = createFileRoute('/_main/projects/create')({
 	component: RouteComponent,
@@ -184,7 +213,34 @@ function RouteComponent() {
 			onSubmit: adminCreateProjectInputSchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
-			await createProject.mutateAsync(value)
+			try {
+				await createProject.mutateAsync(value)
+			} catch (error) {
+				if (
+					isUploadExpiredError(error) ||
+					isPromotionConflictError(error) ||
+					isUploadConsumedError(error)
+				) {
+					// Promote deletes tmp keys before the DB insert, so a failed
+					// submit leaves the form holding dead keys — clear them so
+					// retry starts from re-upload instead of failing again.
+					// This covers UPLOAD_EXPIRED, post-promote conflict, and
+					// failures after partial promotion. Preflight CONFLICT and
+					// plain BAD_REQUEST (repository URL, category validation)
+					// keep the uploaded images.
+					formApi.setFieldValue('logo', '')
+					formApi.setFieldValue('screenshot', undefined)
+					setLogoDisplayUrl(null)
+					setScreenshotDisplayUrl(null)
+					toast.add({
+						type: 'warning',
+						title: 'Images need re-upload',
+						description:
+							'The uploaded images expired when the submit failed. Please upload them again and retry.',
+					})
+				}
+				return
+			}
 			formApi.reset()
 			isSlugCustomized.current = false
 			setLogoDisplayUrl(null)
@@ -194,6 +250,11 @@ function RouteComponent() {
 
 	// Once the user edits the slug by hand, auto-fill from name stops.
 	const isSlugCustomized = useRef(false)
+
+	// Flushes the editor's deferred markdown export so handleSubmit below
+	// reads the latest content even when submit lands in the same task as
+	// the last keystroke.
+	const editorRef = useRef<BlockNoteEditorHandle | null>(null)
 
 	return (
 		<div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
@@ -222,6 +283,7 @@ function RouteComponent() {
 					className="min-w-0"
 					onSubmit={(e) => {
 						e.preventDefault()
+						editorRef.current?.flush()
 						void form.handleSubmit()
 					}}
 				>
@@ -470,6 +532,7 @@ function RouteComponent() {
 										<Field data-invalid={isInvalid}>
 											<ClientOnly>
 												<BlockNoteEditor
+													ref={editorRef}
 													value={field.state.value}
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e)}
