@@ -5,6 +5,8 @@ import type {
 	SortingState,
 	ColumnFiltersState,
 	ColumnVisibilityState,
+	OnChangeFn,
+	PaginationState,
 } from '@tanstack/react-table'
 import { useTanStackTableDevtools } from '@tanstack/react-table-devtools'
 import { useState } from 'react'
@@ -32,11 +34,17 @@ import type { DataTableFeatures } from '#/utils/data-table-features'
 interface DataTableProps<TData extends RowData> {
 	columns: Array<ColumnDef<DataTableFeatures, TData>>
 	data: Array<TData>
+	rowCount: number
+	pagination: PaginationState
+	onPaginationChange: OnChangeFn<PaginationState>
 }
 
 export const AdminProjectDataTable = <TData extends RowData>({
 	columns,
 	data,
+	rowCount,
+	pagination,
+	onPaginationChange,
 }: DataTableProps<TData>) => {
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'name', desc: false },
@@ -50,11 +58,24 @@ export const AdminProjectDataTable = <TData extends RowData>({
 		features,
 		data,
 		columns,
+		// Pagination is server-driven: the parent fetches one page and
+		// reports the total row count. The table only tracks pageIndex /
+		// pageSize and notifies the parent via onPaginationChange.
+		manualPagination: true,
+		rowCount,
+		autoResetPageIndex: false,
 		onSortingChange: setSorting,
 		onColumnFiltersChange: setColumnFilters,
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
-		state: { sorting, columnFilters, columnVisibility, rowSelection },
+		onPaginationChange,
+		state: {
+			sorting,
+			columnFilters,
+			columnVisibility,
+			rowSelection,
+			pagination,
+		},
 		key: 'submissions',
 	})
 
@@ -145,7 +166,11 @@ export const AdminProjectDataTable = <TData extends RowData>({
 			<div className="flex items-center justify-end space-x-2 py-4">
 				<div className="flex-1 text-sm text-muted-foreground">
 					{table.getFilteredSelectedRowModel().rows.length} of{' '}
-					{table.getFilteredRowModel().rows.length} row(s) selected.
+					{table.getRowCount()} row(s) selected.
+				</div>
+
+				<div className="text-sm text-muted-foreground">
+					Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
 				</div>
 
 				<Button
