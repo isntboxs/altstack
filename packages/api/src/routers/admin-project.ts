@@ -9,7 +9,6 @@ import {
 	deleteFinalKeysBestEffort,
 	InvalidTempUploadError,
 	promoteTempImageToProject,
-	StorageError,
 	TempUploadMissingError,
 } from '@altstack/api/storage'
 
@@ -395,8 +394,10 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			if (targetSlug !== existing.slug) {
 				const oldPrefix = `projects/${existing.slug}/`
 				const copyIntoSlug = async (oldKey: string): Promise<string> => {
+					// Legacy/external keys (e.g. seed avatars) live outside the
+					// slug folder — keep them as-is without tracking.
 					if (!oldKey.startsWith(oldPrefix)) {
-						throw new StorageError(`Expected key under ${oldPrefix}`)
+						return oldKey
 					}
 					const destKey = `projects/${targetSlug}/${oldKey.slice(oldPrefix.length)}`
 					await copyS3Object(oldKey, destKey)
