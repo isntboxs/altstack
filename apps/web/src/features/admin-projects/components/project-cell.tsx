@@ -62,7 +62,9 @@ export const ProjectCellActions: FC<ProjectCellProps> = ({ project }) => {
 
 						<AlertDialogTitle>Delete Project</AlertDialogTitle>
 						<AlertDialogDescription>
-							Are you sure you want to delete this project?
+							Are you sure you want to delete
+							<span className="font-semibold">{project.name}</span>? This action
+							cannot be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 
