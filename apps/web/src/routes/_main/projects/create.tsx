@@ -24,6 +24,10 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from '@altstack/ui/components/native-select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
@@ -50,6 +54,10 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	websiteUrl: undefined,
 	content: undefined,
 	categorySlugs: [],
+	// Explicit default: new projects publish immediately unless saved as
+	// draft (hidden from the public catalogue). Mirrors the
+	// `.default('published')` in adminCreateProjectInputSchema.
+	status: 'published',
 }
 
 type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
@@ -632,6 +640,56 @@ function RouteComponent() {
 											</Suspense>
 
 											<FieldDescription>Pick 1–3 categories.</FieldDescription>
+
+											{isInvalid && (
+												<FieldError errors={field.state.meta.errors} />
+											)}
+										</Field>
+									)
+								}}
+							/>
+						</section>
+
+						<section className="space-y-4">
+							<SectionHeading
+								title="Publishing"
+								description="Draft projects stay hidden from the public catalogue."
+							/>
+
+							<form.Field
+								name="status"
+								children={(field) => {
+									const isInvalid =
+										field.state.meta.isTouched && !field.state.meta.isValid
+
+									return (
+										<Field data-invalid={isInvalid}>
+											<FieldLabel htmlFor={field.name}>Status</FieldLabel>
+
+											<NativeSelect
+												id={field.name}
+												name={field.name}
+												value={field.state.value ?? 'published'}
+												onBlur={field.handleBlur}
+												onChange={(e) =>
+													field.handleChange(
+														e.target.value as 'draft' | 'published'
+													)
+												}
+												aria-invalid={isInvalid}
+												className="w-full"
+											>
+												<NativeSelectOption value="draft">
+													Draft — hidden from catalogue
+												</NativeSelectOption>
+												<NativeSelectOption value="published">
+													Published — visible in catalogue
+												</NativeSelectOption>
+											</NativeSelect>
+
+											<FieldDescription>
+												New projects publish immediately unless saved as draft.
+											</FieldDescription>
 
 											{isInvalid && (
 												<FieldError errors={field.state.meta.errors} />

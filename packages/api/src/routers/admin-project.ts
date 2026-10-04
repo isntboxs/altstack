@@ -169,7 +169,10 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 						screenshot: finalScreenshotKey,
 						websiteUrl: input.websiteUrl ?? null,
 						content: input.content ?? null,
-						status: 'published',
+						// input.status defaults to 'published' in the shared
+						// schema when omitted; draft stays hidden from the
+						// public catalogue.
+						status: input.status,
 					})
 					.returning()
 
