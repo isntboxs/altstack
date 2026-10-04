@@ -1,4 +1,4 @@
-import { IconArrowsUpDown, IconDots } from '@tabler/icons-react'
+import { IconArrowsUpDown } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 import { formatDate } from 'date-fns'
@@ -8,15 +8,8 @@ import type { ORPCRouterOutputs } from '@altstack/api/routers'
 import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Checkbox } from '@altstack/ui/components/checkbox'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@altstack/ui/components/dropdown-menu'
 
+import { ProjectCellActions } from '#/features/admin-projects/components/project-cell'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 import { resolveFileUrl } from '#/utils/storage'
 
@@ -137,46 +130,7 @@ export const adminProjectColumns = columnHelper.columns([
 		cell: ({ row }) => {
 			const project = row.original
 
-			return (
-				<div className="flex justify-center">
-					<DropdownMenu>
-						<DropdownMenuTrigger
-							render={<Button variant="ghost" className="h-8 w-8 p-0" />}
-						>
-							<span className="sr-only">Open menu</span>
-							<IconDots className="h-4 w-4" />
-						</DropdownMenuTrigger>
-
-						<DropdownMenuContent align="end">
-							<DropdownMenuGroup>
-								<DropdownMenuLabel>Actions</DropdownMenuLabel>
-							</DropdownMenuGroup>
-
-							<DropdownMenuGroup>
-								<DropdownMenuItem
-									onClick={() => navigator.clipboard.writeText(project.id)}
-								>
-									Copy ID
-								</DropdownMenuItem>
-
-								<DropdownMenuItem
-									render={
-										<Link
-											from="/projects"
-											to="/projects/$id/edit"
-											params={{ id: project.id }}
-											viewTransition
-										/>
-									}
-									nativeButton={false}
-								>
-									Edit
-								</DropdownMenuItem>
-							</DropdownMenuGroup>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			)
+			return <ProjectCellActions project={project} />
 		},
 	}),
 ])
