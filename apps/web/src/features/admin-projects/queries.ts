@@ -121,6 +121,14 @@ export const useAdminProjectUpdate = ({ id }: { id: string }) => {
 				queryKey: adminProjectQueries.list().queryKey,
 			})
 
+			// Public caches use a separate `project` prefix (bySlug for the
+			// detail page, search for the public listing). Broad prefix
+			// invalidation covers both the old and the new slug after a
+			// slug rename.
+			await queryClient.invalidateQueries({
+				predicate: (query) => query.queryKey[0] === 'project',
+			})
+
 			await router.navigate({
 				to: '/projects',
 				replace: true,
@@ -149,6 +157,12 @@ export const useAdminProjectDelete = () => {
 
 			await queryClient.invalidateQueries({
 				queryKey: adminProjectQueries.list().queryKey,
+			})
+
+			// Keep public detail/listing caches (bySlug, search) fresh after
+			// delete; only the id is known here, so invalidate by prefix.
+			await queryClient.invalidateQueries({
+				predicate: (query) => query.queryKey[0] === 'project',
 			})
 
 			await router.invalidate()
