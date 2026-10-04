@@ -25,7 +25,7 @@ const createAdminProjectContract = baseContract
 			method: 'POST',
 			summary: 'Admin create project',
 			description:
-				'Create project directly as published. Duplicate repo/slug → 409.',
+				'Create project with optional status (draft/published, defaults to published). Duplicate repo/slug → 409.',
 			tags: ['AdminProjects'],
 			operationId: 'createAdminProject',
 			successStatus: 201,
