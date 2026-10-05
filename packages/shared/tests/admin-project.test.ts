@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import {
 	adminDeleteProjectInputSchema,
+	adminListProjectInputSchema,
 	adminUpdateProjectInputSchema,
 } from '@altstack/shared/schemas/admin-project'
 import {
@@ -14,6 +15,25 @@ const TMP_LOGO = 'tmp/logos/my-logo-1759380000000.png'
 const TMP_SCREENSHOT = 'tmp/screenshots/landing-1759380000000.webp'
 const FINAL_LOGO = `projects/my-project/logo-${PROJECT_ID}.png`
 const FINAL_SCREENSHOT = `projects/my-project/screenshot-${PROJECT_ID}.jpg`
+
+describe('adminListProjectInputSchema', () => {
+	it('preserves pagination and sorting defaults', () => {
+		expect(adminListProjectInputSchema.parse({})).toEqual({
+			page: 1,
+			limit: 12,
+			sort: 'createdAt',
+			order: 'desc',
+		})
+	})
+
+	it.each([
+		{ sort: 'repositoryUrl' },
+		{ sort: 'name; DROP TABLE projects' },
+		{ order: 'invalid' },
+	])('rejects unsupported sorting input %j', (input) => {
+		expect(adminListProjectInputSchema.safeParse(input).success).toBe(false)
+	})
+})
 
 describe('project final key schemas', () => {
 	it('accepts keys under projects/{slug}/', () => {

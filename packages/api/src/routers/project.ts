@@ -59,7 +59,11 @@ const listHandler = publicProcedure.project.list.handler(
 				.offset(offset)
 				.orderBy(desc(project.createdAt), desc(project.id)),
 
-			db.select({ total: count() }).from(project).where(where),
+			db
+				.select({ total: count() })
+				.from(project)
+				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.where(where),
 		])
 
 		if (countRow) total = countRow.total
@@ -177,7 +181,11 @@ const searchHandler = publicProcedure.project.search.handler(
 				.limit(limit)
 				.offset(offset),
 
-			db.select({ total: count() }).from(project).where(where),
+			db
+				.select({ total: count() })
+				.from(project)
+				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.where(where),
 		])
 
 		// One extra query for the whole page (never N+1).

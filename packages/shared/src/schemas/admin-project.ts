@@ -28,6 +28,11 @@ export const adminCreateProjectInputSchema = z.object({
 		.optional()
 		.transform((v) => v ?? undefined),
 	categorySlugs: z.array(z.string().trim().min(1).max(100)).min(1).max(3),
+	// Visibility at creation. Drafts stay hidden from the public catalogue
+	// (`status = 'published'` filter); omitted input defaults to
+	// 'published' to preserve the pre-status behaviour. The admin UI offers
+	// draft/published; the API accepts the full PROJECT_STATUS enum.
+	status: z.enum(PROJECT_STATUS).optional().default('published'),
 })
 
 export const adminCreateProjectOutputSchema = projectSchema.extend({
@@ -42,6 +47,9 @@ export const adminCreateProjectOutputSchema = projectSchema.extend({
 
 export const adminListProjectInputSchema = z.object({
 	status: z.enum(PROJECT_STATUS).optional(),
+	name: z.string().optional(),
+	sort: z.enum(['name', 'createdAt']).optional().default('createdAt'),
+	order: z.enum(['asc', 'desc']).optional().default('desc'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
 })

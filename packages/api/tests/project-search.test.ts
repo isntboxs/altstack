@@ -168,12 +168,23 @@ describe('searchProjects', () => {
 	)
 
 	it('treats blank q like no query', { timeout: TEST_TIMEOUT }, async () => {
+		// Scoped to the fixture category: the shared dev DB is written by
+		// other suites in parallel, so an unfiltered global count can race
+		// with concurrent inserts/deletes from unrelated fixtures.
 		const [blank, none] = await Promise.all([
-			client.project.search({ q: '   ' }),
-			client.project.search({}),
+			client.project.search({
+				q: '   ',
+				category: 'test-r2-tools',
+				limit: 50,
+			}),
+			client.project.search({ category: 'test-r2-tools', limit: 50 }),
 		])
 
 		expect(blank.pagination.totalItems).toBe(none.pagination.totalItems)
+		expect(blank.projects.map((item) => item.slug).toSorted()).toEqual([
+			'test-r2-alpha',
+			'test-r2-zulu',
+		])
 	})
 
 	it(

@@ -26,6 +26,10 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from '@altstack/ui/components/native-select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
@@ -262,6 +266,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 		websiteUrl: project.websiteUrl ?? undefined,
 		content: project.content ?? undefined,
 		categorySlugs: project.categories,
+		status: project.status,
 	}
 
 	const form = useForm({
@@ -287,6 +292,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 					websiteUrl: updated.websiteUrl ?? undefined,
 					content: updated.content ?? undefined,
 					categorySlugs: updated.categories,
+					status: updated.status,
 				})
 				setLogoDisplayUrl(resolveFileUrl(updated.logo))
 				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
@@ -751,6 +757,65 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 										</Suspense>
 
 										<FieldDescription>Pick 1–3 categories.</FieldDescription>
+
+										{isInvalid && (
+											<FieldError errors={field.state.meta.errors} />
+										)}
+									</Field>
+								)
+							}}
+						/>
+					</section>
+
+					<section className="space-y-4">
+						<SectionHeading
+							title="Publishing"
+							description="Draft projects stay hidden from the public catalogue."
+						/>
+
+						<form.Field
+							name="status"
+							children={(field) => {
+								const isInvalid =
+									field.state.meta.isTouched && !field.state.meta.isValid
+								const currentValue = field.state.value ?? 'published'
+
+								return (
+									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor={field.name}>Status</FieldLabel>
+
+										<NativeSelect
+											id={field.name}
+											name={field.name}
+											value={currentValue}
+											onBlur={field.handleBlur}
+											onChange={(e) =>
+												field.handleChange(
+													e.target.value as typeof currentValue
+												)
+											}
+											aria-invalid={isInvalid}
+											className="w-full"
+										>
+											<NativeSelectOption value="draft">
+												Draft — hidden from catalogue
+											</NativeSelectOption>
+											<NativeSelectOption value="published">
+												Published — visible in catalogue
+											</NativeSelectOption>
+											{currentValue !== 'draft' &&
+											currentValue !== 'published' ? (
+												<NativeSelectOption value={currentValue}>
+													Current: {currentValue} — pick draft or published to
+													change
+												</NativeSelectOption>
+											) : null}
+										</NativeSelect>
+
+										<FieldDescription>
+											Switch to draft to hide this project from the public
+											catalogue without deleting it.
+										</FieldDescription>
 
 										{isInvalid && (
 											<FieldError errors={field.state.meta.errors} />

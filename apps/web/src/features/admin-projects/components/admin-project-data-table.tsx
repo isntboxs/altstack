@@ -5,6 +5,8 @@ import type {
 	SortingState,
 	ColumnFiltersState,
 	ColumnVisibilityState,
+	OnChangeFn,
+	PaginationState,
 } from '@tanstack/react-table'
 import { useTanStackTableDevtools } from '@tanstack/react-table-devtools'
 import { useState } from 'react'
@@ -29,19 +31,29 @@ import {
 import { features } from '#/utils/data-table-features'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 
-interface DataTableProps<TData extends RowData> {
+interface DataTableProps<TData extends RowData & { id: string }> {
 	columns: Array<ColumnDef<DataTableFeatures, TData>>
 	data: Array<TData>
+	rowCount: number
+	pagination: PaginationState
+	onPaginationChange: OnChangeFn<PaginationState>
+	sorting: SortingState
+	onSortingChange: OnChangeFn<SortingState>
+	columnFilters: ColumnFiltersState
+	onColumnFiltersChange: OnChangeFn<ColumnFiltersState>
 }
 
-export const AdminProjectDataTable = <TData extends RowData>({
+export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 	columns,
 	data,
+	rowCount,
+	pagination,
+	onPaginationChange,
+	sorting,
+	onSortingChange,
+	columnFilters,
+	onColumnFiltersChange,
 }: DataTableProps<TData>) => {
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: 'name', desc: false },
-	])
-	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [columnVisibility, setColumnVisibility] =
 		useState<ColumnVisibilityState>({})
 	const [rowSelection, setRowSelection] = useState({})
@@ -50,11 +62,26 @@ export const AdminProjectDataTable = <TData extends RowData>({
 		features,
 		data,
 		columns,
-		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
+		// The parent fetches filtered, sorted pages and their total row count.
+		manualPagination: true,
+		manualFiltering: true,
+		manualSorting: true,
+		enableMultiSort: false,
+		getRowId: (row) => row.id,
+		rowCount,
+		autoResetPageIndex: false,
+		onSortingChange,
+		onColumnFiltersChange,
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
-		state: { sorting, columnFilters, columnVisibility, rowSelection },
+		onPaginationChange,
+		state: {
+			sorting,
+			columnFilters,
+			columnVisibility,
+			rowSelection,
+			pagination,
+		},
 		key: 'submissions',
 	})
 
@@ -144,8 +171,12 @@ export const AdminProjectDataTable = <TData extends RowData>({
 
 			<div className="flex items-center justify-end space-x-2 py-4">
 				<div className="flex-1 text-sm text-muted-foreground">
-					{table.getFilteredSelectedRowModel().rows.length} of{' '}
-					{table.getFilteredRowModel().rows.length} row(s) selected.
+					{Object.values(rowSelection).filter(Boolean).length} row(s) selected.{' '}
+					{table.getRowCount()} row(s) match current filters.
+				</div>
+
+				<div className="text-sm text-muted-foreground">
+					Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
 				</div>
 
 				<Button
