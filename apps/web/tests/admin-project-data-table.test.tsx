@@ -80,7 +80,7 @@ const columns = helper.columns([
 ])
 
 describe('admin project data table', () => {
-	it('keeps selection attached to the same project across pages', () => {
+	it('keeps selection attached to the same project across pages and filters', () => {
 		const props = {
 			columns,
 			rowCount: 2,
@@ -95,12 +95,16 @@ describe('admin project data table', () => {
 		const { rerender } = render(
 			<AdminProjectDataTable {...props} data={firstPage} />
 		)
-		expect(screen.getByText('0 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('0 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Alpha' })
 		).toHaveProperty('checked', true)
-		expect(screen.getByText('1 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('1 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
 
 		rerender(
 			<AdminProjectDataTable
@@ -112,17 +116,52 @@ describe('admin project data table', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Beta' })
 		).toHaveProperty('checked', false)
-		expect(screen.getByText('1 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('1 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Beta' }))
-		expect(screen.getByText('2 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('2 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
+
+		rerender(
+			<AdminProjectDataTable
+				{...props}
+				data={firstPage}
+				rowCount={1}
+				columnFilters={[{ id: 'name', value: 'Alpha' }]}
+			/>
+		)
+		expect(
+			screen.getByText('2 row(s) selected. 1 row(s) match current filters.')
+		).toBeTruthy()
+		expect(
+			screen.getByRole('checkbox', { name: 'Select Alpha' })
+		).toHaveProperty('checked', true)
+
+		rerender(
+			<AdminProjectDataTable
+				{...props}
+				data={[]}
+				rowCount={0}
+				columnFilters={[{ id: 'name', value: 'unmatched' }]}
+			/>
+		)
+		expect(
+			screen.getByText('2 row(s) selected. 0 row(s) match current filters.')
+		).toBeTruthy()
 
 		rerender(<AdminProjectDataTable {...props} data={firstPage} />)
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Alpha' })
 		).toHaveProperty('checked', true)
-		expect(screen.getByText('2 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('2 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
-		expect(screen.getByText('1 of 2 row(s) selected.')).toBeTruthy()
+		expect(
+			screen.getByText('1 row(s) selected. 2 row(s) match current filters.')
+		).toBeTruthy()
 	})
 
 	it('renders the server page without applying local filters or sorting', () => {

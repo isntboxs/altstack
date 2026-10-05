@@ -171,8 +171,8 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 
 			<div className="flex items-center justify-end space-x-2 py-4">
 				<div className="flex-1 text-sm text-muted-foreground">
-					{Object.values(rowSelection).filter(Boolean).length} of{' '}
-					{table.getRowCount()} row(s) selected.
+					{Object.values(rowSelection).filter(Boolean).length} row(s) selected.{' '}
+					{table.getRowCount()} row(s) match current filters.
 				</div>
 
 				<div className="text-sm text-muted-foreground">
