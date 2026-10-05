@@ -1,5 +1,5 @@
 import type { ORPCErrorConstructorMap } from '@orpc/server'
-import { asc, count, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm'
 import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
@@ -589,7 +589,14 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 		const page = input.page
 		const limit = input.limit
 		const offset = (page - 1) * limit
-		const where = input.status ? eq(project.status, input.status) : undefined
+		const where = and(
+			input.status ? eq(project.status, input.status) : undefined,
+			input.name
+				? ilike(project.name, `%${input.name.replace(/[\\%_]/g, '\\$&')}%`)
+				: undefined
+		)
+		const sortColumn = input.sort === 'name' ? project.name : project.createdAt
+		const order = input.order === 'asc' ? asc : desc
 		let total = 0
 
 		const [rows, [countRow]] = await Promise.all([
@@ -598,9 +605,9 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.orderBy(order(sortColumn), order(project.id))
 				.limit(limit)
-				.offset(offset)
-				.orderBy(desc(project.createdAt), desc(project.id)),
+				.offset(offset),
 
 			db
 				.select({ total: count() })

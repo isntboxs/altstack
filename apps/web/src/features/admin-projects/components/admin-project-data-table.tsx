@@ -31,25 +31,29 @@ import {
 import { features } from '#/utils/data-table-features'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 
-interface DataTableProps<TData extends RowData> {
+interface DataTableProps<TData extends RowData & { id: string }> {
 	columns: Array<ColumnDef<DataTableFeatures, TData>>
 	data: Array<TData>
 	rowCount: number
 	pagination: PaginationState
 	onPaginationChange: OnChangeFn<PaginationState>
+	sorting: SortingState
+	onSortingChange: OnChangeFn<SortingState>
+	columnFilters: ColumnFiltersState
+	onColumnFiltersChange: OnChangeFn<ColumnFiltersState>
 }
 
-export const AdminProjectDataTable = <TData extends RowData>({
+export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 	columns,
 	data,
 	rowCount,
 	pagination,
 	onPaginationChange,
+	sorting,
+	onSortingChange,
+	columnFilters,
+	onColumnFiltersChange,
 }: DataTableProps<TData>) => {
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: 'name', desc: false },
-	])
-	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [columnVisibility, setColumnVisibility] =
 		useState<ColumnVisibilityState>({})
 	const [rowSelection, setRowSelection] = useState({})
@@ -58,14 +62,16 @@ export const AdminProjectDataTable = <TData extends RowData>({
 		features,
 		data,
 		columns,
-		// Pagination is server-driven: the parent fetches one page and
-		// reports the total row count. The table only tracks pageIndex /
-		// pageSize and notifies the parent via onPaginationChange.
+		// The parent fetches filtered, sorted pages and their total row count.
 		manualPagination: true,
+		manualFiltering: true,
+		manualSorting: true,
+		enableMultiSort: false,
+		getRowId: (row) => row.id,
 		rowCount,
 		autoResetPageIndex: false,
-		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
+		onSortingChange,
+		onColumnFiltersChange,
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
 		onPaginationChange,

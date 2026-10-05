@@ -92,7 +92,8 @@ const listAdminProjectsContract = baseContract
 			path: '/admin/projects',
 			method: 'GET',
 			summary: 'Admin list projects',
-			description: 'Paginated list with optional status filter.',
+			description:
+				'Paginated list with optional status and name filters and sorting.',
 			tags: ['AdminProjects'],
 			operationId: 'listAdminProjects',
 			successStatus: 200,

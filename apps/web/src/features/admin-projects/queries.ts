@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
-import type { ProjectStatus } from '@altstack/shared'
+import type { ORPCRouterInputs } from '@altstack/api/routers'
 
 import { toast } from '@altstack/ui/components/toast'
 
@@ -15,9 +15,8 @@ export const adminProjectQueries = {
 	create: () => adminORPC.project.create.mutationOptions(),
 	update: () => adminORPC.project.update.mutationOptions(),
 	delete: () => adminORPC.project.remove.mutationOptions(),
-	list: (
-		input: { page?: number; limit?: number; status?: ProjectStatus } = {}
-	) => adminORPC.project.list.queryOptions({ input }),
+	list: (input: ORPCRouterInputs['admin']['project']['list'] = {}) =>
+		adminORPC.project.list.queryOptions({ input }),
 	listCategories: () =>
 		adminORPC.project.listCategories.queryOptions({ input: {} }),
 	get: (input: { id: string }) =>
