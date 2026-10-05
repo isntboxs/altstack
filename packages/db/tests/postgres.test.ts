@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vite-plus/test'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vite-plus/test'
 
 import {
 	category,
@@ -63,6 +63,90 @@ describe('cloud test schema lifecycle', () => {
 	afterAll(async () => {
 		await postgres?.close()
 	}, 60_000)
+
+	it('rejects concurrent verification before reset while allowing independent schemas', async () => {
+		if (!postgres) throw new Error('Missing cloud connection')
+		const first = await postgres.createSchema()
+		const second = await postgres.createSchema()
+		const contenderReset = vi.fn(async () => first.reset())
+		const contenderWork = vi.fn(() => Promise.resolve())
+		try {
+			await withWorkspaceDatabase(first, async () => {
+				const baseline = await first.db.query.project.findFirst()
+				await expect(
+					withWorkspaceDatabase(
+						{ ...first, reset: contenderReset },
+						contenderWork
+					)
+				).rejects.toThrow('Another workspace verification')
+				expect(contenderReset).not.toHaveBeenCalled()
+				expect(contenderWork).not.toHaveBeenCalled()
+				await withWorkspaceDatabase(second, async () => {
+					expect(await second.db.select().from(project)).toHaveLength(1)
+				})
+				expect(await first.db.query.project.findFirst()).toEqual(baseline)
+			})
+			expect(first.pool.totalCount - first.pool.idleCount).toBe(0)
+			expect(second.pool.totalCount - second.pool.idleCount).toBe(0)
+		} finally {
+			await first.close()
+			await second.close()
+		}
+	})
+
+	it.each(['initial restoration', 'work', 'final restoration'])(
+		'holds the lock through both resets and releases the client after %s fails',
+		async (failure) => {
+			if (!postgres) throw new Error('Missing cloud connection')
+			const scope = await postgres.createSchema()
+			let resets = 0
+			const work = vi.fn(async () => {
+				expect(await scope.db.select().from(project)).toHaveLength(1)
+				if (failure === 'work') throw new Error('Synthetic work failure')
+			})
+			try {
+				await expect(
+					withWorkspaceDatabase(
+						{
+							...scope,
+							async reset() {
+								resets += 1
+								const contenderReset = vi.fn(async () => scope.reset())
+								await expect(
+									withWorkspaceDatabase(
+										{ ...scope, reset: contenderReset },
+										() => Promise.resolve()
+									)
+								).rejects.toThrow('Another workspace verification')
+								expect(contenderReset).not.toHaveBeenCalled()
+								if (
+									(failure === 'initial restoration' && resets === 1) ||
+									(failure === 'final restoration' && resets === 2)
+								) {
+									throw new Error(`Synthetic ${failure} failure`)
+								}
+								await scope.reset()
+							},
+						},
+						work
+					)
+				).rejects.toThrow(`Synthetic ${failure} failure`)
+				expect(resets).toBe(2)
+				expect(work).toHaveBeenCalledTimes(
+					failure === 'initial restoration' ? 0 : 1
+				)
+				expect(scope.pool.totalCount - scope.pool.idleCount).toBe(0)
+				// A new verification must acquire the released lock after every failure.
+				await withWorkspaceDatabase(scope, async () => {
+					expect(await scope.db.select().from(project)).toHaveLength(1)
+				})
+				expect(await scope.db.select().from(project)).toEqual([])
+				expect(scope.pool.totalCount - scope.pool.idleCount).toBe(0)
+			} finally {
+				await scope.close()
+			}
+		}
+	)
 
 	it('isolates tables and ledger between schemas and removes scopes after a thrown failure', async () => {
 		if (!postgres) throw new Error('Missing cloud connection')
