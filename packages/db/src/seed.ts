@@ -11,6 +11,8 @@ import {
 
 import { env } from '@altstack/env/server'
 
+import { seedTaxonomy } from './seed-taxonomy'
+
 const octokit: Octokit = new Octokit({
 	auth: env.GITHUB_TOKEN,
 	userAgent: env.APP_NAME,
@@ -244,46 +246,6 @@ const getGithubStats = async (owner: string, repo: string) => {
 	}
 }
 
-interface CategoryItem {
-	name: string
-	slug: string
-	description: string
-}
-
-const seedCategories: Array<CategoryItem> = [
-	{
-		name: 'Frontend',
-		slug: 'frontend',
-		description: 'UI frameworks, client-side routing, and browser tooling.',
-	},
-	{
-		name: 'Backend',
-		slug: 'backend',
-		description: 'Servers, APIs, and server-side frameworks.',
-	},
-	{
-		name: 'Database',
-		slug: 'database',
-		description: 'ORMs, query builders, and database tooling.',
-	},
-	{
-		name: 'Auth',
-		slug: 'auth',
-		description: 'Authentication and authorization libraries.',
-	},
-	{
-		name: 'Devtools',
-		slug: 'devtools',
-		description:
-			'Developer productivity: agents, validators, formatters, linters.',
-	},
-	{
-		name: 'Styling',
-		slug: 'styling',
-		description: 'CSS frameworks and component libraries.',
-	},
-]
-
 // Deterministic assignments: project slug -> category slugs (1-2 each).
 const seedProjectCategories: Record<string, Array<string>> = {
 	opencode: ['devtools'],
@@ -380,12 +342,7 @@ async function seed() {
 }
 
 async function seedCategoryAssignments() {
-	// Idempotent taxonomy: insert missing categories, never update existing rows.
-	await db
-		.insert(category)
-		.values(seedCategories)
-		.onConflictDoNothing({ target: category.slug })
-	console.debug(`Seeded categories: ${seedCategories.length}`)
+	await seedTaxonomy(db)
 
 	// Resolve ids deterministically by slug; skip unknown slugs without failing.
 	const [projects, categories] = await Promise.all([
