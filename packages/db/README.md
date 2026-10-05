@@ -32,10 +32,13 @@ validation and advisory locking belong to PR3.
 
 ## Isolated verification
 
-Use a running Docker daemon and the `postgres:18` image. Each DB test run creates a
-new PostgreSQL container with a random loopback port and temporary in-memory data,
-and each test creates a separate database. The helper never reads `DATABASE_URL`.
-Containers are removed in teardown, including on assertion failures.
+The test helper connects to the cloud `DATABASE_URL` from the root `.env` and
+preserves its SSL and connection parameters. Both URL validation and a server
+identity query require `altstack_development`. Each DB case creates an
+`altstack_test_<uuid>` schema in that database, with its own connection search path
+and Drizzle migration ledger. The search path excludes `public`; case teardown
+closes the pool and drops only its schema, including after assertion failures.
+Direct DB tests do not reset the application schemas.
 
 ```sh
 vp install
@@ -43,31 +46,44 @@ vp run --filter @altstack/db test
 vp check
 ```
 
-Existing API tests use the environment DB and expect a published backend project.
-Run workspace verification through this wrapper to supply a disposable database,
-synthetic credentials, and a synthetic backend fixture:
+Existing API tests use the application schemas and expect a published backend
+project. Run workspace verification through this wrapper:
 
 ```sh
 vp run --filter @altstack/db test:isolated -- vp test
 vp run --filter @altstack/db test:isolated -- vp run ready
 ```
 
-The wrapper defaults to `vp run ready` when no command is supplied. It applies the
-real migrations and calls only `seedTaxonomy`, without running the network-based
-project seed. Do not run the ordinary DB mutation commands or API tests against
-an uninspected `.env` database.
+The wrapper resets `public` and `drizzle` in `altstack_development` before running
+verification. Existing development data is deleted. It applies the real migration
+chain, seeds the taxonomy, and inserts a synthetic backend project. External
+GitHub/storage credentials are replaced with synthetic values for the child
+command. The root `.env` remains unchanged.
+
+After success, a nonzero command exit, or a thrown verification error, the wrapper
+resets those application schemas again, applies the migrations, and seeds only the
+taxonomy. The final database contains the current schema and ten categories/path
+mappings, with no project fixtures. DB cases remain isolated in temporary schemas
+while API tests use `public`. Tests use 30-second timeouts and 60-second hooks.
+
+The wrapper defaults to `vp run ready` when no command is supplied. It never runs
+the network-based project seed. A cleanup or migration failure is reported as a
+failure rather than a successful restoration. The target guard rejects databases
+other than `altstack_development` before attempting to reset them.
 
 The reusable `tests/fixtures/category-hierarchy.ts` fixture creates Zed with
 synthetic repository metadata and two direct sibling leaf assignments. Its default
 status is draft; tests can explicitly request another status. It owns and disposes
-only its project and cascading metadata/assignment rows; the disposable database
+only its project and cascading metadata/assignment rows; the isolated test schema
 owns the taxonomy. It is outside the package's production source/build entries and
 is never included in the production seed.
 
 Tests cover empty and existing migration chains, migration reruns, preservation of
 legacy assignments and taxonomy, constraints/indexes, historical path ownership,
 twice-run taxonomy idempotency, actual existing ancestry, rollback on conflicts,
-relations, and fixture teardown.
+relations, and fixture teardown. Cloud harness tests also cover schema isolation,
+connection parameter preservation, unauthorized targets, and cleanup after
+successful and failed verification.
 
 ## Next: PR2 public API
 

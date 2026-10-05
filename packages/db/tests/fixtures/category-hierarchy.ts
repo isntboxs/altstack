@@ -13,7 +13,7 @@ import { seedTaxonomy } from '@altstack/db/seed-taxonomy'
 import type { ProjectStatus } from '@altstack/shared/constants'
 
 // Test-only data. Call with an isolated DB; dispose owns only the Zed project.
-// The surrounding disposable database owns the taxonomy lifecycle.
+// The surrounding isolated test schema owns the taxonomy lifecycle.
 export async function createZedFixture(
 	database: typeof db,
 	status: ProjectStatus = 'draft'

@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
 	afterAll,
+	afterEach,
 	beforeAll,
 	beforeEach,
 	describe,
@@ -24,7 +25,7 @@ import {
 import { seedTaxonomy } from '@altstack/db/seed-taxonomy'
 
 import { createZedFixture } from './fixtures/category-hierarchy'
-import { startTestPostgres } from './helpers/postgres'
+import { connectTestPostgres } from './helpers/postgres'
 
 const migrationsFolder = fileURLToPath(
 	new URL('../src/migrations', import.meta.url)
@@ -37,14 +38,13 @@ interface LegacyCategoryRow {
 	created_at: Date
 	updated_at: Date
 }
-let postgres: Awaited<ReturnType<typeof startTestPostgres>> | undefined
-let database: Awaited<
-	ReturnType<NonNullable<typeof postgres>['createDatabase']>
->
+let postgres: Awaited<ReturnType<typeof connectTestPostgres>> | undefined
+let database: Awaited<ReturnType<NonNullable<typeof postgres>['createSchema']>>
+let currentScope: typeof database | undefined
 let baselineFolder: string | undefined
 
 beforeAll(async () => {
-	postgres = await startTestPostgres()
+	postgres = await connectTestPostgres()
 	baselineFolder = await mkdtemp(join(tmpdir(), 'altstack-baseline-'))
 	const migrations = (await readdir(migrationsFolder)).toSorted()
 	const hierarchy = migrations.find((name) =>
@@ -59,9 +59,15 @@ beforeAll(async () => {
 }, 60_000)
 
 beforeEach(async () => {
-	if (!postgres) throw new Error('Disposable PostgreSQL is missing')
-	database = await postgres.createDatabase()
-})
+	currentScope = undefined
+	if (!postgres) throw new Error('Cloud development connection is missing')
+	database = await postgres.createSchema()
+	currentScope = database
+}, 60_000)
+
+afterEach(async () => {
+	await currentScope?.close()
+}, 60_000)
 
 afterAll(async () => {
 	try {
@@ -71,10 +77,13 @@ afterAll(async () => {
 			await rm(baselineFolder, { recursive: true, force: true })
 		}
 	}
-})
+}, 60_000)
 
 async function migrateCurrent() {
-	await migrate(database.db, { migrationsFolder })
+	await migrate(database.db, {
+		migrationsFolder,
+		migrationsSchema: database.migrationsSchema,
+	})
 }
 
 async function taxonomyState() {
@@ -98,20 +107,21 @@ describe('category hierarchy migrations', () => {
 	it('applies the full migration chain to an empty DB and reruns without changes', async () => {
 		await migrateCurrent()
 		const before = await database.pool.query(
-			'SELECT * FROM drizzle.__drizzle_migrations ORDER BY id'
+			`SELECT * FROM "${database.migrationsSchema}".__drizzle_migrations ORDER BY id`
 		)
 		await migrateCurrent()
 		expect(
 			(
 				await database.pool.query(
-					'SELECT * FROM drizzle.__drizzle_migrations ORDER BY id'
+					`SELECT * FROM "${database.migrationsSchema}".__drizzle_migrations ORDER BY id`
 				)
 			).rows
 		).toEqual(before.rows)
 		expect(await database.db.select().from(category)).toEqual([])
 		expect(await database.db.select().from(categoryPath)).toEqual([])
 		const indexes = await database.pool.query<{ indexname: string }>(
-			"SELECT indexname FROM pg_indexes WHERE tablename IN ('categories', 'category_paths')"
+			"SELECT indexname FROM pg_indexes WHERE schemaname = $1 AND tablename IN ('categories', 'category_paths')",
+			[database.migrationsSchema]
 		)
 		expect(indexes.rows.map((row) => row.indexname)).toEqual(
 			expect.arrayContaining([
@@ -123,8 +133,13 @@ describe('category hierarchy migrations', () => {
 	})
 
 	it('upgrades existing flat categories and backfills paths without remapping data', async () => {
-		if (!baselineFolder) throw new Error('Baseline migration folder is missing')
-		await migrate(database.db, { migrationsFolder: baselineFolder })
+		if (!baselineFolder) {
+			throw new Error('Baseline migration folder is missing')
+		}
+		await migrate(database.db, {
+			migrationsFolder: baselineFolder,
+			migrationsSchema: database.migrationsSchema,
+		})
 		const categoryIds = [randomUUID(), randomUUID(), randomUUID()]
 		for (const [index, slug] of [
 			'devtools',
@@ -220,7 +235,7 @@ describe('category hierarchy migrations', () => {
 })
 
 describe('category hierarchy schema and taxonomy', () => {
-	beforeEach(migrateCurrent)
+	beforeEach(migrateCurrent, 60_000)
 
 	it('enforces parent FKs, restricts parent deletion, rejects self-parenting, and retains global slug uniqueness', async () => {
 		const rootId = randomUUID()

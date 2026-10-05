@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
+	test: {
+		testTimeout: 30_000,
+		hookTimeout: 60_000,
+	},
 	staged: {
 		'*': 'vp check --fix',
 	},
