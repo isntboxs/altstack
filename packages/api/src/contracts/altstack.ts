@@ -2,9 +2,9 @@ import 'zod/compile'
 import { openapi } from '@orpc/openapi'
 import { z } from 'zod'
 
-import { baseContract } from '@altstack/api/contracts/base'
+import { publicContract } from '@altstack/api/contracts/base'
 
-const listCommitsContract = baseContract
+const listCommitsContract = publicContract
 	.meta(
 		openapi({
 			path: '/list-commits',

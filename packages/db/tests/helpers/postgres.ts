@@ -57,6 +57,10 @@ export async function connectTestPostgres(value = developmentUrl()) {
 		connectionString: url,
 		max: 5,
 		connectionTimeoutMillis: 10_000,
+		// The workspace lock uses an otherwise idle session during long builds.
+		// Keep its cloud TCP connection reachable until restoration and unlock.
+		keepAlive: true,
+		keepAliveInitialDelayMillis: 10_000,
 	})
 	async function resetSchemas(names: Array<string>) {
 		const client = await pool.connect()
@@ -115,6 +119,8 @@ export async function connectTestPostgres(value = developmentUrl()) {
 				connectionString: scopedUrl,
 				max: 5,
 				connectionTimeoutMillis: 10_000,
+				keepAlive: true,
+				keepAliveInitialDelayMillis: 10_000,
 			})
 			let poolClosed = false
 			const scope = {
