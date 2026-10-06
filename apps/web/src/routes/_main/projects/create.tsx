@@ -7,7 +7,6 @@ import type { z } from 'zod'
 import { slugify } from '@altstack/shared/lib/slug'
 import { adminCreateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
 
-import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
 import {
@@ -37,6 +36,7 @@ import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
+import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
 // Mirrors the max() in adminCreateProjectInputSchema; display-only counters.
@@ -181,17 +181,7 @@ function ProjectPreviewCard({
 				</div>
 
 				<div className="flex flex-wrap gap-1.5">
-					{values.categorySlugs.length > 0 ? (
-						values.categorySlugs.map((categorySlug) => (
-							<Badge key={categorySlug} variant="outline">
-								{categorySlug}
-							</Badge>
-						))
-					) : (
-						<p className="text-xs text-muted-foreground">
-							No categories selected.
-						</p>
-					)}
+					<ProjectCategoryBadges slugs={values.categorySlugs} />
 				</div>
 
 				<div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
@@ -209,6 +199,7 @@ function ProjectPreviewCard({
 
 function RouteComponent() {
 	const createProject = useAdminProjectCreate()
+	const [submitError, setSubmitError] = useState<string | null>(null)
 	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(null)
 	const [screenshotDisplayUrl, setScreenshotDisplayUrl] = useState<
 		string | null
@@ -221,9 +212,13 @@ function RouteComponent() {
 			onSubmit: adminCreateProjectInputSchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
+			setSubmitError(null)
 			try {
 				await createProject.mutateAsync(value)
 			} catch (error) {
+				setSubmitError(
+					error instanceof Error ? error.message : 'Unable to save project.'
+				)
 				if (
 					isUploadExpiredError(error) ||
 					isPromotionConflictError(error) ||
@@ -631,6 +626,7 @@ function RouteComponent() {
 
 									return (
 										<Field data-invalid={isInvalid}>
+											<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
 											<Suspense fallback={<Skeleton className="h-10 w-full" />}>
 												<CategoryCombobox
 													id={field.name}
@@ -638,8 +634,6 @@ function RouteComponent() {
 													onValueChange={(next) => field.handleChange(next)}
 												/>
 											</Suspense>
-
-											<FieldDescription>Pick 1–3 categories.</FieldDescription>
 
 											{isInvalid && (
 												<FieldError errors={field.state.meta.errors} />
@@ -700,6 +694,13 @@ function RouteComponent() {
 							/>
 						</section>
 
+						{submitError && (
+							<p role="alert" className="text-sm text-destructive">
+								{submitError} Your project fields and category selections are
+								preserved. If a category changed, review its leaf status and
+								retry.
+							</p>
+						)}
 						<FieldGroup>
 							<Field orientation="horizontal">
 								{/* canSubmit/isPristine/isSubmitting live in the form store

@@ -17,9 +17,13 @@ import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
+import { Route as MainAdminCategoriesIndexRouteImport } from './routes/_main/admin.categories/index'
+import { Route as MainAdminCategoriesCreateRouteImport } from './routes/_main/admin.categories/create'
 import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
+import { Route as MainAdminCategoriesIdEditRouteImport } from './routes/_main/admin.categories/$id.edit'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -59,6 +63,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
+  id: '/admin/categories',
+  path: '/admin/categories',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainProjectsIndexRoute = MainProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -69,11 +78,29 @@ const MainProjectsCreateRoute = MainProjectsCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => MainProjectsRoute,
 } as any)
+const MainAdminCategoriesIndexRoute =
+  MainAdminCategoriesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => MainAdminCategoriesRoute,
+  } as any)
+const MainAdminCategoriesCreateRoute =
+  MainAdminCategoriesCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => MainAdminCategoriesRoute,
+  } as any)
 const MainProjectsIdEditRoute = MainProjectsIdEditRouteImport.update({
   id: '/$id/edit',
   path: '/$id/edit',
   getParentRoute: () => MainProjectsRoute,
 } as any)
+const MainAdminCategoriesIdEditRoute =
+  MainAdminCategoriesIdEditRouteImport.update({
+    id: '/$id/edit',
+    path: '/$id/edit',
+    getParentRoute: () => MainAdminCategoriesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -82,9 +109,13 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AppActivityRoute
   '/projects': typeof MainProjectsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
+  '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/projects/create': typeof MainProjectsCreateRoute
   '/projects/': typeof MainProjectsIndexRoute
+  '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
+  '/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -94,7 +125,10 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/projects': typeof MainProjectsIndexRoute
+  '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
+  '/admin/categories': typeof MainAdminCategoriesIndexRoute
+  '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,9 +140,13 @@ export interface FileRoutesById {
   '/_main/projects': typeof MainProjectsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/_app/': typeof AppIndexRoute
+  '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/projects/create': typeof MainProjectsCreateRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
+  '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
+  '/_main/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/_main/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,9 +157,13 @@ export interface FileRouteTypes {
     | '/activity'
     | '/projects'
     | '/auth/sign-in'
+    | '/admin/categories'
     | '/projects/create'
     | '/projects/'
+    | '/admin/categories/create'
     | '/projects/$id/edit'
+    | '/admin/categories/'
+    | '/admin/categories/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,7 +173,10 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/projects/create'
     | '/projects'
+    | '/admin/categories/create'
     | '/projects/$id/edit'
+    | '/admin/categories'
+    | '/admin/categories/$id/edit'
   id:
     | '__root__'
     | '/_app'
@@ -142,9 +187,13 @@ export interface FileRouteTypes {
     | '/_main/projects'
     | '/auth/sign-in'
     | '/_app/'
+    | '/_main/admin/categories'
     | '/_main/projects/create'
     | '/_main/projects/'
+    | '/_main/admin/categories/create'
     | '/_main/projects/$id/edit'
+    | '/_main/admin/categories/'
+    | '/_main/admin/categories/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -211,6 +260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_main/admin/categories': {
+      id: '/_main/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof MainAdminCategoriesRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/projects/': {
       id: '/_main/projects/'
       path: '/'
@@ -225,12 +281,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainProjectsCreateRouteImport
       parentRoute: typeof MainProjectsRoute
     }
+    '/_main/admin/categories/': {
+      id: '/_main/admin/categories/'
+      path: '/'
+      fullPath: '/admin/categories/'
+      preLoaderRoute: typeof MainAdminCategoriesIndexRouteImport
+      parentRoute: typeof MainAdminCategoriesRoute
+    }
+    '/_main/admin/categories/create': {
+      id: '/_main/admin/categories/create'
+      path: '/create'
+      fullPath: '/admin/categories/create'
+      preLoaderRoute: typeof MainAdminCategoriesCreateRouteImport
+      parentRoute: typeof MainAdminCategoriesRoute
+    }
     '/_main/projects/$id/edit': {
       id: '/_main/projects/$id/edit'
       path: '/$id/edit'
       fullPath: '/projects/$id/edit'
       preLoaderRoute: typeof MainProjectsIdEditRouteImport
       parentRoute: typeof MainProjectsRoute
+    }
+    '/_main/admin/categories/$id/edit': {
+      id: '/_main/admin/categories/$id/edit'
+      path: '/$id/edit'
+      fullPath: '/admin/categories/$id/edit'
+      preLoaderRoute: typeof MainAdminCategoriesIdEditRouteImport
+      parentRoute: typeof MainAdminCategoriesRoute
     }
   }
 }
@@ -267,12 +344,29 @@ const MainProjectsRouteWithChildren = MainProjectsRoute._addFileChildren(
   MainProjectsRouteChildren,
 )
 
+interface MainAdminCategoriesRouteChildren {
+  MainAdminCategoriesCreateRoute: typeof MainAdminCategoriesCreateRoute
+  MainAdminCategoriesIndexRoute: typeof MainAdminCategoriesIndexRoute
+  MainAdminCategoriesIdEditRoute: typeof MainAdminCategoriesIdEditRoute
+}
+
+const MainAdminCategoriesRouteChildren: MainAdminCategoriesRouteChildren = {
+  MainAdminCategoriesCreateRoute: MainAdminCategoriesCreateRoute,
+  MainAdminCategoriesIndexRoute: MainAdminCategoriesIndexRoute,
+  MainAdminCategoriesIdEditRoute: MainAdminCategoriesIdEditRoute,
+}
+
+const MainAdminCategoriesRouteWithChildren =
+  MainAdminCategoriesRoute._addFileChildren(MainAdminCategoriesRouteChildren)
+
 interface MainRouteRouteChildren {
   MainProjectsRoute: typeof MainProjectsRouteWithChildren
+  MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainProjectsRoute: MainProjectsRouteWithChildren,
+  MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(
