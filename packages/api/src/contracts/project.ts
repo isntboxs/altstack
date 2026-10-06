@@ -1,6 +1,6 @@
 import { openapi } from '@orpc/openapi'
 
-import { baseContract } from '@altstack/api/contracts/base'
+import { publicContract } from '@altstack/api/contracts/base'
 
 import {
 	getProjectBySlugInputSchema,
@@ -13,7 +13,7 @@ import {
 	searchProjectsOutputSchema,
 } from '@altstack/shared/schemas/project'
 
-const getBySlugContract = baseContract
+const getBySlugContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects/{slug}',
@@ -29,7 +29,7 @@ const getBySlugContract = baseContract
 	.input(getProjectBySlugInputSchema)
 	.output(getProjectBySlugOutputSchema)
 
-const listProjectsContract = baseContract
+const listProjectsContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects',
@@ -45,7 +45,7 @@ const listProjectsContract = baseContract
 	.input(listProjectsInputSchema)
 	.output(listProjectsOutputSchema)
 
-const searchProjectsContract = baseContract
+const searchProjectsContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects/search',
@@ -62,20 +62,8 @@ const searchProjectsContract = baseContract
 	.input(searchProjectsInputSchema)
 	.output(searchProjectsOutputSchema)
 
-const listCategoriesContract = baseContract
-	.meta(
-		openapi({
-			path: '/categories',
-			method: 'GET',
-			summary: 'List categories',
-			description:
-				'List categories attached to published projects, ordered by name.',
-			tags: ['Projects'],
-			operationId: 'listCategories',
-			successStatus: 200,
-			successDescription: 'Categories listed',
-		})
-	)
+// RPC compatibility only. category.list owns the REST categories endpoint.
+const listCategoriesContract = publicContract
 	.input(listCategoriesInputSchema)
 	.output(listCategoriesOutputSchema)
 

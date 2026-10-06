@@ -1,6 +1,11 @@
-import { and, asc, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
 
 import { publicProcedure } from '@altstack/api/procedures'
+import {
+	getDirectProjectCategories,
+	listPublicCategories,
+	projectInCategorySubtree,
+} from '@altstack/api/queries/category'
 
 import {
 	category,
@@ -26,6 +31,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 
 		return {
 			...row.projects,
+			categoryDetails: await getDirectProjectCategories(db, row.projects.id),
 			logo: row.projects.logo,
 			screenshot: row.projects.screenshot,
 			github: {
@@ -109,20 +115,6 @@ const searchSortOrder = {
 	'most-forks': [desc(githubRepository.forks), desc(project.id)],
 } as const
 
-function emptySearchPage(page: number, limit: number) {
-	return {
-		projects: [],
-		pagination: {
-			page,
-			limit,
-			totalItems: 0,
-			totalPages: 0,
-			hasNextPage: false,
-			hasPreviousPage: page > 1,
-		},
-	}
-}
-
 const searchHandler = publicProcedure.project.search.handler(
 	async ({ context, input }) => {
 		const { db } = context
@@ -136,31 +128,8 @@ const searchHandler = publicProcedure.project.search.handler(
 		const conditions = [eq(project.status, 'published')]
 
 		if (input.category) {
-			const [categoryRow] = await db
-				.select({ id: category.id })
-				.from(category)
-				.where(eq(category.slug, input.category))
-				.limit(1)
-
-			// Unknown category slug is a valid filter with zero matches.
-			if (!categoryRow) {
-				return emptySearchPage(page, limit)
-			}
-
-			// EXISTS (not JOIN): a project in N categories must still appear once.
-			conditions.push(
-				exists(
-					db
-						.select({ one: sql`1` })
-						.from(projectCategory)
-						.where(
-							and(
-								eq(projectCategory.projectId, project.id),
-								eq(projectCategory.categoryId, categoryRow.id)
-							)
-						)
-				)
-			)
+			// An unknown slug naturally yields zero matches through EXISTS.
+			conditions.push(projectInCategorySubtree(input.category))
 		}
 
 		if (input.q) {
@@ -246,23 +215,12 @@ const searchHandler = publicProcedure.project.search.handler(
 const listCategoriesHandler = publicProcedure.project.listCategories.handler(
 	async ({ context }) => {
 		const { db } = context
-
-		// Only categories attached to at least one published project, so the
-		// filter UI never offers a dead-end option.
-		const rows = await db
-			.selectDistinct({ slug: category.slug, name: category.name })
-			.from(category)
-			.innerJoin(projectCategory, eq(projectCategory.categoryId, category.id))
-			.innerJoin(
-				project,
-				and(
-					eq(project.id, projectCategory.projectId),
-					eq(project.status, 'published')
-				)
-			)
-			.orderBy(asc(category.name))
-
-		return { categories: rows }
+		const nodes = await listPublicCategories(db)
+		return {
+			categories: nodes.map(({ slug, name }) => {
+				return { slug, name }
+			}),
+		}
 	}
 )
 

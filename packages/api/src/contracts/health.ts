@@ -2,9 +2,9 @@ import 'zod/compile'
 import { openapi } from '@orpc/openapi'
 import { z } from 'zod'
 
-import { baseContract } from '@altstack/api/contracts/base'
+import { publicContract } from '@altstack/api/contracts/base'
 
-export const healthContract = baseContract
+export const healthContract = publicContract
 	.meta(
 		openapi({
 			path: '/health',

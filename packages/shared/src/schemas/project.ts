@@ -3,6 +3,7 @@ import limax from 'limax'
 import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
+import { categoryNodeSchema } from '@altstack/shared/schemas/category'
 
 const slugSchema = z
 	.string()
@@ -46,6 +47,7 @@ export const getProjectBySlugInputSchema = z.object({
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
 	github: z.object(githubField),
+	categoryDetails: z.array(categoryNodeSchema),
 })
 
 export const listProjectsInputSchema = z.object({

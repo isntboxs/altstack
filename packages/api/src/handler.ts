@@ -1,6 +1,10 @@
 import { EvlogHandlerPlugin } from '@orpc/evlog'
 import { SmartCoercionHandlerPlugin } from '@orpc/json-schema'
-import { COMMON_ERROR_STATUS_MAP, OpenAPIGenerator } from '@orpc/openapi'
+import {
+	COMMON_ERROR_STATUS_MAP,
+	getOpenAPIMeta,
+	OpenAPIGenerator,
+} from '@orpc/openapi'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { OpenAPIReferenceHandlerPlugin } from '@orpc/openapi/plugins'
 import { RPCHandler } from '@orpc/server/fetch'
@@ -30,6 +34,9 @@ const generator = new OpenAPIGenerator({
 })
 
 export const openApiHandler = new OpenAPIHandler(routers, {
+	// Expose only explicitly mapped REST procedures. RPC-only compatibility
+	// procedures must not acquire fallback paths in the matcher or reference.
+	filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 	plugins: [
 		new EvlogHandlerPlugin({
 			drain: undefined, // <- custom Evlog drain
@@ -45,6 +52,7 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 			provider: 'scalar',
 			spec: () =>
 				generator.generate(routers, {
+					filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 					base: {
 						info: {
 							title: 'Altstack API',
