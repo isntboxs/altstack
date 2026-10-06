@@ -3,7 +3,10 @@ import { sql } from 'drizzle-orm'
 import type { db } from '@altstack/db'
 import { project } from '@altstack/db/schemas'
 
+import type { AdminCategoryNode } from '@altstack/shared/schemas/admin-category'
 import type { CategoryNode } from '@altstack/shared/schemas/category'
+
+type CategoryDatabase = Pick<typeof db, 'execute'>
 
 // Only rooted paths within the public three-level contract are representable.
 // The depth bound and visited IDs protect reads from malformed legacy/test
@@ -48,7 +51,7 @@ const nodesCtes = sql`${hierarchyCte}, category_project_counts AS (
 // DB locales and equal display names. The flat public list is ordered by name.
 const nodeOrder = sql`node.name COLLATE "C", node.slug COLLATE "C", node.id`
 
-export async function listPublicCategories(database: typeof db) {
+export async function listPublicCategories(database: CategoryDatabase) {
 	const result = await database.execute<CategoryNode>(sql`
 		${nodesCtes}
 		SELECT node.* FROM category_nodes node
@@ -57,7 +60,10 @@ export async function listPublicCategories(database: typeof db) {
 	return result.rows
 }
 
-export async function getCategoryByPath(database: typeof db, path: string) {
+export async function getCategoryByPath(
+	database: CategoryDatabase,
+	path: string
+) {
 	const result = await database.execute<
 		CategoryNode & { relationship: 'category' | 'ancestor' | 'child' }
 	>(sql`
@@ -94,7 +100,7 @@ export async function getCategoryByPath(database: typeof db, path: string) {
 }
 
 export async function getDirectProjectCategories(
-	database: typeof db,
+	database: CategoryDatabase,
 	projectId: string
 ) {
 	const result = await database.execute<CategoryNode>(sql`
@@ -105,6 +111,45 @@ export async function getDirectProjectCategories(
 		ORDER BY ${nodeOrder}
 	`)
 	return result.rows
+}
+
+// Admin visibility includes empty categories. Keep the published subtree count
+// unchanged; direct counts include every status and drive assignment/delete guards.
+export async function listAdminCategories(database: CategoryDatabase) {
+	const result = await database.execute<AdminCategoryNode>(sql`
+		${nodesCtes}, direct_counts AS (
+			SELECT category_id, count(*)::integer AS total
+			FROM project_categories GROUP BY category_id
+		)
+		SELECT node.*, coalesce(direct.total, 0) AS "directProjectCount"
+		FROM category_nodes node
+		LEFT JOIN direct_counts direct ON direct.category_id = node.id
+		ORDER BY ${nodeOrder}
+	`)
+	return result.rows
+}
+
+export async function getAdminCategoryById(
+	database: CategoryDatabase,
+	id: string
+) {
+	const nodes = await listAdminCategories(database)
+	const byId = new Map(nodes.map((node) => [node.id, node]))
+	const category = byId.get(id)
+	if (!category) return undefined
+	const ancestors: Array<AdminCategoryNode> = []
+	let parentId = category.parentId
+	while (parentId !== null) {
+		const parent = byId.get(parentId)
+		if (!parent) break
+		ancestors.unshift(parent)
+		parentId = parent.parentId
+	}
+	return {
+		category,
+		ancestors,
+		children: nodes.filter((node) => node.parentId === id),
+	}
 }
 
 // Both search data and count receive this identical predicate. EXISTS keeps a

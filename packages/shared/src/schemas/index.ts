@@ -1,3 +1,4 @@
+export * from '@altstack/shared/schemas/admin-category'
 export * from '@altstack/shared/schemas/admin-project'
 export * from '@altstack/shared/schemas/audit'
 export * from '@altstack/shared/schemas/category'
