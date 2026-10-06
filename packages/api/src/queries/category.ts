@@ -64,8 +64,8 @@ export async function getCategoryByPath(database: typeof db, path: string) {
 		${nodesCtes}, requested_category AS (
 			SELECT * FROM category_hierarchy
 			WHERE id = coalesce(
-				(SELECT category_id FROM category_paths WHERE path = ${path}),
-				(SELECT id FROM category_hierarchy WHERE path = ${path})
+				(SELECT id FROM category_hierarchy WHERE path = ${path}),
+				(SELECT category_id FROM category_paths WHERE path = ${path})
 			)
 		)
 		SELECT node.*, CASE

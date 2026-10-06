@@ -371,6 +371,48 @@ describe('public category hierarchy', () => {
 		).toBe(0)
 	})
 
+	it('prefers current hierarchy paths over historical owners while retaining historical fallback', async () => {
+		const original = await database.db.query.category.findFirst({
+			where: { slug: 'backend' },
+		})
+		if (!original) throw new Error('Missing original backend category')
+		await database.db
+			.update(category)
+			.set({ slug: 'previous-backend' })
+			.where(eq(category.id, original.id))
+		await database.db.insert(categoryPath).values({
+			path: 'previous-backend',
+			categoryId: original.id,
+		})
+		await database.db
+			.update(category)
+			.set({ slug: 'current-backend' })
+			.where(eq(category.id, original.id))
+		const [current] = await database.db
+			.insert(category)
+			.values({ slug: 'backend', name: 'Current Backend' })
+			.returning()
+		if (!current) throw new Error('Missing current backend category')
+
+		const client = clientWith()
+		const detail = await client.category.getByPath({ path: 'backend' })
+		expect(detail.category).toMatchObject({
+			id: current.id,
+			path: 'backend',
+			name: 'Current Backend',
+		})
+		const response = await rest('/categories/by-path?path=backend')
+		expect(response.response?.status).toBe(200)
+		expect(await response.response?.json()).toEqual(detail)
+		const canonical = await client.category.getByPath({
+			path: 'current-backend',
+		})
+		expect(canonical.category.id).toBe(original.id)
+		expect(
+			await client.category.getByPath({ path: 'previous-backend' })
+		).toEqual(canonical)
+	})
+
 	it('terminates reads for cyclic and over-depth test hierarchies', async () => {
 		const fixture = await zed()
 		const [fourth] = await database.db
