@@ -9,7 +9,6 @@ import type { ORPCRouterOutputs } from '@altstack/api/routers'
 import { slugify } from '@altstack/shared/lib/slug'
 import { adminUpdateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
 
-import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
 import {
@@ -39,6 +38,7 @@ import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
+import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import {
 	adminProjectQueries,
 	useAdminProjectGet,
@@ -93,10 +93,7 @@ function toRepositoryShortForm(canonicalUrl: string): string {
 
 export const Route = createFileRoute('/_main/projects/$id/edit')({
 	loader: async ({ context, params }) => {
-		await context.queryClient.query({
-			...adminProjectQueries.get({ id: params.id }),
-			staleTime: 'static',
-		})
+		await context.queryClient.query(adminProjectQueries.get({ id: params.id }))
 	},
 	component: RouteComponent,
 })
@@ -189,17 +186,7 @@ function ProjectPreviewCard({
 				</div>
 
 				<div className="flex flex-wrap gap-1.5">
-					{(values.categorySlugs ?? []).length > 0 ? (
-						(values.categorySlugs ?? []).map((categorySlug) => (
-							<Badge key={categorySlug} variant="outline">
-								{categorySlug}
-							</Badge>
-						))
-					) : (
-						<p className="text-xs text-muted-foreground">
-							No categories selected.
-						</p>
-					)}
+					<ProjectCategoryBadges slugs={values.categorySlugs ?? []} />
 				</div>
 
 				<div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
@@ -244,7 +231,8 @@ function RouteComponent() {
 }
 
 function EditProjectForm({ project }: { project: AdminProject }) {
-	const updateProject = useAdminProjectUpdate({ id: project.id })
+	const updateProject = useAdminProjectUpdate()
+	const [submitError, setSubmitError] = useState<string | null>(null)
 	// Form image fields hold tmp keys only (undefined = keep,
 	// screenshot null = remove). The existing file keys are resolved to
 	// display URLs here so the preview keeps showing them until replaced.
@@ -276,6 +264,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 			onSubmit: editProjectFormSchema,
 		},
 		onSubmit: async ({ value }) => {
+			setSubmitError(null)
 			try {
 				const updated = await updateProject.mutateAsync({
 					id: project.id,
@@ -297,6 +286,9 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 				setLogoDisplayUrl(resolveFileUrl(updated.logo))
 				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
 			} catch (error) {
+				setSubmitError(
+					error instanceof Error ? error.message : 'Unable to save project.'
+				)
 				if (
 					isUploadExpiredError(error) ||
 					isPromotionConflictError(error) ||
@@ -748,6 +740,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 
 								return (
 									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
 										<Suspense fallback={<Skeleton className="h-10 w-full" />}>
 											<CategoryCombobox
 												id={field.name}
@@ -755,8 +748,6 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 												onValueChange={(next) => field.handleChange(next)}
 											/>
 										</Suspense>
-
-										<FieldDescription>Pick 1–3 categories.</FieldDescription>
 
 										{isInvalid && (
 											<FieldError errors={field.state.meta.errors} />
@@ -826,6 +817,13 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 						/>
 					</section>
 
+					{submitError && (
+						<p role="alert" className="text-sm text-destructive">
+							{submitError} Your project fields and category selections are
+							preserved. If a category changed, review its leaf status and
+							retry.
+						</p>
+					)}
 					<FieldGroup>
 						<Field orientation="horizontal">
 							{/* canSubmit/isPristine/isSubmitting live in the form store

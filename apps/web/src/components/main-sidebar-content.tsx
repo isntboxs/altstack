@@ -1,5 +1,10 @@
-import { IconPackage } from '@tabler/icons-react'
-import { Link, linkOptions, useMatchRoute } from '@tanstack/react-router'
+import { IconPackage, IconCategory } from '@tabler/icons-react'
+import {
+	Link,
+	linkOptions,
+	useMatchRoute,
+	useRouteContext,
+} from '@tanstack/react-router'
 import type { ComponentProps, FC } from 'react'
 
 import {
@@ -20,12 +25,14 @@ const navLinks = linkOptions([
 		icon: IconPackage,
 		label: 'Projects',
 	},
+	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
 ])
 
 export const MainSidebarContent: FC<MainSidebarContentProps> = ({
 	...props
 }) => {
 	const matchRoute = useMatchRoute()
+	const { auth } = useRouteContext({ from: '/_main' })
 	const { isMobile, setOpenMobile } = useSidebar()
 
 	return (
@@ -33,8 +40,8 @@ export const MainSidebarContent: FC<MainSidebarContentProps> = ({
 			<SidebarGroup>
 				<SidebarGroupContent>
 					<SidebarMenu>
-						{navLinks.map((link) => {
-							const isActiveRoute = !!matchRoute({ to: link.to })
+						{(auth.user.role === 'admin' ? navLinks : []).map((link) => {
+							const isActiveRoute = !!matchRoute({ to: link.to, fuzzy: true })
 
 							return (
 								<SidebarMenuItem key={link.to}>
@@ -42,7 +49,7 @@ export const MainSidebarContent: FC<MainSidebarContentProps> = ({
 										render={
 											<Link
 												{...link}
-												activeOptions={{ exact: true }}
+												activeOptions={{ exact: false }}
 												viewTransition={true}
 												onClick={() => {
 													if (isMobile) setOpenMobile(false)
