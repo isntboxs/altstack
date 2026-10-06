@@ -103,20 +103,8 @@ const listAdminProjectsContract = baseContract
 	.input(adminListProjectInputSchema)
 	.output(adminListProjectOutputSchema)
 
+// RPC compatibility for the current project form; admin.category.list owns REST.
 const listAdminCategoriesContract = baseContract
-	.meta(
-		openapi({
-			path: '/admin/categories',
-			method: 'GET',
-			summary: 'Admin list categories',
-			description:
-				'List all categories ordered by name, including ones with no published projects. For the admin creation form.',
-			tags: ['AdminProjects'],
-			operationId: 'listAdminCategories',
-			successStatus: 200,
-			successDescription: 'Categories listed',
-		})
-	)
 	.input(listCategoriesInputSchema)
 	.output(listCategoriesOutputSchema)
 

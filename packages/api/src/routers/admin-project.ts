@@ -1,9 +1,14 @@
+import { ORPCError } from '@orpc/server'
 import type { ORPCErrorConstructorMap } from '@orpc/server'
 import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm'
 import { RequestError } from 'octokit'
 
 import { octokit } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
+import {
+	lockCategoryIntegrity,
+	validateLeafCategoryAssignments,
+} from '@altstack/api/queries/category-integrity'
 import {
 	copyS3Object,
 	deleteFinalKeysBestEffort,
@@ -98,21 +103,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 		const uniqueCategorySlugs = [...new Set(input.categorySlugs)]
 
-		const categoryRows = await db
-			.select({ id: category.id, slug: category.slug })
-			.from(category)
-			.where(inArray(category.slug, uniqueCategorySlugs))
-
-		const categoryIdBySlug = new Map(
-			categoryRows.map((row) => [row.slug, row.id])
-		)
-
-		const categoryIds: Array<string> = []
-		for (const slug of uniqueCategorySlugs) {
-			const categoryId = categoryIdBySlug.get(slug)
-			if (!categoryId) throw errors.BAD_REQUEST()
-			categoryIds.push(categoryId)
-		}
+		await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
 
 		const { forks, stars } = await fetchGithub(owner, repo, errors)
 
@@ -157,6 +148,11 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 		try {
 			return await db.transaction(async (tx) => {
+				await lockCategoryIntegrity(tx)
+				const categoryIds = await validateLeafCategoryAssignments(
+					tx,
+					uniqueCategorySlugs
+				)
 				const [inserted] = await tx
 					.insert(project)
 					.values({
@@ -321,26 +317,10 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			if (slugOwner) throw errors.CONFLICT()
 		}
 
-		let categoryIds: Array<string> | undefined
 		let uniqueCategorySlugs: Array<string> | undefined
 		if (input.categorySlugs !== undefined) {
 			uniqueCategorySlugs = [...new Set(input.categorySlugs)]
-
-			const categoryRows = await db
-				.select({ id: category.id, slug: category.slug })
-				.from(category)
-				.where(inArray(category.slug, uniqueCategorySlugs))
-
-			const categoryIdBySlug = new Map(
-				categoryRows.map((row) => [row.slug, row.id])
-			)
-
-			categoryIds = []
-			for (const slug of uniqueCategorySlugs) {
-				const categoryId = categoryIdBySlug.get(slug)
-				if (!categoryId) throw errors.BAD_REQUEST()
-				categoryIds.push(categoryId)
-			}
+			await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
 		}
 
 		let refreshedGithub:
@@ -445,6 +425,14 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 
 		try {
 			const result = await db.transaction(async (tx) => {
+				let categoryIds: Array<string> | undefined
+				if (uniqueCategorySlugs !== undefined) {
+					await lockCategoryIntegrity(tx)
+					categoryIds = await validateLeafCategoryAssignments(
+						tx,
+						uniqueCategorySlugs
+					)
+				}
 				const [updated] = await tx
 					.update(project)
 					.set(patch)
@@ -533,6 +521,13 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			if (isUniqueViolation(error)) {
 				throw promotedTmp ? errors.CONFLICT_AFTER_PROMOTE() : errors.CONFLICT()
 			}
+			if (
+				!promotedTmp &&
+				error instanceof ORPCError &&
+				error.code === 'BAD_REQUEST'
+			) {
+				throw error
+			}
 			throw promotedTmp
 				? errors.UPLOAD_CONSUMED()
 				: errors.INTERNAL_SERVER_ERROR()
@@ -558,6 +553,7 @@ const adminDeleteProjectHandler = adminProcedure.admin.project.remove.handler(
 
 		try {
 			await db.transaction(async (tx) => {
+				await lockCategoryIntegrity(tx)
 				await tx.insert(auditLog).values({
 					actorId: auth.user.id,
 					action: 'project_removed',

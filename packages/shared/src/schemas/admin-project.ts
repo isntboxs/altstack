@@ -13,6 +13,12 @@ import {
 	screenshotKeySchema,
 } from '@altstack/shared/schemas/upload'
 
+// Validate the number of distinct direct assignments after trimming/deduplication.
+const categorySlugsSchema = z
+	.array(z.string().trim().min(1).max(100))
+	.transform((slugs) => [...new Set(slugs)])
+	.pipe(z.array(z.string()).min(1).max(3))
+
 export const adminCreateProjectInputSchema = z.object({
 	name: z.string().trim().min(2).max(100),
 	slug: slugSchema,
@@ -27,7 +33,7 @@ export const adminCreateProjectInputSchema = z.object({
 		.trim()
 		.optional()
 		.transform((v) => v ?? undefined),
-	categorySlugs: z.array(z.string().trim().min(1).max(100)).min(1).max(3),
+	categorySlugs: categorySlugsSchema,
 	// Visibility at creation. Drafts stay hidden from the public catalogue
 	// (`status = 'published'` filter); omitted input defaults to
 	// 'published' to preserve the pre-status behaviour. The admin UI offers
@@ -86,11 +92,7 @@ export const adminUpdateProjectInputSchema = z.object({
 		.nullable()
 		.optional(),
 	content: z.string().trim().nullable().optional(),
-	categorySlugs: z
-		.array(z.string().trim().min(1).max(100))
-		.min(1)
-		.max(3)
-		.optional(),
+	categorySlugs: categorySlugsSchema.optional(),
 	status: z.enum(PROJECT_STATUS).optional(),
 })
 
