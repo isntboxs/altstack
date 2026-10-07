@@ -28,8 +28,7 @@ import {
 } from '@altstack/ui/components/pagination'
 import { Separator } from '@altstack/ui/components/separator'
 
-import { useProjectSearch } from '#/features/project/queries'
-import type { SearchProjectsParams } from '#/features/project/queries'
+import type { ProjectPageLinkOptions } from '#/features/project/page-links'
 import { resolveFileUrl } from '#/utils/storage'
 
 type ProjectCardProps =
@@ -43,14 +42,28 @@ const CreatedPaginationLink = createLink(PaginationLink)
 
 const CustomPaginationPrevious: LinkComponent<typeof PaginationPrevious> = (
 	props
-) => <CreatedPaginationPrevious preload="intent" {...props} />
+) => (
+	<CreatedPaginationPrevious
+		preload="intent"
+		activeOptions={{ exact: true, explicitUndefined: true }}
+		{...props}
+	/>
+)
 
 const CustomPaginationNext: LinkComponent<typeof PaginationNext> = (props) => (
-	<CreatedPaginationNext preload="intent" {...props} />
+	<CreatedPaginationNext
+		preload="intent"
+		activeOptions={{ exact: true, explicitUndefined: true }}
+		{...props}
+	/>
 )
 
 const CustomPaginationLink: LinkComponent<typeof PaginationLink> = (props) => (
-	<CreatedPaginationLink preload="intent" {...props} />
+	<CreatedPaginationLink
+		preload="intent"
+		activeOptions={{ exact: true, explicitUndefined: true }}
+		{...props}
+	/>
 )
 
 function getPaginationItems(currentPage: number, totalPages: number) {
@@ -135,7 +148,7 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							className="size-7 rounded-sm"
 						/>
 
-						<h1 className="text-xl font-semibold">{projectData.name}</h1>
+						<h2 className="text-xl font-semibold">{projectData.name}</h2>
 					</CardTitle>
 				</CardHeader>
 
@@ -192,28 +205,24 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 }
 
 export const ProjectListSection = ({
-	page = 1,
-	category,
-	q,
-	sort,
-}: SearchProjectsParams) => {
-	const { data } = useProjectSearch({ page, category, q, sort })
+	data,
+	emptyMessage,
+	pageLinkOptions,
+}: {
+	data: ORPCRouterOutputs['project']['search']
+	emptyMessage: string
+	pageLinkOptions: (page: number) => ProjectPageLinkOptions
+}) => {
 	const { pagination } = data
-	const currentPage = pagination.page || page || 1
+	const currentPage = pagination.page || 1
 	const totalPages = pagination.totalPages
-	const hasActiveFilters =
-		Boolean(q) || Boolean(category) || (sort !== undefined && sort !== 'newest')
 
 	if (data.projects.length === 0) {
 		return (
 			<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
 				<div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
 					<p className="text-lg font-medium">No projects found</p>
-					<p className="mt-1 text-sm text-muted-foreground">
-						{hasActiveFilters
-							? 'No projects match your current filters. Try a different search term or clear filters above.'
-							: 'There are no published projects available in the catalogue yet.'}
-					</p>
+					<p className="mt-1 text-sm text-muted-foreground">{emptyMessage}</p>
 				</div>
 			</section>
 		)
@@ -246,13 +255,7 @@ export const ProjectListSection = ({
 					{/* Previous Button */}
 					<PaginationItem>
 						<CustomPaginationPrevious
-							from="/"
-							search={(prev) => {
-								return {
-									...prev,
-									page: currentPage - 1 === 1 ? undefined : currentPage - 1,
-								}
-							}}
+							{...pageLinkOptions(Math.max(1, currentPage - 1))}
 							resetScroll={false}
 							disabled={!pagination.hasPreviousPage}
 							viewTransition
@@ -266,13 +269,7 @@ export const ProjectListSection = ({
 								<PaginationEllipsis />
 							) : (
 								<CustomPaginationLink
-									from="/"
-									search={(prev) => {
-										return {
-											...prev,
-											page: item === 1 ? undefined : item,
-										}
-									}}
+									{...pageLinkOptions(item)}
 									resetScroll={false}
 									isActive={item === currentPage}
 									viewTransition
@@ -287,13 +284,7 @@ export const ProjectListSection = ({
 					<PaginationItem>
 						<CustomPaginationNext
 							disabled={!pagination.hasNextPage}
-							from="/"
-							search={(prev) => {
-								return {
-									...prev,
-									page: currentPage + 1,
-								}
-							}}
+							{...pageLinkOptions(currentPage + 1)}
 							resetScroll={false}
 							viewTransition
 						/>

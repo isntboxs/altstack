@@ -52,9 +52,36 @@ export const Header = ({
 			<header className="fixed top-0 z-50 h-12 w-full bg-background">
 				<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-4 lg:px-16">
 					<div className="flex items-center gap-2 lg:gap-8">
-						<Button size="icon-sm" variant="ghost" className="lg:hidden">
-							<IconMenu2 />
-						</Button>
+						<DropdownMenu>
+							<DropdownMenuTrigger
+								render={
+									<Button
+										size="icon-sm"
+										variant="ghost"
+										className="lg:hidden"
+										aria-label="Open navigation"
+									>
+										<IconMenu2 />
+									</Button>
+								}
+							/>
+							<DropdownMenuContent align="start">
+								<DropdownMenuItem
+									render={
+										<Link
+											to="/categories"
+											activeOptions={{ includeSearch: false }}
+											activeProps={{ className: 'font-semibold' }}
+										/>
+									}
+								>
+									Categories
+								</DropdownMenuItem>
+								<DropdownMenuItem render={<Link to="/activity" />}>
+									Activity
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 
 						<Link
 							to="/"
@@ -72,8 +99,27 @@ export const Header = ({
 							<h1 className="text-base font-medium">{env.VITE_APP_NAME}</h1>
 						</Link>
 
-						<NavigationMenu>
+						<NavigationMenu className="max-lg:hidden">
 							<NavigationMenuList>
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={
+											<Link
+												to="/categories"
+												activeOptions={{ includeSearch: false }}
+												activeProps={{
+													className: 'font-semibold text-primary',
+												}}
+												viewTransition
+											/>
+										}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit p-1',
+										})}
+									>
+										Categories
+									</NavigationMenuLink>
+								</NavigationMenuItem>
 								<NavigationMenuItem>
 									<NavigationMenuLink
 										render={<Link to="/activity" viewTransition />}

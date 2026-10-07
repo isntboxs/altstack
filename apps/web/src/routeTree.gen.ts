@@ -17,6 +17,8 @@ import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
+import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
@@ -62,6 +64,16 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
   getParentRoute: () => AuthRouteRoute,
+} as any)
+const AppCategoriesIndexRoute = AppCategoriesIndexRouteImport.update({
+  id: '/categories/',
+  path: '/categories/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppCategoriesSplatRoute = AppCategoriesSplatRouteImport.update({
+  id: '/categories/$',
+  path: '/categories/$',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
   id: '/admin/categories',
@@ -109,8 +121,10 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AppActivityRoute
   '/projects': typeof MainProjectsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
+  '/categories/$': typeof AppCategoriesSplatRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/projects/create': typeof MainProjectsCreateRoute
+  '/categories/': typeof AppCategoriesIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -123,7 +137,9 @@ export interface FileRoutesByTo {
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/categories/$': typeof AppCategoriesSplatRoute
   '/projects/create': typeof MainProjectsCreateRoute
+  '/categories': typeof AppCategoriesIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -140,8 +156,10 @@ export interface FileRoutesById {
   '/_main/projects': typeof MainProjectsRouteWithChildren
   '/auth/sign-in': typeof AuthSignInRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/projects/create': typeof MainProjectsCreateRoute
+  '/_app/categories/': typeof AppCategoriesIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -157,8 +175,10 @@ export interface FileRouteTypes {
     | '/activity'
     | '/projects'
     | '/auth/sign-in'
+    | '/categories/$'
     | '/admin/categories'
     | '/projects/create'
+    | '/categories/'
     | '/projects/'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -171,7 +191,9 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/activity'
     | '/auth/sign-in'
+    | '/categories/$'
     | '/projects/create'
+    | '/categories'
     | '/projects'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -187,8 +209,10 @@ export interface FileRouteTypes {
     | '/_main/projects'
     | '/auth/sign-in'
     | '/_app/'
+    | '/_app/categories/$'
     | '/_main/admin/categories'
     | '/_main/projects/create'
+    | '/_app/categories/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
     | '/_main/projects/$id/edit'
@@ -260,6 +284,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_app/categories/': {
+      id: '/_app/categories/'
+      path: '/categories'
+      fullPath: '/categories/'
+      preLoaderRoute: typeof AppCategoriesIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/categories/$': {
+      id: '/_app/categories/$'
+      path: '/categories/$'
+      fullPath: '/categories/$'
+      preLoaderRoute: typeof AppCategoriesSplatRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_main/admin/categories': {
       id: '/_main/admin/categories'
       path: '/admin/categories'
@@ -316,12 +354,16 @@ interface AppRouteRouteChildren {
   AppSlugRoute: typeof AppSlugRoute
   AppActivityRoute: typeof AppActivityRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
+  AppCategoriesIndexRoute: typeof AppCategoriesIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSlugRoute: AppSlugRoute,
   AppActivityRoute: AppActivityRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCategoriesSplatRoute: AppCategoriesSplatRoute,
+  AppCategoriesIndexRoute: AppCategoriesIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
