@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
 
 import type { db } from '@altstack/db'
-import { category, categoryPath } from '@altstack/db/schemas'
+import { category, categoryPath, projectCategory } from '@altstack/db/schemas'
 
 interface CategoryItem {
 	name: string
@@ -82,10 +82,24 @@ export async function seedTaxonomy(database: typeof db) {
 				throw new Error(`Seed parent must precede category: ${entry.slug}`)
 			}
 
-			await tx
+			const inserted = await tx
 				.insert(category)
 				.values({ ...entry, parentId })
 				.onConflictDoNothing({ target: category.slug })
+				.returning({ id: category.id })
+			if (inserted.length > 0 && parentId) {
+				const [assigned] = await tx
+					.select({ categoryId: projectCategory.categoryId })
+					.from(projectCategory)
+					.where(eq(projectCategory.categoryId, parentId))
+					.limit(1)
+				if (assigned) {
+					throw new Error(
+						`Seed parent has direct project assignments: ${parentSlug}`
+					)
+				}
+			}
+
 			const [existing] = await tx
 				.select({ id: category.id })
 				.from(category)

@@ -14,5 +14,5 @@ export const projectFilterSearchSchema = searchProjectsInputSchema
 	})
 
 export const homeProjectSearchSchema = projectFilterSearchSchema.extend({
-	category: searchProjectsInputSchema.shape.category,
+	category: searchProjectsInputSchema.shape.category.catch(undefined),
 })

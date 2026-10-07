@@ -291,8 +291,7 @@ export function CategoryForm({
 												{changes.length > 1
 													? ` and ${changes.length - 1} descendant URL(s)`
 													: ''}{' '}
-												will change. Old links will redirect once public
-												category pages are available. URL history is saved now.
+												will change. Old links will redirect to the new URL.
 											</p>
 											<ul className="max-h-72 space-y-3 overflow-y-auto">
 												{changes.map((change) => (
