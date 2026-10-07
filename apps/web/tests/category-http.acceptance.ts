@@ -21,20 +21,8 @@ import { connectTestPostgres } from '../../../packages/db/tests/helpers/postgres
 // through final restoration. This acceptance script never resets a database.
 assert.equal(process.env.NODE_ENV, 'test')
 assert.equal(process.env.APP_NAME, 'Altstack Test')
-const database = await connectTestPostgres()
-const lock = await database.pool.query<{ held: boolean }>(
-	"SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND granted AND classid = hashtext('altstack.workspace-verification')::oid AND objid = hashtext('drizzle')::oid) AS held"
-)
-assert.equal(
-	lock.rows[0]?.held,
-	true,
-	'Use the authorized test:isolated wrapper'
-)
 const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
-const evidence = await mkdtemp(join(tmpdir(), 'altstack-category-acceptance-'))
-const client = createRouterClient(routers, {
-	context: { db: database.db, auth: null },
-})
+let evidence: string
 const origin = 'http://localhost:3010'
 const apiOrigin = 'http://localhost:3001'
 const serverEnv = {
@@ -159,7 +147,20 @@ async function checkpoint(phase: string, data: Record<string, unknown>) {
 	throw new Error('Collaborative preview checkpoint timed out')
 }
 
+const database = await connectTestPostgres()
 try {
+	const lock = await database.pool.query<{ held: boolean }>(
+		"SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND granted AND classid = hashtext('altstack.workspace-verification')::oid AND objid = hashtext('drizzle')::oid) AS held"
+	)
+	assert.equal(
+		lock.rows[0]?.held,
+		true,
+		'Use the authorized test:isolated wrapper'
+	)
+	evidence = await mkdtemp(join(tmpdir(), 'altstack-category-acceptance-'))
+	const client = createRouterClient(routers, {
+		context: { db: database.db, auth: null },
+	})
 	const published = await createZedFixture(database.db, 'published')
 	fixtures.push(published)
 	const draft = await createZedFixture(database.db, 'draft')
