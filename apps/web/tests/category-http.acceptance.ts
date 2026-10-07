@@ -382,15 +382,29 @@ try {
 	)
 	console.debug(JSON.stringify({ acceptance: 'passed', checks, evidence }))
 } finally {
+	const failures: Array<unknown> = []
+	const attempt = async (step: () => Promise<unknown>) => {
+		try {
+			await step()
+		} catch (error) {
+			failures.push(error)
+		}
+	}
 	try {
 		// oxlint-disable-next-line unicorn/no-array-reverse -- ES2022 target; reverse a copy for cleanup.
-		for (const child of [...processes].reverse()) await stop(child)
-		for (const fixture of fixtures) await fixture.dispose()
-		await database.close()
+		for (const child of [...processes].reverse()) {
+			await attempt(() => stop(child))
+		}
+		for (const fixture of fixtures) await attempt(() => fixture.dispose())
+		await attempt(() => database.close())
 	} finally {
-		const { rm } = await import('node:fs/promises')
-		if (assetCreated) await rm(assetPath, { force: true })
+		await attempt(async () => {
+			const { rm } = await import('node:fs/promises')
+			if (assetCreated) await rm(assetPath, { force: true })
+		})
 	}
+	// oxlint-disable-next-line no-unsafe-finally
+	if (failures.length > 0) throw new AggregateError(failures, 'Cleanup failed')
 	console.debug(
 		'Acceptance fixtures and local servers cleaned; wrapper restores taxonomy-only database.'
 	)
