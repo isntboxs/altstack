@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createWriteStream } from 'node:fs'
-import { access, mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, open, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -48,6 +48,8 @@ const serverEnv = {
 }
 const processes: Array<ReturnType<typeof spawn>> = []
 const fixtures: Array<Awaited<ReturnType<typeof createZedFixture>>> = []
+const assetPath = join(workspace, 'apps/web/public/test-fixtures/zed.svg')
+let assetCreated = false
 const preview = process.argv.includes('--preview')
 const checks: Array<string> = []
 
@@ -171,12 +173,16 @@ try {
 	assert.ok(publishedRow)
 	assert.ok(draftRow)
 	// Keep fixture assets local; browser acceptance never contacts GitHub/storage.
-	const assetDirectory = join(workspace, 'apps/web/public/test-fixtures')
-	await mkdir(assetDirectory, { recursive: true })
-	await writeFile(
-		join(assetDirectory, 'zed.svg'),
-		'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#202020"/><path d="M17 19h30L17 45h30" fill="none" stroke="#fafafa" stroke-width="5"/></svg>'
-	)
+	await mkdir(dirname(assetPath), { recursive: true })
+	const assetFile = await open(assetPath, 'wx')
+	assetCreated = true
+	try {
+		await assetFile.writeFile(
+			'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#202020"/><path d="M17 19h30L17 45h30" fill="none" stroke="#fafafa" stroke-width="5"/></svg>'
+		)
+	} finally {
+		await assetFile.close()
+	}
 	start('bun', ['run', 'src/index.ts'], join(workspace, 'apps/server'), 'api')
 	start(
 		'vp',
@@ -381,9 +387,7 @@ try {
 	for (const fixture of fixtures) await fixture.dispose()
 	await database.close()
 	const { rm } = await import('node:fs/promises')
-	await rm(join(workspace, 'apps/web/public/test-fixtures/zed.svg'), {
-		force: true,
-	})
+	if (assetCreated) await rm(assetPath, { force: true })
 	console.debug(
 		'Acceptance fixtures and local servers cleaned; wrapper restores taxonomy-only database.'
 	)
