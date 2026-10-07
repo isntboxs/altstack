@@ -50,10 +50,12 @@ function clientWith(auth = adminAuth) {
 }
 function createCategory(slug: string, parentId: string | null = null) {
 	return clientWith().admin.category.create({
-		name: slug,
-		slug,
-		description: `Description of ${slug}`,
-		parentId,
+		body: {
+			name: slug,
+			slug,
+			description: `Description of ${slug}`,
+			parentId,
+		},
 	})
 }
 async function findCategory(slug: string) {
@@ -76,7 +78,7 @@ function projectInput(categorySlugs: Array<string> = ['backend']) {
 }
 async function rest(
 	path: string,
-	method = 'GET',
+	method = 'QUERY',
 	input?: unknown,
 	auth = adminAuth
 ) {
@@ -102,6 +104,14 @@ async function rpc(path: string, input: unknown, auth = adminAuth) {
 		}),
 		{ prefix: '/api/rpc', context: { db: database.db, auth } }
 	)
+}
+
+function categoryRpcInput(endpoint: string, input: Record<string, unknown>) {
+	const { id, ...body } = input
+	if (endpoint === 'list') return {}
+	if (endpoint === 'create') return { body }
+	if (endpoint === 'update') return { params: { id }, body }
+	return { params: { id } }
 }
 
 beforeAll(async () => {
@@ -176,8 +186,8 @@ describe('admin category endpoints and compatibility', () => {
 					? '/admin/categories'
 					: `/admin/categories/${node.id}`
 			const method = {
-				list: 'GET',
-				getById: 'GET',
+				list: 'QUERY',
+				getById: 'QUERY',
 				create: 'POST',
 				update: 'PATCH',
 				remove: 'DELETE',
@@ -187,22 +197,35 @@ describe('admin category endpoints and compatibility', () => {
 				[userAuth, 403, 'FORBIDDEN'],
 			] as const) {
 				const direct = clientWith(auth).admin.category
-				await expect(direct[endpoint](input as never)).rejects.toMatchObject({
+				await expect(
+					direct[endpoint](categoryRpcInput(endpoint, input) as never)
+				).rejects.toMatchObject({
 					code,
 				})
 				expect(
-					(await rest(path, method, method === 'GET' ? undefined : input, auth))
-						.response?.status
+					(
+						await rest(
+							path,
+							method,
+							method === 'QUERY' ? undefined : input,
+							auth
+						)
+					).response?.status
 				).toBe(status)
 				expect(
-					(await rpc(`admin/category/${endpoint}`, input, auth)).response
-						?.status
+					(
+						await rpc(
+							`admin/category/${endpoint}`,
+							categoryRpcInput(endpoint, input),
+							auth
+						)
+					).response?.status
 				).toBe(status)
 			}
 			const result = await rest(
 				path,
 				method,
-				method === 'GET' ? undefined : input
+				method === 'QUERY' ? undefined : input
 			)
 			expect(result.matched).toBe(true)
 			expect(result.response?.status).toBe(endpoint === 'create' ? 201 : 200)
@@ -231,7 +254,10 @@ describe('admin category endpoints and compatibility', () => {
 					;(rpcInput as { id: string }).id = n.id
 				})
 			}
-			const rpcResult = await rpc(`admin/category/${endpoint}`, rpcInput)
+			const rpcResult = await rpc(
+				`admin/category/${endpoint}`,
+				categoryRpcInput(endpoint, rpcInput)
+			)
 			expect(rpcResult.matched).toBe(true)
 			expect(rpcResult.response?.status).toBe(200)
 			const rpcBody = (await rpcResult.response?.json()) as { json: unknown }
@@ -258,7 +284,7 @@ describe('admin category endpoints and compatibility', () => {
 		expect(
 			(await rest('/admin/project/listCategories', 'POST', {})).matched
 		).toBe(false)
-		const spec = (await (await rest('/spec.json')).response?.json()) as {
+		const spec = (await (await rest('/spec.json', 'GET')).response?.json()) as {
 			security: Array<Record<string, Array<string>>>
 			paths: Record<
 				string,
@@ -272,12 +298,12 @@ describe('admin category endpoints and compatibility', () => {
 			>
 		}
 		expect(Object.keys(spec.paths['/admin/categories']!).toSorted()).toEqual([
-			'get',
 			'post',
+			'query',
 		])
 		expect(
 			Object.keys(spec.paths['/admin/categories/{id}']!).toSorted()
-		).toEqual(['delete', 'get', 'patch'])
+		).toEqual(['delete', 'patch', 'query'])
 		expect(
 			Object.values(spec.paths)
 				.flatMap((operations) => Object.values(operations))
@@ -289,17 +315,19 @@ describe('admin category endpoints and compatibility', () => {
 				expect(op.security ?? spec.security).toEqual([{ apiKeyCookie: [] }])
 			}
 		}
-		expect(spec.paths['/categories']?.get?.security).toEqual([])
+		expect(spec.paths['/categories']?.query?.security).toEqual([])
 	})
 
 	it('returns all nodes/children and all-status direct counts while public counts remain published-only, even for admins', async () => {
 		const admin = clientWith()
-		const draft = await admin.admin.project.create(
-			projectInput(['general-purpose-editors', 'ai-powered-editors'])
-		)
+		const draft = await admin.admin.project.create({
+			body: projectInput(['general-purpose-editors', 'ai-powered-editors']),
+		})
 		await admin.admin.project.create({
-			...projectInput(['general-purpose-editors', 'ai-powered-editors']),
-			status: 'published',
+			body: {
+				...projectInput(['general-purpose-editors', 'ai-powered-editors']),
+				status: 'published',
+			},
 		})
 		const query = vi.spyOn(database.pool, 'query')
 		const all = await admin.admin.category.list({})
@@ -319,14 +347,16 @@ describe('admin category endpoints and compatibility', () => {
 		query.mockClear()
 		const root = await findCategory('developer-tools')
 		query.mockClear()
-		const detail = await admin.admin.category.getById({ id: root.id })
+		const detail = await admin.admin.category.getById({
+			params: { id: root.id },
+		})
 		expect(query).toHaveBeenCalledTimes(1)
 		expect(detail.children.map((n) => n.slug)).toEqual(['ides-code-editors'])
 		const leaf = await findCategory('ai-powered-editors')
 		expect(
-			(await admin.admin.category.getById({ id: leaf.id })).ancestors.map(
-				(n) => n.slug
-			)
+			(
+				await admin.admin.category.getById({ params: { id: leaf.id } })
+			).ancestors.map((n) => n.slug)
 		).toEqual(['developer-tools', 'ides-code-editors'])
 		expect(await admin.category.list({})).toEqual(
 			await clientWith(null).category.list({})
@@ -338,12 +368,14 @@ describe('admin category endpoints and compatibility', () => {
 			)
 		).toBe(true)
 		await expect(
-			admin.project.getBySlug({ slug: draft.slug })
+			admin.project.getBySlug({ params: { slug: draft.slug } })
 		).rejects.toMatchObject({ code: 'NOT_FOUND' })
 		expect(
 			(
 				await admin.admin.category.getById({
-					id: (await findCategory('frontend')).id,
+					params: {
+						id: (await findCategory('frontend')).id,
+					},
 				})
 			).children
 		).toEqual([])
@@ -360,13 +392,13 @@ describe('admin category endpoints and compatibility', () => {
 				})
 			).response?.status
 		).toBe(400)
-		for (const method of ['GET', 'PATCH', 'DELETE']) {
+		for (const method of ['QUERY', 'PATCH', 'DELETE']) {
 			expect(
 				(
 					await rest(
 						`/admin/categories/${missingId}`,
 						method,
-						method === 'GET' ? undefined : {}
+						method === 'QUERY' ? undefined : {}
 					)
 				).response?.status
 			).toBe(404)
@@ -378,13 +410,66 @@ describe('admin category endpoints and compatibility', () => {
 })
 
 describe('hierarchy mutation guards', () => {
+	it('preserves stored project/category fields when REST PATCH bodies or fields are omitted', async () => {
+		const node = await createCategory('patch-omission')
+		const created = await clientWith().admin.project.create({
+			body: {
+				...projectInput(),
+				screenshot: 'tmp/screenshots/omission-1.png',
+				content: 'Stored content',
+				websiteUrl: 'https://example.com',
+			},
+		})
+		vi.mocked(storage.promoteTempImageToProject).mockClear()
+		vi.mocked(storage.copyS3Object).mockClear()
+		vi.mocked(storage.deleteFinalKeysBestEffort).mockClear()
+		for (const body of [undefined, {}, { name: ' Renamed ' }]) {
+			const categoryResult = await rest(
+				`/admin/categories/${node.id}`,
+				'PATCH',
+				body
+			)
+			expect(categoryResult.response?.status).toBe(200)
+			expect(await categoryResult.response?.json()).toMatchObject({
+				id: node.id,
+				slug: node.slug,
+				description: node.description,
+				parentId: node.parentId,
+			})
+			const projectResult = await rest(
+				`/admin/projects/${created.id}`,
+				'PATCH',
+				body
+			)
+			expect(projectResult.response?.status).toBe(200)
+			expect(await projectResult.response?.json()).toMatchObject({
+				id: created.id,
+				slug: created.slug,
+				status: 'draft',
+				logo: created.logo,
+				screenshot: created.screenshot,
+				content: 'Stored content',
+				websiteUrl: 'https://example.com',
+				categories: created.categories,
+			})
+		}
+		expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+		expect(storage.copyS3Object).not.toHaveBeenCalled()
+		expect(
+			vi
+				.mocked(storage.deleteFinalKeysBestEffort)
+				.mock.calls.flatMap(([keys]) => keys)
+		).toEqual([])
+	})
 	it('creates root/child/grandchild with normalization, rejects fourth level and missing parent before writing', async () => {
 		const admin = clientWith().admin.category
 		const root = await admin.create({
-			name: '  Root name  ',
-			slug: '  A ROOT!  ',
-			description: '  Root description  ',
-			parentId: null,
+			body: {
+				name: '  Root name  ',
+				slug: '  A ROOT!  ',
+				description: '  Root description  ',
+				parentId: null,
+			},
 		})
 		expect(root).toMatchObject({
 			name: 'Root name',
@@ -440,24 +525,26 @@ describe('hierarchy mutation guards', () => {
 			[child.id, (await findCategory('ides-code-editors')).id],
 		]) {
 			await expect(
-				clientWith().admin.category.update({ id: id!, parentId: parentId! })
+				clientWith().admin.category.update({
+					params: { id: id! },
+					body: { parentId: parentId! },
+				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 			expect(await clientWith().admin.category.list({})).toEqual(before)
 		}
 		const moved = await clientWith().admin.category.update({
-			id: child.id,
-			parentId: target.id,
+			params: { id: child.id },
+			body: { parentId: target.id },
 		})
 		expect(moved).toMatchObject({ depth: 2, path: 'guard-target/guard-child' })
 		expect(
-			(await clientWith().admin.category.getById({ id: leaf.id })).category
-				.depth
+			(await clientWith().admin.category.getById({ params: { id: leaf.id } }))
+				.category.depth
 		).toBe(3)
 		expect(
 			await clientWith().admin.category.update({
-				id: child.id,
-				parentId: target.id,
-				slug: child.slug,
+				params: { id: child.id },
+				body: { parentId: target.id, slug: child.slug },
 			})
 		).toEqual(moved)
 	})
@@ -470,8 +557,8 @@ describe('hierarchy mutation guards', () => {
 			.where(eq(category.id, node.id))
 		const beforePaths = await database.db.select().from(categoryPath)
 		const renamed = await clientWith().admin.category.update({
-			id: node.id,
-			name: '  New Backend  ',
+			params: { id: node.id },
+			body: { name: '  New Backend  ' },
 		})
 		expect(renamed).toMatchObject({
 			name: 'New Backend',
@@ -479,22 +566,25 @@ describe('hierarchy mutation guards', () => {
 			path: 'backend',
 		})
 		const described = await clientWith().admin.category.update({
-			id: node.id,
-			description: '  Better description  ',
+			params: { id: node.id },
+			body: { description: '  Better description  ' },
 		})
 		expect(described.description).toBe('Better description')
 		expect(await database.db.select().from(categoryPath)).toEqual(beforePaths)
 		await expect(
-			clientWith().admin.category.update({ id: node.id, description: ' ' })
+			clientWith().admin.category.update({
+				params: { id: node.id },
+				body: { description: ' ' },
+			})
 		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 	})
 
 	it('rejects gaining a child or deleting with draft/published assignments; deletion never removes projects or assignments', async () => {
 		const assigned = await createCategory('assigned-root')
 		const movable = await createCategory('movable')
-		const draft = await clientWith().admin.project.create(
-			projectInput([assigned.slug])
-		)
+		const draft = await clientWith().admin.project.create({
+			body: projectInput([assigned.slug]),
+		})
 		await expect(
 			createCategory('new-child', assigned.id)
 		).rejects.toMatchObject({
@@ -503,8 +593,8 @@ describe('hierarchy mutation guards', () => {
 		})
 		await expect(
 			clientWith().admin.category.update({
-				id: movable.id,
-				parentId: assigned.id,
+				params: { id: movable.id },
+				body: { parentId: assigned.id },
 			})
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		for (const status of [
@@ -513,9 +603,12 @@ describe('hierarchy mutation guards', () => {
 			'rejected',
 			'removed',
 		] as const) {
-			await clientWith().admin.project.update({ id: draft.id, status })
+			await clientWith().admin.project.update({
+				params: { id: draft.id },
+				body: { status },
+			})
 			await expect(
-				clientWith().admin.category.remove({ id: assigned.id })
+				clientWith().admin.category.remove({ params: { id: assigned.id } })
 			).rejects.toMatchObject({
 				code: 'CONFLICT',
 				message: expect.stringContaining('assignments') as unknown,
@@ -533,7 +626,7 @@ describe('hierarchy mutation guards', () => {
 		const parent = await createCategory('delete-parent')
 		await createCategory('delete-child', parent.id)
 		await expect(
-			clientWith().admin.category.remove({ id: parent.id })
+			clientWith().admin.category.remove({ params: { id: parent.id } })
 		).rejects.toMatchObject({
 			code: 'CONFLICT',
 			message: expect.stringContaining('children') as unknown,
@@ -543,10 +636,12 @@ describe('hierarchy mutation guards', () => {
 	it('deletes only an empty leaf and all its aliases, so old URLs become 404', async () => {
 		const leaf = await createCategory('delete-old')
 		await clientWith().admin.category.update({
-			id: leaf.id,
-			slug: 'delete-current',
+			params: { id: leaf.id },
+			body: { slug: 'delete-current' },
 		})
-		expect(await clientWith().admin.category.remove({ id: leaf.id })).toEqual({
+		expect(
+			await clientWith().admin.category.remove({ params: { id: leaf.id } })
+		).toEqual({
 			id: leaf.id,
 		})
 		expect(
@@ -557,7 +652,7 @@ describe('hierarchy mutation guards', () => {
 		).toEqual([])
 		for (const path of ['delete-old', 'delete-current']) {
 			await expect(
-				clientWith(null).category.getByPath({ path })
+				clientWith(null).category.getByPath({ query: { path } })
 			).rejects.toMatchObject({ code: 'NOT_FOUND' })
 		}
 		expect(
@@ -579,9 +674,9 @@ describe('subtree canonical paths and history ownership', () => {
 				await findCategory('general-purpose-editors'),
 				await findCategory('ai-powered-editors'),
 			]
-			const assigned = await clientWith().admin.project.create(
-				projectInput(leaves.map((n) => n.slug))
-			)
+			const assigned = await clientWith().admin.project.create({
+				body: projectInput(leaves.map((n) => n.slug)),
+			})
 			const assignmentBefore = await database.db
 				.select()
 				.from(projectCategory)
@@ -591,13 +686,16 @@ describe('subtree canonical paths and history ownership', () => {
 			const known = new Map<string, Set<string>>()
 			async function rememberAndResolve() {
 				for (const id of [root.id, editors.id, ...leaves.map((n) => n.id)]) {
-					const current = (await clientWith().admin.category.getById({ id }))
-						.category
+					const current = (
+						await clientWith().admin.category.getById({ params: { id } })
+					).category
 					const paths = known.get(id) ?? new Set<string>()
 					paths.add(current.path)
 					known.set(id, paths)
 					for (const path of paths) {
-						const resolved = await clientWith(null).category.getByPath({ path })
+						const resolved = await clientWith(null).category.getByPath({
+							query: { path },
+						})
 						expect(resolved.category).toMatchObject({
 							id,
 							path: current.path,
@@ -611,30 +709,33 @@ describe('subtree canonical paths and history ownership', () => {
 			}
 			await rememberAndResolve()
 			await clientWith().admin.category.update({
-				id: root.id,
-				slug: 'dev-workbench',
+				params: { id: root.id },
+				body: { slug: 'dev-workbench' },
 			})
 			await rememberAndResolve()
 			await clientWith().admin.category.update({
-				id: root.id,
-				slug: 'dev-tools-new',
+				params: { id: root.id },
+				body: { slug: 'dev-tools-new' },
 			})
 			await rememberAndResolve()
 			const target = await createCategory('workbench')
 			await clientWith().admin.category.update({
-				id: editors.id,
-				parentId: target.id,
+				params: { id: editors.id },
+				body: { parentId: target.id },
 			})
 			await rememberAndResolve()
 			await clientWith().admin.category.update({
-				id: editors.id,
-				parentId: null,
+				params: { id: editors.id },
+				body: { parentId: null },
 			})
 			await rememberAndResolve()
-			await clientWith().admin.category.update({ id: root.id, slug: root.slug })
 			await clientWith().admin.category.update({
-				id: editors.id,
-				parentId: root.id,
+				params: { id: root.id },
+				body: { slug: root.slug },
+			})
+			await clientWith().admin.category.update({
+				params: { id: editors.id },
+				body: { parentId: root.id },
 			})
 			await rememberAndResolve()
 			for (const [id, paths] of known) {
@@ -652,7 +753,9 @@ describe('subtree canonical paths and history ownership', () => {
 			).toEqual(assignmentBefore)
 			expect(
 				(
-					await clientWith().admin.project.getById({ id: assigned.id })
+					await clientWith().admin.project.getById({
+						params: { id: assigned.id },
+					})
 				).categories.toSorted()
 			).toEqual(leaves.map((n) => n.slug).toSorted())
 		}
@@ -665,18 +768,24 @@ describe('subtree canonical paths and history ownership', () => {
 			code: 'CONFLICT',
 		})
 		await expect(
-			clientWith().admin.category.update({ id: second.id, slug: first.slug })
+			clientWith().admin.category.update({
+				params: { id: second.id },
+				body: { slug: first.slug },
+			})
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		await clientWith().admin.category.update({
-			id: first.id,
-			slug: 'owner-renamed',
+			params: { id: first.id },
+			body: { slug: 'owner-renamed' },
 		})
 		await expect(createCategory('owner-one')).rejects.toMatchObject({
 			code: 'CONFLICT',
 			message: expect.stringContaining('path') as unknown,
 		})
 		await expect(
-			clientWith().admin.category.update({ id: second.id, slug: 'owner-one' })
+			clientWith().admin.category.update({
+				params: { id: second.id },
+				body: { slug: 'owner-one' },
+			})
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		const child = await createCategory('owned-child', second.id)
 		await database.db
@@ -686,16 +795,15 @@ describe('subtree canonical paths and history ownership', () => {
 		const pathsBefore = await database.db.select().from(categoryPath)
 		await expect(
 			clientWith().admin.category.update({
-				id: second.id,
-				name: 'Must roll back',
-				slug: 'proposed-root',
+				params: { id: second.id },
+				body: { name: 'Must roll back', slug: 'proposed-root' },
 			})
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		expect(await database.db.select().from(category)).toEqual(before)
 		expect(await database.db.select().from(categoryPath)).toEqual(pathsBefore)
 		expect(
-			(await clientWith().admin.category.getById({ id: child.id })).category
-				.path
+			(await clientWith().admin.category.getById({ params: { id: child.id } }))
+				.category.path
 		).toBe('owner-two/owned-child')
 		// A current path without a mapping is still owned and cannot be taken.
 		await database.db
@@ -703,8 +811,8 @@ describe('subtree canonical paths and history ownership', () => {
 			.where(eq(categoryPath.categoryId, first.id))
 		await expect(
 			clientWith().admin.category.update({
-				id: second.id,
-				slug: 'owner-renamed',
+				params: { id: second.id },
+				body: { slug: 'owner-renamed' },
 			})
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 	})
@@ -713,9 +821,15 @@ describe('subtree canonical paths and history ownership', () => {
 describe('project direct leaf assignment integrity and promotion cleanup', () => {
 	it('accepts two editor leaves plus a legacy root, deduplicates, stores no ancestors, and preserves omitted assignments', async () => {
 		const slugs = ['general-purpose-editors', 'ai-powered-editors', 'backend']
-		const created = await clientWith().admin.project.create(
-			projectInput([slugs[0]!, slugs[1]!, slugs[0]!, slugs[2]!, ' backend '])
-		)
+		const created = await clientWith().admin.project.create({
+			body: projectInput([
+				slugs[0]!,
+				slugs[1]!,
+				slugs[0]!,
+				slugs[2]!,
+				' backend ',
+			]),
+		})
 		expect(created.categories).toEqual(slugs)
 		const assignments = await database.db
 			.select()
@@ -725,8 +839,8 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 		const ancestor = await findCategory('developer-tools')
 		expect(assignments.some((a) => a.categoryId === ancestor.id)).toBe(false)
 		await clientWith().admin.project.update({
-			id: created.id,
-			name: 'New project name',
+			params: { id: created.id },
+			body: { name: 'New project name' },
 		})
 		expect(
 			await database.db
@@ -735,8 +849,8 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 				.where(eq(projectCategory.projectId, created.id))
 		).toEqual(assignments)
 		const updated = await clientWith().admin.project.update({
-			id: created.id,
-			categorySlugs: ['frontend', 'frontend'],
+			params: { id: created.id },
+			body: { categorySlugs: ['frontend', 'frontend'] },
 		})
 		expect(updated.categories).toEqual(['frontend'])
 		expect(
@@ -748,7 +862,9 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 	})
 
 	it('rejects nonexistent/nonleaf categories and empty/over-limit distinct assignments before external image work', async () => {
-		const created = await clientWith().admin.project.create(projectInput())
+		const created = await clientWith().admin.project.create({
+			body: projectInput(),
+		})
 		vi.mocked(storage.promoteTempImageToProject).mockClear()
 		vi.mocked(octokit.rest.repos.get).mockClear()
 		for (const categorySlugs of [
@@ -759,13 +875,12 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 			['backend', 'frontend', 'devops', 'mobile'],
 		]) {
 			await expect(
-				clientWith().admin.project.create(projectInput(categorySlugs))
+				clientWith().admin.project.create({ body: projectInput(categorySlugs) })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 			await expect(
 				clientWith().admin.project.update({
-					id: created.id,
-					categorySlugs,
-					logo: projectInput().logo,
+					params: { id: created.id },
+					body: { categorySlugs, logo: projectInput().logo },
 				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 		}
@@ -790,7 +905,7 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 			})
 			.mockResolvedValueOnce(finals[1]!)
 		await expect(
-			clientWith().admin.project.create(input)
+			clientWith().admin.project.create({ body: input })
 		).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
 		expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith(finals)
 		expect(
@@ -801,7 +916,9 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 	})
 
 	it('revalidates update after promotion and retains old project/images/audit/assignments when a selected leaf becomes a parent', async () => {
-		const created = await clientWith().admin.project.create(projectInput())
+		const created = await clientWith().admin.project.create({
+			body: projectInput(),
+		})
 		const leaf = await createCategory('update-race-leaf')
 		const before = await database.db.query.project.findFirst({
 			where: { id: created.id },
@@ -818,10 +935,12 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 		)
 		await expect(
 			clientWith().admin.project.update({
-				id: created.id,
-				name: 'Must roll back',
-				logo: projectInput().logo,
-				categorySlugs: [leaf.slug],
+				params: { id: created.id },
+				body: {
+					name: 'Must roll back',
+					logo: projectInput().logo,
+					categorySlugs: [leaf.slug],
+				},
 			})
 		).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
 		expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith([final])
@@ -940,7 +1059,8 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 	it('assign then add child: waiting create rejects the now-assigned parent', async () => {
 		const leaf = await createCategory('assign-first')
 		await serializedRace(
-			() => clientWith().admin.project.create(projectInput([leaf.slug])),
+			() =>
+				clientWith().admin.project.create({ body: projectInput([leaf.slug]) }),
 			() => createCategory('assign-first-child', leaf.id),
 			'CONFLICT'
 		)
@@ -954,7 +1074,8 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 		const leaf = await createCategory('child-first')
 		await serializedRace(
 			() => createCategory('child-first-child', leaf.id),
-			() => clientWith().admin.project.create(projectInput([leaf.slug])),
+			() =>
+				clientWith().admin.project.create({ body: projectInput([leaf.slug]) }),
 			'UPLOAD_CONSUMED'
 		)
 		expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith([
@@ -965,8 +1086,9 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 	it('assign then delete: waiting remove rejects the new draft assignment', async () => {
 		const leaf = await createCategory('assign-delete')
 		await serializedRace(
-			() => clientWith().admin.project.create(projectInput([leaf.slug])),
-			() => clientWith().admin.category.remove({ id: leaf.id }),
+			() =>
+				clientWith().admin.project.create({ body: projectInput([leaf.slug]) }),
+			() => clientWith().admin.category.remove({ params: { id: leaf.id } }),
 			'CONFLICT'
 		)
 		expect(
@@ -975,14 +1097,16 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 	})
 	it('delete then assign: waiting project update returns BAD_REQUEST without uploads and preserves existing assignments', async () => {
 		const leaf = await createCategory('delete-assign')
-		const existing = await clientWith().admin.project.create(projectInput())
+		const existing = await clientWith().admin.project.create({
+			body: projectInput(),
+		})
 		const before = await database.db.select().from(projectCategory)
 		await serializedRace(
-			() => clientWith().admin.category.remove({ id: leaf.id }),
+			() => clientWith().admin.category.remove({ params: { id: leaf.id } }),
 			() =>
 				clientWith().admin.project.update({
-					id: existing.id,
-					categorySlugs: [leaf.slug],
+					params: { id: existing.id },
+					body: { categorySlugs: [leaf.slug] },
 				}),
 			'BAD_REQUEST'
 		)
@@ -994,13 +1118,13 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 		await serializedRace(
 			() =>
 				clientWith().admin.category.update({
-					id: first.id,
-					slug: 'race-shared',
+					params: { id: first.id },
+					body: { slug: 'race-shared' },
 				}),
 			() =>
 				clientWith().admin.category.update({
-					id: second.id,
-					slug: 'race-shared',
+					params: { id: second.id },
+					body: { slug: 'race-shared' },
 				}),
 			'CONFLICT'
 		)
@@ -1010,8 +1134,8 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 			})
 		).toEqual({ path: 'race-shared', categoryId: first.id })
 		expect(
-			(await clientWith().admin.category.getById({ id: second.id })).category
-				.slug
+			(await clientWith().admin.category.getById({ params: { id: second.id } }))
+				.category.slug
 		).toBe(second.slug)
 	})
 	it('rename then claim the freed slug: the waiting update rejects the newly historical path', async () => {
@@ -1020,19 +1144,26 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 		await serializedRace(
 			() =>
 				clientWith().admin.category.update({
-					id: first.id,
-					slug: 'history-race-new',
+					params: { id: first.id },
+					body: { slug: 'history-race-new' },
 				}),
 			() =>
-				clientWith().admin.category.update({ id: second.id, slug: first.slug }),
+				clientWith().admin.category.update({
+					params: { id: second.id },
+					body: { slug: first.slug },
+				}),
 			'CONFLICT'
 		)
 		expect(
-			(await clientWith(null).category.getByPath({ path: first.slug })).category
+			(
+				await clientWith(null).category.getByPath({
+					query: { path: first.slug },
+				})
+			).category
 		).toMatchObject({ id: first.id, path: 'history-race-new' })
 		expect(
-			(await clientWith().admin.category.getById({ id: second.id })).category
-				.slug
+			(await clientWith().admin.category.getById({ params: { id: second.id } }))
+				.category.slug
 		).toBe(second.slug)
 	})
 	it('opposite reparent edits: the waiting update detects a cycle against the committed hierarchy', async () => {
@@ -1041,23 +1172,23 @@ describe('controlled concurrent API writes on separate PostgreSQL connections', 
 		await serializedRace(
 			() =>
 				clientWith().admin.category.update({
-					id: first.id,
-					parentId: second.id,
+					params: { id: first.id },
+					body: { parentId: second.id },
 				}),
 			() =>
 				clientWith().admin.category.update({
-					id: second.id,
-					parentId: first.id,
+					params: { id: second.id },
+					body: { parentId: first.id },
 				}),
 			'BAD_REQUEST'
 		)
 		expect(
-			(await clientWith().admin.category.getById({ id: first.id })).category
-				.parentId
+			(await clientWith().admin.category.getById({ params: { id: first.id } }))
+				.category.parentId
 		).toBe(second.id)
 		expect(
-			(await clientWith().admin.category.getById({ id: second.id })).category
-				.parentId
+			(await clientWith().admin.category.getById({ params: { id: second.id } }))
+				.category.parentId
 		).toBeNull()
 	})
 })

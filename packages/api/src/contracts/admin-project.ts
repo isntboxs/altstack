@@ -23,6 +23,8 @@ const createAdminProjectContract = baseContract
 		openapi({
 			path: '/admin/projects',
 			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Admin create project',
 			description:
 				'Create project with optional status (draft/published, defaults to published). Duplicate repo/slug → 409.',
@@ -40,6 +42,9 @@ const updateAdminProjectContract = baseContract
 		openapi({
 			path: '/admin/projects/{id}',
 			method: 'PATCH',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { id: 'primitive' },
 			summary: 'Admin update project',
 			description:
 				'Partial update. New logo/screenshot arrive as tmp keys and are promoted to projects/{slug}/. Slug rename moves the folder. Duplicate repo/slug → 409.',
@@ -57,6 +62,9 @@ const deleteAdminProjectContract = baseContract
 		openapi({
 			path: '/admin/projects/{id}',
 			method: 'DELETE',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { id: 'primitive' },
 			summary: 'Admin delete project',
 			description:
 				'Hard delete project with its images. Missing project → 404.',
@@ -73,7 +81,10 @@ const getAdminProjectByIdContract = baseContract
 	.meta(
 		openapi({
 			path: '/admin/projects/{id}',
-			method: 'GET',
+			method: 'QUERY',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { id: 'primitive' },
 			summary: 'Admin get project by id',
 			description:
 				'Get a single project (image fields are storage keys), for the admin edit form. Any status.',
@@ -90,7 +101,17 @@ const listAdminProjectsContract = baseContract
 	.meta(
 		openapi({
 			path: '/admin/projects',
-			method: 'GET',
+			method: 'QUERY',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			queryStyles: {
+				status: 'primitive',
+				name: 'primitive',
+				sort: 'primitive',
+				order: 'primitive',
+				page: 'primitive',
+				limit: 'primitive',
+			},
 			summary: 'Admin list projects',
 			description:
 				'Paginated list with optional status and name filters and sorting.',

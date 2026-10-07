@@ -72,7 +72,7 @@ app.all('/api/reference*', async (c, next) => {
 	await next()
 })
 
-app.get('/', (c) => c.text('Altstack server is running!'))
+app.on('QUERY', '/', (c) => c.text('Altstack server is running!'))
 
 export default {
 	port: env.PORT,

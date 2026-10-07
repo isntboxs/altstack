@@ -14,7 +14,9 @@ export const categoryContract = {
 		.meta(
 			openapi({
 				path: '/categories',
-				method: 'GET',
+				method: 'QUERY',
+				inputStructure: 'detailed',
+				outputStructure: 'compact',
 				summary: 'List public categories',
 				description:
 					'List categories with published projects in their subtree, ordered by name.',
@@ -28,7 +30,12 @@ export const categoryContract = {
 		.meta(
 			openapi({
 				path: '/categories/by-path',
-				method: 'GET',
+				method: 'QUERY',
+				inputStructure: 'detailed',
+				outputStructure: 'compact',
+				queryStyles: {
+					path: 'primitive',
+				},
 				summary: 'Get category by path',
 				description:
 					'Resolve a current or historical path to its category, current ancestors, and immediate public children.',

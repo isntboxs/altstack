@@ -15,7 +15,7 @@ export const adminCategoryRouter = {
 	}),
 	getById: adminProcedure.admin.category.getById.handler(
 		async ({ context, input, errors }) => {
-			const detail = await getAdminCategoryById(context.db, input.id)
+			const detail = await getAdminCategoryById(context.db, input.params.id)
 			if (!detail) {
 				throw errors.NOT_FOUND({ message: 'Category does not exist.' })
 			}
@@ -23,12 +23,12 @@ export const adminCategoryRouter = {
 		}
 	),
 	create: adminProcedure.admin.category.create.handler(({ context, input }) =>
-		createAdminCategory(context.db, input)
+		createAdminCategory(context.db, input.body)
 	),
 	update: adminProcedure.admin.category.update.handler(({ context, input }) =>
-		updateAdminCategory(context.db, input)
+		updateAdminCategory(context.db, { ...input.body, id: input.params.id })
 	),
 	remove: adminProcedure.admin.category.remove.handler(({ context, input }) =>
-		removeAdminCategory(context.db, input.id)
+		removeAdminCategory(context.db, input.params.id)
 	),
 }

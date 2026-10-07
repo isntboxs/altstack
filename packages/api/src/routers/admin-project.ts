@@ -79,7 +79,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		let repo: string
 		try {
 			;({ canonicalUrl, owner, repo } = canonicalizeGithubUrl(
-				input.repositoryUrl
+				input.body.repositoryUrl
 			))
 		} catch {
 			throw errors.BAD_REQUEST()
@@ -95,13 +95,13 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			db
 				.select({ id: project.id })
 				.from(project)
-				.where(eq(project.slug, input.slug))
+				.where(eq(project.slug, input.body.slug))
 				.limit(1),
 		])
 
 		if (existingProject || existingSlug) throw errors.CONFLICT()
 
-		const uniqueCategorySlugs = [...new Set(input.categorySlugs)]
+		const uniqueCategorySlugs = [...new Set(input.body.categorySlugs)]
 
 		await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
 
@@ -115,16 +115,16 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		const promotedKeys: Array<string> = []
 		try {
 			finalLogoKey = await promoteTempImageToProject({
-				tmpKey: input.logo,
-				slug: input.slug,
+				tmpKey: input.body.logo,
+				slug: input.body.slug,
 				kind: 'logo',
 			})
 			promotedKeys.push(finalLogoKey)
 
-			if (input.screenshot) {
+			if (input.body.screenshot) {
 				finalScreenshotKey = await promoteTempImageToProject({
-					tmpKey: input.screenshot,
-					slug: input.slug,
+					tmpKey: input.body.screenshot,
+					slug: input.body.slug,
 					kind: 'screenshot',
 				})
 				promotedKeys.push(finalScreenshotKey)
@@ -156,19 +156,19 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 				const [inserted] = await tx
 					.insert(project)
 					.values({
-						name: input.name,
-						slug: input.slug,
+						name: input.body.name,
+						slug: input.body.slug,
 						repositoryUrl: canonicalUrl,
-						tagline: input.tagline,
-						description: input.description,
+						tagline: input.body.tagline,
+						description: input.body.description,
 						logo: finalLogoKey,
 						screenshot: finalScreenshotKey,
-						websiteUrl: input.websiteUrl ?? null,
-						content: input.content ?? null,
-						// input.status defaults to 'published' in the shared
+						websiteUrl: input.body.websiteUrl ?? null,
+						content: input.body.content ?? null,
+						// input.body.status defaults to 'published' in the shared
 						// schema when omitted; draft stays hidden from the
 						// public catalogue.
-						status: input.status,
+						status: input.body.status,
 					})
 					.returning()
 
@@ -236,7 +236,7 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 		const [row] = await db
 			.select()
 			.from(project)
-			.where(eq(project.id, input.id))
+			.where(eq(project.id, input.params.id))
 			.limit(1)
 
 		if (!row) throw errors.NOT_FOUND()
@@ -244,7 +244,7 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 		const [githubRow] = await db
 			.select()
 			.from(githubRepository)
-			.where(eq(githubRepository.projectId, input.id))
+			.where(eq(githubRepository.projectId, input.params.id))
 			.limit(1)
 
 		if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
@@ -253,7 +253,7 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 			.select({ slug: category.slug })
 			.from(projectCategory)
 			.innerJoin(category, eq(projectCategory.categoryId, category.id))
-			.where(eq(projectCategory.projectId, input.id))
+			.where(eq(projectCategory.projectId, input.params.id))
 
 		const { searchVector: _searchVector, ...rest } = row
 		void _searchVector
@@ -276,22 +276,23 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 
 const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 	async ({ context, errors, input }) => {
+		const body = input.body ?? {}
 		const { auth, db } = context
 
 		const [existing] = await db
 			.select()
 			.from(project)
-			.where(eq(project.id, input.id))
+			.where(eq(project.id, input.params.id))
 			.limit(1)
 
 		if (!existing) throw errors.NOT_FOUND()
 
 		let canonicalUrl: string | undefined
 		let nextGithub: { owner: string; repo: string } | undefined
-		if (input.repositoryUrl !== undefined) {
+		if (body.repositoryUrl !== undefined) {
 			let parsed: { canonicalUrl: string; owner: string; repo: string }
 			try {
-				parsed = canonicalizeGithubUrl(input.repositoryUrl)
+				parsed = canonicalizeGithubUrl(body.repositoryUrl)
 			} catch {
 				throw errors.BAD_REQUEST()
 			}
@@ -307,19 +308,19 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			}
 		}
 
-		const targetSlug = input.slug ?? existing.slug
-		if (input.slug !== undefined && input.slug !== existing.slug) {
+		const targetSlug = body.slug ?? existing.slug
+		if (body.slug !== undefined && body.slug !== existing.slug) {
 			const [slugOwner] = await db
 				.select({ id: project.id })
 				.from(project)
-				.where(eq(project.slug, input.slug))
+				.where(eq(project.slug, body.slug))
 				.limit(1)
 			if (slugOwner) throw errors.CONFLICT()
 		}
 
 		let uniqueCategorySlugs: Array<string> | undefined
-		if (input.categorySlugs !== undefined) {
-			uniqueCategorySlugs = [...new Set(input.categorySlugs)]
+		if (body.categorySlugs !== undefined) {
+			uniqueCategorySlugs = [...new Set(body.categorySlugs)]
 			await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
 		}
 
@@ -347,9 +348,9 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 		// cleanup, but they consume no tmp upload — retry stays possible.
 		let promotedTmp = false
 		try {
-			if (input.logo !== undefined) {
+			if (body.logo !== undefined) {
 				finalLogoKey = await promoteTempImageToProject({
-					tmpKey: input.logo,
+					tmpKey: body.logo,
 					slug: targetSlug,
 					kind: 'logo',
 				})
@@ -358,13 +359,13 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 				staleKeys.push(existing.logo)
 			}
 
-			if (input.screenshot !== undefined) {
-				if (input.screenshot === null) {
+			if (body.screenshot !== undefined) {
+				if (body.screenshot === null) {
 					if (existing.screenshot) staleKeys.push(existing.screenshot)
 					finalScreenshotKey = null
 				} else {
 					finalScreenshotKey = await promoteTempImageToProject({
-						tmpKey: input.screenshot,
+						tmpKey: body.screenshot,
 						slug: targetSlug,
 						kind: 'screenshot',
 					})
@@ -389,10 +390,10 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					return destKey
 				}
 
-				if (input.logo === undefined) {
+				if (body.logo === undefined) {
 					finalLogoKey = await copyIntoSlug(existing.logo)
 				}
-				if (input.screenshot === undefined && existing.screenshot) {
+				if (body.screenshot === undefined && existing.screenshot) {
 					finalScreenshotKey = await copyIntoSlug(existing.screenshot)
 				}
 			}
@@ -414,14 +415,14 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			logo: finalLogoKey,
 			screenshot: finalScreenshotKey,
 		}
-		if (input.name !== undefined) patch.name = input.name
-		if (input.slug !== undefined) patch.slug = input.slug
+		if (body.name !== undefined) patch.name = body.name
+		if (body.slug !== undefined) patch.slug = body.slug
 		if (canonicalUrl !== undefined) patch.repositoryUrl = canonicalUrl
-		if (input.tagline !== undefined) patch.tagline = input.tagline
-		if (input.description !== undefined) patch.description = input.description
-		if (input.websiteUrl !== undefined) patch.websiteUrl = input.websiteUrl
-		if (input.content !== undefined) patch.content = input.content
-		if (input.status !== undefined) patch.status = input.status
+		if (body.tagline !== undefined) patch.tagline = body.tagline
+		if (body.description !== undefined) patch.description = body.description
+		if (body.websiteUrl !== undefined) patch.websiteUrl = body.websiteUrl
+		if (body.content !== undefined) patch.content = body.content
+		if (body.status !== undefined) patch.status = body.status
 
 		try {
 			const result = await db.transaction(async (tx) => {
@@ -436,7 +437,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 				const [updated] = await tx
 					.update(project)
 					.set(patch)
-					.where(eq(project.id, input.id))
+					.where(eq(project.id, input.params.id))
 					.returning()
 
 				if (!updated) throw errors.INTERNAL_SERVER_ERROR()
@@ -444,12 +445,12 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 				if (categoryIds !== undefined) {
 					await tx
 						.delete(projectCategory)
-						.where(eq(projectCategory.projectId, input.id))
+						.where(eq(projectCategory.projectId, input.params.id))
 					if (categoryIds.length > 0) {
 						await tx.insert(projectCategory).values(
 							categoryIds.map((categoryId) => {
 								return {
-									projectId: input.id,
+									projectId: input.params.id,
 									categoryId,
 								}
 							})
@@ -462,19 +463,19 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					await tx
 						.update(githubRepository)
 						.set({ ...refreshedGithub, fetchedAt })
-						.where(eq(githubRepository.projectId, input.id))
+						.where(eq(githubRepository.projectId, input.params.id))
 				}
 
 				await tx.insert(auditLog).values({
 					actorId: auth.user.id,
 					action: 'project_updated',
-					projectId: input.id,
+					projectId: input.params.id,
 				})
 
 				const [githubRow] = await tx
 					.select()
 					.from(githubRepository)
-					.where(eq(githubRepository.projectId, input.id))
+					.where(eq(githubRepository.projectId, input.params.id))
 					.limit(1)
 
 				if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
@@ -487,7 +488,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 						.select({ slug: category.slug })
 						.from(projectCategory)
 						.innerJoin(category, eq(projectCategory.categoryId, category.id))
-						.where(eq(projectCategory.projectId, input.id))
+						.where(eq(projectCategory.projectId, input.params.id))
 					categorySlugsOut = rows.map((row) => row.slug)
 				}
 
@@ -546,7 +547,7 @@ const adminDeleteProjectHandler = adminProcedure.admin.project.remove.handler(
 				screenshot: project.screenshot,
 			})
 			.from(project)
-			.where(eq(project.id, input.id))
+			.where(eq(project.id, input.params.id))
 			.limit(1)
 
 		if (!existing) throw errors.NOT_FOUND()
@@ -582,17 +583,21 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 	async ({ context, input }) => {
 		const { db } = context
 
-		const page = input.page
-		const limit = input.limit
+		const page = input.query.page
+		const limit = input.query.limit
 		const offset = (page - 1) * limit
 		const where = and(
-			input.status ? eq(project.status, input.status) : undefined,
-			input.name
-				? ilike(project.name, `%${input.name.replace(/[\\%_]/g, '\\$&')}%`)
+			input.query.status ? eq(project.status, input.query.status) : undefined,
+			input.query.name
+				? ilike(
+						project.name,
+						`%${input.query.name.replace(/[\\%_]/g, '\\$&')}%`
+					)
 				: undefined
 		)
-		const sortColumn = input.sort === 'name' ? project.name : project.createdAt
-		const order = input.order === 'asc' ? asc : desc
+		const sortColumn =
+			input.query.sort === 'name' ? project.name : project.createdAt
+		const order = input.query.order === 'asc' ? asc : desc
 		let total = 0
 
 		const [rows, [countRow]] = await Promise.all([

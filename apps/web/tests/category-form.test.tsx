@@ -63,7 +63,7 @@ describe('category form', () => {
 		expect(screen.getByText('/categories/flat-leaf/writing')).toBeTruthy()
 		expect(screen.getByText(/flat-leaf\/writing\/code-editor/)).toBeTruthy()
 		expect(
-			screen.getByText(/once public category pages are available/)
+			screen.getByText(/Old links will redirect to the new URL/)
 		).toBeTruthy()
 	})
 	it('preserves edits and the original record after a server conflict and a cache refresh', async () => {

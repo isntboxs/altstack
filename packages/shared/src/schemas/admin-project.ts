@@ -19,7 +19,9 @@ const categorySlugsSchema = z
 	.transform((slugs) => [...new Set(slugs)])
 	.pipe(z.array(z.string()).min(1).max(3))
 
-export const adminCreateProjectInputSchema = z.object({
+export const adminProjectParamsSchema = z.object({ id: z.uuid() })
+
+export const adminCreateProjectBodySchema = z.object({
 	name: z.string().trim().min(2).max(100),
 	slug: slugSchema,
 	repositoryUrl: repositoryUrlSchema,
@@ -41,6 +43,10 @@ export const adminCreateProjectInputSchema = z.object({
 	status: z.enum(PROJECT_STATUS).optional().default('published'),
 })
 
+export const adminCreateProjectInputSchema = z.object({
+	body: adminCreateProjectBodySchema,
+})
+
 export const adminCreateProjectOutputSchema = projectSchema.extend({
 	github: z.object({
 		owner: z.string(),
@@ -51,13 +57,17 @@ export const adminCreateProjectOutputSchema = projectSchema.extend({
 	}),
 })
 
-export const adminListProjectInputSchema = z.object({
+export const adminListProjectQuerySchema = z.object({
 	status: z.enum(PROJECT_STATUS).optional(),
 	name: z.string().optional(),
 	sort: z.enum(['name', 'createdAt']).optional().default('createdAt'),
 	order: z.enum(['asc', 'desc']).optional().default('desc'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const adminListProjectInputSchema = z.object({
+	query: adminListProjectQuerySchema,
 })
 
 export const adminListProjectOutputSchema = z.object({
@@ -75,11 +85,10 @@ export const adminListProjectOutputSchema = z.object({
 	pagination: paginationSchema,
 })
 
-// Partial update: every field except id is optional. Image fields accept
+// Partial update: every body field is optional. Image fields accept
 // tmp/* keys only — omit to keep the current image, pass a new tmp key to
 // replace it. `screenshot: null` removes the screenshot.
-export const adminUpdateProjectInputSchema = z.object({
-	id: z.uuid(),
+export const adminUpdateProjectBodySchema = z.object({
 	name: z.string().trim().min(2).max(100).optional(),
 	slug: slugSchema.optional(),
 	repositoryUrl: repositoryUrlSchema.optional(),
@@ -96,6 +105,12 @@ export const adminUpdateProjectInputSchema = z.object({
 	status: z.enum(PROJECT_STATUS).optional(),
 })
 
+export const adminUpdateProjectInputSchema = z.object({
+	params: adminProjectParamsSchema,
+	// A PATCH without a body remains a no-op.
+	body: adminUpdateProjectBodySchema.optional(),
+})
+
 export const adminUpdateProjectOutputSchema = projectSchema.extend({
 	github: z.object({
 		owner: z.string(),
@@ -107,7 +122,7 @@ export const adminUpdateProjectOutputSchema = projectSchema.extend({
 })
 
 export const adminDeleteProjectInputSchema = z.object({
-	id: z.uuid(),
+	params: adminProjectParamsSchema,
 })
 
 export const adminDeleteProjectOutputSchema = z.object({
@@ -115,5 +130,5 @@ export const adminDeleteProjectOutputSchema = z.object({
 })
 
 export const adminGetProjectByIdInputSchema = z.object({
-	id: z.uuid(),
+	params: adminProjectParamsSchema,
 })

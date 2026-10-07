@@ -8,7 +8,9 @@ export const healthContract = publicContract
 	.meta(
 		openapi({
 			path: '/health',
-			method: 'GET',
+			method: 'QUERY',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Check server health',
 			description: 'Check if the server is healthy.',
 			tags: ['Health'],

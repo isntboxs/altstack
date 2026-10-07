@@ -1,0 +1,2682 @@
+{
+	"source": "Generated from local development 987f9bd82e51513e9755c2bf56774f5b62306061 using @orpc/openapi and @orpc/zod 2.0.0-beta.42. ID-only DELETE phantom empty bodies omitted. Response schemas deduplicated by operationId; error responses are shared.",
+	"security": [
+		{
+			"apiKeyCookie": []
+		}
+	],
+	"securitySchemes": {
+		"apiKeyCookie": {
+			"type": "apiKey",
+			"in": "cookie",
+			"name": "better-auth.session_token"
+		}
+	},
+	"errorResponses": {
+		"400": {
+			"description": "Bad Request. Usually due to missing parameters, or invalid parameters.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/BadRequest"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"401": {
+			"description": "Unauthorized. Due to missing or invalid authentication.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/Unauthorized"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"403": {
+			"description": "Forbidden. You do not have permission to access this resource or to perform this action.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/Forbidden"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"404": {
+			"description": "Not Found. The requested resource was not found.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/NotFound"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"409": {
+			"description": "Conflict. The request could not be completed due to a conflict with the current state of the resource.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/Conflict"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"422": {
+			"description": "Unprocessable Content. The request was well-formed but was unable to be followed due to semantic errors.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/UnprocessableContent"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"429": {
+			"description": "Too Many Requests. You have exceeded the rate limit. Try again later.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/TooManyRequests"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		},
+		"500": {
+			"description": "Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again., Upload consumed. The request failed after the uploaded images were already consumed. Please upload the images again and retry., Conflict after image promotion. The project slug or repository is already taken, and the uploaded images were already consumed. Please adjust and upload the images again., Internal Server Error. This is a problem with the server that you cannot fix.",
+			"content": {
+				"application/json": {
+					"schema": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/UploadExpired"
+							},
+							{
+								"$ref": "#/components/schemas/UploadConsumed"
+							},
+							{
+								"$ref": "#/components/schemas/ConflictAfterPromote"
+							},
+							{
+								"$ref": "#/components/schemas/InternalServerError"
+							},
+							{
+								"$ref": "#/components/schemas/UndefinedError"
+							}
+						]
+					}
+				}
+			}
+		}
+	},
+	"operations": {
+		"listAdminCategories": {
+			"path": "/admin/categories",
+			"method": "get",
+			"parameters": [],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "listAdminCategories"
+						}
+					}
+				}
+			}
+		},
+		"createAdminCategory": {
+			"path": "/admin/categories",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"slug": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"description": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"parentId": {
+									"anyOf": [
+										{
+											"type": "string",
+											"format": "uuid",
+											"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							},
+							"required": ["name", "slug", "description", "parentId"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"201": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "createAdminCategory"
+						}
+					}
+				}
+			}
+		},
+		"getAdminCategoryById": {
+			"path": "/admin/categories/{id}",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "getAdminCategoryById"
+						}
+					}
+				}
+			}
+		},
+		"updateAdminCategory": {
+			"path": "/admin/categories/{id}",
+			"method": "patch",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": {
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"slug": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"description": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"parentId": {
+									"anyOf": [
+										{
+											"type": "string",
+											"format": "uuid",
+											"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+										},
+										{
+											"type": "null"
+										}
+									]
+								}
+							}
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "createAdminCategory"
+						}
+					}
+				}
+			}
+		},
+		"removeAdminCategory": {
+			"path": "/admin/categories/{id}",
+			"method": "delete",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "removeAdminCategory"
+						}
+					}
+				}
+			}
+		},
+		"createAdminProject": {
+			"path": "/admin/projects",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"slug": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"repositoryUrl": {
+									"type": "string",
+									"minLength": 1
+								},
+								"tagline": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"description": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"logo": {
+									"type": "string",
+									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								},
+								"screenshot": {
+									"type": "string",
+									"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								},
+								"websiteUrl": {
+									"type": "string",
+									"format": "uri"
+								},
+								"content": {
+									"type": "string"
+								},
+								"categorySlugs": {
+									"type": "array",
+									"items": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 100
+									}
+								},
+								"status": {
+									"default": "published",
+									"type": "string",
+									"enum": ["draft", "published", "rejected", "removed"]
+								}
+							},
+							"required": [
+								"name",
+								"slug",
+								"repositoryUrl",
+								"tagline",
+								"description",
+								"logo",
+								"categorySlugs"
+							]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"201": {
+					"description": "Project created",
+					"content": {
+						"application/json": {
+							"schema": "createAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"listAdminProjects": {
+			"path": "/admin/projects",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "query",
+					"name": "status",
+					"schema": {
+						"type": "string",
+						"enum": ["draft", "published", "rejected", "removed"]
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "name",
+					"schema": {
+						"type": "string"
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "sort",
+					"schema": {
+						"default": "createdAt",
+						"type": "string",
+						"enum": ["name", "createdAt"]
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "order",
+					"schema": {
+						"default": "desc",
+						"type": "string",
+						"enum": ["asc", "desc"]
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "page",
+					"schema": {
+						"default": 1,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 9007199254740991
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "limit",
+					"schema": {
+						"default": 12,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 50
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Projects listed",
+					"content": {
+						"application/json": {
+							"schema": "listAdminProjects"
+						}
+					}
+				}
+			}
+		},
+		"getAdminProjectById": {
+			"path": "/admin/projects/{id}",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Project found",
+					"content": {
+						"application/json": {
+							"schema": "createAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"updateAdminProject": {
+			"path": "/admin/projects/{id}",
+			"method": "patch",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": {
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"slug": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"repositoryUrl": {
+									"type": "string",
+									"minLength": 1
+								},
+								"tagline": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"description": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300
+								},
+								"logo": {
+									"type": "string",
+									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								},
+								"screenshot": {
+									"anyOf": [
+										{
+											"type": "string",
+											"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"websiteUrl": {
+									"anyOf": [
+										{
+											"type": "string",
+											"format": "uri"
+										},
+										{
+											"type": "null"
+										}
+									]
+								},
+								"content": {
+									"type": ["string", "null"]
+								},
+								"categorySlugs": {
+									"type": "array",
+									"items": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 100
+									}
+								},
+								"status": {
+									"type": "string",
+									"enum": ["draft", "published", "rejected", "removed"]
+								}
+							}
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Project updated",
+					"content": {
+						"application/json": {
+							"schema": "createAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"deleteAdminProject": {
+			"path": "/admin/projects/{id}",
+			"method": "delete",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Project deleted",
+					"content": {
+						"application/json": {
+							"schema": "deleteAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"requestLogoUpload": {
+			"path": "/admin/uploads/logo",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"filename": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"contentType": {
+									"type": "string",
+									"enum": ["image/png", "image/jpeg", "image/webp", "image/gif"]
+								},
+								"size": {
+									"type": "integer",
+									"minimum": 1,
+									"maximum": 3145728
+								}
+							},
+							"required": ["filename", "contentType", "size"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Presigned URL issued",
+					"content": {
+						"application/json": {
+							"schema": "requestLogoUpload"
+						}
+					}
+				}
+			}
+		},
+		"removeLogoUpload": {
+			"path": "/admin/uploads/logo",
+			"method": "delete",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string",
+									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								}
+							},
+							"required": ["key"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Logo removed",
+					"content": {
+						"application/json": {
+							"schema": "deleteAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"changeLogoUpload": {
+			"path": "/admin/uploads/logo/change",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"oldKey": {
+									"type": "string",
+									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								},
+								"newKey": {
+									"type": "string",
+									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								}
+							},
+							"required": ["oldKey", "newKey"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Logo changed",
+					"content": {
+						"application/json": {
+							"schema": "deleteAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"requestScreenshotUpload": {
+			"path": "/admin/uploads/screenshot",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"filename": {
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 100
+								},
+								"contentType": {
+									"type": "string",
+									"enum": ["image/png", "image/jpeg", "image/webp", "image/gif"]
+								},
+								"size": {
+									"type": "integer",
+									"minimum": 1,
+									"maximum": 5242880
+								}
+							},
+							"required": ["filename", "contentType", "size"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Presigned URL issued",
+					"content": {
+						"application/json": {
+							"schema": "requestScreenshotUpload"
+						}
+					}
+				}
+			}
+		},
+		"removeScreenshotUpload": {
+			"path": "/admin/uploads/screenshot",
+			"method": "delete",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"key": {
+									"type": "string",
+									"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								}
+							},
+							"required": ["key"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Screenshot removed",
+					"content": {
+						"application/json": {
+							"schema": "deleteAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"changeScreenshotUpload": {
+			"path": "/admin/uploads/screenshot/change",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"oldKey": {
+									"type": "string",
+									"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								},
+								"newKey": {
+									"type": "string",
+									"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+								}
+							},
+							"required": ["oldKey", "newKey"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "Screenshot changed",
+					"content": {
+						"application/json": {
+							"schema": "deleteAdminProject"
+						}
+					}
+				}
+			}
+		},
+		"getCommits": {
+			"path": "/list-commits",
+			"method": "get",
+			"parameters": [],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "List of commits retrieved successfully",
+					"content": {
+						"application/json": {
+							"schema": "getCommits"
+						}
+					}
+				}
+			}
+		},
+		"listPublicCategories": {
+			"path": "/categories",
+			"method": "get",
+			"parameters": [],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "listPublicCategories"
+						}
+					}
+				}
+			}
+		},
+		"getCategoryByPath": {
+			"path": "/categories/by-path",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "query",
+					"name": "path",
+					"schema": {
+						"type": "string",
+						"minLength": 1
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true,
+					"required": true
+				}
+			],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "getCategoryByPath"
+						}
+					}
+				}
+			}
+		},
+		"checkHealth": {
+			"path": "/health",
+			"method": "get",
+			"parameters": [],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "Server is healthy",
+					"content": {
+						"application/json": {
+							"schema": "checkHealth"
+						}
+					}
+				}
+			}
+		},
+		"getProjectBySlug": {
+			"path": "/projects/{slug}",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "slug",
+					"schema": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 100
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "Project found",
+					"content": {
+						"application/json": {
+							"schema": "getProjectBySlug"
+						}
+					}
+				}
+			}
+		},
+		"listProjects": {
+			"path": "/projects",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "query",
+					"name": "page",
+					"schema": {
+						"default": 1,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 9007199254740991
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "limit",
+					"schema": {
+						"default": 12,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 50
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				}
+			],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "Projects listed",
+					"content": {
+						"application/json": {
+							"schema": "listProjects"
+						}
+					}
+				}
+			}
+		},
+		"searchProjects": {
+			"path": "/projects/search",
+			"method": "get",
+			"parameters": [
+				{
+					"in": "query",
+					"name": "q",
+					"schema": {
+						"type": "string"
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "category",
+					"schema": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 100
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "sort",
+					"schema": {
+						"default": "newest",
+						"type": "string",
+						"enum": ["newest", "oldest", "name", "most-stars", "most-forks"]
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "page",
+					"schema": {
+						"default": 1,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 9007199254740991
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "limit",
+					"schema": {
+						"default": 12,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 50
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				}
+			],
+			"requestBody": null,
+			"security": [],
+			"responses": {
+				"200": {
+					"description": "Projects found",
+					"content": {
+						"application/json": {
+							"schema": "searchProjects"
+						}
+					}
+				}
+			}
+		}
+	},
+	"responseSchemas": {
+		"listAdminCategories": {
+			"type": "object",
+			"properties": {
+				"categories": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							},
+							"directProjectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount",
+							"directProjectCount"
+						],
+						"additionalProperties": false
+					}
+				}
+			},
+			"required": ["categories"],
+			"additionalProperties": false
+		},
+		"createAdminCategory": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"parentId": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"slug": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"description": {
+					"type": ["string", "null"]
+				},
+				"path": {
+					"type": "string"
+				},
+				"depth": {
+					"type": "integer",
+					"minimum": 1,
+					"maximum": 3
+				},
+				"isLeaf": {
+					"type": "boolean"
+				},
+				"projectCount": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 9007199254740991
+				},
+				"directProjectCount": {
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 9007199254740991
+				}
+			},
+			"required": [
+				"id",
+				"parentId",
+				"slug",
+				"name",
+				"description",
+				"path",
+				"depth",
+				"isLeaf",
+				"projectCount",
+				"directProjectCount"
+			],
+			"additionalProperties": false
+		},
+		"getAdminCategoryById": {
+			"type": "object",
+			"properties": {
+				"category": {
+					"type": "object",
+					"properties": {
+						"id": {
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						"parentId": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "uuid",
+									"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"slug": {
+							"type": "string"
+						},
+						"name": {
+							"type": "string"
+						},
+						"description": {
+							"type": ["string", "null"]
+						},
+						"path": {
+							"type": "string"
+						},
+						"depth": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 3
+						},
+						"isLeaf": {
+							"type": "boolean"
+						},
+						"projectCount": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"directProjectCount": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						}
+					},
+					"required": [
+						"id",
+						"parentId",
+						"slug",
+						"name",
+						"description",
+						"path",
+						"depth",
+						"isLeaf",
+						"projectCount",
+						"directProjectCount"
+					],
+					"additionalProperties": false
+				},
+				"ancestors": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							},
+							"directProjectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount",
+							"directProjectCount"
+						],
+						"additionalProperties": false
+					}
+				},
+				"children": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							},
+							"directProjectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount",
+							"directProjectCount"
+						],
+						"additionalProperties": false
+					}
+				}
+			},
+			"required": ["category", "ancestors", "children"],
+			"additionalProperties": false
+		},
+		"removeAdminCategory": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				}
+			},
+			"required": ["id"],
+			"additionalProperties": false
+		},
+		"createAdminProject": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"name": {
+					"type": "string"
+				},
+				"slug": {
+					"type": "string"
+				},
+				"tagline": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"logo": {
+					"type": "string"
+				},
+				"screenshot": {
+					"type": ["string", "null"]
+				},
+				"repositoryUrl": {
+					"type": "string",
+					"format": "uri"
+				},
+				"websiteUrl": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uri"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"content": {
+					"type": ["string", "null"]
+				},
+				"categories": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"status": {
+					"default": "published",
+					"type": "string",
+					"enum": ["draft", "published", "rejected", "removed"]
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"github": {
+					"type": "object",
+					"properties": {
+						"owner": {
+							"type": "string"
+						},
+						"repo": {
+							"type": "string"
+						},
+						"stars": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"forks": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"fetchedAt": {
+							"type": "string",
+							"format": "date-time",
+							"x-native-type": "date"
+						}
+					},
+					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"id",
+				"name",
+				"slug",
+				"tagline",
+				"description",
+				"logo",
+				"screenshot",
+				"repositoryUrl",
+				"websiteUrl",
+				"content",
+				"categories",
+				"status",
+				"createdAt",
+				"updatedAt",
+				"github"
+			],
+			"additionalProperties": false
+		},
+		"listAdminProjects": {
+			"type": "object",
+			"properties": {
+				"projects": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"name": {
+								"type": "string"
+							},
+							"slug": {
+								"type": "string"
+							},
+							"tagline": {
+								"type": "string"
+							},
+							"description": {
+								"type": "string"
+							},
+							"logo": {
+								"type": "string"
+							},
+							"screenshot": {
+								"type": ["string", "null"]
+							},
+							"repositoryUrl": {
+								"type": "string",
+								"format": "uri"
+							},
+							"websiteUrl": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uri"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"content": {
+								"type": ["string", "null"]
+							},
+							"categories": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"status": {
+								"default": "published",
+								"type": "string",
+								"enum": ["draft", "published", "rejected", "removed"]
+							},
+							"createdAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"updatedAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"github": {
+								"type": "object",
+								"properties": {
+									"owner": {
+										"type": "string"
+									},
+									"repo": {
+										"type": "string"
+									},
+									"stars": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"forks": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"fetchedAt": {
+										"type": "string",
+										"format": "date-time",
+										"x-native-type": "date"
+									}
+								},
+								"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+								"additionalProperties": false
+							}
+						},
+						"required": [
+							"id",
+							"name",
+							"slug",
+							"tagline",
+							"description",
+							"logo",
+							"screenshot",
+							"repositoryUrl",
+							"websiteUrl",
+							"content",
+							"categories",
+							"status",
+							"createdAt",
+							"updatedAt",
+							"github"
+						],
+						"additionalProperties": false
+					}
+				},
+				"pagination": {
+					"type": "object",
+					"properties": {
+						"page": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"limit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalItems": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalPages": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"hasNextPage": {
+							"type": "boolean"
+						},
+						"hasPreviousPage": {
+							"type": "boolean"
+						}
+					},
+					"required": [
+						"page",
+						"limit",
+						"totalItems",
+						"totalPages",
+						"hasNextPage",
+						"hasPreviousPage"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": ["projects", "pagination"],
+			"additionalProperties": false
+		},
+		"deleteAdminProject": {
+			"type": "object",
+			"properties": {
+				"success": {
+					"type": "boolean",
+					"const": true
+				}
+			},
+			"required": ["success"],
+			"additionalProperties": false
+		},
+		"requestLogoUpload": {
+			"type": "object",
+			"properties": {
+				"key": {
+					"type": "string",
+					"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+				},
+				"presignedUrl": {
+					"type": "string",
+					"format": "uri"
+				}
+			},
+			"required": ["key", "presignedUrl"],
+			"additionalProperties": false
+		},
+		"requestScreenshotUpload": {
+			"type": "object",
+			"properties": {
+				"key": {
+					"type": "string",
+					"pattern": "^tmp\\/screenshots\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+				},
+				"presignedUrl": {
+					"type": "string",
+					"format": "uri"
+				}
+			},
+			"required": ["key", "presignedUrl"],
+			"additionalProperties": false
+		},
+		"getCommits": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"sha": {
+						"type": "string"
+					},
+					"htmlUrl": {
+						"type": "string",
+						"format": "uri"
+					},
+					"message": {
+						"type": "string"
+					},
+					"parents": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"author": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": ["string", "null"]
+							},
+							"email": {
+								"type": ["string", "null"]
+							},
+							"date": {
+								"type": ["string", "null"]
+							},
+							"avatarUrl": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uri"
+									},
+									{
+										"type": "null"
+									}
+								]
+							}
+						},
+						"additionalProperties": false
+					}
+				},
+				"required": ["sha", "htmlUrl", "message", "parents", "author"],
+				"additionalProperties": false
+			}
+		},
+		"listPublicCategories": {
+			"type": "object",
+			"properties": {
+				"categories": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount"
+						],
+						"additionalProperties": false
+					}
+				}
+			},
+			"required": ["categories"],
+			"additionalProperties": false
+		},
+		"getCategoryByPath": {
+			"type": "object",
+			"properties": {
+				"category": {
+					"type": "object",
+					"properties": {
+						"id": {
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						"parentId": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "uuid",
+									"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"slug": {
+							"type": "string"
+						},
+						"name": {
+							"type": "string"
+						},
+						"description": {
+							"type": ["string", "null"]
+						},
+						"path": {
+							"type": "string"
+						},
+						"depth": {
+							"type": "integer",
+							"minimum": 1,
+							"maximum": 3
+						},
+						"isLeaf": {
+							"type": "boolean"
+						},
+						"projectCount": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						}
+					},
+					"required": [
+						"id",
+						"parentId",
+						"slug",
+						"name",
+						"description",
+						"path",
+						"depth",
+						"isLeaf",
+						"projectCount"
+					],
+					"additionalProperties": false
+				},
+				"ancestors": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount"
+						],
+						"additionalProperties": false
+					}
+				},
+				"children": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount"
+						],
+						"additionalProperties": false
+					}
+				}
+			},
+			"required": ["category", "ancestors", "children"],
+			"additionalProperties": false
+		},
+		"checkHealth": {
+			"type": "object",
+			"properties": {
+				"message": {
+					"type": "string"
+				}
+			},
+			"required": ["message"],
+			"additionalProperties": false
+		},
+		"getProjectBySlug": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"name": {
+					"type": "string"
+				},
+				"slug": {
+					"type": "string"
+				},
+				"tagline": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"logo": {
+					"type": "string"
+				},
+				"screenshot": {
+					"type": ["string", "null"]
+				},
+				"repositoryUrl": {
+					"type": "string",
+					"format": "uri"
+				},
+				"websiteUrl": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uri"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"content": {
+					"type": ["string", "null"]
+				},
+				"status": {
+					"default": "published",
+					"type": "string",
+					"enum": ["draft", "published", "rejected", "removed"]
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"github": {
+					"type": "object",
+					"properties": {
+						"owner": {
+							"type": "string"
+						},
+						"repo": {
+							"type": "string"
+						},
+						"stars": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"forks": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"fetchedAt": {
+							"type": "string",
+							"format": "date-time",
+							"x-native-type": "date"
+						}
+					},
+					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"additionalProperties": false
+				},
+				"categoryDetails": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"parentId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"slug": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": ["string", "null"]
+							},
+							"path": {
+								"type": "string"
+							},
+							"depth": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 3
+							},
+							"isLeaf": {
+								"type": "boolean"
+							},
+							"projectCount": {
+								"type": "integer",
+								"minimum": 0,
+								"maximum": 9007199254740991
+							}
+						},
+						"required": [
+							"id",
+							"parentId",
+							"slug",
+							"name",
+							"description",
+							"path",
+							"depth",
+							"isLeaf",
+							"projectCount"
+						],
+						"additionalProperties": false
+					}
+				}
+			},
+			"required": [
+				"id",
+				"name",
+				"slug",
+				"tagline",
+				"description",
+				"logo",
+				"screenshot",
+				"repositoryUrl",
+				"websiteUrl",
+				"content",
+				"status",
+				"createdAt",
+				"updatedAt",
+				"github",
+				"categoryDetails"
+			],
+			"additionalProperties": false
+		},
+		"listProjects": {
+			"type": "object",
+			"properties": {
+				"projects": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"name": {
+								"type": "string"
+							},
+							"slug": {
+								"type": "string"
+							},
+							"tagline": {
+								"type": "string"
+							},
+							"description": {
+								"type": "string"
+							},
+							"logo": {
+								"type": "string"
+							},
+							"screenshot": {
+								"type": ["string", "null"]
+							},
+							"repositoryUrl": {
+								"type": "string",
+								"format": "uri"
+							},
+							"websiteUrl": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uri"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"status": {
+								"default": "published",
+								"type": "string",
+								"enum": ["draft", "published", "rejected", "removed"]
+							},
+							"createdAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"updatedAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"github": {
+								"type": "object",
+								"properties": {
+									"owner": {
+										"type": "string"
+									},
+									"repo": {
+										"type": "string"
+									},
+									"stars": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"forks": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"fetchedAt": {
+										"type": "string",
+										"format": "date-time",
+										"x-native-type": "date"
+									}
+								},
+								"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+								"additionalProperties": false
+							}
+						},
+						"required": [
+							"id",
+							"name",
+							"slug",
+							"tagline",
+							"description",
+							"logo",
+							"screenshot",
+							"repositoryUrl",
+							"websiteUrl",
+							"status",
+							"createdAt",
+							"updatedAt",
+							"github"
+						],
+						"additionalProperties": false
+					}
+				},
+				"pagination": {
+					"type": "object",
+					"properties": {
+						"page": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"limit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalItems": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalPages": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"hasNextPage": {
+							"type": "boolean"
+						},
+						"hasPreviousPage": {
+							"type": "boolean"
+						}
+					},
+					"required": [
+						"page",
+						"limit",
+						"totalItems",
+						"totalPages",
+						"hasNextPage",
+						"hasPreviousPage"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": ["projects", "pagination"],
+			"additionalProperties": false
+		},
+		"searchProjects": {
+			"type": "object",
+			"properties": {
+				"projects": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"name": {
+								"type": "string"
+							},
+							"slug": {
+								"type": "string"
+							},
+							"tagline": {
+								"type": "string"
+							},
+							"description": {
+								"type": "string"
+							},
+							"logo": {
+								"type": "string"
+							},
+							"screenshot": {
+								"type": ["string", "null"]
+							},
+							"repositoryUrl": {
+								"type": "string",
+								"format": "uri"
+							},
+							"websiteUrl": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uri"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"status": {
+								"default": "published",
+								"type": "string",
+								"enum": ["draft", "published", "rejected", "removed"]
+							},
+							"createdAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"updatedAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							},
+							"github": {
+								"type": "object",
+								"properties": {
+									"owner": {
+										"type": "string"
+									},
+									"repo": {
+										"type": "string"
+									},
+									"stars": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"forks": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 9007199254740991
+									},
+									"fetchedAt": {
+										"type": "string",
+										"format": "date-time",
+										"x-native-type": "date"
+									}
+								},
+								"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+								"additionalProperties": false
+							},
+							"categories": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						},
+						"required": [
+							"id",
+							"name",
+							"slug",
+							"tagline",
+							"description",
+							"logo",
+							"screenshot",
+							"repositoryUrl",
+							"websiteUrl",
+							"status",
+							"createdAt",
+							"updatedAt",
+							"github",
+							"categories"
+						],
+						"additionalProperties": false
+					}
+				},
+				"pagination": {
+					"type": "object",
+					"properties": {
+						"page": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"limit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalItems": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalPages": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"hasNextPage": {
+							"type": "boolean"
+						},
+						"hasPreviousPage": {
+							"type": "boolean"
+						}
+					},
+					"required": [
+						"page",
+						"limit",
+						"totalItems",
+						"totalPages",
+						"hasNextPage",
+						"hasPreviousPage"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": ["projects", "pagination"],
+			"additionalProperties": false
+		}
+	}
+}

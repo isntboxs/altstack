@@ -7,7 +7,7 @@ import type { z } from 'zod'
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { slugify } from '@altstack/shared/lib/slug'
-import { adminUpdateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
+import { adminUpdateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
@@ -48,7 +48,7 @@ import { resolveFileUrl } from '#/utils/storage'
 
 // Same form as create, minus the id. Every field is optional: omitted image
 // fields keep the current image, `screenshot: null` removes it.
-const editProjectFormSchema = adminUpdateProjectInputSchema.omit({ id: true })
+const editProjectFormSchema = adminUpdateProjectBodySchema
 
 // Mirrors the max() in the schema; display-only counters.
 const TAGLINE_MAX_LENGTH = 100
@@ -267,8 +267,8 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 			setSubmitError(null)
 			try {
 				const updated = await updateProject.mutateAsync({
-					id: project.id,
-					...value,
+					params: { id: project.id },
+					body: value,
 				})
 				form.reset({
 					name: updated.name,

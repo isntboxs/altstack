@@ -67,10 +67,12 @@ afterAll(async () => {
 describe('admin project list', () => {
 	it('filters names before pagination and counts every match', async () => {
 		const result = await adminClient.admin.project.list({
-			name: `${PREFIX.toUpperCase()} ALP`,
-			limit: 1,
-			sort: 'name',
-			order: 'asc',
+			query: {
+				name: `${PREFIX.toUpperCase()} ALP`,
+				limit: 1,
+				sort: 'name',
+				order: 'asc',
+			},
 		})
 		expect(result.projects.map((item) => item.id)).toEqual([createdIds[2]])
 		expect(result.pagination).toMatchObject({
@@ -85,11 +87,13 @@ describe('admin project list', () => {
 		const pages = await Promise.all(
 			[1, 2, 3, 4].map((page) =>
 				adminClient.admin.project.list({
-					name: PREFIX,
-					sort: 'name',
-					order: 'asc',
-					limit: 2,
-					page,
+					query: {
+						name: PREFIX,
+						sort: 'name',
+						order: 'asc',
+						limit: 2,
+						page,
+					},
 				})
 			)
 		)
@@ -107,10 +111,12 @@ describe('admin project list', () => {
 
 	it('supports descending names and uses IDs to break ties across pages', async () => {
 		const descending = await adminClient.admin.project.list({
-			name: PREFIX,
-			sort: 'name',
-			order: 'desc',
-			limit: 2,
+			query: {
+				name: PREFIX,
+				sort: 'name',
+				order: 'desc',
+				limit: 2,
+			},
 		})
 		expect(descending.projects.map((item) => item.name)).toEqual([
 			`${PREFIX} Zulu`,
@@ -119,11 +125,13 @@ describe('admin project list', () => {
 		const pages = await Promise.all(
 			[1, 2].map((page) =>
 				adminClient.admin.project.list({
-					name: `${PREFIX} Tie`,
-					sort: 'name',
-					order: 'desc',
-					limit: 1,
-					page,
+					query: {
+						name: `${PREFIX} Tie`,
+						sort: 'name',
+						order: 'desc',
+						limit: 1,
+						page,
+					},
 				})
 			)
 		)
@@ -134,9 +142,11 @@ describe('admin project list', () => {
 
 	it('combines status and name filters for rows and totals', async () => {
 		const result = await adminClient.admin.project.list({
-			name: PREFIX,
-			status: 'draft',
-			limit: 1,
+			query: {
+				name: PREFIX,
+				status: 'draft',
+				limit: 1,
+			},
 		})
 		expect(result.projects.map((item) => item.id)).toEqual([createdIds[3]])
 		expect(result.pagination.totalItems).toBe(1)
@@ -144,7 +154,9 @@ describe('admin project list', () => {
 
 	it('treats SQL wildcard and escape characters as literal name text', async () => {
 		const result = await adminClient.admin.project.list({
-			name: `${PREFIX} Literal %_\\`,
+			query: {
+				name: `${PREFIX} Literal %_\\`,
+			},
 		})
 		expect(result.projects.map((item) => item.id)).toEqual([createdIds[6]])
 		expect(result.pagination.totalItems).toBe(1)
@@ -152,14 +164,18 @@ describe('admin project list', () => {
 
 	it('preserves the default creation-date order and supports ascending dates', async () => {
 		const newest = await adminClient.admin.project.list({
-			name: PREFIX,
-			limit: 1,
+			query: {
+				name: PREFIX,
+				limit: 1,
+			},
 		})
 		const oldest = await adminClient.admin.project.list({
-			name: PREFIX,
-			sort: 'createdAt',
-			order: 'asc',
-			limit: 1,
+			query: {
+				name: PREFIX,
+				sort: 'createdAt',
+				order: 'asc',
+				limit: 1,
+			},
 		})
 		expect(newest.projects[0]?.id).toBe(createdIds[7])
 		expect(oldest.projects[0]?.id).toBe(createdIds[0])

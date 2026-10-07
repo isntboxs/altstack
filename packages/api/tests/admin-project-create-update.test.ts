@@ -98,14 +98,16 @@ async function createFixtureProject(
 ) {
 	const slug = `${PREFIX}-${suffix}`
 	const result = await adminClient.admin.project.create({
-		name: `Test CU ${suffix}`,
-		slug,
-		repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
-		tagline: `Tagline for ${suffix}`,
-		description: `Description for ${suffix}`,
-		logo: tmpLogoKey(suffix),
-		...(overrides.screenshot ? { screenshot: tmpScreenshotKey(suffix) } : {}),
-		categorySlugs: ['backend'],
+		body: {
+			name: `Test CU ${suffix}`,
+			slug,
+			repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
+			tagline: `Tagline for ${suffix}`,
+			description: `Description for ${suffix}`,
+			logo: tmpLogoKey(suffix),
+			...(overrides.screenshot ? { screenshot: tmpScreenshotKey(suffix) } : {}),
+			categorySlugs: ['backend'],
+		},
 	})
 	createdProjectIds.push(result.id)
 	return result
@@ -202,14 +204,16 @@ describe('admin create project', () => {
 			const screenshotTmp = tmpScreenshotKey(suffix)
 
 			const result = await adminClient.admin.project.create({
-				name: `Test CU ${suffix}`,
-				slug,
-				repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
-				tagline: `Tagline for ${suffix}`,
-				description: `Description for ${suffix}`,
-				logo: logoTmp,
-				screenshot: screenshotTmp,
-				categorySlugs: ['backend'],
+				body: {
+					name: `Test CU ${suffix}`,
+					slug,
+					repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
+					tagline: `Tagline for ${suffix}`,
+					description: `Description for ${suffix}`,
+					logo: logoTmp,
+					screenshot: screenshotTmp,
+					categorySlugs: ['backend'],
+				},
 			})
 			createdProjectIds.push(result.id)
 
@@ -288,17 +292,21 @@ describe('admin create project', () => {
 
 			await expect(
 				adminClient.admin.project.create({
-					...base,
-					slug: fixture.slug,
-					repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-dup-${suffix}`,
+					body: {
+						...base,
+						slug: fixture.slug,
+						repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-dup-${suffix}`,
+					},
 				})
 			).rejects.toMatchObject({ code: 'CONFLICT' })
 
 			await expect(
 				adminClient.admin.project.create({
-					...base,
-					slug: `${PREFIX}-other-${suffix}`,
-					repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
+					body: {
+						...base,
+						slug: `${PREFIX}-other-${suffix}`,
+						repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
+					},
 				})
 			).rejects.toMatchObject({ code: 'CONFLICT' })
 
@@ -329,13 +337,15 @@ describe('admin create project', () => {
 
 			await expect(
 				adminClient.admin.project.create({
-					name: `Test CU ${suffix}`,
-					slug,
-					repositoryUrl,
-					tagline: `Tagline for ${suffix}`,
-					description: `Description for ${suffix}`,
-					logo: tmpLogoKey(suffix),
-					categorySlugs: ['backend'],
+					body: {
+						name: `Test CU ${suffix}`,
+						slug,
+						repositoryUrl,
+						tagline: `Tagline for ${suffix}`,
+						description: `Description for ${suffix}`,
+						logo: tmpLogoKey(suffix),
+						categorySlugs: ['backend'],
+					},
 				})
 			).rejects.toMatchObject({ code: 'CONFLICT_AFTER_PROMOTE' })
 
@@ -361,13 +371,15 @@ describe('admin create project', () => {
 
 			await expect(
 				adminClient.admin.project.create({
-					name: `Test CU ${suffix}`,
-					slug: `${PREFIX}-${suffix}`,
-					repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
-					tagline: `Tagline for ${suffix}`,
-					description: `Description for ${suffix}`,
-					logo: tmpLogoKey(suffix),
-					categorySlugs: ['backend'],
+					body: {
+						name: `Test CU ${suffix}`,
+						slug: `${PREFIX}-${suffix}`,
+						repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-${suffix}`,
+						tagline: `Tagline for ${suffix}`,
+						description: `Description for ${suffix}`,
+						logo: tmpLogoKey(suffix),
+						categorySlugs: ['backend'],
+					},
 				})
 			).rejects.toMatchObject({ code: 'UPLOAD_EXPIRED' })
 		}
@@ -388,18 +400,22 @@ describe('admin create project', () => {
 
 			await expect(
 				adminClient.admin.project.create({
-					...valid,
-					slug: `${PREFIX}-${suffix}`,
-					repositoryUrl: 'not-a-url',
+					body: {
+						...valid,
+						slug: `${PREFIX}-${suffix}`,
+						repositoryUrl: 'not-a-url',
+					},
 				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 
 			await expect(
 				adminClient.admin.project.create({
-					...valid,
-					slug: `${PREFIX}-badcat-${suffix}`,
-					repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-badcat-${suffix}`,
-					categorySlugs: ['no-such-category'],
+					body: {
+						...valid,
+						slug: `${PREFIX}-badcat-${suffix}`,
+						repositoryUrl: `https://github.com/${PREFIX}-owner/${PREFIX}-repo-badcat-${suffix}`,
+						categorySlugs: ['no-such-category'],
+					},
 				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 
@@ -426,8 +442,8 @@ describe('admin update project', () => {
 
 			const newTmp = tmpLogoKey(`new-${suffix}`)
 			const updated = await adminClient.admin.project.update({
-				id: created.id,
-				logo: newTmp,
+				params: { id: created.id },
+				body: { logo: newTmp },
 			})
 
 			expect(updated.logo).toMatch(
@@ -461,8 +477,8 @@ describe('admin update project', () => {
 
 			const newSlug = `${PREFIX}-renamed-${suffix}`
 			const updated = await adminClient.admin.project.update({
-				id: created.id,
-				slug: newSlug,
+				params: { id: created.id },
+				body: { slug: newSlug },
 			})
 
 			expect(updated.slug).toBe(newSlug)
@@ -502,9 +518,8 @@ describe('admin update project', () => {
 			const newSlug = `${PREFIX}-renamed-${suffix}`
 			const newTmp = tmpLogoKey(`new-${suffix}`)
 			const updated = await adminClient.admin.project.update({
-				id: created.id,
-				slug: newSlug,
-				logo: newTmp,
+				params: { id: created.id },
+				body: { slug: newSlug, logo: newTmp },
 			})
 
 			expect(updated.slug).toBe(newSlug)
@@ -546,9 +561,8 @@ describe('admin update project', () => {
 
 			await expect(
 				adminClient.admin.project.update({
-					id: created.id,
-					slug: newSlug,
-					logo: tmpLogoKey(`new-${suffix}`),
+					params: { id: created.id },
+					body: { slug: newSlug, logo: tmpLogoKey(`new-${suffix}`) },
 				})
 			).rejects.toMatchObject({ code: 'CONFLICT_AFTER_PROMOTE' })
 
@@ -571,7 +585,10 @@ describe('admin update project', () => {
 			clearStorageMocks()
 
 			await expect(
-				adminClient.admin.project.update({ id: first.id, slug: second.slug })
+				adminClient.admin.project.update({
+					params: { id: first.id },
+					body: { slug: second.slug },
+				})
 			).rejects.toMatchObject({ code: 'CONFLICT' })
 
 			expect(
@@ -595,16 +612,16 @@ describe('admin update project', () => {
 				'removed',
 			] as const) {
 				const updated = await adminClient.admin.project.update({
-					id: created.id,
-					status,
+					params: { id: created.id },
+					body: { status },
 				})
 				expect(updated.status).toBe(status)
 			}
 
 			await expect(
 				adminClient.admin.project.update({
-					id: created.id,
-					status: 'archived' as never,
+					params: { id: created.id },
+					body: { status: 'archived' as never },
 				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 		}
@@ -628,16 +645,16 @@ describe('admin create/update auth', () => {
 			}
 
 			await expect(
-				anonClient.admin.project.create(input)
+				anonClient.admin.project.create({ body: input })
 			).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
 			await expect(
-				userClient.admin.project.create(input)
+				userClient.admin.project.create({ body: input })
 			).rejects.toMatchObject({ code: 'FORBIDDEN' })
 			await expect(
-				anonClient.admin.project.update({ id: MISSING_ID })
+				anonClient.admin.project.update({ params: { id: MISSING_ID } })
 			).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
 			await expect(
-				userClient.admin.project.update({ id: MISSING_ID })
+				userClient.admin.project.update({ params: { id: MISSING_ID } })
 			).rejects.toMatchObject({ code: 'FORBIDDEN' })
 		}
 	)

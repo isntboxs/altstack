@@ -324,11 +324,51 @@ const queryVariants = () => [
 	projectQueries.bySlug('demo'),
 	projectQueries.search({ q: 'demo', category: 'editors' }),
 	orpc.admin.category.list.queryOptions({ input: {} }),
-	orpc.project.search.queryOptions({ input: { q: 'demo' } }),
-	projectORPC.search.queryOptions({ input: { page: 3 } }),
+	orpc.project.search.queryOptions({ input: { query: { q: 'demo' } } }),
+	projectORPC.search.queryOptions({ input: { query: { page: 3 } } }),
 ]
 
 describe('CRUD cache callbacks with real oRPC query keys', () => {
+	it('sends detailed input sections from public/admin query helpers and keeps legacy category inputs flat', async () => {
+		const { queryClient } = provider()
+		await Promise.all([
+			queryClient.query(projectQueries.bySlug('demo')),
+			queryClient.query(projectQueries.search({ q: 'demo', page: 2 })),
+			queryClient.query(
+				categoryQueries.getByPath({ path: 'software/editors' })
+			),
+			queryClient.query(adminProjectQueries.get({ id: flat.id })),
+			queryClient.query(adminProjectQueries.list({ page: 2, name: 'demo' })),
+			queryClient.query(adminCategoryQueries.get({ id: editors.id })),
+			queryClient.query(projectQueries.listCategories()),
+			queryClient.query(adminProjectQueries.listCategories()),
+		])
+		const calls = rpc.mock.calls.map(([path, input]) => {
+			return { path: path.join('/'), input }
+		})
+		expect(calls).toHaveLength(8)
+		expect(calls).toEqual(
+			expect.arrayContaining([
+				{ path: 'project/getBySlug', input: { params: { slug: 'demo' } } },
+				{ path: 'project/search', input: { query: { q: 'demo', page: 2 } } },
+				{
+					path: 'category/getByPath',
+					input: { query: { path: 'software/editors' } },
+				},
+				{ path: 'admin/project/getById', input: { params: { id: flat.id } } },
+				{
+					path: 'admin/project/list',
+					input: { query: { page: 2, name: 'demo' } },
+				},
+				{
+					path: 'admin/category/getById',
+					input: { params: { id: editors.id } },
+				},
+				{ path: 'project/listCategories', input: {} },
+				{ path: 'admin/project/listCategories', input: {} },
+			])
+		)
+	})
 	it.each([
 		['category create', useAdminCategoryCreate],
 		['category update', useAdminCategoryUpdate],
@@ -365,7 +405,7 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 				logo: 'test-logo',
 			}
 			await act(async () => {
-				await result.current.mutate(input)
+				await result.current.mutate({ params: { id: input.id }, body: input })
 			})
 			const deletedProjectDetail =
 				_name === 'project delete'
@@ -386,8 +426,9 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 		const { wrapper, queryClient } = provider()
 		const keys = [
 			adminCategoryQueries.get({ id: flat.id }).queryKey,
-			orpc.admin.category.getById.queryOptions({ input: { id: flat.id } })
-				.queryKey,
+			orpc.admin.category.getById.queryOptions({
+				input: { params: { id: flat.id } },
+			}).queryKey,
 		]
 		for (const key of keys) {
 			queryClient.setQueryData(key, {
@@ -402,7 +443,7 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 		)
 		const { result } = renderHook(useAdminCategoryDelete, { wrapper })
 		await act(async () => {
-			await result.current.mutateAsync({ id: flat.id })
+			await result.current.mutateAsync({ params: { id: flat.id } })
 		})
 		for (const key of keys) {
 			expect(queryClient.getQueryData(key)).toBeUndefined()
@@ -422,7 +463,10 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 		const { result } = renderHook(useAdminCategoryUpdate, { wrapper })
 		await act(async () => {
 			await expect(
-				result.current.mutateAsync({ id: assigned.id, name: 'Edited' })
+				result.current.mutateAsync({
+					params: { id: assigned.id },
+					body: { name: 'Edited' },
+				})
 			).rejects.toThrow('Conflict')
 		})
 		expect(

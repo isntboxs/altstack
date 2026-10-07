@@ -187,7 +187,7 @@ beforeEach(() => {
 					return { categories: visibleNodes }
 				case 'category/getByPath': {
 					const { path: categoryPath } =
-						getCategoryByPathInputSchema.parse(input)
+						getCategoryByPathInputSchema.parse(input).query
 					const active = visibleNodes.find((node) => node.path === categoryPath)
 					if (!active) throw new ORPCError('NOT_FOUND')
 					const ancestors = visibleNodes.filter((node) =>
@@ -202,7 +202,7 @@ beforeEach(() => {
 					}
 				}
 				case 'project/search': {
-					const { page, q } = searchProjectsInputSchema.parse(input)
+					const { page, q } = searchProjectsInputSchema.parse(input).query
 					const count = q === 'absent' ? 0 : total
 					return {
 						projects:
@@ -300,7 +300,9 @@ describe('public category routes and hierarchy UI', () => {
 			expect(router.state.matches.at(-1)?.status).toBe('success')
 			expect(rpc).toHaveBeenCalledWith(
 				['project', 'search'],
-				expect.objectContaining({ category: node.slug }),
+				expect.objectContaining({
+					query: expect.objectContaining({ category: node.slug }) as unknown,
+				}),
 				expect.anything()
 			)
 		}
@@ -598,7 +600,7 @@ describe('public category search, sorting and pagination', () => {
 		})
 		expect(rpc).toHaveBeenCalledWith(
 			['project', 'search'],
-			{ category: ai.slug, sort: 'newest', page: 1, q: undefined },
+			{ query: { category: ai.slug, sort: 'newest', page: 1, q: undefined } },
 			expect.anything()
 		)
 	})
@@ -633,7 +635,7 @@ describe('public category search, sorting and pagination', () => {
 		const original = rpc.getMockImplementation()!
 		rpc.mockImplementation((path, input) =>
 			path.join('/') === 'category/getByPath' &&
-			getCategoryByPathInputSchema.parse(input).path ===
+			getCategoryByPathInputSchema.parse(input).query.path ===
 				'old-root/old-parent/old-leaf'
 				? Promise.resolve({
 						category: ai,
@@ -686,7 +688,7 @@ describe('public category search, sorting and pagination', () => {
 		)
 		expect(
 			detailCalls.map(
-				([, input]) => getCategoryByPathInputSchema.parse(input).path
+				([, input]) => getCategoryByPathInputSchema.parse(input).query.path
 			)
 		).toEqual(['old-root/old-parent/old-leaf', ai.path])
 		expect(

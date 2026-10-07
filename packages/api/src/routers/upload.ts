@@ -146,32 +146,32 @@ async function changeImageUpload(
 
 const requestLogoUploadHandler =
 	adminProcedure.admin.upload.logo.request.handler(async ({ input }) =>
-		requestImageUpload(input, LOGO_KIND)
+		requestImageUpload(input.body, LOGO_KIND)
 	)
 
 const removeLogoUploadHandler = adminProcedure.admin.upload.logo.remove.handler(
-	async ({ errors, input }) => removeImageUpload(input.key, errors)
+	async ({ errors, input }) => removeImageUpload(input.body.key, errors)
 )
 
 const changeLogoUploadHandler = adminProcedure.admin.upload.logo.change.handler(
 	async ({ errors, input }) =>
-		changeImageUpload(input.oldKey, input.newKey, errors)
+		changeImageUpload(input.body.oldKey, input.body.newKey, errors)
 )
 
 const requestScreenshotUploadHandler =
 	adminProcedure.admin.upload.screenshot.request.handler(async ({ input }) =>
-		requestImageUpload(input, SCREENSHOT_KIND)
+		requestImageUpload(input.body, SCREENSHOT_KIND)
 	)
 
 const removeScreenshotUploadHandler =
 	adminProcedure.admin.upload.screenshot.remove.handler(
-		async ({ errors, input }) => removeImageUpload(input.key, errors)
+		async ({ errors, input }) => removeImageUpload(input.body.key, errors)
 	)
 
 const changeScreenshotUploadHandler =
 	adminProcedure.admin.upload.screenshot.change.handler(
 		async ({ errors, input }) =>
-			changeImageUpload(input.oldKey, input.newKey, errors)
+			changeImageUpload(input.body.oldKey, input.body.newKey, errors)
 	)
 
 export const uploadRouter = {
