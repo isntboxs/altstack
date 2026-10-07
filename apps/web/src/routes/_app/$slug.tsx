@@ -6,7 +6,12 @@ import {
 	IconGitFork,
 	IconTag,
 } from '@tabler/icons-react'
-import { ClientOnly, createFileRoute } from '@tanstack/react-router'
+import {
+	ClientOnly,
+	createFileRoute,
+	Link,
+	notFound,
+} from '@tanstack/react-router'
 import { useMemo } from 'react'
 import {
 	Bookmark,
@@ -44,16 +49,37 @@ import {
 } from '@altstack/ui/components/tooltip'
 
 import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
+import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 import { resolveFileUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$slug')({
 	loader: async ({ context, params }) => {
-		await context.queryClient.query({
-			...projectQueries.bySlug(params.slug),
-			staleTime: 'static',
-		})
+		try {
+			await context.queryClient.query({
+				...projectQueries.bySlug(params.slug),
+				retry: false,
+			})
+		} catch (error) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'code' in error &&
+				error.code === 'NOT_FOUND'
+			) {
+				throw notFound()
+			}
+			throw error
+		}
 	},
+	notFoundComponent: () => (
+		<div className="container mx-auto max-w-6xl space-y-4 px-4 pt-28 lg:px-16">
+			<h1 className="text-3xl font-medium">Project not found</h1>
+			<Link to="/" className="underline underline-offset-4">
+				Browse projects
+			</Link>
+		</div>
+	),
 	component: RouteComponent,
 })
 
@@ -343,6 +369,8 @@ function RouteComponent() {
 								{screenshotImg}
 							</div>
 						))}
+
+					<PublicProjectCategories categories={projectData.categoryDetails} />
 
 					{projectData.content && (
 						<ClientOnly>

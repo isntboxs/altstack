@@ -16,6 +16,7 @@
 		"./schemas/github": "./src/schemas/github.ts",
 		"./schemas/project": "./src/schemas/project.ts",
 		"./seed": "./src/seed.ts",
+		"./seed-taxonomy": "./src/seed-taxonomy.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -29,6 +30,7 @@
 			"./schemas/github": "./dist/schemas/github.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
 			"./seed": "./dist/seed.mjs",
+			"./seed-taxonomy": "./dist/seed-taxonomy.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -41,7 +43,8 @@
 		"db:seed": "bun run ./src/seed.ts",
 		"db:studio": "drizzle-kit studio",
 		"dev": "vp pack --watch",
-		"test": "vp test"
+		"test": "vp test",
+		"test:isolated": "bun run ./tests/run-isolated.ts"
 	},
 	"dependencies": {
 		"@altstack/env": "workspace:*",

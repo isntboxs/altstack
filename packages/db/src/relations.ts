@@ -50,9 +50,31 @@ export const relations = defineRelations(schemas, (r) => {
 		},
 
 		category: {
+			parent: r.one.category({
+				from: r.category.parentId,
+				to: r.category.id,
+				alias: 'categoryHierarchy',
+			}),
+			children: r.many.category({
+				from: r.category.id,
+				to: r.category.parentId,
+				alias: 'categoryHierarchy',
+			}),
+			paths: r.many.categoryPath({
+				from: r.category.id,
+				to: r.categoryPath.categoryId,
+			}),
 			projectCategories: r.many.projectCategory({
 				from: r.category.id,
 				to: r.projectCategory.categoryId,
+			}),
+		},
+
+		categoryPath: {
+			category: r.one.category({
+				from: r.categoryPath.categoryId,
+				to: r.category.id,
+				optional: false,
 			}),
 		},
 

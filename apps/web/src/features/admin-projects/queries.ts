@@ -9,6 +9,7 @@ import type { ORPCRouterInputs } from '@altstack/api/routers'
 
 import { toast } from '@altstack/ui/components/toast'
 
+import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import { adminORPC } from '@/utils/orpc'
 
 export const adminProjectQueries = {
@@ -64,20 +65,19 @@ export const useAdminProjectCreate = () => {
 				description: 'Project created successfully',
 			})
 
-			await queryClient.invalidateQueries({
-				queryKey: adminProjectQueries.list().queryKey,
-			})
+			await invalidateCatalog(queryClient)
 
 			await router.navigate({
 				to: '/projects',
 				replace: true,
 				viewTransition: true,
 			})
+			await router.invalidate()
 		},
 	})
 }
 
-export const useAdminProjectUpdate = ({ id }: { id: string }) => {
+export const useAdminProjectUpdate = () => {
 	const queryClient = useQueryClient()
 	const router = useRouter()
 
@@ -112,27 +112,14 @@ export const useAdminProjectUpdate = ({ id }: { id: string }) => {
 				description: 'Project updated successfully',
 			})
 
-			await queryClient.invalidateQueries({
-				queryKey: adminProjectQueries.get({ id }).queryKey,
-			})
-
-			await queryClient.invalidateQueries({
-				queryKey: adminProjectQueries.list().queryKey,
-			})
-
-			// Public caches use a separate `project` prefix (bySlug for the
-			// detail page, search for the public listing). Broad prefix
-			// invalidation covers both the old and the new slug after a
-			// slug rename.
-			await queryClient.invalidateQueries({
-				predicate: (query) => query.queryKey[0] === 'project',
-			})
+			await invalidateCatalog(queryClient)
 
 			await router.navigate({
 				to: '/projects',
 				replace: true,
 				viewTransition: true,
 			})
+			await router.invalidate()
 		},
 	})
 }
@@ -154,15 +141,7 @@ export const useAdminProjectDelete = () => {
 				queryKey: adminProjectQueries.get({ id: variables.id }).queryKey,
 			})
 
-			await queryClient.invalidateQueries({
-				queryKey: adminProjectQueries.list().queryKey,
-			})
-
-			// Keep public detail/listing caches (bySlug, search) fresh after
-			// delete; only the id is known here, so invalidate by prefix.
-			await queryClient.invalidateQueries({
-				predicate: (query) => query.queryKey[0] === 'project',
-			})
+			await invalidateCatalog(queryClient)
 
 			await router.invalidate()
 		},

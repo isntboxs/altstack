@@ -35,7 +35,7 @@ function RouteComponent() {
 		<SidebarProvider>
 			<MainSidebar variant="floating" />
 
-			<SidebarInset>
+			<SidebarInset className="min-w-0">
 				<Wrapper>
 					<Outlet />
 				</Wrapper>

@@ -7,7 +7,8 @@ import {
 import { cn } from 'cn'
 import React from 'react'
 
-import { Button } from '@altstack/ui/components/button'
+import { buttonVariants } from '@altstack/ui/components/button'
+import type { Button } from '@altstack/ui/components/button'
 
 function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
 	return (
@@ -50,19 +51,15 @@ function PaginationLink({
 	...props
 }: PaginationLinkProps) {
 	return (
-		<Button
-			variant={isActive ? 'outline' : 'ghost'}
-			size={size}
-			className={cn(className)}
-			nativeButton={false}
-			render={
-				<a
-					aria-current={isActive ? 'page' : undefined}
-					data-slot="pagination-link"
-					data-active={isActive}
-					{...props}
-				/>
-			}
+		<a
+			aria-current={isActive ? 'page' : undefined}
+			data-slot="pagination-link"
+			data-active={isActive}
+			className={cn(
+				buttonVariants({ variant: isActive ? 'outline' : 'ghost', size }),
+				className
+			)}
+			{...props}
 		/>
 	)
 }

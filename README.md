@@ -4,16 +4,24 @@ A starter for creating a Vite+ monorepo.
 
 ## Development
 
+Database development menggunakan PostgreSQL cloud. Konfigurasikan `.env` dari
+`.env.example` dengan `DATABASE_URL` untuk `altstack_development`, termasuk
+parameter SSL dari penyedia cloud. Terapkan migration dengan `vp run db:migrate`.
+
+Wrapper tes di bawah mereset schema aplikasi dan riwayat migration pada
+`altstack_development` sebelum dan sesudah tes. Data sebelumnya dihapus; setelah
+selesai, database berisi schema terbaru dan taxonomy tanpa fixture proyek.
+
 - Check everything is ready:
 
 ```bash
-vp run ready
+vp run --filter @altstack/db test:isolated -- vp run ready
 ```
 
 - Run the tests:
 
 ```bash
-vp run -r test
+vp run --filter @altstack/db test:isolated -- vp run -r test
 ```
 
 - Build the monorepo:

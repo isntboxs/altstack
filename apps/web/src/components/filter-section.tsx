@@ -4,12 +4,9 @@ import {
 	IconSearch,
 	IconX,
 } from '@tabler/icons-react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, useNavigate, useRouter } from '@tanstack/react-router'
 import { cn } from 'cn'
-import { Suspense, useEffect, useState } from 'react'
-
-import type { ORPCRouterOutputs } from '@altstack/api/routers'
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import type { SearchSortType } from '@altstack/shared/schemas/project'
 
@@ -35,10 +32,6 @@ import {
 	SelectValue,
 } from '@altstack/ui/components/select'
 
-import { projectQueries } from '#/features/project/queries'
-
-const routeApi = getRouteApi('/_app/')
-
 const selectSortItems: Array<{ label: string; value: SearchSortType }> = [
 	{ label: 'Latest', value: 'newest' },
 	{ label: 'Oldest', value: 'oldest' },
@@ -47,82 +40,15 @@ const selectSortItems: Array<{ label: string; value: SearchSortType }> = [
 	{ label: 'Most Forks', value: 'most-forks' },
 ]
 
-function toSelectCategoryItem(
-	categories: ORPCRouterOutputs['project']['listCategories']['categories']
-): Array<{ label: string; value: string }> {
-	return categories.map((category) => {
-		return {
-			label: category.name,
-			value: category.slug,
-		}
-	})
-}
-
-const CardCategoryFilter = () => {
-	const { data } = useSuspenseQuery(projectQueries.listCategories())
-	const { category } = routeApi.useSearch()
-	const navigate = useNavigate()
-
-	const handleCategoryChange = (value: string | null) => {
-		if (value == null) return
-		void navigate({
-			to: '.',
-			search: (prev) => {
-				return {
-					...prev,
-					category: value,
-					page: undefined,
-				}
-			},
-			replace: true,
-			viewTransition: true,
-		})
-	}
-
-	const items = [...toSelectCategoryItem(data.categories)]
-
-	return (
-		<Select
-			items={items}
-			value={category ?? null}
-			onValueChange={handleCategoryChange}
-		>
-			<SelectTrigger className="w-full">
-				<SelectValue placeholder="Select Category" />
-			</SelectTrigger>
-
-			<SelectContent>
-				<SelectGroup>
-					<SelectLabel>Category</SelectLabel>
-					{items.map((item) => (
-						<SelectItem key={item.value} value={item.value}>
-							{item.label}
-						</SelectItem>
-					))}
-				</SelectGroup>
-			</SelectContent>
-		</Select>
-	)
-}
-
-const SelectSortBar = () => {
-	const { sort } = routeApi.useSearch()
-	const navigate = useNavigate()
-
+const SelectSortBar = ({
+	sort,
+	onSortChange,
+}: {
+	sort?: SearchSortType
+	onSortChange: (sort: SearchSortType | undefined) => void
+}) => {
 	const handleSortChange = (value: SearchSortType | null) => {
-		if (value == null) return
-		void navigate({
-			to: '.',
-			search: (prev) => {
-				return {
-					...prev,
-					sort: value === 'newest' ? undefined : value,
-					page: undefined,
-				}
-			},
-			replace: true,
-			viewTransition: true,
-		})
+		if (value !== null) onSortChange(value === 'newest' ? undefined : value)
 	}
 
 	return (
@@ -131,7 +57,7 @@ const SelectSortBar = () => {
 			value={sort ?? 'newest'}
 			onValueChange={handleSortChange}
 		>
-			<SelectTrigger className="w-full md:max-w-48">
+			<SelectTrigger aria-label="Order by" className="w-full md:max-w-48">
 				<SelectValue placeholder="Order By" />
 			</SelectTrigger>
 
@@ -149,58 +75,52 @@ const SelectSortBar = () => {
 	)
 }
 
-export const FilterSection = () => {
-	const [isOpen, setIsOpen] = useState<boolean>(false)
-	const { category, q, sort } = routeApi.useSearch()
-	const navigate = useNavigate()
-	const router = useRouter()
-
+export const FilterSection = ({
+	q,
+	sort,
+	page,
+	category,
+	categorySelector,
+	placeholder = 'Search...',
+	onQueryChange,
+	onSortChange,
+	onReset,
+}: {
+	q?: string
+	sort?: SearchSortType
+	page?: number
+	category?: string
+	categorySelector?: ReactNode
+	placeholder?: string
+	onQueryChange: (q: string | undefined) => void
+	onSortChange: (sort: SearchSortType | undefined) => void
+	onReset: () => void
+}) => {
+	const [isOpen, setIsOpen] = useState(false)
 	const [inputValue, setInputValue] = useState(q ?? '')
-	const [prevQ, setPrevQ] = useState(q)
-	if (q !== prevQ) {
-		setPrevQ(q)
+
+	// URL changes from reset/back/forward must replace a pending local draft.
+	useEffect(() => {
+		// oxlint-disable-next-line react-hooks-js/set-state-in-effect -- Synchronize an external URL value with the editable, debounced draft.
 		setInputValue(q ?? '')
-	}
+	}, [q])
 
 	useEffect(() => {
-		const handler = window.setTimeout(() => {
-			const trimmed = inputValue.trim()
-			const nextQ = trimmed === '' ? undefined : trimmed
-			if (nextQ !== (q ?? undefined)) {
-				void navigate({
-					to: '.',
-					search: (prev) => {
-						return { ...prev, q: nextQ, page: undefined }
-					},
-					replace: true,
-					viewTransition: true,
-				})
-			}
+		const timer = window.setTimeout(() => {
+			const nextQ = inputValue.trim() || undefined
+			if (nextQ !== q) onQueryChange(nextQ)
 		}, 500)
-		return () => window.clearTimeout(handler)
-	}, [inputValue, navigate, q])
+		return () => window.clearTimeout(timer)
+	}, [inputValue, onQueryChange, q])
 
 	const hasActiveFilters =
-		Boolean(q) || Boolean(category) || (sort !== undefined && sort !== 'newest')
-
+		Boolean(inputValue) ||
+		Boolean(category) ||
+		(sort !== undefined && sort !== 'newest') ||
+		(page ?? 1) > 1
 	const handleReset = () => {
 		setInputValue('')
-		void navigate({
-			to: '.',
-			search: (prev) => {
-				return {
-					...prev,
-					category: undefined,
-					page: undefined,
-					q: undefined,
-					sort: undefined,
-				}
-			},
-			replace: true,
-			viewTransition: true,
-		})
-
-		void router.invalidate()
+		onReset()
 	}
 
 	return (
@@ -217,7 +137,8 @@ export const FilterSection = () => {
 						</InputGroupAddon>
 
 						<InputGroupInput
-							placeholder="Search..."
+							aria-label={placeholder}
+							placeholder={placeholder}
 							value={inputValue}
 							onChange={(e) => setInputValue(e.target.value)}
 						/>
@@ -230,27 +151,29 @@ export const FilterSection = () => {
 						</Button>
 					)}
 
-					<CollapsibleTrigger
-						render={
-							<Button
-								variant="outline"
-								className={cn(isOpen && 'bg-secondary!')}
-							>
-								{isOpen ? <IconFilter2Up /> : <IconFilter2Down />}
-								<span>Filter</span>
-							</Button>
-						}
-					/>
+					{categorySelector && (
+						<CollapsibleTrigger
+							render={
+								<Button
+									variant="outline"
+									className={cn(isOpen && 'bg-secondary!')}
+								>
+									{isOpen ? <IconFilter2Up /> : <IconFilter2Down />}
+									<span>Filter</span>
+								</Button>
+							}
+						/>
+					)}
 				</ButtonGroup>
 
-				<SelectSortBar />
+				<SelectSortBar sort={sort} onSortChange={onSortChange} />
 			</div>
 
-			<CollapsibleContent className="h-(--collapsible-panel-height) w-full overflow-hidden transition-[height] duration-200 ease-in-out data-ending-style:h-0 data-starting-style:h-0">
-				<Suspense fallback={<div>Loading...</div>}>
-					<CardCategoryFilter />
-				</Suspense>
-			</CollapsibleContent>
+			{categorySelector && (
+				<CollapsibleContent className="h-(--collapsible-panel-height) w-full overflow-hidden transition-[height] duration-200 ease-in-out data-ending-style:h-0 data-starting-style:h-0">
+					{categorySelector}
+				</CollapsibleContent>
+			)}
 		</Collapsible>
 	)
 }

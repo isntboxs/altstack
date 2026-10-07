@@ -9,7 +9,8 @@
 		"dev": "vp dev",
 		"generate-routes": "tsr generate",
 		"preview": "vp preview",
-		"test": "vp test run"
+		"test": "vp test run",
+		"test:categories-http": "vp run --filter @altstack/db test:isolated -- bun run apps/web/tests/category-http.acceptance.ts"
 	},
 	"dependencies": {
 		"@altstack/api": "workspace:*",
