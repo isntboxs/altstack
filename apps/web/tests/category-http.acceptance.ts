@@ -382,12 +382,15 @@ try {
 	)
 	console.debug(JSON.stringify({ acceptance: 'passed', checks, evidence }))
 } finally {
-	// oxlint-disable-next-line unicorn/no-array-reverse -- ES2022 target; reverse a copy for cleanup.
-	for (const child of [...processes].reverse()) await stop(child)
-	for (const fixture of fixtures) await fixture.dispose()
-	await database.close()
-	const { rm } = await import('node:fs/promises')
-	if (assetCreated) await rm(assetPath, { force: true })
+	try {
+		// oxlint-disable-next-line unicorn/no-array-reverse -- ES2022 target; reverse a copy for cleanup.
+		for (const child of [...processes].reverse()) await stop(child)
+		for (const fixture of fixtures) await fixture.dispose()
+		await database.close()
+	} finally {
+		const { rm } = await import('node:fs/promises')
+		if (assetCreated) await rm(assetPath, { force: true })
+	}
 	console.debug(
 		'Acceptance fixtures and local servers cleaned; wrapper restores taxonomy-only database.'
 	)
