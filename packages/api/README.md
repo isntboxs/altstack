@@ -5,10 +5,10 @@ The `category` router and contract are exported at
 Shared Zod schemas and the `CategoryNode` type are available from
 `@altstack/shared/schemas/category`, the schemas barrel, and the package root.
 
-| RPC                            | REST under `/api/reference`        | Output                              |
-| ------------------------------ | ---------------------------------- | ----------------------------------- |
-| `category.list({})`            | `GET /categories`                  | `{ categories: CategoryNode[] }`    |
-| `category.getByPath({ path })` | `GET /categories/by-path?path=...` | `{ category, ancestors, children }` |
+| RPC                                       | REST under `/api/reference`        | Output                              |
+| ----------------------------------------- | ---------------------------------- | ----------------------------------- |
+| `category.list({})`                       | `GET /categories`                  | `{ categories: CategoryNode[] }`    |
+| `category.getByPath({ query: { path } })` | `GET /categories/by-path?path=...` | `{ category, ancestors, children }` |
 
 `CategoryNode` contains `id`, nullable `parentId`, `slug`, `name`, nullable legacy
 `description`, current relative `path`, `depth` (1–3), `isLeaf`, and
@@ -31,7 +31,7 @@ detail adds one query for its direct category assignments. Rooted traversal is
 bounded to three levels and checks visited IDs. Cyclic, orphaned, and over-depth
 rows are omitted from representable public nodes; reads do not modify them.
 
-`project.search({ category: slug })` uses the same subtree `EXISTS` predicate for
+`project.search({ query: { category: slug } })` uses the same subtree `EXISTS` predicate for
 data and count, so sibling assignments never duplicate a project. Existing text
 search, sort whitelists, ID tie-breakers, pagination, and the limit of 50 remain.
 Unknown slugs return empty pages. `project.getBySlug` now requires
@@ -47,6 +47,66 @@ All public operations explicitly declare `security: []`; admin operations retain
 the document-level Better Auth cookie requirement and existing authorization.
 Public queries always restrict project visibility to published status, including
 for admin sessions.
+
+## Explicit OpenAPI input mapping
+
+All 23 mapped operations use `inputStructure: 'detailed'` and
+`outputStructure: 'compact'`. The inventory below was taken from development at
+`987f9bd82e51513e9755c2bf56774f5b62306061` before migration. REST URLs, methods,
+operation IDs, success statuses, response bodies, errors, and authentication stay
+unchanged. RPC callers now supply only the sections listed below.
+
+| Method | REST path                          | Operation ID              | RPC input sections      | Success |
+| ------ | ---------------------------------- | ------------------------- | ----------------------- | ------- |
+| GET    | `/admin/categories`                | `listAdminCategories`     | {}                      | 200     |
+| POST   | `/admin/categories`                | `createAdminCategory`     | body                    | 201     |
+| GET    | `/admin/categories/{id}`           | `getAdminCategoryById`    | params                  | 200     |
+| PATCH  | `/admin/categories/{id}`           | `updateAdminCategory`     | params, body (optional) | 200     |
+| DELETE | `/admin/categories/{id}`           | `removeAdminCategory`     | params                  | 200     |
+| POST   | `/admin/projects`                  | `createAdminProject`      | body                    | 201     |
+| GET    | `/admin/projects`                  | `listAdminProjects`       | query                   | 200     |
+| GET    | `/admin/projects/{id}`             | `getAdminProjectById`     | params                  | 200     |
+| PATCH  | `/admin/projects/{id}`             | `updateAdminProject`      | params, body (optional) | 200     |
+| DELETE | `/admin/projects/{id}`             | `deleteAdminProject`      | params                  | 200     |
+| POST   | `/admin/uploads/logo`              | `requestLogoUpload`       | body                    | 200     |
+| DELETE | `/admin/uploads/logo`              | `removeLogoUpload`        | body                    | 200     |
+| POST   | `/admin/uploads/logo/change`       | `changeLogoUpload`        | body                    | 200     |
+| POST   | `/admin/uploads/screenshot`        | `requestScreenshotUpload` | body                    | 200     |
+| DELETE | `/admin/uploads/screenshot`        | `removeScreenshotUpload`  | body                    | 200     |
+| POST   | `/admin/uploads/screenshot/change` | `changeScreenshotUpload`  | body                    | 200     |
+| GET    | `/list-commits`                    | `getCommits`              | none                    | 200     |
+| GET    | `/categories`                      | `listPublicCategories`    | {}                      | 200     |
+| GET    | `/categories/by-path`              | `getCategoryByPath`       | query                   | 200     |
+| GET    | `/health`                          | `checkHealth`             | none                    | 200     |
+| GET    | `/projects/{slug}`                 | `getProjectBySlug`        | params                  | 200     |
+| GET    | `/projects`                        | `listProjects`            | query                   | 200     |
+| GET    | `/projects/search`                 | `searchProjects`          | query                   | 200     |
+
+IDs/slugs use explicit primitive path styles. Every query field is a scalar and
+uses an explicit primitive query style; numeric pagination and upload sizes keep
+existing coercion. There are no consumed input headers; authentication remains in
+context/middleware. Create and update forms validate the shared body schemas,
+then wrap values at the RPC boundary. PATCH body omission, omitted fields, null
+removals, slug/repository normalization, category deduplication, and defaults retain
+runtime behavior.
+
+`project.listCategories({})` and `admin.project.listCategories({})` keep their flat
+RPC input/output shapes and have no OpenAPI mapping. Both REST routing and spec
+filters continue to exclude them. Health and commits keep no-input contracts, and
+category lists keep their existing `{}` inputs. The server's plain Hono `GET /`
+is outside oRPC and keeps its text response.
+
+The installed beta.42 converter correctly represents these schemas, so no JSON
+schema registry overrides are needed. Generated OpenAPI matches the captured wire
+contract except that ID-only DELETE operations no longer advertise phantom empty
+request bodies. Their HTTP requests still need only the path ID.
+
+Mapping guidance: [oRPC input/output mapping](https://orpc.dev/docs/openapi/input-and-output-mapping)
+and [Zod integration](https://orpc.dev/docs/integrations/zod). The database-free
+`tests/openapi-mapping.test.ts` exercises every mapped operation and compares its
+spec with `tests/fixtures/openapi-wire-contract.json`, captured from the base commit.
+The fixture deduplicates response schemas and shared errors; do not regenerate it
+from the migrated contracts when validating compatibility.
 
 ## Verification
 

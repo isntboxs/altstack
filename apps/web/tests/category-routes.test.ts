@@ -124,7 +124,7 @@ describe('category routes and preloading guards', () => {
 		await router.load()
 		expect(rpc).toHaveBeenCalledWith(
 			['admin', 'category', 'getById'],
-			{ id: flat.id },
+			{ params: { id: flat.id } },
 			expect.anything()
 		)
 		expect(rpc).toHaveBeenCalledWith(

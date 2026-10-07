@@ -5,7 +5,7 @@ import { Suspense, useRef, useState } from 'react'
 import type { z } from 'zod'
 
 import { slugify } from '@altstack/shared/lib/slug'
-import { adminCreateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
+import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
@@ -39,11 +39,11 @@ import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
-// Mirrors the max() in adminCreateProjectInputSchema; display-only counters.
+// Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
 const TAGLINE_MAX_LENGTH = 100
 const DESCRIPTION_MAX_LENGTH = 300
 
-const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
+const defaultValues: z.input<typeof adminCreateProjectBodySchema> = {
 	name: '',
 	slug: '',
 	repositoryUrl: '',
@@ -56,11 +56,11 @@ const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
 	categorySlugs: [],
 	// Explicit default: new projects publish immediately unless saved as
 	// draft (hidden from the public catalogue). Mirrors the
-	// `.default('published')` in adminCreateProjectInputSchema.
+	// `.default('published')` in adminCreateProjectBodySchema.
 	status: 'published',
 }
 
-type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
+type CreateProjectValues = z.input<typeof adminCreateProjectBodySchema>
 
 function isUploadExpiredError(error: unknown): boolean {
 	return (
@@ -208,13 +208,13 @@ function RouteComponent() {
 	const form = useForm({
 		defaultValues,
 		validators: {
-			onChange: adminCreateProjectInputSchema,
-			onSubmit: adminCreateProjectInputSchema,
+			onChange: adminCreateProjectBodySchema,
+			onSubmit: adminCreateProjectBodySchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
 			setSubmitError(null)
 			try {
-				await createProject.mutateAsync(value)
+				await createProject.mutateAsync({ body: value })
 			} catch (error) {
 				setSubmitError(
 					error instanceof Error ? error.message : 'Unable to save project.'

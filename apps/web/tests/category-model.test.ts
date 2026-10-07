@@ -114,7 +114,7 @@ describe('category hierarchy editor', () => {
 				parentId: null,
 				description: '',
 			})
-		).toEqual({ id: flat.id, name: 'Renamed' })
+		).toEqual({ params: { id: flat.id }, body: { name: 'Renamed' } })
 		expect(
 			categoryUpdatePayload(legacy, {
 				name: flat.name,
@@ -122,7 +122,10 @@ describe('category hierarchy editor', () => {
 				parentId: editors.id,
 				description: ' New copy ',
 			})
-		).toEqual({ id: flat.id, parentId: editors.id, description: 'New copy' })
+		).toEqual({
+			params: { id: flat.id },
+			body: { parentId: editors.id, description: 'New copy' },
+		})
 	})
 	it('rejects clearing existing copy, blank supplied copy, and overlong copy', () => {
 		const values = {

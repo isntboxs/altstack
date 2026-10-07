@@ -18,6 +18,9 @@ const getBySlugContract = publicContract
 		openapi({
 			path: '/projects/{slug}',
 			method: 'GET',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { slug: 'primitive' },
 			summary: 'Get project by slug',
 			description: 'Get project by slug.',
 			tags: ['Projects'],
@@ -34,6 +37,12 @@ const listProjectsContract = publicContract
 		openapi({
 			path: '/projects',
 			method: 'GET',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			queryStyles: {
+				page: 'primitive',
+				limit: 'primitive',
+			},
 			summary: 'List projects',
 			description: 'List projects. Paginated list of projects.',
 			tags: ['Projects'],
@@ -50,6 +59,15 @@ const searchProjectsContract = publicContract
 		openapi({
 			path: '/projects/search',
 			method: 'GET',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			queryStyles: {
+				q: 'primitive',
+				category: 'primitive',
+				sort: 'primitive',
+				page: 'primitive',
+				limit: 'primitive',
+			},
 			summary: 'Search projects',
 			description:
 				'Search published projects by text query, category, sort, and pagination.',

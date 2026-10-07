@@ -40,8 +40,12 @@ const githubField = {
 	fetchedAt: z.coerce.date(),
 }
 
-export const getProjectBySlugInputSchema = z.object({
+export const getProjectBySlugParamsSchema = z.object({
 	slug: slugSchema,
+})
+
+export const getProjectBySlugInputSchema = z.object({
+	params: getProjectBySlugParamsSchema,
 })
 
 export const getProjectBySlugOutputSchema = z.object({
@@ -50,9 +54,13 @@ export const getProjectBySlugOutputSchema = z.object({
 	categoryDetails: z.array(categoryNodeSchema),
 })
 
-export const listProjectsInputSchema = z.object({
+export const listProjectsQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const listProjectsInputSchema = z.object({
+	query: listProjectsQuerySchema,
 })
 
 const listProjectItemSchema = z
@@ -86,7 +94,7 @@ export const searchSortSchema = z.enum([
 
 export type SearchSortType = z.infer<typeof searchSortSchema>
 
-export const searchProjectsInputSchema = z.object({
+export const searchProjectsQuerySchema = z.object({
 	q: z
 		.string()
 		.trim()
@@ -98,6 +106,10 @@ export const searchProjectsInputSchema = z.object({
 	sort: searchSortSchema.optional().default('newest'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const searchProjectsInputSchema = z.object({
+	query: searchProjectsQuerySchema,
 })
 
 export const searchProjectsOutputSchema = z.object({

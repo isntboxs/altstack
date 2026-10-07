@@ -24,10 +24,14 @@ export const projectLogoKeySchema = z
 		'Invalid project logo key'
 	)
 
-export const requestLogoUploadInputSchema = z.object({
+export const requestLogoUploadBodySchema = z.object({
 	filename: z.string().trim().min(1).max(100),
 	contentType: z.enum(LOGO_MIME),
 	size: z.number().int().min(1).max(LOGO_MAX_SIZE),
+})
+
+export const requestLogoUploadInputSchema = z.object({
+	body: requestLogoUploadBodySchema,
 })
 
 export const requestLogoUploadOutputSchema = z.object({
@@ -35,17 +39,25 @@ export const requestLogoUploadOutputSchema = z.object({
 	presignedUrl: z.url(),
 })
 
-export const removeLogoUploadInputSchema = z.object({
+export const removeLogoUploadBodySchema = z.object({
 	key: logoKeySchema,
+})
+
+export const removeLogoUploadInputSchema = z.object({
+	body: removeLogoUploadBodySchema,
 })
 
 export const removeLogoUploadOutputSchema = z.object({
 	success: z.literal(true),
 })
 
-export const changeLogoUploadInputSchema = z.object({
+export const changeLogoUploadBodySchema = z.object({
 	oldKey: logoKeySchema,
 	newKey: logoKeySchema,
+})
+
+export const changeLogoUploadInputSchema = z.object({
+	body: changeLogoUploadBodySchema,
 })
 
 export const changeLogoUploadOutputSchema = z.object({
@@ -68,10 +80,14 @@ export const projectScreenshotKeySchema = z
 		'Invalid project screenshot key'
 	)
 
-export const requestScreenshotUploadInputSchema = z.object({
+export const requestScreenshotUploadBodySchema = z.object({
 	filename: z.string().trim().min(1).max(100),
 	contentType: z.enum(SCREENSHOT_MIME),
 	size: z.number().int().min(1).max(SCREENSHOT_MAX_SIZE),
+})
+
+export const requestScreenshotUploadInputSchema = z.object({
+	body: requestScreenshotUploadBodySchema,
 })
 
 export const requestScreenshotUploadOutputSchema = z.object({
@@ -79,17 +95,25 @@ export const requestScreenshotUploadOutputSchema = z.object({
 	presignedUrl: z.url(),
 })
 
-export const removeScreenshotUploadInputSchema = z.object({
+export const removeScreenshotUploadBodySchema = z.object({
 	key: screenshotKeySchema,
+})
+
+export const removeScreenshotUploadInputSchema = z.object({
+	body: removeScreenshotUploadBodySchema,
 })
 
 export const removeScreenshotUploadOutputSchema = z.object({
 	success: z.literal(true),
 })
 
-export const changeScreenshotUploadInputSchema = z.object({
+export const changeScreenshotUploadBodySchema = z.object({
 	oldKey: screenshotKeySchema,
 	newKey: screenshotKeySchema,
+})
+
+export const changeScreenshotUploadInputSchema = z.object({
+	body: changeScreenshotUploadBodySchema,
 })
 
 export const changeScreenshotUploadOutputSchema = z.object({

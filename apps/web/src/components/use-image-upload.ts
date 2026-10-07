@@ -104,7 +104,10 @@ export const useImageUpload = ({
 			deleteAbortRef.current = abortController
 
 			try {
-				await api.remove({ key: fileKey }, { signal: abortController.signal })
+				await api.remove(
+					{ body: { key: fileKey } },
+					{ signal: abortController.signal }
+				)
 			} catch (error) {
 				throw new Error(
 					error instanceof Error
@@ -137,9 +140,11 @@ export const useImageUpload = ({
 			try {
 				const { key: fileKey, presignedUrl } = await api.request(
 					{
-						contentType: file.type,
-						filename: file.name,
-						size: file.size,
+						body: {
+							contentType: file.type,
+							filename: file.name,
+							size: file.size,
+						},
 					},
 					{ signal: abortController.signal }
 				)
@@ -317,8 +322,10 @@ export const useImageUpload = ({
 				) {
 					try {
 						await api.change({
-							oldKey: previousFile.fileKey,
-							newKey: uploaded.fileKey,
+							body: {
+								oldKey: previousFile.fileKey,
+								newKey: uploaded.fileKey,
+							},
 						})
 					} catch (error) {
 						toast.add({

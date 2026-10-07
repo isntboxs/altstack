@@ -16,12 +16,12 @@ export const adminProjectQueries = {
 	create: () => adminORPC.project.create.mutationOptions(),
 	update: () => adminORPC.project.update.mutationOptions(),
 	delete: () => adminORPC.project.remove.mutationOptions(),
-	list: (input: ORPCRouterInputs['admin']['project']['list'] = {}) =>
-		adminORPC.project.list.queryOptions({ input }),
+	list: (input: ORPCRouterInputs['admin']['project']['list']['query'] = {}) =>
+		adminORPC.project.list.queryOptions({ input: { query: input } }),
 	listCategories: () =>
 		adminORPC.project.listCategories.queryOptions({ input: {} }),
 	get: (input: { id: string }) =>
-		adminORPC.project.getById.queryOptions({ input }),
+		adminORPC.project.getById.queryOptions({ input: { params: input } }),
 }
 
 export const useAdminProjectList = (
@@ -138,7 +138,7 @@ export const useAdminProjectDelete = () => {
 			})
 
 			queryClient.removeQueries({
-				queryKey: adminProjectQueries.get({ id: variables.id }).queryKey,
+				queryKey: adminProjectQueries.get({ id: variables.params.id }).queryKey,
 			})
 
 			await invalidateCatalog(queryClient)

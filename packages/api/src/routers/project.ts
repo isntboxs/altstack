@@ -21,7 +21,12 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 		const [row] = await db
 			.select()
 			.from(project)
-			.where(and(eq(project.slug, input.slug), eq(project.status, 'published')))
+			.where(
+				and(
+					eq(project.slug, input.params.slug),
+					eq(project.status, 'published')
+				)
+			)
 			.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
 			.limit(1)
 
@@ -49,8 +54,8 @@ const listHandler = publicProcedure.project.list.handler(
 	async ({ context, input }) => {
 		const { db } = context
 
-		const page = input.page
-		const limit = input.limit
+		const page = input.query.page
+		const limit = input.query.limit
 		const offset = (page - 1) * limit
 		const where = eq(project.status, 'published')
 		let total = 0
@@ -119,22 +124,22 @@ const searchHandler = publicProcedure.project.search.handler(
 	async ({ context, input }) => {
 		const { db } = context
 
-		const page = input.page
-		const limit = input.limit
+		const page = input.query.page
+		const limit = input.query.limit
 		const offset = (page - 1) * limit
 
 		// Visibility is decided here, never in the UI: every branch stays
 		// limited to published projects.
 		const conditions = [eq(project.status, 'published')]
 
-		if (input.category) {
+		if (input.query.category) {
 			// An unknown slug naturally yields zero matches through EXISTS.
-			conditions.push(projectInCategorySubtree(input.category))
+			conditions.push(projectInCategorySubtree(input.query.category))
 		}
 
-		if (input.q) {
+		if (input.query.q) {
 			conditions.push(
-				sql`${project.searchVector} @@ websearch_to_tsquery('english', ${input.q})`
+				sql`${project.searchVector} @@ websearch_to_tsquery('english', ${input.query.q})`
 			)
 		}
 
@@ -146,7 +151,7 @@ const searchHandler = publicProcedure.project.search.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-				.orderBy(...searchSortOrder[input.sort])
+				.orderBy(...searchSortOrder[input.query.sort])
 				.limit(limit)
 				.offset(offset),
 

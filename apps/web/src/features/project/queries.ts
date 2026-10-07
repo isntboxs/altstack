@@ -13,9 +13,9 @@ export interface SearchProjectsParams {
 
 export const projectQueries = {
 	bySlug: (slug: string) =>
-		projectORPC.getBySlug.queryOptions({ input: { slug } }),
+		projectORPC.getBySlug.queryOptions({ input: { params: { slug } } }),
 	search: (params: SearchProjectsParams) =>
-		projectORPC.search.queryOptions({ input: params }),
+		projectORPC.search.queryOptions({ input: { query: params } }),
 	listCategories: () => projectORPC.listCategories.queryOptions({ input: {} }),
 }
 

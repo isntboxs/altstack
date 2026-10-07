@@ -206,10 +206,12 @@ try {
 	checks.push('SSR index groups roots/direct children and reserves /categories')
 
 	for (const path of [rootPath, parentPath, aiPath, generalPath]) {
-		const detail = await client.category.getByPath({ path })
+		const detail = await client.category.getByPath({ query: { path } })
 		assert.equal(detail.category.projectCount, 1)
 		const search = await client.project.search({
-			category: detail.category.slug,
+			query: {
+				category: detail.category.slug,
+			},
 		})
 		assert.equal(search.pagination.totalItems, 1)
 		assert.deepEqual(
@@ -304,9 +306,11 @@ try {
 		generalPath,
 	})
 
-	const root = (await client.category.getByPath({ path: rootPath })).category
-	const parent = (await client.category.getByPath({ path: parentPath }))
+	const root = (await client.category.getByPath({ query: { path: rootPath } }))
 		.category
+	const parent = (
+		await client.category.getByPath({ query: { path: parentPath } })
+	).category
 	const history = [aiPath]
 	await updateAdminCategory(database.db, {
 		id: root.id,
@@ -352,13 +356,16 @@ try {
 		canonical(current.html, '/categories/' + currentPath)
 		hasHeading(current.html, 'Open Source AI-Powered Editors')
 	}
-	const latest = await client.project.getBySlug({ slug: publishedRow.slug })
+	const latest = await client.project.getBySlug({
+		params: { slug: publishedRow.slug },
+	})
 	assert.deepEqual(
 		latest.categoryDetails.map((node) => node.path),
 		[currentPath, 'test-workbench/test-code-editors/general-purpose-editors']
 	)
 	assert.equal(
-		(await client.category.getByPath({ path: rootPath })).category.projectCount,
+		(await client.category.getByPath({ query: { path: rootPath } })).category
+			.projectCount,
 		0
 	)
 	const oldParent = await http('/categories/' + parentPath + query)

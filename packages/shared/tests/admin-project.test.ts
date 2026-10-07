@@ -18,11 +18,8 @@ const FINAL_SCREENSHOT = `projects/my-project/screenshot-${PROJECT_ID}.jpg`
 
 describe('adminListProjectInputSchema', () => {
 	it('preserves pagination and sorting defaults', () => {
-		expect(adminListProjectInputSchema.parse({})).toEqual({
-			page: 1,
-			limit: 12,
-			sort: 'createdAt',
-			order: 'desc',
+		expect(adminListProjectInputSchema.parse({ query: {} })).toEqual({
+			query: { page: 1, limit: 12, sort: 'createdAt', order: 'desc' },
 		})
 	})
 
@@ -31,7 +28,9 @@ describe('adminListProjectInputSchema', () => {
 		{ sort: 'name; DROP TABLE projects' },
 		{ order: 'invalid' },
 	])('rejects unsupported sorting input %j', (input) => {
-		expect(adminListProjectInputSchema.safeParse(input).success).toBe(false)
+		expect(
+			adminListProjectInputSchema.safeParse({ query: input }).success
+		).toBe(false)
 	})
 })
 
@@ -56,52 +55,54 @@ describe('project final key schemas', () => {
 
 describe('adminUpdateProjectInputSchema', () => {
 	it('accepts id alone (no-op patch)', () => {
-		const parsed = adminUpdateProjectInputSchema.parse({ id: PROJECT_ID })
-		expect(parsed.id).toBe(PROJECT_ID)
-		expect(parsed.logo).toBeUndefined()
+		const parsed = adminUpdateProjectInputSchema.parse({
+			params: { id: PROJECT_ID },
+		})
+		expect(parsed.params.id).toBe(PROJECT_ID)
+		expect(parsed.body?.logo).toBeUndefined()
 	})
 
 	it('accepts tmp keys for replacement', () => {
 		const parsed = adminUpdateProjectInputSchema.parse({
-			id: PROJECT_ID,
-			logo: TMP_LOGO,
-			screenshot: TMP_SCREENSHOT,
+			params: { id: PROJECT_ID },
+			body: { logo: TMP_LOGO, screenshot: TMP_SCREENSHOT },
 		})
-		expect(parsed.logo).toBe(TMP_LOGO)
-		expect(parsed.screenshot).toBe(TMP_SCREENSHOT)
+		expect(parsed.body?.logo).toBe(TMP_LOGO)
+		expect(parsed.body?.screenshot).toBe(TMP_SCREENSHOT)
 	})
 
 	it('accepts screenshot: null for removal', () => {
 		const parsed = adminUpdateProjectInputSchema.parse({
-			id: PROJECT_ID,
-			screenshot: null,
+			params: { id: PROJECT_ID },
+			body: { screenshot: null },
 		})
-		expect(parsed.screenshot).toBeNull()
+		expect(parsed.body?.screenshot).toBeNull()
 	})
 
 	it('rejects final keys (only tmp keys may be submitted)', () => {
 		expect(
 			adminUpdateProjectInputSchema.safeParse({
-				id: PROJECT_ID,
-				logo: FINAL_LOGO,
+				params: { id: PROJECT_ID },
+				body: { logo: FINAL_LOGO },
 			}).success
 		).toBe(false)
 		expect(
 			adminUpdateProjectInputSchema.safeParse({
-				id: PROJECT_ID,
-				screenshot: FINAL_SCREENSHOT,
+				params: { id: PROJECT_ID },
+				body: { screenshot: FINAL_SCREENSHOT },
 			}).success
 		).toBe(false)
 	})
 
 	it('rejects invalid id and empty categorySlugs', () => {
 		expect(
-			adminUpdateProjectInputSchema.safeParse({ id: 'not-a-uuid' }).success
+			adminUpdateProjectInputSchema.safeParse({ params: { id: 'not-a-uuid' } })
+				.success
 		).toBe(false)
 		expect(
 			adminUpdateProjectInputSchema.safeParse({
-				id: PROJECT_ID,
-				categorySlugs: [],
+				params: { id: PROJECT_ID },
+				body: { categorySlugs: [] },
 			}).success
 		).toBe(false)
 	})
@@ -109,12 +110,15 @@ describe('adminUpdateProjectInputSchema', () => {
 
 describe('adminDeleteProjectInputSchema', () => {
 	it('accepts a uuid and rejects anything else', () => {
-		expect(adminDeleteProjectInputSchema.parse({ id: PROJECT_ID })).toEqual({
-			id: PROJECT_ID,
-		})
 		expect(
-			adminDeleteProjectInputSchema.safeParse({ id: 'not-a-uuid' }).success
+			adminDeleteProjectInputSchema.parse({ params: { id: PROJECT_ID } })
+		).toEqual({ params: { id: PROJECT_ID } })
+		expect(
+			adminDeleteProjectInputSchema.safeParse({ params: { id: 'not-a-uuid' } })
+				.success
 		).toBe(false)
-		expect(adminDeleteProjectInputSchema.safeParse({}).success).toBe(false)
+		expect(
+			adminDeleteProjectInputSchema.safeParse({ params: {} }).success
+		).toBe(false)
 	})
 })

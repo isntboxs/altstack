@@ -10,7 +10,7 @@ export const categoryRouter = {
 	}),
 	getByPath: publicProcedure.category.getByPath.handler(
 		async ({ context, input, errors }) => {
-			const detail = await getCategoryByPath(context.db, input.path)
+			const detail = await getCategoryByPath(context.db, input.query.path)
 			if (!detail) throw errors.NOT_FOUND()
 			return detail
 		}
