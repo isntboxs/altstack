@@ -1,6 +1,8 @@
+import { createORPCClient } from '@orpc/client'
+import type { ContractRouterClient } from '@orpc/contract'
 import { SmartCoercionHandlerPlugin } from '@orpc/json-schema'
 import { getOpenAPIMeta, OpenAPIGenerator } from '@orpc/openapi'
-import { OpenAPIHandler } from '@orpc/openapi/fetch'
+import { OpenAPIHandler, OpenAPILink } from '@orpc/openapi/fetch'
 import { createRouterClient, implement } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/fetch'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
@@ -206,7 +208,7 @@ const handler = new OpenAPIHandler(probes, {
 		}),
 	],
 })
-async function rest(path: string, method = 'GET', body?: unknown) {
+async function rest(path: string, method = 'QUERY', body?: unknown) {
 	return handler.handle(
 		new Request(`http://localhost${path}`, {
 			method,
@@ -434,6 +436,55 @@ const cases: Array<MappingCase> = [
 beforeEach(() => observed.mockClear())
 
 describe('detailed REST mapping', () => {
+	it('excludes GET for every read endpoint migrated to QUERY', async () => {
+		const reads = cases.filter(({ method }) => method === undefined)
+		expect(reads).toHaveLength(11)
+		for (const { path } of reads) {
+			expect((await rest(path, 'GET')).matched).toBe(false)
+		}
+		expect(observed).not.toHaveBeenCalled()
+	})
+	it('sends QUERY through OpenAPILink with path/query inputs in the URL and no body', async () => {
+		const requests: Array<{ method: string; url: string; body: string }> = []
+		const client = createORPCClient<ContractRouterClient<typeof contracts>>(
+			new OpenAPILink(contracts, {
+				origin: 'http://localhost',
+				url: '/',
+				async fetch(url, init) {
+					const request = new Request(url, init)
+					requests.push({
+						method: request.method,
+						url: request.url,
+						body: await request.clone().text(),
+					})
+					const result = await handler.handle(request, { context: {} })
+					if (!result.response) throw new Error('Unmatched OpenAPI request')
+					return result.response
+				},
+			})
+		)
+		await client.project.search({ query: { q: 'hello & world', page: 2 } })
+		await client.admin.category.getById({ params: { id: ID } })
+		expect(await client.health()).toEqual({ message: 'OK' })
+		expect(requests.map(({ method }) => method)).toEqual([
+			'QUERY',
+			'QUERY',
+			'QUERY',
+		])
+		expect(requests.map(({ url }) => url)).toEqual([
+			'http://localhost/projects/search?q=hello+%26+world&page=2',
+			`http://localhost/admin/categories/${ID}`,
+			'http://localhost/health',
+		])
+		for (const request of requests) expect(request.body).toBe('')
+		expect(observed.mock.calls).toEqual([
+			[
+				'searchProjects',
+				{ query: { q: 'hello & world', page: 2, limit: 12, sort: 'newest' } },
+			],
+			['getAdminCategoryById', { params: { id: ID } }],
+		])
+	})
 	it.each(cases)(
 		'$operationId preserves its wire input, compact response, and status',
 		async ({ operationId, path, method, body, input, status }) => {
@@ -490,12 +541,12 @@ describe('detailed REST mapping', () => {
 		})
 	})
 	it.each([
-		['/categories/by-path', 'GET', undefined],
-		['/categories/by-path?path=', 'GET', undefined],
-		['/projects/search?sort=invalid', 'GET', undefined],
-		['/projects?page=0', 'GET', undefined],
-		['/projects?limit=51', 'GET', undefined],
-		['/admin/projects?page=NaN', 'GET', undefined],
+		['/categories/by-path', 'QUERY', undefined],
+		['/categories/by-path?path=', 'QUERY', undefined],
+		['/projects/search?sort=invalid', 'QUERY', undefined],
+		['/projects?page=0', 'QUERY', undefined],
+		['/projects?limit=51', 'QUERY', undefined],
+		['/admin/projects?page=NaN', 'QUERY', undefined],
 		['/admin/categories/not-a-uuid', 'PATCH', {}],
 		[`/admin/projects/${ID}`, 'PATCH', { status: 'invalid' }],
 		[`/admin/projects/${ID}`, 'PATCH', { categorySlugs: [] }],
@@ -577,7 +628,7 @@ describe('detailed REST mapping', () => {
 })
 
 describe('generated OpenAPI compatibility', () => {
-	it('matches the pre-migration wire contract for every operation, including parameters, bodies, errors, and security', async () => {
+	it('matches the pre-migration wire contract with GET changed to QUERY, including parameters, bodies, errors, and security', async () => {
 		const spec = await new OpenAPIGenerator({
 			converters: [new ZodToJsonSchemaConverter()],
 		}).generate(contracts, {
@@ -597,22 +648,31 @@ describe('generated OpenAPI compatibility', () => {
 			},
 		})
 		const paths = spec.paths ?? {}
+		expect(spec.openapi).toBe('3.2.0')
 		const operations = Object.keys(paths)
 			.filter((path): path is `/${string}` => path.startsWith('/'))
 			.flatMap((path) =>
-				(['get', 'post', 'patch', 'delete'] as const).flatMap((method) => {
-					const operation = paths[path]?.[method]
-					return operation ? [{ path, method, operation }] : []
-				})
+				(['get', 'query', 'post', 'patch', 'delete'] as const).flatMap(
+					(method) => {
+						const operation = paths[path]?.[method]
+						return operation ? [{ path, method, operation }] : []
+					}
+				)
 			)
 		expect(operations).toHaveLength(23)
+		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
+		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
+			11
+		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
 				({ operation }) => operation.operationId === operationId
 			)
 			expect(actual).toBeDefined()
 			expect(actual?.path).toBe(expected.path)
-			expect(actual?.method).toBe(expected.method)
+			expect(actual?.method).toBe(
+				expected.method === 'get' ? 'query' : expected.method
+			)
 			expect(actual?.operation.parameters ?? []).toEqual(expected.parameters)
 			expect(actual?.operation.requestBody ?? null).toEqual(
 				expected.requestBody
@@ -662,6 +722,8 @@ describe('generated OpenAPI compatibility', () => {
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
 		expect(mapped).toHaveLength(23)
+		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(11)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe('detailed')
 			expect(meta?.outputStructure).toBe('compact')

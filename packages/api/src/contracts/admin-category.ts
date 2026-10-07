@@ -20,7 +20,7 @@ export const adminCategoryContract = {
 		.meta(
 			openapi({
 				path: '/admin/categories',
-				method: 'GET',
+				method: 'QUERY',
 				inputStructure: 'detailed',
 				outputStructure: 'compact',
 				summary: 'Admin list categories',
@@ -36,7 +36,7 @@ export const adminCategoryContract = {
 		.meta(
 			openapi({
 				path: '/admin/categories/{id}',
-				method: 'GET',
+				method: 'QUERY',
 				inputStructure: 'detailed',
 				outputStructure: 'compact',
 				paramsStyles: { id: 'primitive' },

@@ -78,7 +78,7 @@ function projectInput(categorySlugs: Array<string> = ['backend']) {
 }
 async function rest(
 	path: string,
-	method = 'GET',
+	method = 'QUERY',
 	input?: unknown,
 	auth = adminAuth
 ) {
@@ -186,8 +186,8 @@ describe('admin category endpoints and compatibility', () => {
 					? '/admin/categories'
 					: `/admin/categories/${node.id}`
 			const method = {
-				list: 'GET',
-				getById: 'GET',
+				list: 'QUERY',
+				getById: 'QUERY',
 				create: 'POST',
 				update: 'PATCH',
 				remove: 'DELETE',
@@ -203,8 +203,14 @@ describe('admin category endpoints and compatibility', () => {
 					code,
 				})
 				expect(
-					(await rest(path, method, method === 'GET' ? undefined : input, auth))
-						.response?.status
+					(
+						await rest(
+							path,
+							method,
+							method === 'QUERY' ? undefined : input,
+							auth
+						)
+					).response?.status
 				).toBe(status)
 				expect(
 					(
@@ -219,7 +225,7 @@ describe('admin category endpoints and compatibility', () => {
 			const result = await rest(
 				path,
 				method,
-				method === 'GET' ? undefined : input
+				method === 'QUERY' ? undefined : input
 			)
 			expect(result.matched).toBe(true)
 			expect(result.response?.status).toBe(endpoint === 'create' ? 201 : 200)
@@ -278,7 +284,7 @@ describe('admin category endpoints and compatibility', () => {
 		expect(
 			(await rest('/admin/project/listCategories', 'POST', {})).matched
 		).toBe(false)
-		const spec = (await (await rest('/spec.json')).response?.json()) as {
+		const spec = (await (await rest('/spec.json', 'GET')).response?.json()) as {
 			security: Array<Record<string, Array<string>>>
 			paths: Record<
 				string,
@@ -292,12 +298,12 @@ describe('admin category endpoints and compatibility', () => {
 			>
 		}
 		expect(Object.keys(spec.paths['/admin/categories']!).toSorted()).toEqual([
-			'get',
 			'post',
+			'query',
 		])
 		expect(
 			Object.keys(spec.paths['/admin/categories/{id}']!).toSorted()
-		).toEqual(['delete', 'get', 'patch'])
+		).toEqual(['delete', 'patch', 'query'])
 		expect(
 			Object.values(spec.paths)
 				.flatMap((operations) => Object.values(operations))
@@ -309,7 +315,7 @@ describe('admin category endpoints and compatibility', () => {
 				expect(op.security ?? spec.security).toEqual([{ apiKeyCookie: [] }])
 			}
 		}
-		expect(spec.paths['/categories']?.get?.security).toEqual([])
+		expect(spec.paths['/categories']?.query?.security).toEqual([])
 	})
 
 	it('returns all nodes/children and all-status direct counts while public counts remain published-only, even for admins', async () => {
@@ -386,13 +392,13 @@ describe('admin category endpoints and compatibility', () => {
 				})
 			).response?.status
 		).toBe(400)
-		for (const method of ['GET', 'PATCH', 'DELETE']) {
+		for (const method of ['QUERY', 'PATCH', 'DELETE']) {
 			expect(
 				(
 					await rest(
 						`/admin/categories/${missingId}`,
 						method,
-						method === 'GET' ? undefined : {}
+						method === 'QUERY' ? undefined : {}
 					)
 				).response?.status
 			).toBe(404)

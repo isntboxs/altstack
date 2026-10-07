@@ -17,7 +17,7 @@ const getBySlugContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects/{slug}',
-			method: 'GET',
+			method: 'QUERY',
 			inputStructure: 'detailed',
 			outputStructure: 'compact',
 			paramsStyles: { slug: 'primitive' },
@@ -36,7 +36,7 @@ const listProjectsContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects',
-			method: 'GET',
+			method: 'QUERY',
 			inputStructure: 'detailed',
 			outputStructure: 'compact',
 			queryStyles: {
@@ -58,7 +58,7 @@ const searchProjectsContract = publicContract
 	.meta(
 		openapi({
 			path: '/projects/search',
-			method: 'GET',
+			method: 'QUERY',
 			inputStructure: 'detailed',
 			outputStructure: 'compact',
 			queryStyles: {

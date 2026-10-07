@@ -14,7 +14,7 @@ export const categoryContract = {
 		.meta(
 			openapi({
 				path: '/categories',
-				method: 'GET',
+				method: 'QUERY',
 				inputStructure: 'detailed',
 				outputStructure: 'compact',
 				summary: 'List public categories',
@@ -30,7 +30,7 @@ export const categoryContract = {
 		.meta(
 			openapi({
 				path: '/categories/by-path',
-				method: 'GET',
+				method: 'QUERY',
 				inputStructure: 'detailed',
 				outputStructure: 'compact',
 				queryStyles: {

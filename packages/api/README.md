@@ -5,10 +5,10 @@ The `category` router and contract are exported at
 Shared Zod schemas and the `CategoryNode` type are available from
 `@altstack/shared/schemas/category`, the schemas barrel, and the package root.
 
-| RPC                                       | REST under `/api/reference`        | Output                              |
-| ----------------------------------------- | ---------------------------------- | ----------------------------------- |
-| `category.list({})`                       | `GET /categories`                  | `{ categories: CategoryNode[] }`    |
-| `category.getByPath({ query: { path } })` | `GET /categories/by-path?path=...` | `{ category, ancestors, children }` |
+| RPC                                       | REST under `/api/reference`          | Output                              |
+| ----------------------------------------- | ------------------------------------ | ----------------------------------- |
+| `category.list({})`                       | `QUERY /categories`                  | `{ categories: CategoryNode[] }`    |
+| `category.getByPath({ query: { path } })` | `QUERY /categories/by-path?path=...` | `{ category, ancestors, children }` |
 
 `CategoryNode` contains `id`, nullable `parentId`, `slug`, `name`, nullable legacy
 `description`, current relative `path`, `depth` (1–3), `isLeaf`, and
@@ -52,20 +52,22 @@ for admin sessions.
 
 All 23 mapped operations use `inputStructure: 'detailed'` and
 `outputStructure: 'compact'`. The inventory below was taken from development at
-`987f9bd82e51513e9755c2bf56774f5b62306061` before migration. REST URLs, methods,
-operation IDs, success statuses, response bodies, errors, and authentication stay
-unchanged. RPC callers now supply only the sections listed below.
+`987f9bd82e51513e9755c2bf56774f5b62306061` before migration; the table reflects
+current methods. All 11 read operations now use `QUERY` in place of `GET`. REST
+URLs, URL query encoding, operation IDs, success statuses, response bodies, errors,
+and authentication stay unchanged. RPC callers now supply only the sections listed
+below.
 
 | Method | REST path                          | Operation ID              | RPC input sections      | Success |
 | ------ | ---------------------------------- | ------------------------- | ----------------------- | ------- |
-| GET    | `/admin/categories`                | `listAdminCategories`     | {}                      | 200     |
+| QUERY  | `/admin/categories`                | `listAdminCategories`     | {}                      | 200     |
 | POST   | `/admin/categories`                | `createAdminCategory`     | body                    | 201     |
-| GET    | `/admin/categories/{id}`           | `getAdminCategoryById`    | params                  | 200     |
+| QUERY  | `/admin/categories/{id}`           | `getAdminCategoryById`    | params                  | 200     |
 | PATCH  | `/admin/categories/{id}`           | `updateAdminCategory`     | params, body (optional) | 200     |
 | DELETE | `/admin/categories/{id}`           | `removeAdminCategory`     | params                  | 200     |
 | POST   | `/admin/projects`                  | `createAdminProject`      | body                    | 201     |
-| GET    | `/admin/projects`                  | `listAdminProjects`       | query                   | 200     |
-| GET    | `/admin/projects/{id}`             | `getAdminProjectById`     | params                  | 200     |
+| QUERY  | `/admin/projects`                  | `listAdminProjects`       | query                   | 200     |
+| QUERY  | `/admin/projects/{id}`             | `getAdminProjectById`     | params                  | 200     |
 | PATCH  | `/admin/projects/{id}`             | `updateAdminProject`      | params, body (optional) | 200     |
 | DELETE | `/admin/projects/{id}`             | `deleteAdminProject`      | params                  | 200     |
 | POST   | `/admin/uploads/logo`              | `requestLogoUpload`       | body                    | 200     |
@@ -74,13 +76,13 @@ unchanged. RPC callers now supply only the sections listed below.
 | POST   | `/admin/uploads/screenshot`        | `requestScreenshotUpload` | body                    | 200     |
 | DELETE | `/admin/uploads/screenshot`        | `removeScreenshotUpload`  | body                    | 200     |
 | POST   | `/admin/uploads/screenshot/change` | `changeScreenshotUpload`  | body                    | 200     |
-| GET    | `/list-commits`                    | `getCommits`              | none                    | 200     |
-| GET    | `/categories`                      | `listPublicCategories`    | {}                      | 200     |
-| GET    | `/categories/by-path`              | `getCategoryByPath`       | query                   | 200     |
-| GET    | `/health`                          | `checkHealth`             | none                    | 200     |
-| GET    | `/projects/{slug}`                 | `getProjectBySlug`        | params                  | 200     |
-| GET    | `/projects`                        | `listProjects`            | query                   | 200     |
-| GET    | `/projects/search`                 | `searchProjects`          | query                   | 200     |
+| QUERY  | `/list-commits`                    | `getCommits`              | none                    | 200     |
+| QUERY  | `/categories`                      | `listPublicCategories`    | {}                      | 200     |
+| QUERY  | `/categories/by-path`              | `getCategoryByPath`       | query                   | 200     |
+| QUERY  | `/health`                          | `checkHealth`             | none                    | 200     |
+| QUERY  | `/projects/{slug}`                 | `getProjectBySlug`        | params                  | 200     |
+| QUERY  | `/projects`                        | `listProjects`            | query                   | 200     |
+| QUERY  | `/projects/search`                 | `searchProjects`          | query                   | 200     |
 
 IDs/slugs use explicit primitive path styles. Every query field is a scalar and
 uses an explicit primitive query style; numeric pagination and upload sizes keep
@@ -93,13 +95,17 @@ runtime behavior.
 `project.listCategories({})` and `admin.project.listCategories({})` keep their flat
 RPC input/output shapes and have no OpenAPI mapping. Both REST routing and spec
 filters continue to exclude them. Health and commits keep no-input contracts, and
-category lists keep their existing `{}` inputs. The server's plain Hono `GET /`
-is outside oRPC and keeps its text response.
+category lists keep their existing `{}` inputs. The server's plain Hono `QUERY /`
+is outside oRPC and keeps its text response. RPC accepts `QUERY` for reads and no
+longer accepts `GET`; the web RPC client already uses `QUERY`. Better Auth routes
+and the reference HTML/spec remain served by their existing `GET` handlers.
 
 The installed beta.42 converter correctly represents these schemas, so no JSON
-schema registry overrides are needed. Generated OpenAPI matches the captured wire
-contract except that ID-only DELETE operations no longer advertise phantom empty
-request bodies. Their HTTP requests still need only the path ID.
+schema registry overrides are needed. `QUERY` requires OpenAPI 3.2; the installed
+generator emits 3.2.0. Generated OpenAPI matches the captured wire contract with
+read methods changed from `get` to `query`. ID-only DELETE operations no longer
+advertise phantom empty request bodies. Their HTTP requests still need only the
+path ID.
 
 Mapping guidance: [oRPC input/output mapping](https://orpc.dev/docs/openapi/input-and-output-mapping)
 and [Zod integration](https://orpc.dev/docs/integrations/zod). The database-free

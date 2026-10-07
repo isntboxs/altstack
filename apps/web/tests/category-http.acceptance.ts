@@ -114,7 +114,7 @@ async function waitForServer() {
 		)
 		try {
 			if (
-				(await fetch(apiOrigin)).ok &&
+				(await fetch(apiOrigin, { method: 'QUERY' })).ok &&
 				(await fetch(origin + '/categories')).ok
 			) {
 				return
@@ -192,6 +192,36 @@ try {
 		'web'
 	)
 	await waitForServer()
+
+	const rootResponse = await fetch(apiOrigin, { method: 'QUERY' })
+	assert.equal(rootResponse.status, 200)
+	assert.equal(await rootResponse.text(), 'Altstack server is running!')
+	assert.equal((await fetch(apiOrigin)).status, 404)
+	const healthUrl = apiOrigin + '/api/reference/health'
+	const health = await fetch(healthUrl, { method: 'QUERY' })
+	assert.equal(health.status, 200)
+	assert.deepEqual(await health.json(), { message: 'OK' })
+	assert.equal((await fetch(healthUrl)).status, 404)
+	const rpcHealthUrl = apiOrigin + '/api/rpc/health'
+	const rpcHealth = await fetch(rpcHealthUrl, { method: 'QUERY' })
+	assert.equal(rpcHealth.status, 200)
+	assert.deepEqual(await rpcHealth.json(), { json: { message: 'OK' } })
+	assert.equal((await fetch(rpcHealthUrl)).status, 404)
+	const preflight = await fetch(healthUrl, {
+		method: 'OPTIONS',
+		headers: {
+			origin,
+			'access-control-request-method': 'QUERY',
+		},
+	})
+	assert.equal(preflight.status, 204)
+	assert.equal(preflight.headers.get('access-control-allow-origin'), origin)
+	assert.ok(
+		preflight.headers.get('access-control-allow-methods')?.includes('QUERY')
+	)
+	checks.push(
+		'QUERY root/REST/RPC preserve 200 bodies, reject GET, and allow CORS'
+	)
 
 	const rootPath = 'developer-tools'
 	const parentPath = rootPath + '/ides-code-editors'

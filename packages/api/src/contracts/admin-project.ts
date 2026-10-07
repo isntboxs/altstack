@@ -81,7 +81,7 @@ const getAdminProjectByIdContract = baseContract
 	.meta(
 		openapi({
 			path: '/admin/projects/{id}',
-			method: 'GET',
+			method: 'QUERY',
 			inputStructure: 'detailed',
 			outputStructure: 'compact',
 			paramsStyles: { id: 'primitive' },
@@ -101,7 +101,7 @@ const listAdminProjectsContract = baseContract
 	.meta(
 		openapi({
 			path: '/admin/projects',
-			method: 'GET',
+			method: 'QUERY',
 			inputStructure: 'detailed',
 			outputStructure: 'compact',
 			queryStyles: {

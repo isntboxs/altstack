@@ -65,7 +65,7 @@ async function zed(status: 'draft' | 'published' = 'published') {
 async function rest(
 	path: string,
 	auth: ORPCContext['auth'] = null,
-	method = 'GET'
+	method = 'QUERY'
 ) {
 	return openApiHandler.handle(
 		new Request(`http://localhost/api/reference${path}`, { method }),
@@ -83,7 +83,7 @@ async function rpc(
 ) {
 	return rpcHandler.handle(
 		new Request(`http://localhost/api/rpc/${path}`, {
-			method: 'POST',
+			method: 'QUERY',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ json: input }),
 		}),
@@ -712,8 +712,8 @@ describe('public category HTTP and OpenAPI', () => {
 		expect((await rest('/admin/categories')).response?.status).toBe(401)
 	})
 
-	it('generates explicit anonymous public operations, one categories GET, and protected admin operations', async () => {
-		const response = await rest('/spec.json')
+	it('generates explicit anonymous public operations, one categories QUERY, and protected admin operations', async () => {
+		const response = await rest('/spec.json', null, 'GET')
 		expect(response.response?.status).toBe(200)
 		type Security = Array<Record<string, Array<string>>>
 		type Operation = { operationId?: string; security?: Security }
@@ -738,10 +738,10 @@ describe('public category HTTP and OpenAPI', () => {
 			'/health',
 			'/list-commits',
 		]) {
-			expect(spec.paths[path]?.get?.security).toEqual([])
+			expect(spec.paths[path]?.query?.security).toEqual([])
 		}
-		expect(Object.keys(spec.paths['/categories']!)).toEqual(['get'])
-		expect(spec.paths['/categories']?.get?.operationId).toBe(
+		expect(Object.keys(spec.paths['/categories']!)).toEqual(['query'])
+		expect(spec.paths['/categories']?.query?.operationId).toBe(
 			'listPublicCategories'
 		)
 		expect(spec.paths['/project/listCategories']).toBeUndefined()
