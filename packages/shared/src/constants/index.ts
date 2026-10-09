@@ -11,6 +11,8 @@ export const AUDIT_ACTIONS = [
 	'project_created',
 	'project_updated',
 	'project_removed',
+	'project_submitted',
+	'project_status_changed',
 ] as const
 
 export type ProjectStatus = (typeof PROJECT_STATUS)[number]

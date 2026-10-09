@@ -49,7 +49,7 @@ const defaultValues: z.input<typeof adminCreateProjectBodySchema> = {
 	repositoryUrl: '',
 	tagline: '',
 	description: '',
-	logo: '',
+	logo: undefined,
 	screenshot: undefined,
 	websiteUrl: undefined,
 	content: undefined,
@@ -121,8 +121,8 @@ function ProjectPreviewCard({
 }) {
 	const name = values.name.trim() || 'Untitled project'
 	const slug = values.slug.trim() || 'your-slug'
-	const tagline = values.tagline.trim()
-	const description = values.description.trim()
+	const tagline = (values.tagline ?? '').trim()
+	const description = (values.description ?? '').trim()
 	const repository = values.repositoryUrl.trim()
 
 	return (
@@ -181,7 +181,7 @@ function ProjectPreviewCard({
 				</div>
 
 				<div className="flex flex-wrap gap-1.5">
-					<ProjectCategoryBadges slugs={values.categorySlugs} />
+					<ProjectCategoryBadges slugs={values.categorySlugs ?? []} />
 				</div>
 
 				<div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
@@ -231,7 +231,7 @@ function RouteComponent() {
 					// failures after partial promotion. Preflight CONFLICT and
 					// plain BAD_REQUEST (repository URL, category validation)
 					// keep the uploaded images.
-					formApi.setFieldValue('logo', '')
+					formApi.setFieldValue('logo', undefined)
 					formApi.setFieldValue('screenshot', undefined)
 					setLogoDisplayUrl(null)
 					setScreenshotDisplayUrl(null)
@@ -464,14 +464,15 @@ function RouteComponent() {
 											<div className="flex items-baseline justify-between gap-2">
 												<FieldLabel htmlFor={field.name}>Tagline</FieldLabel>
 												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{field.state.value.length}/{TAGLINE_MAX_LENGTH}
+													{(field.state.value ?? '').length}/
+													{TAGLINE_MAX_LENGTH}
 												</span>
 											</div>
 
 											<Input
 												id={field.name}
 												name={field.name}
-												value={field.state.value}
+												value={field.state.value ?? ''}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												aria-invalid={isInvalid}
@@ -499,14 +500,15 @@ function RouteComponent() {
 													Description
 												</FieldLabel>
 												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{field.state.value.length}/{DESCRIPTION_MAX_LENGTH}
+													{(field.state.value ?? '').length}/
+													{DESCRIPTION_MAX_LENGTH}
 												</span>
 											</div>
 
 											<Textarea
 												id={field.name}
 												name={field.name}
-												value={field.state.value}
+												value={field.state.value ?? ''}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												aria-invalid={isInvalid}
@@ -536,7 +538,7 @@ function RouteComponent() {
 											<ClientOnly>
 												<BlockNoteEditor
 													ref={editorRef}
-													value={field.state.value}
+													value={field.state.value ?? ''}
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e)}
 													className="rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
@@ -555,7 +557,7 @@ function RouteComponent() {
 						<section className="space-y-4">
 							<SectionHeading
 								title="Media"
-								description="Logo is required. Screenshots are cropped to 16:9."
+								description="Logo is required to publish. Screenshots are cropped to 16:9."
 							/>
 
 							<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -570,8 +572,10 @@ function RouteComponent() {
 												<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
 												<LogoUploader
-													value={field.state.value}
-													onChange={(next) => field.handleChange(next)}
+													value={field.state.value ?? ''}
+													onChange={(next) =>
+														field.handleChange(next === '' ? undefined : next)
+													}
 													onDisplayUrlChange={setLogoDisplayUrl}
 												/>
 
@@ -594,7 +598,7 @@ function RouteComponent() {
 												<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
 
 												<ScreenshotUploader
-													value={field.state.value}
+													value={field.state.value ?? ''}
 													onChange={(next) =>
 														field.handleChange(next === '' ? undefined : next)
 													}
@@ -630,7 +634,7 @@ function RouteComponent() {
 											<Suspense fallback={<Skeleton className="h-10 w-full" />}>
 												<CategoryCombobox
 													id={field.name}
-													value={field.state.value}
+													value={field.state.value ?? []}
 													onValueChange={(next) => field.handleChange(next)}
 												/>
 											</Suspense>

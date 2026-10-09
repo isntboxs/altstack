@@ -94,7 +94,7 @@ describe('adminUpdateProjectInputSchema', () => {
 		).toBe(false)
 	})
 
-	it('rejects invalid id and empty categorySlugs', () => {
+	it('rejects invalid id and allows empty draft categorySlugs', () => {
 		expect(
 			adminUpdateProjectInputSchema.safeParse({ params: { id: 'not-a-uuid' } })
 				.success
@@ -104,7 +104,7 @@ describe('adminUpdateProjectInputSchema', () => {
 				params: { id: PROJECT_ID },
 				body: { categorySlugs: [] },
 			}).success
-		).toBe(false)
+		).toBe(true)
 	})
 })
 

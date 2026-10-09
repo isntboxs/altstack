@@ -1,14 +1,25 @@
 import { ORPCError } from '@orpc/server'
-import type { ORPCErrorConstructorMap } from '@orpc/server'
-import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm'
-import { RequestError } from 'octokit'
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	ilike,
+	inArray,
+	ne,
+	sql,
+} from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
-import { octokit } from '@altstack/api/github'
+import { fetchPublicGithubRepository } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
 import {
 	lockCategoryIntegrity,
 	validateLeafCategoryAssignments,
 } from '@altstack/api/queries/category-integrity'
+import { isUniqueViolation } from '@altstack/api/queries/pg-error'
 import {
 	copyS3Object,
 	deleteFinalKeysBestEffort,
@@ -17,57 +28,73 @@ import {
 	TempUploadMissingError,
 } from '@altstack/api/storage'
 
+import type { db as Database } from '@altstack/db'
 import {
 	auditLog,
 	category,
 	githubRepository,
 	project,
 	projectCategory,
+	user,
 } from '@altstack/db/schemas'
+import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
 
 import { canonicalizeGithubUrl } from '@altstack/shared'
-import type { ORPC_ERRORS } from '@altstack/shared/constants/orpc-errors'
+import {
+	adminUpdateProjectBodySchema,
+	publishProjectSchema,
+} from '@altstack/shared/schemas/admin-project'
 
-function hasPgCode(value: unknown, code: string): boolean {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'code' in value &&
-		value.code === code
-	)
-}
-
-function isUniqueViolation(error: unknown): boolean {
-	if (hasPgCode(error, '23505')) return true
-
-	if (
-		typeof error === 'object' &&
-		error !== null &&
-		'cause' in error &&
-		hasPgCode(error.cause, '23505')
-	) {
-		return true
+function requirePublishable(value: unknown) {
+	const result = publishProjectSchema.safeParse(value)
+	if (!result.success) {
+		throw new ORPCError('BAD_REQUEST', {
+			message:
+				'Cannot publish: ' +
+				result.error.issues
+					.map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+					.join('; '),
+		})
 	}
-
-	return false
 }
 
-async function fetchGithub(
-	owner: string,
-	repo: string,
-	errors: ORPCErrorConstructorMap<typeof ORPC_ERRORS>
+async function getSubmitter(
+	database: Pick<typeof Database, 'select'>,
+	id: string | null
 ) {
-	try {
-		const { data } = await octokit.rest.repos.get({ owner, repo })
-		return { stars: data.stargazers_count, forks: data.forks_count }
-	} catch (e) {
-		if (e instanceof RequestError) {
-			if (e.status === 404) throw errors.NOT_FOUND()
-			if (e.status === 403 || e.status === 429) throw errors.TOO_MANY_REQUESTS()
-			throw errors.INTERNAL_SERVER_ERROR()
-		}
-		throw e
-	}
+	if (!id) return null
+	const [submitter] = await database
+		.select({
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			image: user.image,
+		})
+		.from(user)
+		.where(eq(user.id, id))
+		.limit(1)
+	return submitter ?? null
+}
+
+async function assignedCategorySlugs(
+	database: Pick<typeof Database, 'select'>,
+	id: string
+) {
+	const rows = await database
+		.select({ slug: category.slug })
+		.from(projectCategory)
+		.innerJoin(category, eq(projectCategory.categoryId, category.id))
+		.where(eq(projectCategory.projectId, id))
+	return rows.map((row) => row.slug)
+}
+
+async function validateCategories(
+	database: Parameters<typeof validateLeafCategoryAssignments>[0],
+	slugs: Array<string>,
+	published: boolean
+) {
+	if (!published && slugs.length === 0) return []
+	return validateLeafCategoryAssignments(database, slugs)
 }
 
 const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
@@ -89,7 +116,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			db
 				.select({ id: project.id })
 				.from(project)
-				.where(eq(project.repositoryUrl, canonicalUrl))
+				.where(eq(canonicalRepositoryKey(project.repositoryUrl), canonicalUrl))
 				.limit(1),
 
 			db
@@ -103,23 +130,43 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 		const uniqueCategorySlugs = [...new Set(input.body.categorySlugs)]
 
-		await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
+		if (input.body.status === 'published') requirePublishable(input.body)
+		await validateCategories(
+			db,
+			uniqueCategorySlugs,
+			input.body.status === 'published'
+		)
 
-		const { forks, stars } = await fetchGithub(owner, repo, errors)
+		const resolved = await fetchPublicGithubRepository(owner, repo)
+		const [resolvedExisting] = await db
+			.select({ id: project.id })
+			.from(project)
+			.where(
+				inArray(canonicalRepositoryKey(project.repositoryUrl), [
+					canonicalUrl,
+					resolved.canonicalUrl,
+				])
+			)
+			.limit(1)
+		if (resolvedExisting) throw errors.CONFLICT()
+		;({ canonicalUrl, owner, repo } = resolved)
+		const { forks, stars } = resolved
 
 		// Uploads land in tmp/logos|tmp/screenshots first. Only on real submit
 		// do we copy to projects/{slug}/logo|screenshot-{uuid}.ext and store
 		// the final key. Temp orphans expire via S3 lifecycle on tmp/*.
-		let finalLogoKey: string
+		let finalLogoKey: string | null = null
 		let finalScreenshotKey: string | null = null
 		const promotedKeys: Array<string> = []
 		try {
-			finalLogoKey = await promoteTempImageToProject({
-				tmpKey: input.body.logo,
-				slug: input.body.slug,
-				kind: 'logo',
-			})
-			promotedKeys.push(finalLogoKey)
+			if (input.body.logo) {
+				finalLogoKey = await promoteTempImageToProject({
+					tmpKey: input.body.logo,
+					slug: input.body.slug,
+					kind: 'logo',
+				})
+				promotedKeys.push(finalLogoKey)
+			}
 
 			if (input.body.screenshot) {
 				finalScreenshotKey = await promoteTempImageToProject({
@@ -149,9 +196,10 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		try {
 			return await db.transaction(async (tx) => {
 				await lockCategoryIntegrity(tx)
-				const categoryIds = await validateLeafCategoryAssignments(
+				const categoryIds = await validateCategories(
 					tx,
-					uniqueCategorySlugs
+					uniqueCategorySlugs,
+					input.body.status === 'published'
 				)
 				const [inserted] = await tx
 					.insert(project)
@@ -159,8 +207,8 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 						name: input.body.name,
 						slug: input.body.slug,
 						repositoryUrl: canonicalUrl,
-						tagline: input.body.tagline,
-						description: input.body.description,
+						tagline: input.body.tagline ?? null,
+						description: input.body.description ?? null,
 						logo: finalLogoKey,
 						screenshot: finalScreenshotKey,
 						websiteUrl: input.body.websiteUrl ?? null,
@@ -185,19 +233,22 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					fetchedAt,
 				})
 
-				await tx.insert(projectCategory).values(
-					categoryIds.map((categoryId) => {
-						return {
-							projectId: inserted.id,
-							categoryId,
-						}
-					})
-				)
+				if (categoryIds.length > 0) {
+					await tx.insert(projectCategory).values(
+						categoryIds.map((categoryId) => {
+							return {
+								projectId: inserted.id,
+								categoryId,
+							}
+						})
+					)
+				}
 
 				await tx.insert(auditLog).values({
 					actorId: auth.user.id,
 					action: 'project_created',
 					projectId: inserted.id,
+					metadata: { status: inserted.status },
 				})
 
 				const { searchVector: _searchVector, ...rest } = inserted
@@ -205,6 +256,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				return {
 					...rest,
+					submitter: null,
 					logo: rest.logo,
 					screenshot: rest.screenshot,
 					categories: uniqueCategorySlugs,
@@ -214,17 +266,22 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		} catch (error) {
 			// Promote already copied to final keys; clean them up so a failed
 			// insert (e.g. slug race → 409) doesn't leave orphan finals.
-			await deleteFinalKeysBestEffort(
-				finalScreenshotKey ? [finalLogoKey, finalScreenshotKey] : [finalLogoKey]
-			)
+			await deleteFinalKeysBestEffort(promotedKeys)
 			// Unique violation here is always post-promote (tmp keys already
 			// deleted), so use a distinct code from the preflight CONFLICT
 			// above where the uploads are still alive.
-			if (isUniqueViolation(error)) throw errors.CONFLICT_AFTER_PROMOTE()
+			if (isUniqueViolation(error)) {
+				throw promotedKeys.length > 0
+					? errors.CONFLICT_AFTER_PROMOTE()
+					: errors.CONFLICT()
+			}
 			// Any other failure here is also post-promote: the tmp uploads
 			// are already consumed, so report that instead of a generic
 			// 500 the form would retry with dead keys.
-			throw errors.UPLOAD_CONSUMED()
+			if (promotedKeys.length === 0 && error instanceof ORPCError) throw error
+			throw promotedKeys.length > 0
+				? errors.UPLOAD_CONSUMED()
+				: errors.INTERNAL_SERVER_ERROR()
 		}
 	}
 )
@@ -260,6 +317,7 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 
 		return {
 			...rest,
+			submitter: await getSubmitter(db, rest.submitterId),
 			logo: rest.logo,
 			screenshot: rest.screenshot,
 			categories: categoryRows.map((categoryRow) => categoryRow.slug),
@@ -275,231 +333,271 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 )
 
 const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
-	async ({ context, errors, input }) => {
-		const body = input.body ?? {}
-		const { auth, db } = context
-
-		const [existing] = await db
-			.select()
-			.from(project)
-			.where(eq(project.id, input.params.id))
-			.limit(1)
-
-		if (!existing) throw errors.NOT_FOUND()
-
-		let canonicalUrl: string | undefined
-		let nextGithub: { owner: string; repo: string } | undefined
-		if (body.repositoryUrl !== undefined) {
-			let parsed: { canonicalUrl: string; owner: string; repo: string }
-			try {
-				parsed = canonicalizeGithubUrl(body.repositoryUrl)
-			} catch {
-				throw errors.BAD_REQUEST()
+	async ({ context: { auth, db }, input, errors }) => {
+		const body = input.body ?? adminUpdateProjectBodySchema.parse({})
+		const promotedKeys: Array<string> = []
+		const staleKeys: Array<string> = []
+		const promotion = { consumed: false }
+		try {
+			const [existing] = await db
+				.select({
+					...getTableColumns(project),
+					revision: sql<string>`xmin::text`,
+				})
+				.from(project)
+				.where(eq(project.id, input.params.id))
+				.limit(1)
+			if (!existing) throw errors.NOT_FOUND()
+			const submitted = canonicalizeGithubUrl(
+				body.repositoryUrl ?? existing.repositoryUrl
+			)
+			let repository = submitted
+			const targetSlug = body.slug ?? existing.slug
+			const status = body.status ?? existing.status
+			const originalCategorySlugs = await assignedCategorySlugs(db, existing.id)
+			const categorySlugs = body.categorySlugs ?? originalCategorySlugs
+			const merged = {
+				...existing,
+				...body,
+				name: body.name ?? existing.name,
+				tagline: body.tagline === undefined ? existing.tagline : body.tagline,
+				description:
+					body.description === undefined
+						? existing.description
+						: body.description,
+				slug: targetSlug,
+				repositoryUrl: repository.canonicalUrl,
+				logo: body.logo === undefined ? existing.logo : body.logo,
+				categorySlugs,
 			}
-			canonicalUrl = parsed.canonicalUrl
-			if (canonicalUrl !== existing.repositoryUrl) {
-				const [repoOwner] = await db
-					.select({ id: project.id })
-					.from(project)
-					.where(eq(project.repositoryUrl, canonicalUrl))
-					.limit(1)
-				if (repoOwner) throw errors.CONFLICT()
-				nextGithub = { owner: parsed.owner, repo: parsed.repo }
+			if (status === 'published') requirePublishable(merged)
+			await validateCategories(db, categorySlugs, status === 'published')
+			if (
+				body.rejectionReason !== undefined &&
+				status !== 'rejected' &&
+				body.rejectionReason !== null
+			) {
+				throw errors.BAD_REQUEST({
+					message: 'A rejection reason requires rejected status.',
+				})
 			}
-		}
-
-		const targetSlug = body.slug ?? existing.slug
-		if (body.slug !== undefined && body.slug !== existing.slug) {
+			const [repoOwner] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(
+					eq(
+						canonicalRepositoryKey(project.repositoryUrl),
+						repository.canonicalUrl
+					)
+				)
+				.limit(1)
 			const [slugOwner] = await db
 				.select({ id: project.id })
 				.from(project)
-				.where(eq(project.slug, body.slug))
+				.where(eq(project.slug, targetSlug))
 				.limit(1)
-			if (slugOwner) throw errors.CONFLICT()
-		}
-
-		let uniqueCategorySlugs: Array<string> | undefined
-		if (body.categorySlugs !== undefined) {
-			uniqueCategorySlugs = [...new Set(body.categorySlugs)]
-			await validateLeafCategoryAssignments(db, uniqueCategorySlugs)
-		}
-
-		let refreshedGithub:
-			| { owner: string; repo: string; stars: number; forks: number }
-			| undefined
-		if (nextGithub) {
-			const { forks, stars } = await fetchGithub(
-				nextGithub.owner,
-				nextGithub.repo,
-				errors
-			)
-			refreshedGithub = { ...nextGithub, stars, forks }
-		}
-
-		// New images arrive as tmp keys and are promoted straight into the
-		// target slug folder. Kept images move along on slug rename via
-		// copy (source deleted only after the DB update succeeds).
-		let finalLogoKey = existing.logo
-		let finalScreenshotKey = existing.screenshot
-		const promotedKeys: Array<string> = []
-		const staleKeys: Array<string> = []
-		// True once a tmp upload was promoted (its tmp key is deleted).
-		// Slug-rename copies below also land in promotedKeys for rollback
-		// cleanup, but they consume no tmp upload — retry stays possible.
-		let promotedTmp = false
-		try {
-			if (body.logo !== undefined) {
-				finalLogoKey = await promoteTempImageToProject({
-					tmpKey: body.logo,
-					slug: targetSlug,
-					kind: 'logo',
-				})
-				promotedKeys.push(finalLogoKey)
-				promotedTmp = true
-				staleKeys.push(existing.logo)
+			if (
+				(repoOwner && repoOwner.id !== existing.id) ||
+				(slugOwner && slugOwner.id !== existing.id)
+			) {
+				throw errors.CONFLICT()
 			}
+			const refreshedGithub =
+				repository.canonicalUrl !== existing.repositoryUrl
+					? await fetchPublicGithubRepository(repository.owner, repository.repo)
+					: undefined
+			if (refreshedGithub) repository = refreshedGithub
+			const requireAvailableRepository = async (
+				database: Pick<typeof Database, 'select'>
+			) => {
+				const [other] = await database
+					.select({ id: project.id })
+					.from(project)
+					.where(
+						and(
+							ne(project.id, existing.id),
+							inArray(canonicalRepositoryKey(project.repositoryUrl), [
+								submitted.canonicalUrl,
+								repository.canonicalUrl,
+							])
+						)
+					)
+					.limit(1)
+				if (other) throw errors.CONFLICT()
+			}
+			await requireAvailableRepository(db)
 
+			let logo = existing.logo
+			let screenshot = existing.screenshot
+			if (body.logo !== undefined) {
+				if (body.logo === null) logo = null
+				else {
+					logo = await promoteTempImageToProject({
+						tmpKey: body.logo,
+						slug: targetSlug,
+						kind: 'logo',
+					})
+					promotedKeys.push(logo)
+					promotion.consumed = true
+				}
+				if (existing.logo) staleKeys.push(existing.logo)
+			}
 			if (body.screenshot !== undefined) {
-				if (body.screenshot === null) {
-					if (existing.screenshot) staleKeys.push(existing.screenshot)
-					finalScreenshotKey = null
-				} else {
-					finalScreenshotKey = await promoteTempImageToProject({
+				if (body.screenshot === null) screenshot = null
+				else {
+					screenshot = await promoteTempImageToProject({
 						tmpKey: body.screenshot,
 						slug: targetSlug,
 						kind: 'screenshot',
 					})
-					promotedKeys.push(finalScreenshotKey)
-					promotedTmp = true
-					if (existing.screenshot) staleKeys.push(existing.screenshot)
+					promotedKeys.push(screenshot)
+					promotion.consumed = true
 				}
+				if (existing.screenshot) staleKeys.push(existing.screenshot)
 			}
-
+			const copyIntoSlug = async (key: string, kind: 'logo' | 'screenshot') => {
+				const prefix = `projects/${existing.slug}/`
+				if (!key.startsWith(prefix)) return key
+				// Each attempt owns its copies, so cleanup after a stale edit cannot
+				// delete a concurrent winner's objects.
+				const extension = /\.[^/.]+$/.exec(key)?.[0] ?? ''
+				const next = `projects/${targetSlug}/${kind}-${randomUUID()}${extension}`
+				await copyS3Object(key, next)
+				promotedKeys.push(next)
+				staleKeys.push(key)
+				return next
+			}
 			if (targetSlug !== existing.slug) {
-				const oldPrefix = `projects/${existing.slug}/`
-				const copyIntoSlug = async (oldKey: string): Promise<string> => {
-					// Legacy/external keys (e.g. seed avatars) live outside the
-					// slug folder — keep them as-is without tracking.
-					if (!oldKey.startsWith(oldPrefix)) {
-						return oldKey
-					}
-					const destKey = `projects/${targetSlug}/${oldKey.slice(oldPrefix.length)}`
-					await copyS3Object(oldKey, destKey)
-					promotedKeys.push(destKey)
-					staleKeys.push(oldKey)
-					return destKey
+				if (body.logo === undefined && logo) {
+					logo = await copyIntoSlug(logo, 'logo')
 				}
-
-				if (body.logo === undefined) {
-					finalLogoKey = await copyIntoSlug(existing.logo)
-				}
-				if (body.screenshot === undefined && existing.screenshot) {
-					finalScreenshotKey = await copyIntoSlug(existing.screenshot)
+				if (body.screenshot === undefined && screenshot) {
+					screenshot = await copyIntoSlug(screenshot, 'screenshot')
 				}
 			}
-		} catch (error) {
-			await deleteFinalKeysBestEffort(promotedKeys)
-			if (
-				error instanceof TempUploadMissingError ||
-				error instanceof InvalidTempUploadError
-			) {
-				throw errors.UPLOAD_EXPIRED()
-			}
-			// Only a promoted tmp upload deletes its tmp key; slug-rename
-			// copies alone leave retry possible.
-			if (promotedTmp) throw errors.UPLOAD_CONSUMED()
-			throw errors.INTERNAL_SERVER_ERROR()
-		}
-
-		const patch: Partial<typeof project.$inferInsert> = {
-			logo: finalLogoKey,
-			screenshot: finalScreenshotKey,
-		}
-		if (body.name !== undefined) patch.name = body.name
-		if (body.slug !== undefined) patch.slug = body.slug
-		if (canonicalUrl !== undefined) patch.repositoryUrl = canonicalUrl
-		if (body.tagline !== undefined) patch.tagline = body.tagline
-		if (body.description !== undefined) patch.description = body.description
-		if (body.websiteUrl !== undefined) patch.websiteUrl = body.websiteUrl
-		if (body.content !== undefined) patch.content = body.content
-		if (body.status !== undefined) patch.status = body.status
-
-		try {
 			const result = await db.transaction(async (tx) => {
-				let categoryIds: Array<string> | undefined
-				if (uniqueCategorySlugs !== undefined) {
-					await lockCategoryIntegrity(tx)
-					categoryIds = await validateLeafCategoryAssignments(
-						tx,
-						uniqueCategorySlugs
-					)
+				// GitHub and media work is complete before these locks are acquired.
+				await lockCategoryIntegrity(tx)
+				const [current] = await tx
+					.select({ revision: sql<string>`xmin::text` })
+					.from(project)
+					.where(eq(project.id, existing.id))
+					.limit(1)
+					.for('update')
+				if (!current) throw errors.NOT_FOUND()
+				const currentCategorySlugs = await assignedCategorySlugs(
+					tx,
+					existing.id
+				)
+				if (
+					current.revision !== existing.revision ||
+					JSON.stringify(currentCategorySlugs.toSorted()) !==
+						JSON.stringify(originalCategorySlugs.toSorted())
+				) {
+					throw errors.CONFLICT({
+						message:
+							'This project changed while the update was prepared. Reload it and try again.',
+					})
 				}
+				if (status === 'published') {
+					requirePublishable({
+						...merged,
+						repositoryUrl: repository.canonicalUrl,
+					})
+				}
+				const categoryIds = await validateCategories(
+					tx,
+					categorySlugs,
+					status === 'published'
+				)
+				await requireAvailableRepository(tx)
 				const [updated] = await tx
 					.update(project)
-					.set(patch)
-					.where(eq(project.id, input.params.id))
+					.set({
+						name: body.name ?? existing.name,
+						slug: targetSlug,
+						repositoryUrl: repository.canonicalUrl,
+						tagline:
+							body.tagline === undefined ? existing.tagline : body.tagline,
+						description:
+							body.description === undefined
+								? existing.description
+								: body.description,
+						logo,
+						screenshot,
+						status,
+						websiteUrl:
+							body.websiteUrl === undefined
+								? existing.websiteUrl
+								: body.websiteUrl,
+						content:
+							body.content === undefined ? existing.content : body.content,
+						rejectionReason:
+							status === 'rejected'
+								? body.rejectionReason === undefined
+									? existing.rejectionReason
+									: body.rejectionReason
+								: null,
+					})
+					.where(eq(project.id, existing.id))
 					.returning()
-
 				if (!updated) throw errors.INTERNAL_SERVER_ERROR()
-
-				if (categoryIds !== undefined) {
+				if (body.categorySlugs !== undefined) {
 					await tx
 						.delete(projectCategory)
-						.where(eq(projectCategory.projectId, input.params.id))
+						.where(eq(projectCategory.projectId, existing.id))
 					if (categoryIds.length > 0) {
 						await tx.insert(projectCategory).values(
 							categoryIds.map((categoryId) => {
 								return {
-									projectId: input.params.id,
+									projectId: existing.id,
 									categoryId,
 								}
 							})
 						)
 					}
 				}
-
 				if (refreshedGithub) {
-					const fetchedAt = new Date()
 					await tx
 						.update(githubRepository)
-						.set({ ...refreshedGithub, fetchedAt })
-						.where(eq(githubRepository.projectId, input.params.id))
+						.set({
+							owner: refreshedGithub.owner,
+							repo: refreshedGithub.repo,
+							stars: refreshedGithub.stars,
+							forks: refreshedGithub.forks,
+							fetchedAt: new Date(),
+						})
+						.where(eq(githubRepository.projectId, existing.id))
 				}
-
 				await tx.insert(auditLog).values({
 					actorId: auth.user.id,
 					action: 'project_updated',
-					projectId: input.params.id,
+					projectId: existing.id,
 				})
-
+				if (
+					status !== existing.status ||
+					updated.rejectionReason !== existing.rejectionReason
+				) {
+					await tx.insert(auditLog).values({
+						actorId: auth.user.id,
+						action: 'project_status_changed',
+						projectId: existing.id,
+						reason: updated.rejectionReason,
+						metadata: { fromStatus: existing.status, toStatus: status },
+					})
+				}
 				const [githubRow] = await tx
 					.select()
 					.from(githubRepository)
-					.where(eq(githubRepository.projectId, input.params.id))
+					.where(eq(githubRepository.projectId, existing.id))
 					.limit(1)
-
 				if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
-
-				let categorySlugsOut: Array<string>
-				if (uniqueCategorySlugs !== undefined) {
-					categorySlugsOut = uniqueCategorySlugs
-				} else {
-					const rows = await tx
-						.select({ slug: category.slug })
-						.from(projectCategory)
-						.innerJoin(category, eq(projectCategory.categoryId, category.id))
-						.where(eq(projectCategory.projectId, input.params.id))
-					categorySlugsOut = rows.map((row) => row.slug)
-				}
-
 				const { searchVector: _searchVector, ...rest } = updated
 				void _searchVector
-
 				return {
 					...rest,
-					logo: rest.logo,
-					screenshot: rest.screenshot,
-					categories: categorySlugsOut,
+					submitter: await getSubmitter(tx, rest.submitterId),
+					categories: categorySlugs,
 					github: {
 						owner: githubRow.owner,
 						repo: githubRow.repo,
@@ -509,27 +607,23 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					},
 				}
 			})
-
-			// DB now points at the new finals — the replaced and moved-from
-			// keys are safe to delete. Best-effort: projects/* has no lifecycle.
 			await deleteFinalKeysBestEffort(staleKeys)
-
 			return result
 		} catch (error) {
 			await deleteFinalKeysBestEffort(promotedKeys)
-			// Without a promoted tmp upload the submitted keys are still
-			// alive, so report preflight-style codes that preserve them.
-			if (isUniqueViolation(error)) {
-				throw promotedTmp ? errors.CONFLICT_AFTER_PROMOTE() : errors.CONFLICT()
-			}
 			if (
-				!promotedTmp &&
-				error instanceof ORPCError &&
-				error.code === 'BAD_REQUEST'
+				error instanceof TempUploadMissingError ||
+				error instanceof InvalidTempUploadError
 			) {
-				throw error
+				throw errors.UPLOAD_EXPIRED()
 			}
-			throw promotedTmp
+			if (isUniqueViolation(error)) {
+				throw promotion.consumed
+					? errors.CONFLICT_AFTER_PROMOTE()
+					: errors.CONFLICT()
+			}
+			if (!promotion.consumed && error instanceof ORPCError) throw error
+			throw promotion.consumed
 				? errors.UPLOAD_CONSUMED()
 				: errors.INTERNAL_SERVER_ERROR()
 		}
@@ -570,9 +664,9 @@ const adminDeleteProjectHandler = adminProcedure.admin.project.remove.handler(
 		// Best-effort: the DB row is gone, so leftover finals would be
 		// orphans with no lifecycle covering projects/*.
 		await deleteFinalKeysBestEffort(
-			existing.screenshot
-				? [existing.logo, existing.screenshot]
-				: [existing.logo]
+			[existing.logo, existing.screenshot].filter(
+				(key): key is string => key !== null
+			)
 		)
 
 		return { success: true as const }
@@ -606,6 +700,7 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.leftJoin(user, eq(project.submitterId, user.id))
 				.orderBy(order(sortColumn), order(project.id))
 				.limit(limit)
 				.offset(offset),
@@ -651,6 +746,14 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				void _searchVector
 				return {
 					...rest,
+					submitter: row.user
+						? {
+								id: row.user.id,
+								name: row.user.name,
+								email: row.user.email,
+								image: row.user.image,
+							}
+						: null,
 					logo: rest.logo,
 					screenshot: rest.screenshot,
 					github: {

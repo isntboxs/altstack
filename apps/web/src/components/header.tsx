@@ -135,6 +135,14 @@ export const Header = ({
 					</div>
 
 					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							nativeButton={false}
+							render={<Link to="/submit" viewTransition />}
+						>
+							Submit
+						</Button>
 						<ThemeSwitcher />
 
 						{!auth ? (
@@ -184,6 +192,13 @@ const UserButton = ({
 			/>
 
 			<DropdownMenuContent className="w-40" align="end">
+				<DropdownMenuItem
+					render={
+						<Link to={user.role === 'admin' ? '/projects' : '/submission'} />
+					}
+				>
+					{user.role === 'admin' ? 'Projects' : 'Submission'}
+				</DropdownMenuItem>
 				<DropdownMenuItem>
 					<Bookmark2 />
 					Bookmarks

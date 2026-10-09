@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm'
+import type { SQLWrapper } from 'drizzle-orm'
 import {
 	check,
 	customType,
@@ -6,12 +7,20 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from 'drizzle-orm/pg-core'
 
+import { user } from '@altstack/db/schemas/auth'
+
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import type { ProjectStatus } from '@altstack/shared/constants'
+
+// Covers legacy case, HTTP/www, trailing slash and .git variants as well as
+// canonical URLs written by the API. The same expression is used in preflight.
+export const canonicalRepositoryKey = (column: SQLWrapper) =>
+	sql`lower(regexp_replace(regexp_replace(rtrim(${column}, '/'), '^https?://(www[.])?github[.]com/', 'https://github.com/', 'i'), '[.]git$', '', 'i'))`
 
 export const project = pgTable(
 	'projects',
@@ -21,9 +30,13 @@ export const project = pgTable(
 			.primaryKey(),
 		name: text('name').notNull(),
 		slug: text('slug').notNull().unique(),
-		tagline: varchar('tagline', { length: 100 }).notNull(),
-		description: varchar('description', { length: 300 }).notNull(),
-		logo: text('logo').notNull(),
+		tagline: varchar('tagline', { length: 100 }),
+		description: varchar('description', { length: 300 }),
+		logo: text('logo'),
+		submitterId: uuid('submitter_id').references(() => user.id, {
+			onDelete: 'set null',
+		}),
+		rejectionReason: text('rejection_reason'),
 		screenshot: text('screenshot'),
 		repositoryUrl: text('repository_url').notNull().unique(),
 		websiteUrl: text('website_url'),
@@ -41,6 +54,9 @@ export const project = pgTable(
 			.notNull(),
 	},
 	(table) => [
+		uniqueIndex('projects_repository_canonical_idx').on(
+			canonicalRepositoryKey(table.repositoryUrl)
+		),
 		index('project_slug_idx').on(table.slug),
 		index('project_status_idx').on(table.status),
 		index('project_search_vector_idx').using('gin', table.searchVector),

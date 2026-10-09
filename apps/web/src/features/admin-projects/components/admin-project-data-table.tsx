@@ -11,6 +11,8 @@ import type {
 import { useTanStackTableDevtools } from '@tanstack/react-table-devtools'
 import { useState } from 'react'
 
+import { PROJECT_STATUS } from '@altstack/shared/constants'
+
 import { Button } from '@altstack/ui/components/button'
 import {
 	DropdownMenu,
@@ -19,6 +21,13 @@ import {
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
 import { Input } from '@altstack/ui/components/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@altstack/ui/components/select'
 import {
 	Table,
 	TableBody,
@@ -42,6 +51,16 @@ interface DataTableProps<TData extends RowData & { id: string }> {
 	columnFilters: ColumnFiltersState
 	onColumnFiltersChange: OnChangeFn<ColumnFiltersState>
 }
+
+const statusItems = [
+	{ value: 'all', label: 'All statuses' },
+	...PROJECT_STATUS.map((status) => {
+		return {
+			value: status,
+			label: status.charAt(0).toUpperCase() + status.slice(1),
+		}
+	}),
+]
 
 export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 	columns,
@@ -89,16 +108,39 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 
 	const nameColumn = table.getColumn('name')
 	const nameFilter = nameColumn?.getFilterValue()
+	const statusFilter = columnFilters.find((filter) => filter.id === 'status')
 
 	return (
 		<>
-			<div className="flex items-center py-4">
+			<div className="flex flex-wrap items-center gap-2 py-4">
 				<Input
 					placeholder="Filter names..."
 					value={typeof nameFilter === 'string' ? nameFilter : ''}
 					onChange={(event) => nameColumn?.setFilterValue(event.target.value)}
 					className="max-w-sm"
 				/>
+
+				<Select
+					items={statusItems}
+					value={statusFilter?.value ?? 'all'}
+					onValueChange={(value) => {
+						onColumnFiltersChange((previous) => [
+							...previous.filter((filter) => filter.id !== 'status'),
+							...(value && value !== 'all' ? [{ id: 'status', value }] : []),
+						])
+					}}
+				>
+					<SelectTrigger aria-label="Filter status" className="w-36">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{statusItems.map((item) => (
+							<SelectItem key={item.value} value={item.value}>
+								{item.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
 				<DropdownMenu>
 					<DropdownMenuTrigger

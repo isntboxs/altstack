@@ -15,6 +15,7 @@ export async function invalidateCatalog(queryClient: QueryClient) {
 			orpc.category.key(),
 			orpc.admin.project.key(),
 			orpc.project.key(),
+			orpc.submission.key(),
 		].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
 	)
 }
