@@ -18,6 +18,7 @@ import { octokit } from '@altstack/api/github'
 import { lockCategoryIntegrity } from '@altstack/api/queries/category-integrity'
 import { routers } from '@altstack/api/routers'
 import * as storage from '@altstack/api/storage'
+import { submissionRateLimiter } from '@altstack/api/submission-rate-limit'
 
 import {
 	auditLog,
@@ -109,6 +110,13 @@ beforeAll(async () => {
 	submitterId = submitter.id
 	adminId = admin.id
 	vi.spyOn(octokit.rest.repos, 'get')
+	// These cases exercise review/storage/capacity; quota is tested separately.
+	vi.spyOn(submissionRateLimiter, 'limit').mockResolvedValue({
+		success: true,
+		limit: 5,
+		remaining: 4,
+		reset: Date.now() + 600_000,
+	})
 	vi.spyOn(storage, 'promoteTempImageToProject')
 	vi.spyOn(storage, 'copyS3Object').mockResolvedValue(undefined)
 	vi.spyOn(storage, 'deleteFinalKeysBestEffort').mockResolvedValue(undefined)

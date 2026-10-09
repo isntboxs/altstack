@@ -29,6 +29,13 @@ export const createSubmissionOutputSchema = z.object({
 	status: z.literal('draft'),
 })
 
+export const submissionRateLimitDataSchema = z.object({
+	limit: z.number().int().positive(),
+	remaining: z.number().int().nonnegative(),
+	// oRPC and Upstash both use an epoch timestamp in milliseconds.
+	reset: z.number().int().positive(),
+})
+
 export const listSubmissionQuerySchema = z.object({
 	q: z.string().trim().max(100).optional(),
 	page: z.coerce.number().int().min(1).optional().default(1),

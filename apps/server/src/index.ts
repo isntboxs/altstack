@@ -41,6 +41,12 @@ app.use(
 		origin: env.CORS_ORIGINS,
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'QUERY', 'OPTIONS'],
 		allowHeaders: ['Content-Type', 'Authorization'],
+		exposeHeaders: [
+			'RateLimit-Limit',
+			'RateLimit-Remaining',
+			'RateLimit-Reset',
+			'Retry-After',
+		],
 		credentials: true,
 	})
 )

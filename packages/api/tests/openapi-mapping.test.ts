@@ -797,9 +797,40 @@ describe('generated OpenAPI compatibility', () => {
 			)
 			expect(actual?.operation.responses).toEqual({
 				...baseline.errorResponses,
+				...(operationId === 'createSubmission'
+					? {
+							'429': {
+								...baseline.errorResponses['429'],
+								content: {
+									'application/json': {
+										schema: {
+											oneOf: [
+												{ $ref: '#/components/schemas/TooManyRequests2' },
+												{ $ref: '#/components/schemas/UndefinedError' },
+											],
+										},
+									},
+								},
+							},
+						}
+					: {}),
 				...successResponses,
 			})
 		}
+		expect(spec.components?.schemas?.TooManyRequests2).toMatchObject({
+			properties: {
+				data: {
+					type: 'object',
+					properties: {
+						limit: { type: 'integer' },
+						remaining: { type: 'integer' },
+						reset: { type: 'integer' },
+					},
+					required: ['limit', 'remaining', 'reset'],
+				},
+			},
+			required: ['defined', 'code', 'message'],
+		})
 		expect(spec.security).toEqual(baseline.security)
 		expect(spec.components?.securitySchemes).toEqual(baseline.securitySchemes)
 		expect(spec.paths?.['/project/listCategories']).toBeUndefined()
