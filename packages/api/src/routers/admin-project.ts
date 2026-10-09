@@ -1,5 +1,17 @@
 import { ORPCError } from '@orpc/server'
-import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm'
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	ilike,
+	inArray,
+	ne,
+	sql,
+} from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 
 import { fetchPublicGithubRepository } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
@@ -125,7 +137,20 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 			input.body.status === 'published'
 		)
 
-		const { forks, stars } = await fetchPublicGithubRepository(owner, repo)
+		const resolved = await fetchPublicGithubRepository(owner, repo)
+		const [resolvedExisting] = await db
+			.select({ id: project.id })
+			.from(project)
+			.where(
+				inArray(canonicalRepositoryKey(project.repositoryUrl), [
+					canonicalUrl,
+					resolved.canonicalUrl,
+				])
+			)
+			.limit(1)
+		if (resolvedExisting) throw errors.CONFLICT()
+		;({ canonicalUrl, owner, repo } = resolved)
+		const { forks, stars } = resolved
 
 		// Uploads land in tmp/logos|tmp/screenshots first. Only on real submit
 		// do we copy to projects/{slug}/logo|screenshot-{uuid}.ext and store
@@ -314,125 +339,178 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 		const staleKeys: Array<string> = []
 		const promotion = { consumed: false }
 		try {
-			const result = await db.transaction(async (tx) => {
-				// Serialize assignments and project edits before reading the final
-				// state. Completeness checks run before any upload is consumed.
-				await lockCategoryIntegrity(tx)
-				const [existing] = await tx
-					.select()
+			const [existing] = await db
+				.select({
+					...getTableColumns(project),
+					revision: sql<string>`xmin::text`,
+				})
+				.from(project)
+				.where(eq(project.id, input.params.id))
+				.limit(1)
+			if (!existing) throw errors.NOT_FOUND()
+			const submitted = canonicalizeGithubUrl(
+				body.repositoryUrl ?? existing.repositoryUrl
+			)
+			let repository = submitted
+			const targetSlug = body.slug ?? existing.slug
+			const status = body.status ?? existing.status
+			const originalCategorySlugs = await assignedCategorySlugs(db, existing.id)
+			const categorySlugs = body.categorySlugs ?? originalCategorySlugs
+			const merged = {
+				...existing,
+				...body,
+				name: body.name ?? existing.name,
+				tagline: body.tagline === undefined ? existing.tagline : body.tagline,
+				description:
+					body.description === undefined
+						? existing.description
+						: body.description,
+				slug: targetSlug,
+				repositoryUrl: repository.canonicalUrl,
+				logo: body.logo === undefined ? existing.logo : body.logo,
+				categorySlugs,
+			}
+			if (status === 'published') requirePublishable(merged)
+			await validateCategories(db, categorySlugs, status === 'published')
+			if (
+				body.rejectionReason !== undefined &&
+				status !== 'rejected' &&
+				body.rejectionReason !== null
+			) {
+				throw errors.BAD_REQUEST({
+					message: 'A rejection reason requires rejected status.',
+				})
+			}
+			const [repoOwner] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(
+					eq(
+						canonicalRepositoryKey(project.repositoryUrl),
+						repository.canonicalUrl
+					)
+				)
+				.limit(1)
+			const [slugOwner] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(eq(project.slug, targetSlug))
+				.limit(1)
+			if (
+				(repoOwner && repoOwner.id !== existing.id) ||
+				(slugOwner && slugOwner.id !== existing.id)
+			) {
+				throw errors.CONFLICT()
+			}
+			const refreshedGithub =
+				repository.canonicalUrl !== existing.repositoryUrl
+					? await fetchPublicGithubRepository(repository.owner, repository.repo)
+					: undefined
+			if (refreshedGithub) repository = refreshedGithub
+			const requireAvailableRepository = async (
+				database: Pick<typeof Database, 'select'>
+			) => {
+				const [other] = await database
+					.select({ id: project.id })
 					.from(project)
-					.where(eq(project.id, input.params.id))
+					.where(
+						and(
+							ne(project.id, existing.id),
+							inArray(canonicalRepositoryKey(project.repositoryUrl), [
+								submitted.canonicalUrl,
+								repository.canonicalUrl,
+							])
+						)
+					)
+					.limit(1)
+				if (other) throw errors.CONFLICT()
+			}
+			await requireAvailableRepository(db)
+
+			let logo = existing.logo
+			let screenshot = existing.screenshot
+			if (body.logo !== undefined) {
+				if (body.logo === null) logo = null
+				else {
+					logo = await promoteTempImageToProject({
+						tmpKey: body.logo,
+						slug: targetSlug,
+						kind: 'logo',
+					})
+					promotedKeys.push(logo)
+					promotion.consumed = true
+				}
+				if (existing.logo) staleKeys.push(existing.logo)
+			}
+			if (body.screenshot !== undefined) {
+				if (body.screenshot === null) screenshot = null
+				else {
+					screenshot = await promoteTempImageToProject({
+						tmpKey: body.screenshot,
+						slug: targetSlug,
+						kind: 'screenshot',
+					})
+					promotedKeys.push(screenshot)
+					promotion.consumed = true
+				}
+				if (existing.screenshot) staleKeys.push(existing.screenshot)
+			}
+			const copyIntoSlug = async (key: string, kind: 'logo' | 'screenshot') => {
+				const prefix = `projects/${existing.slug}/`
+				if (!key.startsWith(prefix)) return key
+				// Each attempt owns its copies, so cleanup after a stale edit cannot
+				// delete a concurrent winner's objects.
+				const extension = /\.[^/.]+$/.exec(key)?.[0] ?? ''
+				const next = `projects/${targetSlug}/${kind}-${randomUUID()}${extension}`
+				await copyS3Object(key, next)
+				promotedKeys.push(next)
+				staleKeys.push(key)
+				return next
+			}
+			if (targetSlug !== existing.slug) {
+				if (body.logo === undefined && logo) {
+					logo = await copyIntoSlug(logo, 'logo')
+				}
+				if (body.screenshot === undefined && screenshot) {
+					screenshot = await copyIntoSlug(screenshot, 'screenshot')
+				}
+			}
+			const result = await db.transaction(async (tx) => {
+				// GitHub and media work is complete before these locks are acquired.
+				await lockCategoryIntegrity(tx)
+				const [current] = await tx
+					.select({ revision: sql<string>`xmin::text` })
+					.from(project)
+					.where(eq(project.id, existing.id))
 					.limit(1)
 					.for('update')
-				if (!existing) throw errors.NOT_FOUND()
-				const repository = canonicalizeGithubUrl(
-					body.repositoryUrl ?? existing.repositoryUrl
+				if (!current) throw errors.NOT_FOUND()
+				const currentCategorySlugs = await assignedCategorySlugs(
+					tx,
+					existing.id
 				)
-				const targetSlug = body.slug ?? existing.slug
-				const status = body.status ?? existing.status
-				const categorySlugs =
-					body.categorySlugs ?? (await assignedCategorySlugs(tx, existing.id))
-				const merged = {
-					...existing,
-					...body,
-					name: body.name ?? existing.name,
-					tagline: body.tagline === undefined ? existing.tagline : body.tagline,
-					description:
-						body.description === undefined
-							? existing.description
-							: body.description,
-					slug: targetSlug,
-					repositoryUrl: repository.canonicalUrl,
-					logo: body.logo === undefined ? existing.logo : body.logo,
-					categorySlugs,
+				if (
+					current.revision !== existing.revision ||
+					JSON.stringify(currentCategorySlugs.toSorted()) !==
+						JSON.stringify(originalCategorySlugs.toSorted())
+				) {
+					throw errors.CONFLICT({
+						message:
+							'This project changed while the update was prepared. Reload it and try again.',
+					})
 				}
-				if (status === 'published') requirePublishable(merged)
+				if (status === 'published') {
+					requirePublishable({
+						...merged,
+						repositoryUrl: repository.canonicalUrl,
+					})
+				}
 				const categoryIds = await validateCategories(
 					tx,
 					categorySlugs,
 					status === 'published'
 				)
-				if (
-					body.rejectionReason !== undefined &&
-					status !== 'rejected' &&
-					body.rejectionReason !== null
-				) {
-					throw errors.BAD_REQUEST({
-						message: 'A rejection reason requires rejected status.',
-					})
-				}
-				const [repoOwner] = await tx
-					.select({ id: project.id })
-					.from(project)
-					.where(
-						eq(
-							canonicalRepositoryKey(project.repositoryUrl),
-							repository.canonicalUrl
-						)
-					)
-					.limit(1)
-				const [slugOwner] = await tx
-					.select({ id: project.id })
-					.from(project)
-					.where(eq(project.slug, targetSlug))
-					.limit(1)
-				if (
-					(repoOwner && repoOwner.id !== existing.id) ||
-					(slugOwner && slugOwner.id !== existing.id)
-				) {
-					throw errors.CONFLICT()
-				}
-				const refreshedGithub =
-					repository.canonicalUrl !== existing.repositoryUrl
-						? await fetchPublicGithubRepository(
-								repository.owner,
-								repository.repo
-							)
-						: undefined
-
-				let logo = existing.logo
-				let screenshot = existing.screenshot
-				if (body.logo !== undefined) {
-					if (body.logo === null) logo = null
-					else {
-						logo = await promoteTempImageToProject({
-							tmpKey: body.logo,
-							slug: targetSlug,
-							kind: 'logo',
-						})
-						promotedKeys.push(logo)
-						promotion.consumed = true
-					}
-					if (existing.logo) staleKeys.push(existing.logo)
-				}
-				if (body.screenshot !== undefined) {
-					if (body.screenshot === null) screenshot = null
-					else {
-						screenshot = await promoteTempImageToProject({
-							tmpKey: body.screenshot,
-							slug: targetSlug,
-							kind: 'screenshot',
-						})
-						promotedKeys.push(screenshot)
-						promotion.consumed = true
-					}
-					if (existing.screenshot) staleKeys.push(existing.screenshot)
-				}
-				const copyIntoSlug = async (key: string) => {
-					const prefix = `projects/${existing.slug}/`
-					if (!key.startsWith(prefix)) return key
-					const next = `projects/${targetSlug}/${key.slice(prefix.length)}`
-					await copyS3Object(key, next)
-					promotedKeys.push(next)
-					staleKeys.push(key)
-					return next
-				}
-				if (targetSlug !== existing.slug) {
-					if (body.logo === undefined && logo) logo = await copyIntoSlug(logo)
-					if (body.screenshot === undefined && screenshot) {
-						screenshot = await copyIntoSlug(screenshot)
-					}
-				}
+				await requireAvailableRepository(tx)
 				const [updated] = await tx
 					.update(project)
 					.set({
@@ -483,9 +561,10 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					await tx
 						.update(githubRepository)
 						.set({
-							owner: repository.owner,
-							repo: repository.repo,
-							...refreshedGithub,
+							owner: refreshedGithub.owner,
+							repo: refreshedGithub.repo,
+							stars: refreshedGithub.stars,
+							forks: refreshedGithub.forks,
 							fetchedAt: new Date(),
 						})
 						.where(eq(githubRepository.projectId, existing.id))

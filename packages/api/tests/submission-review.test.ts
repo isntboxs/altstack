@@ -1,5 +1,5 @@
 import { createRouterClient } from '@orpc/server'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { fileURLToPath } from 'node:url'
 import { RequestError } from 'octokit'
@@ -15,11 +15,13 @@ import {
 
 import type { ORPCContext } from '@altstack/api/context'
 import { octokit } from '@altstack/api/github'
+import { lockCategoryIntegrity } from '@altstack/api/queries/category-integrity'
 import { routers } from '@altstack/api/routers'
 import * as storage from '@altstack/api/storage'
 
 import {
 	auditLog,
+	category,
 	githubRepository,
 	project,
 	projectCategory,
@@ -41,6 +43,37 @@ function client(role: 'admin' | 'user' | null) {
 			} as ORPCContext['auth'])
 		: null
 	return createRouterClient(routers, { context: { db: scope.db, auth } })
+}
+async function seedDrafts(
+	amount: number,
+	ownerId: string,
+	prefix = 'capacity'
+) {
+	const rows = await scope.db
+		.insert(project)
+		.values(
+			Array.from({ length: amount }, (_, index) => {
+				return {
+					name: `Capacity ${index}`,
+					slug: `${prefix}-${index}`,
+					repositoryUrl: `https://github.com/${prefix}/repo-${index}`,
+					status: 'draft' as const,
+					submitterId: ownerId,
+				}
+			})
+		)
+		.returning()
+	await scope.db.insert(githubRepository).values(
+		rows.map((row, index) => {
+			return {
+				projectId: row.id,
+				owner: prefix,
+				repo: `repo-${index}`,
+				fetchedAt: new Date(),
+			}
+		})
+	)
+	return rows
 }
 const input = (repo = 'review/example') => {
 	return {
@@ -86,9 +119,17 @@ beforeEach(async () => {
 	await scope.db.delete(project)
 	vi.mocked(octokit.rest.repos.get)
 		.mockReset()
-		.mockResolvedValue({
-			data: { private: false, stargazers_count: 0, forks_count: 2 },
-		} as unknown as GithubResult)
+		.mockImplementation((parameters) =>
+			Promise.resolve({
+				data: {
+					private: false,
+					owner: { login: parameters?.owner },
+					name: parameters?.repo,
+					stargazers_count: 0,
+					forks_count: 2,
+				},
+			} as unknown as GithubResult)
+		)
 	vi.mocked(storage.promoteTempImageToProject)
 		.mockReset()
 		.mockImplementation(({ slug, kind }) =>
@@ -96,7 +137,7 @@ beforeEach(async () => {
 				`projects/${slug}/${kind}-550e8400-e29b-41d4-a716-446655440000.png`
 			)
 		)
-	vi.mocked(storage.copyS3Object).mockClear()
+	vi.mocked(storage.copyS3Object).mockReset().mockResolvedValue(undefined)
 	vi.mocked(storage.deleteFinalKeysBestEffort).mockClear()
 })
 
@@ -237,6 +278,100 @@ describe('owner submission listing', () => {
 })
 
 describe('protected submissions', () => {
+	it('stores the repository identity resolved by GitHub and rejects old aliases without modifying it', async () => {
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
+			data: {
+				private: false,
+				owner: { login: 'NewOrg' },
+				name: 'CurrentTool',
+				stargazers_count: 7,
+				forks_count: 3,
+			},
+		} as GithubResult)
+		const draft = await client('user').submission.create(
+			input('old-org/old-tool')
+		)
+		const detail = await client('admin').admin.project.getById({
+			params: { id: draft.id },
+		})
+		expect(detail).toMatchObject({
+			repositoryUrl: 'https://github.com/neworg/currenttool',
+			github: { owner: 'neworg', repo: 'currenttool', stars: 7, forks: 3 },
+		})
+		const before = await scope.db.select().from(project)
+		await expect(
+			client('admin').submission.create(input('another-old-org/alias'))
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		expect(await scope.db.select().from(project)).toEqual(before)
+		expect(await scope.db.select().from(githubRepository)).toHaveLength(1)
+		expect(await scope.db.select().from(auditLog)).toHaveLength(1)
+	})
+	it('allows one winner when two different aliases resolve concurrently to one repository', async () => {
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
+			data: {
+				private: false,
+				owner: { login: 'current-owner' },
+				name: 'current-repo',
+				stargazers_count: 0,
+				forks_count: 0,
+			},
+		} as GithubResult)
+		const results = await Promise.allSettled([
+			client('user').submission.create(input('old/first-alias')),
+			client('admin').submission.create(input('older/second-alias')),
+		])
+		expect(
+			results.filter((result) => result.status === 'fulfilled')
+		).toHaveLength(1)
+		expect(
+			results.find((result) => result.status === 'rejected')
+		).toMatchObject({ reason: { code: 'CONFLICT' } })
+		expect(await scope.db.select().from(project)).toHaveLength(1)
+		expect(await scope.db.select().from(githubRepository)).toHaveLength(1)
+		expect(await scope.db.select().from(auditLog)).toHaveLength(1)
+	})
+	it('enforces ten open drafts before GitHub and allows submissions after review frees a slot', async () => {
+		const rows = await seedDrafts(10, submitterId)
+		await expect(
+			client('user').submission.create(input())
+		).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' })
+		expect(octokit.rest.repos.get).not.toHaveBeenCalled()
+		expect(await scope.db.select().from(auditLog)).toEqual([])
+		await client('admin').admin.project.update({
+			params: { id: rows[0]!.id },
+			body: { status: 'rejected' },
+		})
+		expect(await client('user').submission.create(input())).toMatchObject({
+			status: 'draft',
+		})
+	})
+	it('counts only the authenticated user open drafts', async () => {
+		await seedDrafts(10, adminId, 'other-capacity')
+		await seedDrafts(10, submitterId, 'closed-capacity')
+		await scope.db
+			.update(project)
+			.set({ status: 'rejected' })
+			.where(eq(project.submitterId, submitterId))
+		expect(await client('user').submission.create(input())).toMatchObject({
+			status: 'draft',
+		})
+	})
+	it('does not exceed the draft cap when submissions race for the last slot', async () => {
+		await seedDrafts(9, submitterId)
+		const results = await Promise.allSettled([
+			client('user').submission.create(input('review/first-slot')),
+			client('user').submission.create(input('review/second-slot')),
+		])
+		expect(
+			results.filter((result) => result.status === 'fulfilled')
+		).toHaveLength(1)
+		expect(
+			results.find((result) => result.status === 'rejected')
+		).toMatchObject({ reason: { code: 'TOO_MANY_REQUESTS' } })
+		expect(await scope.db.select().from(project)).toHaveLength(10)
+		expect(await scope.db.select().from(githubRepository)).toHaveLength(10)
+		expect(await scope.db.select().from(auditLog)).toHaveLength(1)
+	})
 	it('requires login before looking up GitHub', async () => {
 		await expect(client(null).submission.create(input())).rejects.toMatchObject(
 			{ code: 'UNAUTHORIZED' }
@@ -403,6 +538,264 @@ describe('protected submissions', () => {
 })
 
 describe('admin review', () => {
+	it('keeps rename copies separate so a stale attempt cannot delete the winning media', async () => {
+		const draft = await client('user').submission.create(input())
+		await client('admin').admin.project.update({
+			params: { id: draft.id },
+			body: complete,
+		})
+		const copied = Promise.withResolvers<void>()
+		const release = Promise.withResolvers<void>()
+		let copies = 0
+		vi.mocked(storage.copyS3Object).mockImplementation(async () => {
+			copies += 1
+			if (copies === 2) copied.resolve()
+			await release.promise
+		})
+		vi.mocked(storage.deleteFinalKeysBestEffort).mockClear()
+		const edits = Promise.allSettled([
+			client('admin').admin.project.update({
+				params: { id: draft.id },
+				body: { slug: 'renamed-tool' },
+			}),
+			client('admin').admin.project.update({
+				params: { id: draft.id },
+				body: { slug: 'renamed-tool' },
+			}),
+		])
+		await copied.promise
+		expect(
+			new Set(
+				vi.mocked(storage.copyS3Object).mock.calls.map(([, target]) => target)
+			).size
+		).toBe(2)
+		release.resolve()
+		const results = await edits
+		expect(
+			results.filter((result) => result.status === 'fulfilled')
+		).toHaveLength(1)
+		expect(
+			results.find((result) => result.status === 'rejected')
+		).toMatchObject({ reason: { code: 'CONFLICT' } })
+		const winner = await client('admin').admin.project.getById({
+			params: { id: draft.id },
+		})
+		expect(winner.slug).toBe('renamed-tool')
+		expect(
+			vi
+				.mocked(storage.deleteFinalKeysBestEffort)
+				.mock.calls.flatMap(([keys]) => keys)
+		).not.toContain(winner.logo)
+	})
+	it('rechecks leaf categories after media work and cleans promoted uploads if the hierarchy changed', async () => {
+		const draft = await client('user').submission.create(input())
+		const started = Promise.withResolvers<void>()
+		const release = Promise.withResolvers<void>()
+		vi.mocked(storage.promoteTempImageToProject).mockImplementationOnce(
+			async ({ slug }) => {
+				started.resolve()
+				await release.promise
+				return `projects/${slug}/logo-550e8400-e29b-41d4-a716-446655440000.png`
+			}
+		)
+		const pending = client('admin').admin.project.update({
+			params: { id: draft.id },
+			body: { ...complete, status: 'published' },
+		})
+		const outcome = pending.then(
+			(value) => {
+				return { value }
+			},
+			(error: unknown) => {
+				return { error }
+			}
+		)
+		let childId = ''
+		try {
+			await started.promise
+			const [backend] = await scope.db
+				.select()
+				.from(category)
+				.where(eq(category.slug, 'backend'))
+			const child = await client('admin').admin.category.create({
+				body: {
+					slug: 'changed-leaf',
+					name: 'Changed leaf',
+					description: 'Synthetic child created during media preparation.',
+					parentId: backend!.id,
+				},
+			})
+			childId = child.id
+		} finally {
+			release.resolve()
+		}
+		try {
+			expect(await outcome).toMatchObject({
+				error: { code: 'UPLOAD_CONSUMED' },
+			})
+			expect(
+				await client('admin').admin.project.getById({
+					params: { id: draft.id },
+				})
+			).toMatchObject({ status: 'draft', logo: null, categories: [] })
+			expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith([
+				'projects/review-tool/logo-550e8400-e29b-41d4-a716-446655440000.png',
+			])
+		} finally {
+			if (childId) {
+				await client('admin').admin.category.remove({ params: { id: childId } })
+			}
+		}
+	})
+	it('uses resolved GitHub identity in admin create/update and blocks aliases owned by another project before promotion', async () => {
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
+			data: {
+				private: false,
+				owner: { login: 'current' },
+				name: 'one',
+				stargazers_count: 2,
+				forks_count: 1,
+			},
+		} as GithubResult)
+		const first = await client('admin').admin.project.create({
+			body: { ...input('old/one'), slug: 'current-one', status: 'draft' },
+		})
+		expect(first).toMatchObject({
+			repositoryUrl: 'https://github.com/current/one',
+			github: { owner: 'current', repo: 'one' },
+		})
+		await expect(
+			client('admin').admin.project.create({
+				body: { ...input('other/one'), slug: 'duplicate', ...complete },
+			})
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
+			data: {
+				private: false,
+				owner: { login: 'current' },
+				name: 'two',
+				stargazers_count: 4,
+				forks_count: 2,
+			},
+		} as GithubResult)
+		const second = await client('user').submission.create(input('old/two'))
+		await expect(
+			client('admin').admin.project.update({
+				params: { id: second.id },
+				body: { repositoryUrl: 'alias/one', logo: complete.logo },
+			})
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
+			data: {
+				private: false,
+				owner: { login: 'TransferredOrg' },
+				name: 'NewName',
+				stargazers_count: 6,
+				forks_count: 3,
+			},
+		} as GithubResult)
+		expect(
+			await client('admin').admin.project.update({
+				params: { id: second.id },
+				body: { repositoryUrl: 'older/renamed' },
+			})
+		).toMatchObject({
+			repositoryUrl: 'https://github.com/transferredorg/newname',
+			github: { owner: 'transferredorg', repo: 'newname', stars: 6, forks: 3 },
+		})
+	})
+	it.each(['github', 'promotion'] as const)(
+		'does not hold category or project locks during %s and rejects concurrent edits',
+		async (operation) => {
+			const draft = await client('user').submission.create(input())
+			const [before] = await scope.db
+				.select()
+				.from(project)
+				.where(eq(project.id, draft.id))
+			const started = Promise.withResolvers<void>()
+			const release = Promise.withResolvers<void>()
+			if (operation === 'github') {
+				vi.mocked(octokit.rest.repos.get).mockImplementationOnce(async () => {
+					started.resolve()
+					await release.promise
+					return {
+						data: {
+							private: false,
+							owner: { login: 'review' },
+							name: 'changed',
+							stargazers_count: 1,
+							forks_count: 1,
+						},
+					} as GithubResult
+				})
+			} else {
+				vi.mocked(storage.promoteTempImageToProject).mockImplementationOnce(
+					async ({ slug }) => {
+						started.resolve()
+						await release.promise
+						return `projects/${slug}/logo-550e8400-e29b-41d4-a716-446655440000.png`
+					}
+				)
+			}
+			const pending = client('admin').admin.project.update({
+				params: { id: draft.id },
+				body:
+					operation === 'github'
+						? { repositoryUrl: 'review/changed' }
+						: { ...complete, status: 'published' },
+			})
+			const outcome = pending.then(
+				(value) => {
+					return { value }
+				},
+				(error: unknown) => {
+					return { error }
+				}
+			)
+			try {
+				await started.promise
+				await scope.db.transaction(async (tx) => {
+					await tx.execute(sql`SET LOCAL lock_timeout = '1s'`)
+					await lockCategoryIntegrity(tx)
+					await tx
+						.select()
+						.from(project)
+						.where(eq(project.id, draft.id))
+						.for('update')
+					// Keep the timestamp identical: the row version still detects this edit.
+					await tx
+						.update(project)
+						.set({ name: 'Concurrent edit', updatedAt: before!.updatedAt })
+						.where(eq(project.id, draft.id))
+				})
+			} finally {
+				release.resolve()
+			}
+			expect(await outcome).toMatchObject({
+				error: {
+					code: operation === 'github' ? 'CONFLICT' : 'UPLOAD_CONSUMED',
+				},
+			})
+			expect(
+				await client('admin').admin.project.getById({
+					params: { id: draft.id },
+				})
+			).toMatchObject({
+				name: 'Concurrent edit',
+				repositoryUrl: 'https://github.com/review/example',
+				status: 'draft',
+				logo: null,
+			})
+			expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith(
+				operation === 'promotion'
+					? [
+							`projects/review-tool/logo-550e8400-e29b-41d4-a716-446655440000.png`,
+						]
+					: []
+			)
+		}
+	)
 	it('saves an incomplete admin draft without assigning a submitter', async () => {
 		const result = await client('admin').admin.project.create({
 			body: { ...input(), slug: 'admin-draft', status: 'draft' },

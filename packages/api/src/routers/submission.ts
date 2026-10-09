@@ -1,14 +1,18 @@
-import { and, count, desc, eq, ilike } from 'drizzle-orm'
+import { ORPCError } from '@orpc/server'
+import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
 
 import { fetchPublicGithubRepository } from '@altstack/api/github'
 import { protectedProcedure } from '@altstack/api/procedures'
 import { isUniqueViolation } from '@altstack/api/queries/pg-error'
 
+import type { db as Database } from '@altstack/db'
 import { auditLog, githubRepository, project } from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
 import { slugify } from '@altstack/shared/lib/slug'
+
+const MAX_OPEN_SUBMISSIONS = 10
 
 export const submissionRouter = {
 	list: protectedProcedure.submission.list.handler(
@@ -57,26 +61,71 @@ export const submissionRouter = {
 	),
 	create: protectedProcedure.submission.create.handler(
 		async ({ context: { db, auth }, input, errors }) => {
-			const { canonicalUrl, owner, repo } = canonicalizeGithubUrl(
-				input.repositoryUrl
-			)
+			const submitted = canonicalizeGithubUrl(input.repositoryUrl)
+			const requireCapacity = async (
+				database: Pick<typeof Database, 'select'>
+			) => {
+				const [open] = await database
+					.select({ count: count() })
+					.from(project)
+					.where(
+						and(
+							eq(project.submitterId, auth.user.id),
+							eq(project.status, 'draft')
+						)
+					)
+				if ((open?.count ?? 0) >= MAX_OPEN_SUBMISSIONS) {
+					throw errors.TOO_MANY_REQUESTS({
+						message:
+							'You have 10 submissions awaiting review. Please wait for a review before submitting more.',
+					})
+				}
+			}
 			const [existing] = await db
 				.select({ id: project.id })
 				.from(project)
-				.where(eq(canonicalRepositoryKey(project.repositoryUrl), canonicalUrl))
+				.where(
+					eq(
+						canonicalRepositoryKey(project.repositoryUrl),
+						submitted.canonicalUrl
+					)
+				)
 				.limit(1)
 			if (existing) {
 				throw errors.CONFLICT({
 					message: 'This repository has already been submitted or listed.',
 				})
 			}
+			await requireCapacity(db)
 
 			// Quality guidelines are reviewed by an admin; stars are never a gate.
-			const metadata = await fetchPublicGithubRepository(owner, repo)
+			const { canonicalUrl, owner, repo, stars, forks } =
+				await fetchPublicGithubRepository(submitted.owner, submitted.repo)
+			const [resolvedExisting] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(
+					inArray(canonicalRepositoryKey(project.repositoryUrl), [
+						submitted.canonicalUrl,
+						canonicalUrl,
+					])
+				)
+				.limit(1)
+			if (resolvedExisting) {
+				throw errors.CONFLICT({
+					message: 'This repository has already been submitted or listed.',
+				})
+			}
 			const baseSlug =
 				slugify(input.name).slice(0, 90).replace(/-+$/, '') || 'project'
 			try {
 				return await db.transaction(async (tx) => {
+					// Serialize capacity checks per user, after the GitHub request, so
+					// concurrent submissions cannot exceed the cap.
+					await tx.execute(
+						sql`SELECT pg_advisory_xact_lock(hashtext('altstack.submission-capacity'), hashtext(${auth.user.id}))`
+					)
+					await requireCapacity(tx)
 					// ON CONFLICT only targets the slug. Repository uniqueness still raises
 					// 23505, including concurrent submissions, and rolls back everything.
 					let inserted: typeof project.$inferSelect | undefined
@@ -101,7 +150,8 @@ export const submissionRouter = {
 						projectId: inserted.id,
 						owner,
 						repo,
-						...metadata,
+						stars,
+						forks,
 						fetchedAt: new Date(),
 					})
 					await tx.insert(auditLog).values({
@@ -112,6 +162,7 @@ export const submissionRouter = {
 					return { id: inserted.id, status: 'draft' as const }
 				})
 			} catch (error) {
+				if (error instanceof ORPCError) throw error
 				if (isUniqueViolation(error)) {
 					throw errors.CONFLICT({
 						message: 'This repository has already been submitted or listed.',

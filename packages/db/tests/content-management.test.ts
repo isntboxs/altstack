@@ -10,7 +10,7 @@ import { project, user } from '@altstack/db/schemas'
 import { connectTestPostgres } from './helpers/postgres'
 
 describe('content management migration', () => {
-	it('preserves all legacy project statuses, media, metadata and assignments and sets deleted submitters to null', async () => {
+	it('requires explicit duplicate cleanup without altering data, then preserves legacy records and submitter deletion behavior', async () => {
 		const postgres = await connectTestPostgres()
 		const scope = await postgres.createSchema()
 		const baseline = await mkdtemp(join(tmpdir(), 'altstack-content-baseline-'))
@@ -70,6 +70,44 @@ describe('content management migration', () => {
 					'SELECT * FROM project_categories ORDER BY project_id'
 				)
 			).rows
+			const {
+				rows: [duplicate],
+			} = await scope.pool.query<{ id: string }>(
+				"INSERT INTO projects (name, slug, tagline, description, logo, repository_url, status) VALUES ('Legacy duplicate', 'legacy-duplicate', 'Existing tagline', 'Existing description', 'legacy/logo.svg', 'http://www.GitHub.com/LEGACY/Draft.git/', 'rejected') RETURNING id"
+			)
+			if (!duplicate) throw new Error('Missing duplicate fixture')
+			const duplicateRows = (
+				await scope.pool.query('SELECT * FROM projects ORDER BY slug')
+			).rows
+			const failure = await migrate(scope.db, {
+				migrationsFolder: folder,
+				migrationsSchema: scope.migrationsSchema,
+			}).then(
+				() => null,
+				(error: unknown) => error
+			)
+			expect(failure).toMatchObject({
+				cause: {
+					code: '23505',
+					message:
+						'Content management migration requires canonical repository duplicate cleanup.',
+				},
+			})
+			expect(failure).toHaveProperty(
+				'cause.detail',
+				expect.stringContaining(duplicate.id)
+			)
+			expect(failure).toHaveProperty(
+				'cause.hint',
+				expect.stringContaining('before retrying')
+			)
+			expect(
+				(await scope.pool.query('SELECT * FROM projects ORDER BY slug')).rows
+			).toEqual(duplicateRows)
+			// Only the disposable fixture is explicitly removed, then migration retries.
+			await scope.pool.query('DELETE FROM projects WHERE id = $1', [
+				duplicate.id,
+			])
 			await migrate(scope.db, {
 				migrationsFolder: folder,
 				migrationsSchema: scope.migrationsSchema,

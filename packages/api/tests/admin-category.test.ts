@@ -140,9 +140,16 @@ beforeEach(async () => {
 		user: { id: actor.id, role: 'admin' },
 	} as unknown as ORPCContext['auth']
 	// Synthetic services only: no GitHub or S3 requests.
-	vi.spyOn(octokit.rest.repos, 'get').mockResolvedValue({
-		data: { stargazers_count: 10, forks_count: 1 },
-	} as unknown as Awaited<ReturnType<typeof octokit.rest.repos.get>>)
+	vi.spyOn(octokit.rest.repos, 'get').mockImplementation((parameters) =>
+		Promise.resolve({
+			data: {
+				owner: { login: parameters?.owner },
+				name: parameters?.repo,
+				stargazers_count: 10,
+				forks_count: 1,
+			},
+		} as unknown as Awaited<ReturnType<typeof octokit.rest.repos.get>>)
+	)
 	vi.spyOn(storage, 'promoteTempImageToProject').mockImplementation(
 		({ slug, kind }) =>
 			Promise.resolve(`projects/${slug}/${kind}-${crypto.randomUUID()}.png`)

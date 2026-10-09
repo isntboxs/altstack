@@ -68,9 +68,14 @@ function nextUuid() {
 
 function mockGithubRepoGet() {
 	vi.mocked(octokit.rest.repos.get).mockReset()
-	vi.mocked(octokit.rest.repos.get).mockImplementation(() =>
+	vi.mocked(octokit.rest.repos.get).mockImplementation((parameters) =>
 		Promise.resolve({
-			data: { stargazers_count: MOCK_STARS, forks_count: MOCK_FORKS },
+			data: {
+				owner: { login: parameters?.owner },
+				name: parameters?.repo,
+				stargazers_count: MOCK_STARS,
+				forks_count: MOCK_FORKS,
+			},
 		} as unknown as OctokitGetResult)
 	)
 }
