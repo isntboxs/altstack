@@ -54,6 +54,7 @@ interface DataTableProps<TData extends RowData & { id: string }> {
 
 const statusItems = [
 	{ value: 'all', label: 'All statuses' },
+	{ value: 'needsReview', label: 'Needs review' },
 	...PROJECT_STATUS.map((status) => {
 		return {
 			value: status,

@@ -88,6 +88,10 @@ const responses = {
 	},
 	deleteAdminProject: { success: true as const },
 	listAdminProjects: { projects: [], pagination },
+	reviewHistoryAdminProject: {
+		events: [],
+		pagination: { ...pagination, limit: 20 },
+	},
 	requestLogoUpload: { key: LOGO, presignedUrl: 'https://storage.test/logo' },
 	removeLogoUpload: { success: true as const },
 	changeLogoUpload: { success: true as const },
@@ -155,6 +159,13 @@ const probes = {
 			),
 			list: o.admin.project.list.handler(({ input }) =>
 				record('listAdminProjects', input, responses.listAdminProjects)
+			),
+			reviewHistory: o.admin.project.reviewHistory.handler(({ input }) =>
+				record(
+					'reviewHistoryAdminProject',
+					input,
+					responses.reviewHistoryAdminProject
+				)
 			),
 			listCategories: o.admin.project.listCategories.handler(({ input }) =>
 				record('legacyAdminCategories', input, {
@@ -401,6 +412,11 @@ const cases: Array<MappingCase> = [
 		},
 	},
 	{
+		operationId: 'reviewHistoryAdminProject',
+		path: `/admin/projects/${ID}/review-history?page=2&limit=50`,
+		input: { params: { id: ID }, query: { page: 2, limit: 50 } },
+	},
+	{
 		operationId: 'removeLogoUpload',
 		path: '/admin/uploads/logo',
 		method: 'DELETE',
@@ -487,11 +503,37 @@ beforeEach(() => observed.mockClear())
 describe('detailed REST mapping', () => {
 	it('excludes GET for every read endpoint migrated to QUERY', async () => {
 		const reads = cases.filter(({ method }) => method === undefined)
-		expect(reads).toHaveLength(12)
+		expect(reads).toHaveLength(13)
 		for (const { path } of reads) {
 			expect((await rest(path, 'GET')).matched).toBe(false)
 		}
 		expect(observed).not.toHaveBeenCalled()
+	})
+	it.each(['true', 'false'])(
+		'preserves HTTP needsReview=%s boolean semantics',
+		async (value) => {
+			expect(
+				(await rest(`/admin/projects?needsReview=${value}`)).response?.status
+			).toBe(200)
+			expect(observed).toHaveBeenLastCalledWith('listAdminProjects', {
+				query: {
+					needsReview: value === 'true',
+					sort: 'createdAt',
+					order: 'desc',
+					page: 1,
+					limit: 12,
+				},
+			})
+		}
+	)
+	it('uses review history defaults over HTTP', async () => {
+		expect(
+			(await rest(`/admin/projects/${ID}/review-history`)).response?.status
+		).toBe(200)
+		expect(observed).toHaveBeenLastCalledWith('reviewHistoryAdminProject', {
+			params: { id: ID },
+			query: { page: 1, limit: 20 },
+		})
 	})
 	it('sends QUERY through OpenAPILink with path/query inputs in the URL and no body', async () => {
 		const requests: Array<{ method: string; url: string; body: string }> = []
@@ -596,6 +638,9 @@ describe('detailed REST mapping', () => {
 		['/projects?page=0', 'QUERY', undefined],
 		['/projects?limit=51', 'QUERY', undefined],
 		['/admin/projects?page=NaN', 'QUERY', undefined],
+		['/admin/projects?needsReview=invalid', 'QUERY', undefined],
+		[`/admin/projects/${ID}/review-history?limit=51`, 'QUERY', undefined],
+		[`/admin/projects/${ID}/review-history?page=0`, 'QUERY', undefined],
 		['/admin/categories/not-a-uuid', 'PATCH', {}],
 		[`/admin/projects/${ID}`, 'PATCH', { status: 'invalid' }],
 		[
@@ -712,10 +757,10 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(25)
+		expect(operations).toHaveLength(26)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			12
+			13
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -775,9 +820,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(24)
+		expect(mapped).toHaveLength(25)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(12)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(13)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe('detailed')
 			expect(meta?.outputStructure).toBe('compact')

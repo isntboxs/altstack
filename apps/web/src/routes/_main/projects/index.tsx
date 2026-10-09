@@ -36,6 +36,7 @@ function RouteComponent() {
 		limit: pagination.pageSize,
 		name: typeof nameFilter === 'string' ? nameFilter : undefined,
 		status: PROJECT_STATUS.find((status) => status === statusFilter),
+		needsReview: statusFilter === 'needsReview' ? true : undefined,
 		sort: sorting[0]?.id === 'name' ? 'name' : 'createdAt',
 		order: sorting[0]?.desc === false ? 'asc' : 'desc',
 	})

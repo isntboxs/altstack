@@ -100,6 +100,13 @@ export const adminCreateProjectOutputSchema = adminProjectSchema.extend({
 
 export const adminListProjectQuerySchema = z.object({
 	status: z.enum(PROJECT_STATUS).optional(),
+	// HTTP query strings must preserve false instead of Boolean('false').
+	needsReview: z
+		.union([
+			z.boolean(),
+			z.enum(['true', 'false']).transform((v) => v === 'true'),
+		])
+		.optional(),
 	name: z.string().optional(),
 	sort: z.enum(['name', 'createdAt']).optional().default('createdAt'),
 	order: z.enum(['asc', 'desc']).optional().default('desc'),
@@ -179,4 +186,35 @@ export const adminDeleteProjectOutputSchema = z.object({
 
 export const adminGetProjectByIdInputSchema = z.object({
 	params: adminProjectParamsSchema,
+})
+
+export const adminProjectReviewActionSchema = z.enum([
+	'project_created',
+	'project_submitted',
+	'project_status_changed',
+])
+
+export const adminProjectReviewHistoryQuerySchema = z.object({
+	page: z.coerce.number().int().min(1).default(1),
+	limit: z.coerce.number().int().min(1).max(50).default(20),
+})
+
+export const adminProjectReviewHistoryInputSchema = z.object({
+	params: adminProjectParamsSchema,
+	query: adminProjectReviewHistoryQuerySchema,
+})
+
+export const adminProjectReviewHistoryOutputSchema = z.object({
+	events: z.array(
+		z.object({
+			id: z.uuid(),
+			action: adminProjectReviewActionSchema,
+			createdAt: z.coerce.date(),
+			actor: z.object({ id: z.uuid(), name: z.string() }).nullable(),
+			reason: z.string().nullable(),
+			fromStatus: z.enum(PROJECT_STATUS).nullable(),
+			toStatus: z.enum(PROJECT_STATUS).nullable(),
+		})
+	),
+	pagination: paginationSchema,
 })

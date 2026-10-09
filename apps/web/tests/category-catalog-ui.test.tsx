@@ -319,6 +319,7 @@ const queryVariants = () => [
 	categoryQueries.getByPath({ path: 'former/path' }),
 	adminProjectQueries.list({ page: 2, name: 'demo' }),
 	adminProjectQueries.get({ id: flat.id }),
+	adminProjectQueries.reviewHistory({ id: flat.id }),
 	adminProjectQueries.listCategories(),
 	projectQueries.listCategories(),
 	projectQueries.bySlug('demo'),

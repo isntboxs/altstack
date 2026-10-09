@@ -10,6 +10,8 @@ import {
 	adminGetProjectByIdInputSchema,
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
+	adminProjectReviewHistoryInputSchema,
+	adminProjectReviewHistoryOutputSchema,
 	adminUpdateProjectInputSchema,
 	adminUpdateProjectOutputSchema,
 } from '@altstack/shared'
@@ -106,6 +108,7 @@ const listAdminProjectsContract = baseContract
 			outputStructure: 'compact',
 			queryStyles: {
 				status: 'primitive',
+				needsReview: 'primitive',
 				name: 'primitive',
 				sort: 'primitive',
 				order: 'primitive',
@@ -114,7 +117,7 @@ const listAdminProjectsContract = baseContract
 			},
 			summary: 'Admin list projects',
 			description:
-				'Paginated list with optional status and name filters and sorting.',
+				'Paginated list with optional status, name and needsReview filters and sorting. Needs review means a draft with a submitter.',
 			tags: ['AdminProjects'],
 			operationId: 'listAdminProjects',
 			successStatus: 200,
@@ -123,6 +126,27 @@ const listAdminProjectsContract = baseContract
 	)
 	.input(adminListProjectInputSchema)
 	.output(adminListProjectOutputSchema)
+
+const reviewHistoryAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/{id}/review-history',
+			method: 'QUERY',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { id: 'primitive' },
+			queryStyles: { page: 'primitive', limit: 'primitive' },
+			summary: 'Admin project review history',
+			description:
+				'Paginated creation, submission and status change events, newest first. Missing project → 404.',
+			tags: ['AdminProjects'],
+			operationId: 'reviewHistoryAdminProject',
+			successStatus: 200,
+			successDescription: 'Review history listed',
+		})
+	)
+	.input(adminProjectReviewHistoryInputSchema)
+	.output(adminProjectReviewHistoryOutputSchema)
 
 // RPC compatibility for the current project form; admin.category.list owns REST.
 const listAdminCategoriesContract = baseContract
@@ -135,5 +159,6 @@ export const adminProjectContract = {
 	update: updateAdminProjectContract,
 	remove: deleteAdminProjectContract,
 	list: listAdminProjectsContract,
+	reviewHistory: reviewHistoryAdminProjectContract,
 	listCategories: listAdminCategoriesContract,
 } as const
