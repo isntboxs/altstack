@@ -6,6 +6,8 @@ import type {
 } from '@tanstack/react-table'
 import { useState } from 'react'
 
+import { PROJECT_STATUS } from '@altstack/shared/constants'
+
 import { adminProjectColumns } from '#/features/admin-projects/components/admin-project-columns'
 import { AdminProjectDataTable } from '#/features/admin-projects/components/admin-project-data-table'
 import { useAdminProjectList } from '#/features/admin-projects/queries'
@@ -26,10 +28,14 @@ function RouteComponent() {
 	])
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const nameFilter = columnFilters.find((filter) => filter.id === 'name')?.value
+	const statusFilter = columnFilters.find(
+		(filter) => filter.id === 'status'
+	)?.value
 	const { data } = useAdminProjectList({
 		page: pagination.pageIndex + 1,
 		limit: pagination.pageSize,
 		name: typeof nameFilter === 'string' ? nameFilter : undefined,
+		status: PROJECT_STATUS.find((status) => status === statusFilter),
 		sort: sorting[0]?.id === 'name' ? 'name' : 'createdAt',
 		order: sorting[0]?.desc === false ? 'asc' : 'desc',
 	})

@@ -17,7 +17,48 @@ import {
 const categorySlugsSchema = z
 	.array(z.string().trim().min(1).max(100))
 	.transform((slugs) => [...new Set(slugs)])
-	.pipe(z.array(z.string()).min(1).max(3))
+	.pipe(z.array(z.string()).max(3))
+
+const nullableCopy = (max: number) =>
+	z
+		.string()
+		.trim()
+		.max(max)
+		.nullable()
+		.transform((value) => (value === '' ? null : value))
+
+// Publish checks the complete merged record, including existing final media.
+export const publishProjectSchema = z.object({
+	name: z.string().trim().min(2).max(100),
+	slug: slugSchema,
+	repositoryUrl: repositoryUrlSchema,
+	tagline: z.string().trim().min(1, 'Tagline is required to publish').max(100),
+	description: z
+		.string()
+		.trim()
+		.min(1, 'Description is required to publish')
+		.max(300),
+	logo: z.string().trim().min(1, 'Logo is required to publish'),
+	categorySlugs: categorySlugsSchema.pipe(
+		z.array(z.string()).min(1, 'Choose 1–3 leaf categories to publish')
+	),
+})
+
+export const adminProjectSchema = projectSchema.extend({
+	tagline: z.string().nullable(),
+	description: z.string().nullable(),
+	logo: z.string().nullable(),
+	submitterId: z.uuid().nullable(),
+	submitter: z
+		.object({
+			id: z.uuid(),
+			name: z.string(),
+			email: z.string(),
+			image: z.string().nullable(),
+		})
+		.nullable(),
+	rejectionReason: z.string().nullable(),
+})
 
 export const adminProjectParamsSchema = z.object({ id: z.uuid() })
 
@@ -25,9 +66,9 @@ export const adminCreateProjectBodySchema = z.object({
 	name: z.string().trim().min(2).max(100),
 	slug: slugSchema,
 	repositoryUrl: repositoryUrlSchema,
-	tagline: z.string().trim().nonempty().max(100),
-	description: z.string().trim().nonempty().max(300),
-	logo: logoKeySchema,
+	tagline: nullableCopy(100).optional(),
+	description: nullableCopy(300).optional(),
+	logo: logoKeySchema.nullable().optional(),
 	screenshot: screenshotKeySchema.optional(),
 	websiteUrl: z.url({ protocol: /^https?$/ }).optional(),
 	content: z
@@ -35,7 +76,7 @@ export const adminCreateProjectBodySchema = z.object({
 		.trim()
 		.optional()
 		.transform((v) => v ?? undefined),
-	categorySlugs: categorySlugsSchema,
+	categorySlugs: categorySlugsSchema.default([]),
 	// Visibility at creation. Drafts stay hidden from the public catalogue
 	// (`status = 'published'` filter); omitted input defaults to
 	// 'published' to preserve the pre-status behaviour. The admin UI offers
@@ -47,7 +88,7 @@ export const adminCreateProjectInputSchema = z.object({
 	body: adminCreateProjectBodySchema,
 })
 
-export const adminCreateProjectOutputSchema = projectSchema.extend({
+export const adminCreateProjectOutputSchema = adminProjectSchema.extend({
 	github: z.object({
 		owner: z.string(),
 		repo: z.string(),
@@ -72,7 +113,7 @@ export const adminListProjectInputSchema = z.object({
 
 export const adminListProjectOutputSchema = z.object({
 	projects: z.array(
-		projectSchema.extend({
+		adminProjectSchema.extend({
 			github: z.object({
 				owner: z.string(),
 				repo: z.string(),
@@ -92,9 +133,9 @@ export const adminUpdateProjectBodySchema = z.object({
 	name: z.string().trim().min(2).max(100).optional(),
 	slug: slugSchema.optional(),
 	repositoryUrl: repositoryUrlSchema.optional(),
-	tagline: z.string().trim().nonempty().max(100).optional(),
-	description: z.string().trim().nonempty().max(300).optional(),
-	logo: logoKeySchema.optional(),
+	tagline: nullableCopy(100).optional(),
+	description: nullableCopy(300).optional(),
+	logo: logoKeySchema.nullable().optional(),
 	screenshot: screenshotKeySchema.nullable().optional(),
 	websiteUrl: z
 		.url({ protocol: /^https?$/ })
@@ -103,6 +144,13 @@ export const adminUpdateProjectBodySchema = z.object({
 	content: z.string().trim().nullable().optional(),
 	categorySlugs: categorySlugsSchema.optional(),
 	status: z.enum(PROJECT_STATUS).optional(),
+	rejectionReason: z
+		.string()
+		.trim()
+		.max(1000)
+		.nullable()
+		.transform((value) => (value === '' ? null : value))
+		.optional(),
 })
 
 export const adminUpdateProjectInputSchema = z.object({
@@ -111,7 +159,7 @@ export const adminUpdateProjectInputSchema = z.object({
 	body: adminUpdateProjectBodySchema.optional(),
 })
 
-export const adminUpdateProjectOutputSchema = projectSchema.extend({
+export const adminUpdateProjectOutputSchema = adminProjectSchema.extend({
 	github: z.object({
 		owner: z.string(),
 		repo: z.string(),

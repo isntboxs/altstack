@@ -58,14 +58,34 @@ const pagination = {
 	hasPreviousPage: false,
 }
 const responses = {
+	listMySubmissions: { submissions: [], pagination },
+	createSubmission: { id: ID, status: 'draft' as const },
 	listAdminCategories: { categories: [adminNode] },
 	getAdminCategoryById: { category: adminNode, ancestors: [], children: [] },
 	createAdminCategory: adminNode,
 	updateAdminCategory: adminNode,
 	removeAdminCategory: { id: ID },
-	createAdminProject: { ...project, categories: ['backend'] },
-	getAdminProjectById: { ...project, categories: ['backend'] },
-	updateAdminProject: { ...project, categories: ['backend'] },
+	createAdminProject: {
+		...project,
+		categories: ['backend'],
+		submitterId: null,
+		submitter: null,
+		rejectionReason: null,
+	},
+	getAdminProjectById: {
+		...project,
+		categories: ['backend'],
+		submitterId: null,
+		submitter: null,
+		rejectionReason: null,
+	},
+	updateAdminProject: {
+		...project,
+		categories: ['backend'],
+		submitterId: null,
+		submitter: null,
+		rejectionReason: null,
+	},
 	deleteAdminProject: { success: true as const },
 	listAdminProjects: { projects: [], pagination },
 	requestLogoUpload: { key: LOGO, presignedUrl: 'https://storage.test/logo' },
@@ -94,6 +114,14 @@ function record<T>(operationId: string, input: unknown, output: T) {
 // Exercise the real contracts and codecs without database, GitHub, or S3 writes.
 const o = implement(contracts)
 const probes = {
+	submission: {
+		list: o.submission.list.handler(({ input }) =>
+			record('listMySubmissions', input, responses.listMySubmissions)
+		),
+		create: o.submission.create.handler(({ input }) =>
+			record('createSubmission', input, responses.createSubmission)
+		),
+	},
 	admin: {
 		category: {
 			list: o.admin.category.list.handler(({ input }) =>
@@ -247,6 +275,27 @@ interface MappingCase {
 	status?: number
 }
 const cases: Array<MappingCase> = [
+	{
+		operationId: 'listMySubmissions',
+		path: '/submissions?q=%20Example%20&page=2&limit=10&submitterId=ignored',
+		input: { query: { q: 'Example', page: 2, limit: 10 } },
+	},
+	{
+		operationId: 'createSubmission',
+		path: '/submissions',
+		method: 'POST',
+		body: {
+			name: ' Example ',
+			repositoryUrl: 'Example/Project.GIT',
+			websiteUrl: '',
+		},
+		input: {
+			name: 'Example',
+			repositoryUrl: 'https://github.com/example/project',
+			websiteUrl: undefined,
+		},
+		status: 201,
+	},
 	{ operationId: 'listAdminCategories', path: '/admin/categories', input: {} },
 	{
 		operationId: 'getAdminCategoryById',
@@ -438,7 +487,7 @@ beforeEach(() => observed.mockClear())
 describe('detailed REST mapping', () => {
 	it('excludes GET for every read endpoint migrated to QUERY', async () => {
 		const reads = cases.filter(({ method }) => method === undefined)
-		expect(reads).toHaveLength(11)
+		expect(reads).toHaveLength(12)
 		for (const { path } of reads) {
 			expect((await rest(path, 'GET')).matched).toBe(false)
 		}
@@ -549,7 +598,11 @@ describe('detailed REST mapping', () => {
 		['/admin/projects?page=NaN', 'QUERY', undefined],
 		['/admin/categories/not-a-uuid', 'PATCH', {}],
 		[`/admin/projects/${ID}`, 'PATCH', { status: 'invalid' }],
-		[`/admin/projects/${ID}`, 'PATCH', { categorySlugs: [] }],
+		[
+			`/admin/projects/${ID}`,
+			'PATCH',
+			{ categorySlugs: ['one', 'two', 'three', 'four'] },
+		],
 		['/admin/projects', 'POST', {}],
 		[
 			'/admin/uploads/logo',
@@ -659,10 +712,10 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(23)
+		expect(operations).toHaveLength(25)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			11
+			12
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -713,6 +766,7 @@ describe('generated OpenAPI compatibility', () => {
 			...Object.values(contracts.altstack),
 			...Object.values(contracts.category),
 			...Object.values(contracts.project),
+			contracts.submission.list,
 			...Object.values(contracts.admin.category),
 			...Object.values(contracts.admin.project),
 			...Object.values(contracts.admin.upload.logo),
@@ -721,9 +775,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(23)
+		expect(mapped).toHaveLength(24)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(11)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(12)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe('detailed')
 			expect(meta?.outputStructure).toBe('compact')

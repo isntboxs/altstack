@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { createColumnHelper } from '@tanstack/react-table'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { AdminProjectDataTable } from '#/features/admin-projects/components/admin-project-data-table'
@@ -197,6 +203,7 @@ describe('admin project data table', () => {
 			page: 1,
 			limit: 12,
 			name: undefined,
+			status: undefined,
 			sort: 'name',
 			order: 'asc',
 		})
@@ -216,6 +223,35 @@ describe('admin project data table', () => {
 		})
 		expect(queryInput).toHaveBeenLastCalledWith(
 			expect.objectContaining({ page: 1, name: 'Alpha', order: 'desc' })
+		)
+	})
+	it('filters statuses on the server, combines the name filter and resets pagination', async () => {
+		const Component = Route.options.component
+		if (!Component) throw new Error('Missing projects route component')
+		render(<Component />)
+		fireEvent.change(screen.getByPlaceholderText('Filter names...'), {
+			target: { value: 'Review' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+		fireEvent.click(screen.getByRole('combobox', { name: 'Filter status' }))
+		const draftOption = await screen.findByRole('option', { name: 'Draft' })
+		fireEvent.pointerDown(draftOption)
+		fireEvent.click(draftOption)
+		await waitFor(() =>
+			expect(queryInput).toHaveBeenLastCalledWith(
+				expect.objectContaining({ page: 1, name: 'Review', status: 'draft' })
+			)
+		)
+		fireEvent.click(screen.getByRole('combobox', { name: 'Filter status' }))
+		const allOption = await screen.findByRole('option', {
+			name: 'All statuses',
+		})
+		fireEvent.pointerDown(allOption)
+		fireEvent.click(allOption)
+		await waitFor(() =>
+			expect(queryInput).toHaveBeenLastCalledWith(
+				expect.objectContaining({ name: 'Review', status: undefined })
+			)
 		)
 	})
 })

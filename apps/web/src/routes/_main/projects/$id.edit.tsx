@@ -15,7 +15,6 @@ import {
 	Field,
 	FieldDescription,
 	FieldError,
-	FieldGroup,
 	FieldLabel,
 } from '@altstack/ui/components/field'
 import { Input } from '@altstack/ui/components/input'
@@ -25,12 +24,7 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from '@altstack/ui/components/native-select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
-import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
@@ -39,6 +33,7 @@ import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { ProjectReviewActions } from '#/features/admin-projects/components/project-review-actions'
 import {
 	adminProjectQueries,
 	useAdminProjectGet,
@@ -230,7 +225,7 @@ function RouteComponent() {
 	)
 }
 
-function EditProjectForm({ project }: { project: AdminProject }) {
+export function EditProjectForm({ project }: { project: AdminProject }) {
 	const updateProject = useAdminProjectUpdate()
 	const [submitError, setSubmitError] = useState<string | null>(null)
 	// Form image fields hold tmp keys only (undefined = keep,
@@ -247,14 +242,15 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 		name: project.name,
 		slug: project.slug,
 		repositoryUrl: toRepositoryShortForm(project.repositoryUrl),
-		tagline: project.tagline,
-		description: project.description,
+		tagline: project.tagline ?? '',
+		description: project.description ?? '',
 		logo: undefined,
 		screenshot: undefined,
 		websiteUrl: project.websiteUrl ?? undefined,
 		content: project.content ?? undefined,
 		categorySlugs: project.categories,
 		status: project.status,
+		rejectionReason: project.rejectionReason ?? '',
 	}
 
 	const form = useForm({
@@ -268,20 +264,25 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 			try {
 				const updated = await updateProject.mutateAsync({
 					params: { id: project.id },
-					body: value,
+					body: {
+						...value,
+						rejectionReason:
+							value.status === 'rejected' ? value.rejectionReason : null,
+					},
 				})
 				form.reset({
 					name: updated.name,
 					slug: updated.slug,
 					repositoryUrl: toRepositoryShortForm(updated.repositoryUrl),
-					tagline: updated.tagline,
-					description: updated.description,
+					tagline: updated.tagline ?? '',
+					description: updated.description ?? '',
 					logo: undefined,
 					screenshot: undefined,
 					websiteUrl: updated.websiteUrl ?? undefined,
 					content: updated.content ?? undefined,
 					categorySlugs: updated.categories,
 					status: updated.status,
+					rejectionReason: updated.rejectionReason ?? '',
 				})
 				setLogoDisplayUrl(resolveFileUrl(updated.logo))
 				setScreenshotDisplayUrl(resolveFileUrl(updated.screenshot))
@@ -599,7 +600,7 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 					<section className="space-y-4">
 						<SectionHeading
 							title="Media"
-							description="Logo is required. Screenshots are cropped to 16:9."
+							description="Logo is required to publish. Screenshots are cropped to 16:9."
 						/>
 
 						<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -764,56 +765,35 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 							description="Draft projects stay hidden from the public catalogue."
 						/>
 
-						<form.Field
-							name="status"
-							children={(field) => {
-								const isInvalid =
-									field.state.meta.isTouched && !field.state.meta.isValid
-								const currentValue = field.state.value ?? 'published'
-
-								return (
-									<Field data-invalid={isInvalid}>
-										<FieldLabel htmlFor={field.name}>Status</FieldLabel>
-
-										<NativeSelect
-											id={field.name}
-											name={field.name}
-											value={currentValue}
-											onBlur={field.handleBlur}
-											onChange={(e) =>
-												field.handleChange(
-													e.target.value as typeof currentValue
-												)
-											}
-											aria-invalid={isInvalid}
-											className="w-full"
-										>
-											<NativeSelectOption value="draft">
-												Draft — hidden from catalogue
-											</NativeSelectOption>
-											<NativeSelectOption value="published">
-												Published — visible in catalogue
-											</NativeSelectOption>
-											{currentValue !== 'draft' &&
-											currentValue !== 'published' ? (
-												<NativeSelectOption value={currentValue}>
-													Current: {currentValue} — pick draft or published to
-													change
-												</NativeSelectOption>
-											) : null}
-										</NativeSelect>
-
-										<FieldDescription>
-											Switch to draft to hide this project from the public
-											catalogue without deleting it.
-										</FieldDescription>
-
-										{isInvalid && (
-											<FieldError errors={field.state.meta.errors} />
-										)}
-									</Field>
+						<p className="text-sm">
+							Current status: <strong>{project.status}</strong>
+						</p>
+						{project.submitter && (
+							<p className="text-sm text-muted-foreground">
+								Submitted by {project.submitter.name} ({project.submitter.email}
 								)
-							}}
+							</p>
+						)}
+						<form.Field
+							name="rejectionReason"
+							children={(field) => (
+								<Field>
+									<FieldLabel htmlFor="rejectionReason">
+										Rejection reason (optional)
+									</FieldLabel>
+									<Textarea
+										id="rejectionReason"
+										value={field.state.value ?? ''}
+										maxLength={1000}
+										onBlur={field.handleBlur}
+										onChange={(event) => field.handleChange(event.target.value)}
+									/>
+									<FieldDescription>
+										Recorded when you reject this project. Restore rejected
+										projects to draft to reopen review.
+									</FieldDescription>
+								</Field>
+							)}
 						/>
 					</section>
 
@@ -824,47 +804,23 @@ function EditProjectForm({ project }: { project: AdminProject }) {
 							retry.
 						</p>
 					)}
-					<FieldGroup>
-						<Field orientation="horizontal">
-							{/* canSubmit/isPristine/isSubmitting live in the form store
-								(useSyncExternalStore). Async validation can settle them
-								during SSR streaming, so the server snapshot diverges from
-								the client's first render (hydration mismatch on `disabled`
-								and button content). Render a static fallback until
-								hydrated, same as the editor above. */}
-							<ClientOnly
-								fallback={
-									<Button type="submit" disabled className="w-full">
-										Submit
-									</Button>
-								}
-							>
-								<form.Subscribe
-									selector={(state) => [
-										state.canSubmit,
-										state.isPristine,
-										state.isSubmitting,
-									]}
-									children={([canSubmit, isPristine, isSubmitting]) => (
-										<Button
-											type="submit"
-											disabled={!canSubmit || isPristine}
-											className="w-full"
-										>
-											{isSubmitting ? (
-												<>
-													<Spinner />
-													Submitting...
-												</>
-											) : (
-												'Submit'
-											)}
-										</Button>
-									)}
+					<ClientOnly fallback={<Button disabled>Save Draft</Button>}>
+						<form.Subscribe
+							selector={(state) => [state.canSubmit, state.isSubmitting]}
+							children={([canSubmit, isSubmitting]) => (
+								<ProjectReviewActions
+									status={project.status}
+									disabled={!canSubmit}
+									pending={isSubmitting}
+									onAction={(status) => {
+										form.setFieldValue('status', status)
+										editorRef.current?.flush()
+										void form.handleSubmit()
+									}}
 								/>
-							</ClientOnly>
-						</Field>
-					</FieldGroup>
+							)}
+						/>
+					</ClientOnly>
 				</div>
 			</form>
 

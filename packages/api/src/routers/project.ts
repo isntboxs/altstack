@@ -14,6 +14,10 @@ import {
 	projectCategory,
 } from '@altstack/db/schemas'
 
+import { projectSchema } from '@altstack/shared/schemas/common'
+
+const publicFields = projectSchema.omit({ categories: true })
+
 const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 	async ({ context, errors, input }) => {
 		const { db } = context
@@ -35,9 +39,8 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 		}
 
 		return {
-			...row.projects,
+			...publicFields.parse(row.projects),
 			categoryDetails: await getDirectProjectCategories(db, row.projects.id),
-			logo: row.projects.logo,
 			screenshot: row.projects.screenshot,
 			github: {
 				owner: row.github_repositories.owner,
@@ -86,8 +89,7 @@ const listHandler = publicProcedure.project.list.handler(
 		return {
 			projects: rows.map((row) => {
 				return {
-					...row.projects,
-					logo: row.projects.logo,
+					...publicFields.parse(row.projects),
 					screenshot: row.projects.screenshot,
 					github: {
 						owner: row.github_repositories.owner,
@@ -193,8 +195,7 @@ const searchHandler = publicProcedure.project.search.handler(
 		return {
 			projects: rows.map((row) => {
 				return {
-					...row.projects,
-					logo: row.projects.logo,
+					...publicFields.parse(row.projects),
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,

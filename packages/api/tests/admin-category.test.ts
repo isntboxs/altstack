@@ -861,7 +861,7 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 		).toHaveLength(1)
 	})
 
-	it('rejects nonexistent/nonleaf categories and empty/over-limit distinct assignments before external image work', async () => {
+	it('rejects invalid published category assignments before external image work', async () => {
 		const created = await clientWith().admin.project.create({
 			body: projectInput(),
 		})
@@ -875,12 +875,18 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 			['backend', 'frontend', 'devops', 'mobile'],
 		]) {
 			await expect(
-				clientWith().admin.project.create({ body: projectInput(categorySlugs) })
+				clientWith().admin.project.create({
+					body: { ...projectInput(categorySlugs), status: 'published' },
+				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 			await expect(
 				clientWith().admin.project.update({
 					params: { id: created.id },
-					body: { categorySlugs, logo: projectInput().logo },
+					body: {
+						categorySlugs,
+						logo: projectInput().logo,
+						status: 'published',
+					},
 				})
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 		}
@@ -915,45 +921,34 @@ describe('project direct leaf assignment integrity and promotion cleanup', () =>
 		expect(await database.db.select().from(projectCategory)).toEqual([])
 	})
 
-	it('revalidates update after promotion and retains old project/images/audit/assignments when a selected leaf becomes a parent', async () => {
+	it('serializes project updates against child creation and preserves the selected leaf during promotion and commit', async () => {
 		const created = await clientWith().admin.project.create({
 			body: projectInput(),
 		})
 		const leaf = await createCategory('update-race-leaf')
-		const before = await database.db.query.project.findFirst({
-			where: { id: created.id },
+		await serializedRace(
+			() =>
+				clientWith().admin.project.update({
+					params: { id: created.id },
+					body: {
+						name: 'Updated safely',
+						logo: projectInput().logo,
+						categorySlugs: [leaf.slug],
+					},
+				}),
+			() => createCategory('update-race-child', leaf.id),
+			'CONFLICT'
+		)
+		const updated = await clientWith().admin.project.getById({
+			params: { id: created.id },
 		})
-		const assignments = await database.db.select().from(projectCategory)
-		const audits = await database.db.select().from(auditLog)
-		vi.mocked(storage.deleteFinalKeysBestEffort).mockClear()
-		const final = `projects/${created.slug}/logo-replacement.png`
-		vi.mocked(storage.promoteTempImageToProject).mockImplementationOnce(
-			async () => {
-				await createCategory('update-race-child', leaf.id)
-				return final
-			}
-		)
-		await expect(
-			clientWith().admin.project.update({
-				params: { id: created.id },
-				body: {
-					name: 'Must roll back',
-					logo: projectInput().logo,
-					categorySlugs: [leaf.slug],
-				},
-			})
-		).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
-		expect(storage.deleteFinalKeysBestEffort).toHaveBeenCalledWith([final])
-		expect(storage.deleteFinalKeysBestEffort).not.toHaveBeenCalledWith([
-			created.logo,
-		])
+		expect(updated.name).toBe('Updated safely')
+		expect(updated.categories).toEqual([leaf.slug])
 		expect(
-			await database.db.query.project.findFirst({ where: { id: created.id } })
-		).toEqual(before)
-		expect(await database.db.select().from(projectCategory)).toEqual(
-			assignments
-		)
-		expect(await database.db.select().from(auditLog)).toEqual(audits)
+			await database.db.query.category.findFirst({
+				where: { slug: 'update-race-child' },
+			})
+		).toBeUndefined()
 	})
 })
 

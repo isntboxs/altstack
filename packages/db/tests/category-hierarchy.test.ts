@@ -157,18 +157,12 @@ describe('category hierarchy migrations', () => {
 				]
 			)
 		}
-		const [legacyProject] = await database.db
-			.insert(project)
-			.values({
-				name: 'Legacy project',
-				slug: 'legacy',
-				tagline: 'Legacy fixture',
-				description: 'Existing published project with two root assignments.',
-				logo: 'legacy.svg',
-				repositoryUrl: 'https://github.com/test-only/legacy',
-				status: 'published',
-			})
-			.returning()
+		const {
+			rows: [legacyProject],
+		} = await database.pool.query<{ id: string }>(`
+			INSERT INTO projects (name, slug, tagline, description, logo, repository_url, status)
+			VALUES ('Legacy project', 'legacy', 'Legacy fixture', 'Existing published project with two root assignments.', 'legacy.svg', 'https://github.com/test-only/legacy', 'published') RETURNING id
+		`)
 		if (!legacyProject) throw new Error('Missing legacy project')
 		await database.db.insert(projectCategory).values(
 			categoryIds.slice(0, 2).map((categoryId) => {
@@ -187,7 +181,11 @@ describe('category hierarchy migrations', () => {
 			.select()
 			.from(projectCategory)
 			.orderBy(projectCategory.categoryId)
-		const oldProjects = await database.db.select().from(project)
+		const oldProjects = (
+			await database.pool.query<Record<string, unknown>>(
+				'SELECT * FROM projects'
+			)
+		).rows
 
 		await migrateCurrent()
 		expect(
@@ -197,7 +195,17 @@ describe('category hierarchy migrations', () => {
 				return { ...row, parent_id: null }
 			})
 		)
-		expect(await database.db.select().from(project)).toEqual(oldProjects)
+		expect(
+			(
+				await database.pool.query<Record<string, unknown>>(
+					'SELECT * FROM projects'
+				)
+			).rows
+		).toEqual(
+			oldProjects.map((row) => {
+				return { ...row, submitter_id: null, rejection_reason: null }
+			})
+		)
 		expect(
 			await database.db
 				.select()

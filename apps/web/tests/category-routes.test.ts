@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient } from '@altstack/api/routers'
 
+import { submissionQueries } from '#/features/submissions/queries'
 import { getRouter } from '#/router'
 import { categories, flat } from './fixtures/categories'
 
@@ -60,6 +61,19 @@ beforeEach(() => {
 		.mockReset()
 		.mockResolvedValue({ user: { role: 'admin' }, session: {} })
 	rpc.mockReset().mockImplementation((path: Array<string>) => {
+		if (path.join('/') === 'submission/list') {
+			return Promise.resolve({
+				submissions: [],
+				pagination: {
+					page: 1,
+					limit: 25,
+					totalPages: 0,
+					totalItems: 0,
+					hasNextPage: false,
+					hasPreviousPage: false,
+				},
+			})
+		}
 		if (path.join('/') === 'admin/category/getById') {
 			return Promise.resolve({ category: flat, ancestors: [], children: [] })
 		}
@@ -153,4 +167,81 @@ describe('category routes and preloading guards', () => {
 			router.state.matches.some((match) => match.status === 'notFound')
 		).toBe(true)
 	})
+})
+
+describe('submission and project review guards', () => {
+	it('does not reuse private query results after switching accounts', async () => {
+		const router = getRouter()
+		const queryClient = router.options.context.queryClient
+		queryClient.clear()
+		const first = submissionQueries.list({}, 'first-owner')
+		await queryClient.query(first)
+		const second = submissionQueries.list({}, 'second-owner')
+		expect(queryClient.getQueryData(second.queryKey)).toBeUndefined()
+		await queryClient.query(second)
+		expect(rpc).toHaveBeenCalledTimes(2)
+	})
+	it('redirects the anonymous submission overview before loading owner data', async () => {
+		getAuthFn.mockResolvedValue(null)
+		const router = routerAt('/submission')
+		await router.load()
+		expect(router.state.location.pathname).toBe('/auth/sign-in')
+		expect(router.state.location.search).toEqual({ returnTo: '/submission' })
+		expect(rpc).not.toHaveBeenCalled()
+	})
+	it('loads the owner endpoint for regular users, using validated search params', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'owner-id', role: 'user' },
+			session: {},
+		})
+		const router = routerAt('/submission?q=Review&page=2&limit=10')
+		await router.load()
+		expect(router.state.location.pathname).toBe('/submission')
+		expect(rpc).toHaveBeenCalledWith(
+			['submission', 'list'],
+			{ query: { q: 'Review', page: 2, limit: 10 } },
+			expect.anything()
+		)
+		expect(
+			rpc.mock.calls.some(
+				([route]) =>
+					Array.isArray(route) && route.join('/').startsWith('admin/project')
+			)
+		).toBe(false)
+		expect(router.state.matches.at(-1)?.status).toBe('success')
+	})
+	it('redirects anonymous submissions to sign-in with the return URL', async () => {
+		getAuthFn.mockResolvedValue(null)
+		const router = routerAt('/submit')
+		await router.load()
+		expect(router.state.location.pathname).toBe('/auth/sign-in')
+		expect(router.state.location.search).toEqual({ returnTo: '/submit' })
+		expect(rpc).not.toHaveBeenCalled()
+	})
+	it('allows a regular logged-in user to submit', async () => {
+		getAuthFn.mockResolvedValue({ user: { role: 'user' }, session: {} })
+		const router = routerAt('/submit')
+		await router.load()
+		expect(router.state.location.pathname).toBe('/submit')
+		expect(router.state.matches.at(-1)?.status).toBe('success')
+	})
+	it.each([
+		'/projects',
+		'/projects/create',
+		'/projects/550e8400-e29b-41d4-a716-446655440000/edit',
+	])(
+		'blocks review route %s and private loaders for regular users',
+		async (path) => {
+			getAuthFn.mockResolvedValue({ user: { role: 'user' }, session: {} })
+			const router = routerAt(path)
+			await router.load()
+			expect(router.state.location.pathname).toBe('/')
+			expect(
+				rpc.mock.calls.some(
+					([route]) =>
+						Array.isArray(route) && route.join('/').startsWith('admin/project')
+				)
+			).toBe(false)
+		}
+	)
 })

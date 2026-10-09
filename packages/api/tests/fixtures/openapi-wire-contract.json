@@ -1,5 +1,5 @@
 {
-	"source": "Generated from local development 987f9bd82e51513e9755c2bf56774f5b62306061 using @orpc/openapi and @orpc/zod 2.0.0-beta.42. ID-only DELETE phantom empty bodies omitted. Response schemas deduplicated by operationId; error responses are shared.",
+	"source": "Local development API baseline, updated for Content Management v1 admin draft fields and protected submission creation. Read methods are compared as QUERY.",
 	"security": [
 		{
 			"apiKeyCookie": []
@@ -400,18 +400,37 @@
 									"minLength": 1
 								},
 								"tagline": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 100
+									"anyOf": [
+										{
+											"type": "string",
+											"maxLength": 100
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"description": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 300
+									"anyOf": [
+										{
+											"type": "string",
+											"maxLength": 300
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"logo": {
-									"type": "string",
-									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+									"anyOf": [
+										{
+											"type": "string",
+											"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"screenshot": {
 									"type": "string",
@@ -438,15 +457,7 @@
 									"enum": ["draft", "published", "rejected", "removed"]
 								}
 							},
-							"required": [
-								"name",
-								"slug",
-								"repositoryUrl",
-								"tagline",
-								"description",
-								"logo",
-								"categorySlugs"
-							]
+							"required": ["name", "slug", "repositoryUrl"]
 						}
 					}
 				}
@@ -580,7 +591,7 @@
 					"description": "Project found",
 					"content": {
 						"application/json": {
-							"schema": "createAdminProject"
+							"schema": "getAdminProjectById"
 						}
 					}
 				}
@@ -622,18 +633,37 @@
 									"minLength": 1
 								},
 								"tagline": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 100
+									"anyOf": [
+										{
+											"type": "string",
+											"maxLength": 100
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"description": {
-									"type": "string",
-									"minLength": 1,
-									"maxLength": 300
+									"anyOf": [
+										{
+											"type": "string",
+											"maxLength": 300
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"logo": {
-									"type": "string",
-									"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+									"anyOf": [
+										{
+											"type": "string",
+											"pattern": "^tmp\\/logos\\/[a-z0-9-]+-[0-9]+\\.(png|jpe?g|webp|gif)$"
+										},
+										{
+											"type": "null"
+										}
+									]
 								},
 								"screenshot": {
 									"anyOf": [
@@ -671,6 +701,17 @@
 								"status": {
 									"type": "string",
 									"enum": ["draft", "published", "rejected", "removed"]
+								},
+								"rejectionReason": {
+									"anyOf": [
+										{
+											"type": "string",
+											"maxLength": 1000
+										},
+										{
+											"type": "null"
+										}
+									]
 								}
 							}
 						}
@@ -687,7 +728,7 @@
 					"description": "Project updated",
 					"content": {
 						"application/json": {
-							"schema": "createAdminProject"
+							"schema": "updateAdminProject"
 						}
 					}
 				}
@@ -1197,6 +1238,107 @@
 					}
 				}
 			}
+		},
+		"createSubmission": {
+			"path": "/submissions",
+			"method": "post",
+			"parameters": [],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"repositoryUrl": {
+									"type": "string",
+									"minLength": 1
+								},
+								"websiteUrl": {
+									"type": "string"
+								}
+							},
+							"required": ["name", "repositoryUrl"]
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"201": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "createSubmission"
+						}
+					}
+				}
+			}
+		},
+		"listMySubmissions": {
+			"path": "/submissions",
+			"method": "query",
+			"parameters": [
+				{
+					"in": "query",
+					"name": "q",
+					"schema": {
+						"type": "string",
+						"maxLength": 100
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "page",
+					"schema": {
+						"default": 1,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 9007199254740991
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "limit",
+					"schema": {
+						"default": 25,
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 50
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "listMySubmissions"
+						}
+					}
+				}
+			}
 		}
 	},
 	"responseSchemas": {
@@ -1575,13 +1717,13 @@
 					"type": "string"
 				},
 				"tagline": {
-					"type": "string"
+					"type": ["string", "null"]
 				},
 				"description": {
-					"type": "string"
+					"type": ["string", "null"]
 				},
 				"logo": {
-					"type": "string"
+					"type": ["string", "null"]
 				},
 				"screenshot": {
 					"type": ["string", "null"]
@@ -1624,6 +1766,49 @@
 					"type": "string",
 					"format": "date-time",
 					"x-native-type": "date"
+				},
+				"submitterId": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"submitter": {
+					"anyOf": [
+						{
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"format": "uuid",
+									"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+								},
+								"name": {
+									"type": "string"
+								},
+								"email": {
+									"type": "string"
+								},
+								"image": {
+									"type": ["string", "null"]
+								}
+							},
+							"required": ["id", "name", "email", "image"],
+							"additionalProperties": false
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"rejectionReason": {
+					"type": ["string", "null"]
 				},
 				"github": {
 					"type": "object",
@@ -1669,6 +1854,9 @@
 				"status",
 				"createdAt",
 				"updatedAt",
+				"submitterId",
+				"submitter",
+				"rejectionReason",
 				"github"
 			],
 			"additionalProperties": false
@@ -1693,13 +1881,13 @@
 								"type": "string"
 							},
 							"tagline": {
-								"type": "string"
+								"type": ["string", "null"]
 							},
 							"description": {
-								"type": "string"
+								"type": ["string", "null"]
 							},
 							"logo": {
-								"type": "string"
+								"type": ["string", "null"]
 							},
 							"screenshot": {
 								"type": ["string", "null"]
@@ -1742,6 +1930,49 @@
 								"type": "string",
 								"format": "date-time",
 								"x-native-type": "date"
+							},
+							"submitterId": {
+								"anyOf": [
+									{
+										"type": "string",
+										"format": "uuid",
+										"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"submitter": {
+								"anyOf": [
+									{
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string",
+												"format": "uuid",
+												"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+											},
+											"name": {
+												"type": "string"
+											},
+											"email": {
+												"type": "string"
+											},
+											"image": {
+												"type": ["string", "null"]
+											}
+										},
+										"required": ["id", "name", "email", "image"],
+										"additionalProperties": false
+									},
+									{
+										"type": "null"
+									}
+								]
+							},
+							"rejectionReason": {
+								"type": ["string", "null"]
 							},
 							"github": {
 								"type": "object",
@@ -1787,6 +2018,9 @@
 							"status",
 							"createdAt",
 							"updatedAt",
+							"submitterId",
+							"submitter",
+							"rejectionReason",
 							"github"
 						],
 						"additionalProperties": false
@@ -2676,6 +2910,436 @@
 				}
 			},
 			"required": ["projects", "pagination"],
+			"additionalProperties": false
+		},
+		"getAdminProjectById": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"name": {
+					"type": "string"
+				},
+				"slug": {
+					"type": "string"
+				},
+				"tagline": {
+					"type": ["string", "null"]
+				},
+				"description": {
+					"type": ["string", "null"]
+				},
+				"logo": {
+					"type": ["string", "null"]
+				},
+				"screenshot": {
+					"type": ["string", "null"]
+				},
+				"repositoryUrl": {
+					"type": "string",
+					"format": "uri"
+				},
+				"websiteUrl": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uri"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"content": {
+					"type": ["string", "null"]
+				},
+				"categories": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"status": {
+					"default": "published",
+					"type": "string",
+					"enum": ["draft", "published", "rejected", "removed"]
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"submitterId": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"submitter": {
+					"anyOf": [
+						{
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"format": "uuid",
+									"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+								},
+								"name": {
+									"type": "string"
+								},
+								"email": {
+									"type": "string"
+								},
+								"image": {
+									"type": ["string", "null"]
+								}
+							},
+							"required": ["id", "name", "email", "image"],
+							"additionalProperties": false
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"rejectionReason": {
+					"type": ["string", "null"]
+				},
+				"github": {
+					"type": "object",
+					"properties": {
+						"owner": {
+							"type": "string"
+						},
+						"repo": {
+							"type": "string"
+						},
+						"stars": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"forks": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"fetchedAt": {
+							"type": "string",
+							"format": "date-time",
+							"x-native-type": "date"
+						}
+					},
+					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"id",
+				"name",
+				"slug",
+				"tagline",
+				"description",
+				"logo",
+				"screenshot",
+				"repositoryUrl",
+				"websiteUrl",
+				"content",
+				"categories",
+				"status",
+				"createdAt",
+				"updatedAt",
+				"submitterId",
+				"submitter",
+				"rejectionReason",
+				"github"
+			],
+			"additionalProperties": false
+		},
+		"updateAdminProject": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"name": {
+					"type": "string"
+				},
+				"slug": {
+					"type": "string"
+				},
+				"tagline": {
+					"type": ["string", "null"]
+				},
+				"description": {
+					"type": ["string", "null"]
+				},
+				"logo": {
+					"type": ["string", "null"]
+				},
+				"screenshot": {
+					"type": ["string", "null"]
+				},
+				"repositoryUrl": {
+					"type": "string",
+					"format": "uri"
+				},
+				"websiteUrl": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uri"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"content": {
+					"type": ["string", "null"]
+				},
+				"categories": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"status": {
+					"default": "published",
+					"type": "string",
+					"enum": ["draft", "published", "rejected", "removed"]
+				},
+				"createdAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"updatedAt": {
+					"type": "string",
+					"format": "date-time",
+					"x-native-type": "date"
+				},
+				"submitterId": {
+					"anyOf": [
+						{
+							"type": "string",
+							"format": "uuid",
+							"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"submitter": {
+					"anyOf": [
+						{
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"format": "uuid",
+									"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+								},
+								"name": {
+									"type": "string"
+								},
+								"email": {
+									"type": "string"
+								},
+								"image": {
+									"type": ["string", "null"]
+								}
+							},
+							"required": ["id", "name", "email", "image"],
+							"additionalProperties": false
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"rejectionReason": {
+					"type": ["string", "null"]
+				},
+				"github": {
+					"type": "object",
+					"properties": {
+						"owner": {
+							"type": "string"
+						},
+						"repo": {
+							"type": "string"
+						},
+						"stars": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"forks": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"fetchedAt": {
+							"type": "string",
+							"format": "date-time",
+							"x-native-type": "date"
+						}
+					},
+					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"additionalProperties": false
+				}
+			},
+			"required": [
+				"id",
+				"name",
+				"slug",
+				"tagline",
+				"description",
+				"logo",
+				"screenshot",
+				"repositoryUrl",
+				"websiteUrl",
+				"content",
+				"categories",
+				"status",
+				"createdAt",
+				"updatedAt",
+				"submitterId",
+				"submitter",
+				"rejectionReason",
+				"github"
+			],
+			"additionalProperties": false
+		},
+		"createSubmission": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"status": {
+					"type": "string",
+					"const": "draft"
+				}
+			},
+			"required": ["id", "status"],
+			"additionalProperties": false
+		},
+		"listMySubmissions": {
+			"type": "object",
+			"properties": {
+				"submissions": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string",
+								"format": "uuid",
+								"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+							},
+							"name": {
+								"type": "string"
+							},
+							"slug": {
+								"type": "string"
+							},
+							"logo": {
+								"type": ["string", "null"]
+							},
+							"repositoryUrl": {
+								"type": "string",
+								"format": "uri"
+							},
+							"status": {
+								"type": "string",
+								"enum": ["draft", "published", "rejected", "removed"]
+							},
+							"rejectionReason": {
+								"type": ["string", "null"]
+							},
+							"createdAt": {
+								"type": "string",
+								"format": "date-time",
+								"x-native-type": "date"
+							}
+						},
+						"required": [
+							"id",
+							"name",
+							"slug",
+							"logo",
+							"repositoryUrl",
+							"status",
+							"rejectionReason",
+							"createdAt"
+						],
+						"additionalProperties": false
+					}
+				},
+				"pagination": {
+					"type": "object",
+					"properties": {
+						"page": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"limit": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalItems": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"totalPages": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 9007199254740991
+						},
+						"hasNextPage": {
+							"type": "boolean"
+						},
+						"hasPreviousPage": {
+							"type": "boolean"
+						}
+					},
+					"required": [
+						"page",
+						"limit",
+						"totalItems",
+						"totalPages",
+						"hasNextPage",
+						"hasPreviousPage"
+					],
+					"additionalProperties": false
+				}
+			},
+			"required": ["submissions", "pagination"],
 			"additionalProperties": false
 		}
 	}
