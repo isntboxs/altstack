@@ -204,6 +204,7 @@ describe('admin project data table', () => {
 			limit: 12,
 			name: undefined,
 			status: undefined,
+			needsReview: undefined,
 			sort: 'name',
 			order: 'asc',
 		})
@@ -224,6 +225,51 @@ describe('admin project data table', () => {
 		expect(queryInput).toHaveBeenLastCalledWith(
 			expect.objectContaining({ page: 1, name: 'Alpha', order: 'desc' })
 		)
+	})
+	it('selects Needs review without a status, then clears it when switching filters and resets the page', async () => {
+		const Component = Route.options.component
+		if (!Component) throw new Error('Missing projects route component')
+		render(<Component />)
+		fireEvent.change(screen.getByPlaceholderText('Filter names...'), {
+			target: { value: 'Review' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+		fireEvent.click(screen.getByRole('combobox', { name: 'Filter status' }))
+		const reviewOption = await screen.findByRole('option', {
+			name: 'Needs review',
+		})
+		fireEvent.pointerDown(reviewOption)
+		fireEvent.click(reviewOption)
+		await waitFor(() =>
+			expect(queryInput).toHaveBeenLastCalledWith(
+				expect.objectContaining({
+					page: 1,
+					name: 'Review',
+					needsReview: true,
+					status: undefined,
+				})
+			)
+		)
+		for (const [label, status] of [
+			['Draft', 'draft'],
+			['All statuses', undefined],
+		] as const) {
+			fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+			fireEvent.click(screen.getByRole('combobox', { name: 'Filter status' }))
+			const option = await screen.findByRole('option', { name: label })
+			fireEvent.pointerDown(option)
+			fireEvent.click(option)
+			await waitFor(() =>
+				expect(queryInput).toHaveBeenLastCalledWith(
+					expect.objectContaining({
+						page: 1,
+						name: 'Review',
+						needsReview: undefined,
+						status,
+					})
+				)
+			)
+		}
 	})
 	it('filters statuses on the server, combines the name filter and resets pagination', async () => {
 		const Component = Route.options.component

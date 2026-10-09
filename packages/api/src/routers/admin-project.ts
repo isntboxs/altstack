@@ -8,10 +8,12 @@ import {
 	getTableColumns,
 	ilike,
 	inArray,
+	isNotNull,
 	ne,
 	sql,
 } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
 
 import { fetchPublicGithubRepository } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
@@ -40,7 +42,9 @@ import {
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
 
 import { canonicalizeGithubUrl } from '@altstack/shared'
+import { PROJECT_STATUS } from '@altstack/shared/constants'
 import {
+	adminProjectReviewActionSchema,
 	adminUpdateProjectBodySchema,
 	publishProjectSchema,
 } from '@altstack/shared/schemas/admin-project'
@@ -682,6 +686,9 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 		const offset = (page - 1) * limit
 		const where = and(
 			input.query.status ? eq(project.status, input.query.status) : undefined,
+			input.query.needsReview
+				? and(eq(project.status, 'draft'), isNotNull(project.submitterId))
+				: undefined,
 			input.query.name
 				? ilike(
 						project.name,
@@ -792,11 +799,90 @@ const adminListCategoriesHandler =
 		return { categories: rows }
 	})
 
+// Historical JSON is untrusted. Validate each status independently so a bad
+// field does not hide another valid field or manufacture a transition.
+const reviewMetadataSchema = z.object({
+	status: z.enum(PROJECT_STATUS).nullable().catch(null),
+	fromStatus: z.enum(PROJECT_STATUS).nullable().catch(null),
+	toStatus: z.enum(PROJECT_STATUS).nullable().catch(null),
+})
+
+const adminProjectReviewHistoryHandler =
+	adminProcedure.admin.project.reviewHistory.handler(
+		async ({ context: { db }, input, errors }) => {
+			const [existing] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(eq(project.id, input.params.id))
+				.limit(1)
+			if (!existing) throw errors.NOT_FOUND()
+
+			const { page, limit } = input.query
+			const where = and(
+				eq(auditLog.projectId, input.params.id),
+				inArray(auditLog.action, adminProjectReviewActionSchema.options)
+			)
+			const [rows, [countRow]] = await Promise.all([
+				db
+					.select({
+						id: auditLog.id,
+						action: auditLog.action,
+						createdAt: auditLog.createdAt,
+						reason: auditLog.reason,
+						metadata: auditLog.metadata,
+						actor: { id: user.id, name: user.name },
+					})
+					.from(auditLog)
+					.leftJoin(user, eq(auditLog.actorId, user.id))
+					.where(where)
+					.orderBy(desc(auditLog.createdAt), desc(auditLog.id))
+					.limit(limit)
+					.offset((page - 1) * limit),
+				db.select({ total: count() }).from(auditLog).where(where),
+			])
+			const totalItems = countRow?.total ?? 0
+			const totalPages = Math.ceil(totalItems / limit)
+			return {
+				events: rows.map((row) => {
+					const action = adminProjectReviewActionSchema.parse(row.action)
+					const metadata = reviewMetadataSchema.safeParse(row.metadata)
+					const statuses = metadata.success ? metadata.data : null
+					return {
+						id: row.id,
+						action,
+						createdAt: row.createdAt,
+						actor: row.actor,
+						reason: row.reason,
+						fromStatus:
+							action === 'project_status_changed'
+								? (statuses?.fromStatus ?? null)
+								: null,
+						toStatus:
+							action === 'project_submitted'
+								? ('draft' as const)
+								: action === 'project_created'
+									? (statuses?.status ?? null)
+									: (statuses?.toStatus ?? null),
+					}
+				}),
+				pagination: {
+					page,
+					limit,
+					totalItems,
+					totalPages,
+					hasNextPage: page < totalPages,
+					hasPreviousPage: page > 1,
+				},
+			}
+		}
+	)
+
 export const adminProjectRouter = {
 	create: adminCreateProjectHandler,
 	getById: adminGetProjectByIdHandler,
 	update: adminUpdateProjectHandler,
 	remove: adminDeleteProjectHandler,
 	list: adminListProjectHandler,
+	reviewHistory: adminProjectReviewHistoryHandler,
 	listCategories: adminListCategoriesHandler,
 }

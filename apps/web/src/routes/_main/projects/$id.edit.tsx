@@ -34,6 +34,7 @@ import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { ProjectReviewActions } from '#/features/admin-projects/components/project-review-actions'
+import { ProjectReviewHistory } from '#/features/admin-projects/components/project-review-history'
 import {
 	adminProjectQueries,
 	useAdminProjectGet,
@@ -221,6 +222,10 @@ function RouteComponent() {
 			</div>
 
 			<EditProjectForm key={project.id} project={project} />
+			<ProjectReviewHistory
+				key={`history-${project.id}`}
+				projectId={project.id}
+			/>
 		</div>
 	)
 }

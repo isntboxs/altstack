@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import {
 	adminDeleteProjectInputSchema,
 	adminListProjectInputSchema,
+	adminProjectReviewHistoryInputSchema,
 	adminUpdateProjectInputSchema,
 } from '@altstack/shared/schemas/admin-project'
 import {
@@ -24,12 +25,77 @@ describe('adminListProjectInputSchema', () => {
 	})
 
 	it.each([
+		[true, true],
+		[false, false],
+		['true', true],
+		['false', false],
+		[undefined, undefined],
+	])('parses needsReview %j as %j', (input, expected) => {
+		expect(
+			adminListProjectInputSchema.parse({ query: { needsReview: input } }).query
+				.needsReview
+		).toBe(expected)
+	})
+
+	it.each(['', 'yes', '0', '1', 'False', 0, 1, null, [], {}])(
+		'rejects ambiguous needsReview input %j',
+		(needsReview) => {
+			expect(
+				adminListProjectInputSchema.safeParse({ query: { needsReview } })
+					.success
+			).toBe(false)
+		}
+	)
+
+	it.each([
 		{ sort: 'repositoryUrl' },
 		{ sort: 'name; DROP TABLE projects' },
 		{ order: 'invalid' },
 	])('rejects unsupported sorting input %j', (input) => {
 		expect(
 			adminListProjectInputSchema.safeParse({ query: input }).success
+		).toBe(false)
+	})
+})
+
+describe('adminProjectReviewHistoryInputSchema', () => {
+	it('defaults pagination and coerces HTTP numbers up to the limit', () => {
+		expect(
+			adminProjectReviewHistoryInputSchema.parse({
+				params: { id: PROJECT_ID },
+				query: {},
+			})
+		).toEqual({ params: { id: PROJECT_ID }, query: { page: 1, limit: 20 } })
+		expect(
+			adminProjectReviewHistoryInputSchema.parse({
+				params: { id: PROJECT_ID },
+				query: { page: '2', limit: '50' },
+			}).query
+		).toEqual({ page: 2, limit: 50 })
+	})
+	it.each([
+		{ page: 0 },
+		{ page: -1 },
+		{ page: 'NaN' },
+		{ page: 1.5 },
+		{ limit: 0 },
+		{ limit: 51 },
+		{ limit: 2.5 },
+		{ limit: 'invalid' },
+	])('rejects invalid pagination %j', (query) => {
+		expect(
+			adminProjectReviewHistoryInputSchema.safeParse({
+				params: { id: PROJECT_ID },
+				query,
+			}).success
+		).toBe(false)
+	})
+	it('requires a project UUID', () => {
+		expect(
+			adminProjectReviewHistoryInputSchema.safeParse({
+				params: { id: 'bad' },
+				query: {},
+			}).success
 		).toBe(false)
 	})
 })

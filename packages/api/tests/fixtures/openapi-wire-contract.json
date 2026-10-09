@@ -1,5 +1,5 @@
 {
-	"source": "Local development API baseline, updated for Content Management v1 admin draft fields and protected submission creation. Read methods are compared as QUERY.",
+	"source": "Local development API baseline, updated for Content Management v1 and the admin Needs review filter. Read methods are compared as QUERY.",
 	"security": [
 		{
 			"apiKeyCookie": []
@@ -488,6 +488,23 @@
 					"schema": {
 						"type": "string",
 						"enum": ["draft", "published", "rejected", "removed"]
+					},
+					"allowEmptyValue": true,
+					"allowReserved": true
+				},
+				{
+					"in": "query",
+					"name": "needsReview",
+					"schema": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "string",
+								"enum": ["true", "false"]
+							}
+						]
 					},
 					"allowEmptyValue": true,
 					"allowReserved": true

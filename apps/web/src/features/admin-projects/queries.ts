@@ -1,4 +1,5 @@
 import {
+	useInfiniteQuery,
 	useMutation,
 	useQueryClient,
 	useSuspenseQuery,
@@ -22,7 +23,21 @@ export const adminProjectQueries = {
 		adminORPC.project.listCategories.queryOptions({ input: {} }),
 	get: (input: { id: string }) =>
 		adminORPC.project.getById.queryOptions({ input: { params: input } }),
+	reviewHistory: (input: { id: string }) =>
+		adminORPC.project.reviewHistory.infiniteOptions({
+			input: (page: number) => {
+				return { params: input, query: { page, limit: 20 } }
+			},
+			initialPageParam: 1,
+			getNextPageParam: (lastPage) =>
+				lastPage.pagination.hasNextPage
+					? lastPage.pagination.page + 1
+					: undefined,
+		}),
 }
+
+export const useAdminProjectReviewHistory = (input: { id: string }) =>
+	useInfiniteQuery(adminProjectQueries.reviewHistory(input))
 
 export const useAdminProjectList = (
 	input?: Parameters<typeof adminProjectQueries.list>[0]
@@ -105,20 +120,18 @@ export const useAdminProjectUpdate = () => {
 				description: error.message,
 			})
 		},
-		onSuccess: async () => {
+		onSuccess: async (updated, variables) => {
 			toast.add({
 				type: 'success',
 				title: 'Project updated successfully',
 				description: 'Project updated successfully',
 			})
 
+			queryClient.setQueryData(
+				adminProjectQueries.get({ id: variables.params.id }).queryKey,
+				updated
+			)
 			await invalidateCatalog(queryClient)
-
-			await router.navigate({
-				to: '/projects',
-				replace: true,
-				viewTransition: true,
-			})
 			await router.invalidate()
 		},
 	})
