@@ -183,11 +183,16 @@ export function SubmissionForm({
 							</p>
 						)}
 						{cooldown && (
-							<p role="alert" className="text-sm text-destructive">
-								You can make 5 submission attempts every 10 minutes. Try again
-								in {Math.floor(cooldown.seconds / 60)}:
-								{String(cooldown.seconds % 60).padStart(2, '0')}.
-							</p>
+							<>
+								<p role="alert" className="text-sm text-destructive">
+									You can make 5 submission attempts every 10 minutes. Try again
+								</p>
+
+								<p className="text-sm text-destructive">
+									in {Math.floor(cooldown.seconds / 60)}:
+									{String(cooldown.seconds % 60).padStart(2, '0')}.
+								</p>
+							</>
 						)}
 						{success && (
 							<output className="block rounded-lg border bg-muted p-4 text-sm">
