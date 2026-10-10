@@ -1,8 +1,12 @@
+import { ORPCError } from '@orpc/client'
 import { useForm } from '@tanstack/react-form-start'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { z } from 'zod'
 
-import { createSubmissionInputSchema } from '@altstack/shared/schemas/submission'
+import {
+	createSubmissionInputSchema,
+	submissionRateLimitDataSchema,
+} from '@altstack/shared/schemas/submission'
 
 import { Button } from '@altstack/ui/components/button'
 import {
@@ -44,6 +48,19 @@ export function SubmissionForm({
 }) {
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState(false)
+	const [cooldown, setCooldown] = useState<{
+		reset: number
+		seconds: number
+	} | null>(null)
+	const resetAt = cooldown?.reset
+	useEffect(() => {
+		if (resetAt === undefined) return
+		const timer = setInterval(() => {
+			const seconds = Math.max(0, Math.ceil((resetAt - Date.now()) / 1_000))
+			setCooldown(seconds > 0 ? { reset: resetAt, seconds } : null)
+		}, 1_000)
+		return () => clearInterval(timer)
+	}, [resetAt])
 	const defaultValues: z.input<typeof createSubmissionInputSchema> = {
 		name: '',
 		websiteUrl: '',
@@ -56,6 +73,7 @@ export function SubmissionForm({
 			onSubmit: createSubmissionInputSchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
+			if (resetAt !== undefined && resetAt > Date.now()) return
 			setError(null)
 			setSuccess(false)
 			try {
@@ -63,6 +81,21 @@ export function SubmissionForm({
 				formApi.reset()
 				setSuccess(true)
 			} catch (failure) {
+				if (
+					failure instanceof ORPCError &&
+					failure.code === 'TOO_MANY_REQUESTS'
+				) {
+					const rateLimit = submissionRateLimitDataSchema.safeParse(
+						failure.data
+					)
+					if (rateLimit.success && rateLimit.data.reset > Date.now()) {
+						setCooldown({
+							reset: rateLimit.data.reset,
+							seconds: Math.ceil((rateLimit.data.reset - Date.now()) / 1_000),
+						})
+						return
+					}
+				}
 				setError(
 					failure instanceof Error
 						? failure.message
@@ -77,6 +110,7 @@ export function SubmissionForm({
 			noValidate
 			onSubmit={(event) => {
 				event.preventDefault()
+				if (cooldown) return
 				void form.handleSubmit()
 			}}
 		>
@@ -148,6 +182,18 @@ export function SubmissionForm({
 								{error}
 							</p>
 						)}
+						{cooldown && (
+							<>
+								<p role="alert" className="text-sm text-destructive">
+									You can make 5 submission attempts every 10 minutes. Try again
+								</p>
+
+								<p className="text-sm text-destructive">
+									in {Math.floor(cooldown.seconds / 60)}:
+									{String(cooldown.seconds % 60).padStart(2, '0')}.
+								</p>
+							</>
+						)}
 						{success && (
 							<output className="block rounded-lg border bg-muted p-4 text-sm">
 								Your project has been submitted and is awaiting review.
@@ -155,7 +201,7 @@ export function SubmissionForm({
 						)}
 						<Button
 							type="submit"
-							disabled={pending}
+							disabled={pending || cooldown !== null}
 							className="w-full sm:w-auto"
 						>
 							{pending ? (

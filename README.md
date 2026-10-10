@@ -8,20 +8,20 @@ Database development menggunakan PostgreSQL cloud. Konfigurasikan `.env` dari
 `.env.example` dengan `DATABASE_URL` untuk `altstack_development`, termasuk
 parameter SSL dari penyedia cloud. Terapkan migration dengan `vp run db:migrate`.
 
-Wrapper tes di bawah mereset schema aplikasi dan riwayat migration pada
-`altstack_development` sebelum dan sesudah tes. Data sebelumnya dihapus; setelah
-selesai, database berisi schema terbaru dan taxonomy tanpa fixture proyek.
+Wrapper `test:scoped` di bawah memakai schema sementara pada
+`altstack_development`, lalu menghapus schema tes setelah selesai. Data aplikasi
+dan riwayat migration di schema `public` tidak diubah.
 
 - Check everything is ready:
 
 ```bash
-vp run --filter @altstack/db test:isolated -- vp run ready
+vp run --filter @altstack/db test:scoped -- vp run ready
 ```
 
 - Run the tests:
 
 ```bash
-vp run --filter @altstack/db test:isolated -- vp run -r test
+vp run --filter @altstack/db test:scoped -- vp run -r test
 ```
 
 - Build the monorepo:
@@ -34,6 +34,47 @@ vp run -r build
 
 ```bash
 vp run dev
+```
+
+## Submission rate limit
+
+`submission.create` uses the oRPC Upstash adapter with a sliding window of five
+attempts per ten minutes per authenticated account, including admins. Validated
+attempts consume quota even if duplicate detection, the ten-open-draft cap,
+GitHub verification, or storage later fails. Invalid and unauthenticated calls
+do not consume quota. Redis errors and the five-second Redis request deadline
+return a server error before submission work begins; there is no local fallback
+or local rate-limit cache.
+
+Set the required server-only `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN`. Use a dedicated development Redis database locally.
+Counters use `altstack:<NODE_ENV>:submission:create` prefixes, shared across all
+instances in that environment. No database migration is required.
+
+The RPC and REST handlers return HTTP 429 with `{ limit, remaining, reset }`
+for quota rejection, where `reset` is an epoch timestamp in milliseconds. Both
+handlers add `RateLimit-*` headers and `Retry-After` on quota rejection, exposed
+through CORS. GitHub and draft-cap 429 errors have no quota payload. The form
+keeps inputs editable, disables submission during the reset countdown, and
+never retries automatically.
+
+Mocked tests do not contact Upstash. To opt into the integration test, explicitly
+provide dedicated development credentials as
+`UPSTASH_DEVELOPMENT_REDIS_REST_URL` and
+`UPSTASH_DEVELOPMENT_REDIS_REST_TOKEN`, set
+`UPSTASH_RATELIMIT_INTEGRATION=1`, and run from `packages/api`:
+
+```bash
+vp test run tests/submission-rate-limit.integration.test.ts
+```
+
+The test uses a unique development prefix, two independent clients, and a
+recreated instance. It cleans only its own prefixed keys. It never falls back to
+the application's runtime credentials and rejects a production environment.
+For full database-backed verification, use the disposable-schema wrapper:
+
+```bash
+vp run --filter @altstack/db test:scoped
 ```
 
 ## Deploy image dengan GitHub Actions

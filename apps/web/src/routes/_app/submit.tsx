@@ -52,6 +52,7 @@ function SubmissionPage() {
 	const queryClient = useQueryClient()
 	const createSubmission = useMutation({
 		...orpc.submission.create.mutationOptions(),
+		retry: false,
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: orpc.submission.key() }),
 	})

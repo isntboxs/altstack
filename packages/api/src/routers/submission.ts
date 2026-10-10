@@ -1,9 +1,11 @@
+import { ratelimit } from '@orpc/ratelimit'
 import { ORPCError } from '@orpc/server'
 import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
 
 import { fetchPublicGithubRepository } from '@altstack/api/github'
 import { protectedProcedure } from '@altstack/api/procedures'
 import { isUniqueViolation } from '@altstack/api/queries/pg-error'
+import { submissionRateLimiter } from '@altstack/api/submission-rate-limit'
 
 import type { db as Database } from '@altstack/db'
 import { auditLog, githubRepository, project } from '@altstack/db/schemas'
@@ -59,8 +61,16 @@ export const submissionRouter = {
 			}
 		}
 	),
-	create: protectedProcedure.submission.create.handler(
-		async ({ context: { db, auth }, input, errors }) => {
+	create: protectedProcedure.submission.create
+		.use(
+			// oRPC beta.42 declares ratelimit's error-map generic as any.
+			// oxlint-disable-next-line typescript/no-unsafe-argument
+			ratelimit({
+				limiter: submissionRateLimiter,
+				key: ({ context }) => `user:${context.auth.user.id}`,
+			})
+		)
+		.handler(async ({ context: { db, auth }, input, errors }) => {
 			const submitted = canonicalizeGithubUrl(input.repositoryUrl)
 			const requireCapacity = async (
 				database: Pick<typeof Database, 'select'>
@@ -172,6 +182,5 @@ export const submissionRouter = {
 					message: 'Unable to save your submission. Please try again.',
 				})
 			}
-		}
-	),
+		}),
 }

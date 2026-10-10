@@ -36,6 +36,7 @@
 		"./routers/upload": "./src/routers/upload.ts",
 		"./s3": "./src/s3.ts",
 		"./storage": "./src/storage.ts",
+		"./submission-rate-limit": "./src/submission-rate-limit.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -69,6 +70,7 @@
 			"./routers/upload": "./dist/routers/upload.mjs",
 			"./s3": "./dist/s3.mjs",
 			"./storage": "./dist/storage.mjs",
+			"./submission-rate-limit": "./dist/submission-rate-limit.mjs",
 			"./package.json": "./package.json"
 		}
 	},
@@ -90,9 +92,12 @@
 		"@orpc/evlog": "catalog:",
 		"@orpc/json-schema": "catalog:",
 		"@orpc/openapi": "catalog:",
+		"@orpc/ratelimit": "2.0.0-beta.42",
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
 		"@scalar/api-reference": "^1.72.0",
+		"@upstash/ratelimit": "^2.2.0",
+		"@upstash/redis": "^1.39.0",
 		"drizzle-orm": "catalog:",
 		"evlog": "catalog:",
 		"limax": "catalog:",
