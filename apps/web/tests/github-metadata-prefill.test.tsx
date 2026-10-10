@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => {
 })
 vi.mock('#/features/admin-projects/queries', () => {
 	return {
+		useAdminProjectGithubReadme: () => {
+			return { mutateAsync: vi.fn() }
+		},
 		useAdminProjectGithubMetadata: () => {
 			return { mutateAsync: mocks.fetch }
 		},

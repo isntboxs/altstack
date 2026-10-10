@@ -192,6 +192,19 @@ export const adminGithubMetadataInputSchema = z.object({
 	repositoryUrl: repositoryUrlSchema,
 })
 
+export const adminGithubReadmeInputSchema = z.object({
+	repositoryUrl: repositoryUrlSchema,
+})
+
+export const adminGithubReadmeOutputSchema = z.object({
+	repositoryUrl: repositoryUrlSchema,
+	sourceUrl: z.url({ protocol: /^https$/ }),
+	path: z.string().min(1),
+	commitSha: z.string().regex(/^[a-f0-9]{40}$/i),
+	markdown: z.string().min(1),
+	warnings: z.array(z.string()),
+})
+
 export const adminGithubMetadataOutputSchema = z.object({
 	repositoryUrl: repositoryUrlSchema,
 	// Keep long upstream copy intact so the admin can correct it in the preview.
