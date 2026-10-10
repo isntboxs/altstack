@@ -311,14 +311,13 @@ export function GithubMetadataPrefill({
 									aria-invalid={preview.selectWebsite && !website.success}
 									aria-describedby={`${id}-website-help`}
 								/>
-								{preview.selectWebsite && !website.success && (
-									<p
-										id={`${id}-website-help`}
-										className="text-xs text-destructive"
-									>
-										Enter a valid HTTP or HTTPS website URL.
-									</p>
-								)}
+								<div id={`${id}-website-help`} className="text-xs">
+									{preview.selectWebsite && !website.success && (
+										<p className="text-destructive">
+											Enter a valid HTTP or HTTPS website URL.
+										</p>
+									)}
+								</div>
 							</div>
 						</>
 					)}
