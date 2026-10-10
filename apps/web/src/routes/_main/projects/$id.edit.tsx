@@ -33,6 +33,7 @@ import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { ProjectReviewActions } from '#/features/admin-projects/components/project-review-actions'
 import { ProjectReviewHistory } from '#/features/admin-projects/components/project-review-history'
 import {
@@ -450,6 +451,46 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 													className="font-mono"
 												/>
 											</InputGroup>
+
+											<form.Subscribe
+												selector={(state) =>
+													[
+														state.values.repositoryUrl,
+														state.isSubmitting,
+													] as const
+												}
+											>
+												{([repositoryUrl, isSubmitting]) => (
+													<GithubMetadataPrefill
+														repositoryUrl={repositoryUrl ?? ''}
+														disabled={isSubmitting || updateProject.isPending}
+														getCurrentValues={() => {
+															return {
+																repositoryUrl:
+																	form.getFieldValue('repositoryUrl'),
+																description: form.getFieldValue('description'),
+																websiteUrl: form.getFieldValue('websiteUrl'),
+															}
+														}}
+														onApply={(values) => {
+															if ('description' in values) {
+																form.setFieldValue(
+																	'description',
+																	values.description
+																)
+																void form.validateField('description', 'change')
+															}
+															if ('websiteUrl' in values) {
+																form.setFieldValue(
+																	'websiteUrl',
+																	values.websiteUrl
+																)
+																void form.validateField('websiteUrl', 'change')
+															}
+														}}
+													/>
+												)}
+											</form.Subscribe>
 
 											<FieldDescription>
 												Must be a public, actively maintained repository with at

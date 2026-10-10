@@ -15,7 +15,10 @@ import {
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
-import { fetchPublicGithubRepository } from '@altstack/api/github'
+import {
+	fetchPublicGithubMetadata,
+	fetchPublicGithubRepository,
+} from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
 import {
 	lockCategoryIntegrity,
@@ -878,6 +881,12 @@ const adminProjectReviewHistoryHandler =
 	)
 
 export const adminProjectRouter = {
+	githubMetadata: adminProcedure.admin.project.githubMetadata.handler(
+		async ({ input }) => {
+			const { owner, repo } = canonicalizeGithubUrl(input.repositoryUrl)
+			return fetchPublicGithubMetadata(owner, repo)
+		}
+	),
 	create: adminCreateProjectHandler,
 	getById: adminGetProjectByIdHandler,
 	update: adminUpdateProjectHandler,

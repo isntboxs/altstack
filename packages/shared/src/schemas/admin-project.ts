@@ -188,6 +188,17 @@ export const adminGetProjectByIdInputSchema = z.object({
 	params: adminProjectParamsSchema,
 })
 
+export const adminGithubMetadataInputSchema = z.object({
+	repositoryUrl: repositoryUrlSchema,
+})
+
+export const adminGithubMetadataOutputSchema = z.object({
+	repositoryUrl: repositoryUrlSchema,
+	// Keep long upstream copy intact so the admin can correct it in the preview.
+	description: z.string().nullable(),
+	websiteUrl: z.url({ protocol: /^https?$/ }).nullable(),
+})
+
 export const adminProjectReviewActionSchema = z.enum([
 	'project_created',
 	'project_submitted',

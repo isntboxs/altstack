@@ -1,0 +1,9 @@
+{
+	"input": { "repositoryUrl": "OldOwner/OldRepo.git" },
+	"canonicalInput": { "repositoryUrl": "https://github.com/oldowner/oldrepo" },
+	"output": {
+		"repositoryUrl": "https://github.com/newowner/newrepo",
+		"description": "A public repository description",
+		"websiteUrl": "https://example.com/project"
+	}
+}
