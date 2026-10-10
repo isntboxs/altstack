@@ -168,6 +168,10 @@ const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 		stars: 123,
 		forks: 12,
 		fetchedAt: new Date(),
+		lastCommitAt: null,
+		repositoryCreatedAt: null,
+		latestReleaseTag: null,
+		metadataFetchedAt: null,
 	},
 	categoryDetails: [ai, general],
 }

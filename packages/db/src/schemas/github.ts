@@ -21,6 +21,12 @@ export const githubRepository = pgTable(
 		stars: integer('stars').notNull().default(0),
 		forks: integer('forks').notNull().default(0),
 		fetchedAt: timestamp('fetched_at').notNull(),
+		lastCommitAt: timestamp('last_commit_at', { withTimezone: true }),
+		repositoryCreatedAt: timestamp('repository_created_at', {
+			withTimezone: true,
+		}),
+		latestReleaseTag: text('latest_release_tag'),
+		metadataFetchedAt: timestamp('metadata_fetched_at', { withTimezone: true }),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
 			.defaultNow()

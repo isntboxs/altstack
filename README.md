@@ -105,3 +105,11 @@ Setiap image memperoleh tag release yang sama (misalnya `:v1.0.0`) dan tag
 `sha-<commit>`. Di Dokploy, gunakan tag release agar deploy dan rollback selalu
 deterministik. Konfigurasi domain tetap menunjuk ke port internal `3009` untuk
 API serta `3000` untuk Web.
+
+## GitHub statistics refresh
+
+Metadata aside, refresh manual admin, dan job harian tersedia. Lihat
+[rollout, migration, token runtime, dan schedule Dokploy 02:00 Asia/Jakarta](docs/github-statistics-refresh.md).
+Urutan rollout: migration nullable → deploy server/web → backfill pertama →
+aktifkan schedule. Command dalam container server dari `/app`:
+`bun run apps/server/dist/jobs/github-refresh.mjs`.

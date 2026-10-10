@@ -8,6 +8,7 @@ import {
 	repositoryUrlSchema,
 	slugSchema,
 } from '@altstack/shared/schemas/common'
+import { githubDetailSchema } from '@altstack/shared/schemas/project'
 import {
 	logoKeySchema,
 	screenshotKeySchema,
@@ -89,13 +90,7 @@ export const adminCreateProjectInputSchema = z.object({
 })
 
 export const adminCreateProjectOutputSchema = adminProjectSchema.extend({
-	github: z.object({
-		owner: z.string(),
-		repo: z.string(),
-		stars: z.number().int().nonnegative(),
-		forks: z.number().int().nonnegative(),
-		fetchedAt: z.coerce.date(),
-	}),
+	github: githubDetailSchema,
 })
 
 export const adminListProjectQuerySchema = z.object({
@@ -167,13 +162,16 @@ export const adminUpdateProjectInputSchema = z.object({
 })
 
 export const adminUpdateProjectOutputSchema = adminProjectSchema.extend({
-	github: z.object({
-		owner: z.string(),
-		repo: z.string(),
-		stars: z.number().int().nonnegative(),
-		forks: z.number().int().nonnegative(),
-		fetchedAt: z.coerce.date(),
-	}),
+	github: githubDetailSchema,
+})
+
+export const adminGithubRefreshInputSchema = z.object({
+	params: adminProjectParamsSchema,
+})
+
+export const adminGithubRefreshOutputSchema = z.object({
+	repositoryUrl: repositoryUrlSchema,
+	github: githubDetailSchema,
 })
 
 export const adminDeleteProjectInputSchema = z.object({

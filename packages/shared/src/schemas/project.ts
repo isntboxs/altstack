@@ -40,6 +40,14 @@ const githubField = {
 	fetchedAt: z.coerce.date(),
 }
 
+export const githubDetailSchema = z.object({
+	...githubField,
+	lastCommitAt: z.coerce.date().nullable(),
+	repositoryCreatedAt: z.coerce.date().nullable(),
+	latestReleaseTag: z.string().nullable(),
+	metadataFetchedAt: z.coerce.date().nullable(),
+})
+
 export const getProjectBySlugParamsSchema = z.object({
 	slug: slugSchema,
 })
@@ -50,7 +58,7 @@ export const getProjectBySlugInputSchema = z.object({
 
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
-	github: z.object(githubField),
+	github: githubDetailSchema,
 	categoryDetails: z.array(categoryNodeSchema),
 })
 

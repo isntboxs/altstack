@@ -1,5 +1,5 @@
 {
-	"source": "Local development API baseline, updated for Content Management v1 and the admin Needs review filter. Read methods are compared as QUERY.",
+	"source": "Local development API baseline, updated for Content Management v1 and the admin Needs review filter. Read methods are compared as QUERY. Detail GitHub schemas expanded for authorized statistics metadata (2026-10-10); list/search remain unchanged.",
 	"security": [
 		{
 			"apiKeyCookie": []
@@ -1850,9 +1850,58 @@
 							"type": "string",
 							"format": "date-time",
 							"x-native-type": "date"
+						},
+						"lastCommitAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"repositoryCreatedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"latestReleaseTag": {
+							"type": ["string", "null"]
+						},
+						"metadataFetchedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
 						}
 					},
-					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"required": [
+						"owner",
+						"repo",
+						"stars",
+						"forks",
+						"fetchedAt",
+						"lastCommitAt",
+						"repositoryCreatedAt",
+						"latestReleaseTag",
+						"metadataFetchedAt"
+					],
 					"additionalProperties": false
 				}
 			},
@@ -2531,9 +2580,58 @@
 							"type": "string",
 							"format": "date-time",
 							"x-native-type": "date"
+						},
+						"lastCommitAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"repositoryCreatedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"latestReleaseTag": {
+							"type": ["string", "null"]
+						},
+						"metadataFetchedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
 						}
 					},
-					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"required": [
+						"owner",
+						"repo",
+						"stars",
+						"forks",
+						"fetchedAt",
+						"lastCommitAt",
+						"repositoryCreatedAt",
+						"latestReleaseTag",
+						"metadataFetchedAt"
+					],
 					"additionalProperties": false
 				},
 				"categoryDetails": {
@@ -3060,9 +3158,58 @@
 							"type": "string",
 							"format": "date-time",
 							"x-native-type": "date"
+						},
+						"lastCommitAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"repositoryCreatedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"latestReleaseTag": {
+							"type": ["string", "null"]
+						},
+						"metadataFetchedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
 						}
 					},
-					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"required": [
+						"owner",
+						"repo",
+						"stars",
+						"forks",
+						"fetchedAt",
+						"lastCommitAt",
+						"repositoryCreatedAt",
+						"latestReleaseTag",
+						"metadataFetchedAt"
+					],
 					"additionalProperties": false
 				}
 			},
@@ -3219,9 +3366,58 @@
 							"type": "string",
 							"format": "date-time",
 							"x-native-type": "date"
+						},
+						"lastCommitAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"repositoryCreatedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
+						},
+						"latestReleaseTag": {
+							"type": ["string", "null"]
+						},
+						"metadataFetchedAt": {
+							"anyOf": [
+								{
+									"type": "string",
+									"format": "date-time",
+									"x-native-type": "date"
+								},
+								{
+									"type": "null"
+								}
+							]
 						}
 					},
-					"required": ["owner", "repo", "stars", "forks", "fetchedAt"],
+					"required": [
+						"owner",
+						"repo",
+						"stars",
+						"forks",
+						"fetchedAt",
+						"lastCommitAt",
+						"repositoryCreatedAt",
+						"latestReleaseTag",
+						"metadataFetchedAt"
+					],
 					"additionalProperties": false
 				}
 			},

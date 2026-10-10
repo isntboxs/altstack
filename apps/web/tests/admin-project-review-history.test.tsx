@@ -123,6 +123,10 @@ const draft: ORPCRouterOutputs['admin']['project']['getById'] = {
 		stars: 0,
 		forks: 0,
 		fetchedAt: new Date(),
+		lastCommitAt: null,
+		repositoryCreatedAt: null,
+		latestReleaseTag: null,
+		metadataFetchedAt: null,
 	},
 }
 function event(index: number, overrides: Partial<Event> = {}): Event {

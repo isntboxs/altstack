@@ -16,11 +16,19 @@ export const octokit: Octokit = new Octokit({
 	auth: env.GITHUB_TOKEN,
 	userAgent: env.APP_NAME,
 	timeZone: 'Asia/Jakarta',
+	request: { timeout: 15_000 },
+	// Let callers report/stop on rate limits instead of sleeping inside a job.
+	throttle: {
+		onRateLimit: () => false,
+		onSecondaryRateLimit: () => false,
+	},
+	retry: { enabled: false },
 })
 
 async function fetchVerifiedPublicGithubRepository(
 	owner: string,
-	repo: string
+	repo: string,
+	mapError = githubRequestError
 ) {
 	try {
 		const { data } = await octokit.rest.repos.get({ owner, repo })
@@ -33,7 +41,7 @@ async function fetchVerifiedPublicGithubRepository(
 		const identity = canonicalizeGithubUrl(`${data.owner.login}/${data.name}`)
 		return { data, identity }
 	} catch (error) {
-		throw githubRequestError(
+		throw mapError(
 			error,
 			'Unable to verify the GitHub repository. Please try again.',
 			'Public GitHub repository not found.'
@@ -50,6 +58,83 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 		...identity,
 		stars: data.stargazers_count,
 		forks: data.forks_count,
+	}
+}
+
+function githubDate(value: string | null | undefined) {
+	if (!value) throw new Error('GitHub returned a missing date')
+	const date = new Date(value)
+	if (!Number.isFinite(date.getTime())) {
+		throw new Error('GitHub returned an invalid date')
+	}
+	return date
+}
+
+export async function fetchPublicGithubStatistics(owner: string, repo: string) {
+	const { data: repository, identity } =
+		await fetchVerifiedPublicGithubRepository(
+			owner,
+			repo,
+			githubStatisticsRequestError
+		)
+	try {
+		const repositoryCreatedAt = githubDate(repository.created_at)
+		const resolved = { owner: identity.owner, repo: identity.repo }
+		let lastCommitAt: Date | null = null
+		try {
+			const { data } = await octokit.rest.repos.getCommit({
+				...resolved,
+				ref: repository.default_branch,
+			})
+			lastCommitAt = githubDate(data.commit.committer?.date)
+		} catch (error) {
+			// A missing branch (404) or arbitrary conflict is not an empty repo.
+			if (
+				!(error instanceof RequestError) ||
+				error.status !== 409 ||
+				!/^Git Repository is empty\.?(?:$| - https:\/\/docs\.github\.com\/)/i.test(
+					error.message
+				)
+			) {
+				throw error
+			}
+		}
+		let latestReleaseTag: string | null = null
+		try {
+			const { data } = await octokit.rest.repos.getLatestRelease(resolved)
+			if (!data.tag_name) {
+				throw new Error('GitHub returned an empty release tag')
+			}
+			latestReleaseTag = data.tag_name
+		} catch (error) {
+			if (!(error instanceof RequestError) || error.status !== 404) throw error
+			// The release endpoint also returns 404 for deleted/private repos.
+			// Confirm continued public access before recording "No releases".
+			const verified = await fetchVerifiedPublicGithubRepository(
+				resolved.owner,
+				resolved.repo,
+				githubStatisticsRequestError
+			)
+			if (verified.identity.canonicalUrl !== identity.canonicalUrl) {
+				throw new ORPCError('CONFLICT', {
+					message: 'The GitHub repository moved during refresh. Please retry.',
+				})
+			}
+		}
+		return {
+			...identity,
+			stars: repository.stargazers_count,
+			forks: repository.forks_count,
+			repositoryCreatedAt,
+			lastCommitAt,
+			latestReleaseTag,
+		}
+	} catch (error) {
+		throw githubStatisticsRequestError(
+			error,
+			'Unable to refresh GitHub statistics. Please try again.',
+			'Public GitHub repository not found.'
+		)
 	}
 }
 
@@ -82,6 +167,23 @@ function githubRequestError(error: unknown, message: string, notFound: string) {
 		}
 	}
 	return new ORPCError('INTERNAL_SERVER_ERROR', { message })
+}
+
+function githubStatisticsRequestError(
+	error: unknown,
+	message: string,
+	notFound: string
+) {
+	if (error instanceof RequestError && error.status === 403) {
+		const headers = error.response?.headers
+		const rateLimited =
+			headers?.['x-ratelimit-remaining'] === '0' ||
+			headers?.['retry-after'] !== undefined ||
+			/rate limit|abuse/i.test(error.message)
+		// An individual repository access restriction must not stop the whole batch.
+		if (!rateLimited) return new ORPCError('INTERNAL_SERVER_ERROR', { message })
+	}
+	return githubRequestError(error, message, notFound)
 }
 
 export async function fetchPublicGithubReadme(owner: string, repo: string) {

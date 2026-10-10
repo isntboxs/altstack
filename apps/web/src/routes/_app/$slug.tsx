@@ -1,11 +1,4 @@
-import {
-	IconBrandGithub,
-	IconCalendar,
-	IconGitBranch,
-	IconGitCommit,
-	IconGitFork,
-	IconTag,
-} from '@tabler/icons-react'
+import { IconBrandGithub } from '@tabler/icons-react'
 import {
 	ClientOnly,
 	createFileRoute,
@@ -19,20 +12,11 @@ import {
 	Flag,
 	More,
 	SquareBottomUp,
-	Star,
 	Verified,
 } from 'reicon-react'
 
-import type { ORPCRouterOutputs } from '@altstack/api/routers'
-
 import { Button } from '@altstack/ui/components/button'
 import { ButtonGroup } from '@altstack/ui/components/button-group'
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@altstack/ui/components/card'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -41,7 +25,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
-import { Separator } from '@altstack/ui/components/separator'
 import {
 	Tooltip,
 	TooltipContent,
@@ -50,6 +33,7 @@ import {
 
 import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
+import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 import { resolveFileUrl } from '#/utils/storage'
 
@@ -71,6 +55,7 @@ export const Route = createFileRoute('/_app/$slug')({
 			}
 			throw error
 		}
+		return { statisticsNow: Date.now() }
 	},
 	notFoundComponent: () => (
 		<div className="container mx-auto max-w-6xl space-y-4 px-4 pt-28 lg:px-16">
@@ -185,101 +170,9 @@ const MoreActions = ({ websiteUrl }: { websiteUrl: string | null }) => (
 	</div>
 )
 
-const AsideSection = ({
-	github,
-}: {
-	github: ORPCRouterOutputs['project']['getBySlug']['github']
-}) => {
-	// FIXME(#32): wire real GitHub metadata for remaining stats (R5 refresh) — stars/forks is R1 scope, other fields intentionally Unknown for now.
-	const githubStatsItem = [
-		{
-			icon: IconGitFork,
-			label: 'Forks',
-			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-				github.forks
-			),
-		},
-		{
-			icon: IconGitCommit,
-			label: 'Last commit',
-			value: 'Unknown',
-		},
-		{
-			icon: IconCalendar,
-			label: 'Repository age',
-			value: 'Unknown',
-		},
-		{
-			icon: IconTag,
-			label: 'Version',
-			value: 'Unknown',
-		},
-	]
-
-	const repoFullName = `${github.owner}/${github.repo}`
-
-	return (
-		<div className="space-y-8 py-5">
-			<Card className="sticky top-17 z-50">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-1.5 font-normal">
-						<Star className="size-4 shrink-0 fill-amber-500/20 text-amber-500" />
-						<span className="text-xl font-semibold">
-							{new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-								github.stars
-							)}
-						</span>
-						<span className="text-sm">Stars</span>
-					</CardTitle>
-				</CardHeader>
-
-				<CardContent className="grid grid-cols-1 gap-2.5">
-					{githubStatsItem.map((item, idx) => (
-						<div key={idx} className="flex items-center justify-between gap-2">
-							<div className="flex shrink-0 items-center gap-1.5">
-								<item.icon className="size-4 shrink-0 text-muted-foreground" />
-								<span className="text-sm whitespace-nowrap text-muted-foreground">
-									{item.label}
-								</span>
-							</div>
-
-							<Separator className="min-w-2 flex-1" />
-
-							<span
-								className="max-w-[50%] min-w-0 truncate text-right text-sm font-medium"
-								title={String(item.value)}
-							>
-								{item.value}
-							</span>
-						</div>
-					))}
-
-					<div className="flex items-center justify-between gap-2">
-						<div className="flex shrink-0 items-center gap-1.5">
-							<IconGitBranch className="size-4 shrink-0 text-muted-foreground" />
-							<span className="text-sm whitespace-nowrap text-muted-foreground">
-								Repository
-							</span>
-						</div>
-						<Separator className="min-w-2 flex-1" />
-						<a
-							href={`https://github.com/${repoFullName}`}
-							target="_blank"
-							rel="noreferrer"
-							title={repoFullName}
-							className="max-w-[55%] min-w-0 truncate text-right text-sm font-medium underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
-						>
-							{repoFullName}
-						</a>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
-	)
-}
-
 function RouteComponent() {
 	const { slug } = Route.useParams()
+	const { statisticsNow } = Route.useLoaderData()
 	const { data: projectData } = useProjectBySlug(slug)
 
 	const safeWebsiteUrl = useMemo(() => {
@@ -379,7 +272,7 @@ function RouteComponent() {
 					)}
 				</div>
 
-				<AsideSection github={projectData.github} />
+				<GithubStatistics github={projectData.github} now={statisticsNow} />
 			</div>
 		</div>
 	)

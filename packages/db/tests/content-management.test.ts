@@ -62,7 +62,7 @@ describe('content management migration', () => {
 			).rows
 			const metadata = (
 				await scope.pool.query(
-					'SELECT * FROM github_repositories ORDER BY repo'
+					'SELECT project_id, owner, repo, stars, forks, fetched_at, created_at, updated_at FROM github_repositories ORDER BY repo'
 				)
 			).rows
 			const assignments = (
@@ -126,7 +126,7 @@ describe('content management migration', () => {
 			expect(
 				(
 					await scope.pool.query(
-						'SELECT * FROM github_repositories ORDER BY repo'
+						'SELECT project_id, owner, repo, stars, forks, fetched_at, created_at, updated_at FROM github_repositories ORDER BY repo'
 					)
 				).rows
 			).toEqual(metadata)

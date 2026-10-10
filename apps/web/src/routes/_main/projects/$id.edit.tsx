@@ -35,6 +35,7 @@ import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
+import { GithubStatisticsRefresh } from '#/features/admin-projects/components/github-statistics-refresh'
 import { ProjectReviewActions } from '#/features/admin-projects/components/project-review-actions'
 import { ProjectReviewHistory } from '#/features/admin-projects/components/project-review-history'
 import {
@@ -245,20 +246,23 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 		string | null
 	>(resolveFileUrl(project.screenshot))
 
-	const defaultValues: EditProjectValues = {
-		name: project.name,
-		slug: project.slug,
-		repositoryUrl: toRepositoryShortForm(project.repositoryUrl),
-		tagline: project.tagline ?? '',
-		description: project.description ?? '',
-		logo: undefined,
-		screenshot: undefined,
-		websiteUrl: project.websiteUrl ?? undefined,
-		content: project.content ?? undefined,
-		categorySlugs: project.categories,
-		status: project.status,
-		rejectionReason: project.rejectionReason ?? '',
-	}
+	// Refetching saved GitHub stats must never replace in-progress form values.
+	const [defaultValues] = useState<EditProjectValues>(() => {
+		return {
+			name: project.name,
+			slug: project.slug,
+			repositoryUrl: toRepositoryShortForm(project.repositoryUrl),
+			tagline: project.tagline ?? '',
+			description: project.description ?? '',
+			logo: undefined,
+			screenshot: undefined,
+			websiteUrl: project.websiteUrl ?? undefined,
+			content: project.content ?? undefined,
+			categorySlugs: project.categories,
+			status: project.status,
+			rejectionReason: project.rejectionReason ?? '',
+		}
+	})
 
 	const form = useForm({
 		defaultValues,
@@ -489,6 +493,16 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 																void form.validateField('websiteUrl', 'change')
 															}
 														}}
+													/>
+												)}
+											</form.Subscribe>
+
+											<form.Subscribe selector={(state) => state.isSubmitting}>
+												{(isSubmitting) => (
+													<GithubStatisticsRefresh
+														projectId={project.id}
+														repositoryUrl={project.repositoryUrl}
+														disabled={isSubmitting || updateProject.isPending}
 													/>
 												)}
 											</form.Subscribe>
