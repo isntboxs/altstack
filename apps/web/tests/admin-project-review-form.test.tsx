@@ -25,6 +25,9 @@ const { mutateAsync } = vi.hoisted(() => {
 })
 vi.mock('#/features/admin-projects/queries', () => {
 	return {
+		useAdminProjectGithubRefresh: () => {
+			return { mutate: vi.fn(), isPending: false }
+		},
 		useAdminProjectUpdate: () => {
 			return { mutateAsync }
 		},
@@ -98,6 +101,10 @@ const draft: ORPCRouterOutputs['admin']['project']['getById'] = {
 		stars: 0,
 		forks: 0,
 		fetchedAt: new Date(),
+		lastCommitAt: null,
+		repositoryCreatedAt: null,
+		latestReleaseTag: null,
+		metadataFetchedAt: null,
 	},
 }
 afterEach(cleanup)
@@ -108,6 +115,73 @@ beforeEach(() => {
 })
 
 describe('admin draft review form', () => {
+	it('syncs pristine repository URLs across refreshes without replacing other edits', async () => {
+		const { rerender } = render(<EditProjectForm project={draft} />)
+		fireEvent.change(screen.getByLabelText('Tagline'), {
+			target: { value: 'Unsaved tagline' },
+		})
+		fireEvent.blur(screen.getByLabelText('Repository URL'))
+		rerender(
+			<EditProjectForm
+				project={{
+					...draft,
+					repositoryUrl: 'https://github.com/canonical/repository',
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Repository URL')).toHaveProperty(
+			'value',
+			'canonical/repository'
+		)
+		rerender(
+			<EditProjectForm
+				project={{
+					...draft,
+					repositoryUrl: 'https://github.com/canonical/renamed-repository',
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Repository URL')).toHaveProperty(
+			'value',
+			'canonical/renamed-repository'
+		)
+		expect(screen.getByLabelText('Tagline')).toHaveProperty(
+			'value',
+			'Unsaved tagline'
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }))
+		await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+		expect(mutateAsync.mock.calls[0]?.[0].body).toMatchObject({
+			repositoryUrl: 'canonical/renamed-repository',
+			tagline: 'Unsaved tagline',
+		})
+	})
+	it('keeps unsaved values when a GitHub refresh updates the detail query', () => {
+		const { rerender } = render(<EditProjectForm project={draft} />)
+		fireEvent.change(screen.getByLabelText('Tagline'), {
+			target: { value: 'Unsaved tagline' },
+		})
+		fireEvent.change(screen.getByLabelText('Repository URL'), {
+			target: { value: 'unsaved/repository' },
+		})
+		rerender(
+			<EditProjectForm
+				project={{
+					...draft,
+					repositoryUrl: 'https://github.com/canonical/repository',
+					github: { ...draft.github, stars: 99, metadataFetchedAt: new Date() },
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Tagline')).toHaveProperty(
+			'value',
+			'Unsaved tagline'
+		)
+		expect(screen.getByLabelText('Repository URL')).toHaveProperty(
+			'value',
+			'unsaved/repository'
+		)
+	})
 	it('renders null copy and media safely and saves an unchanged incomplete draft', async () => {
 		render(<EditProjectForm project={draft} />)
 		expect(screen.getByLabelText('Tagline')).toHaveProperty('value', '')

@@ -6,14 +6,15 @@ import {
 } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
-import type { ORPCRouterInputs } from '@altstack/api/routers'
+import type { ORPCRouterInputs, ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { toast } from '@altstack/ui/components/toast'
 
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
-import { adminORPC } from '@/utils/orpc'
+import { adminORPC } from '#/utils/orpc'
 
 export const adminProjectQueries = {
+	githubRefresh: () => adminORPC.project.githubRefresh.mutationOptions(),
 	githubReadme: () => adminORPC.project.githubReadme.mutationOptions(),
 	githubMetadata: () => adminORPC.project.githubMetadata.mutationOptions(),
 	create: () => adminORPC.project.create.mutationOptions(),
@@ -44,6 +45,31 @@ export const useAdminProjectGithubReadme = () =>
 
 export const useAdminProjectGithubMetadata = () =>
 	useMutation({ ...adminProjectQueries.githubMetadata(), retry: false })
+
+export const useAdminProjectGithubRefresh = () => {
+	const queryClient = useQueryClient()
+	return useMutation({
+		...adminProjectQueries.githubRefresh(),
+		retry: false,
+		onSuccess: async (statistics, variables) => {
+			queryClient.setQueryData<
+				ORPCRouterOutputs['admin']['project']['getById']
+			>(
+				adminProjectQueries.get({ id: variables.params.id }).queryKey,
+				(previous) => (previous ? { ...previous, ...statistics } : previous)
+			)
+			await invalidateCatalog(queryClient)
+			toast.add({ type: 'success', title: 'GitHub statistics refreshed' })
+		},
+		onError: (error) => {
+			toast.add({
+				type: 'error',
+				title: 'GitHub refresh failed',
+				description: error.message,
+			})
+		},
+	})
+}
 
 export const useAdminProjectReviewHistory = (input: { id: string }) =>
 	useInfiniteQuery(adminProjectQueries.reviewHistory(input))

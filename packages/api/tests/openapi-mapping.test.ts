@@ -49,6 +49,10 @@ const project = {
 		stars: 10,
 		forks: 1,
 		fetchedAt: new Date('2026-01-01T00:00:00Z'),
+		lastCommitAt: null,
+		repositoryCreatedAt: null,
+		latestReleaseTag: null,
+		metadataFetchedAt: null,
 	},
 }
 const pagination = {
@@ -60,6 +64,10 @@ const pagination = {
 	hasPreviousPage: false,
 }
 const responses = {
+	githubRefreshAdminProject: {
+		repositoryUrl: project.repositoryUrl,
+		github: project.github,
+	},
 	githubMetadataAdminProject: metadataFixture.output,
 	githubReadmeAdminProject: readmeFixture.output,
 	listMySubmissions: { submissions: [], pagination },
@@ -149,6 +157,13 @@ const probes = {
 			),
 		},
 		project: {
+			githubRefresh: o.admin.project.githubRefresh.handler(({ input }) =>
+				record(
+					'githubRefreshAdminProject',
+					input,
+					responses.githubRefreshAdminProject
+				)
+			),
 			githubReadme: o.admin.project.githubReadme.handler(({ input }) =>
 				record(
 					'githubReadmeAdminProject',
@@ -304,6 +319,12 @@ interface MappingCase {
 	status?: number
 }
 const cases: Array<MappingCase> = [
+	{
+		operationId: 'githubRefreshAdminProject',
+		path: `/admin/projects/${ID}/github-refresh`,
+		method: 'POST',
+		input: { params: { id: ID } },
+	},
 	{
 		operationId: 'githubReadmeAdminProject',
 		path: '/admin/projects/github-readme',
@@ -855,7 +876,7 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(28)
+		expect(operations).toHaveLength(29)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
 			15
@@ -949,7 +970,7 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(27)
+		expect(mapped).toHaveLength(28)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
 		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(15)
 		for (const meta of mapped) {

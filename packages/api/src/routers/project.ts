@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
 
+import { githubDetail } from '@altstack/api/github-refresh'
 import { publicProcedure } from '@altstack/api/procedures'
 import {
 	getDirectProjectCategories,
@@ -42,13 +43,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 			...publicFields.parse(row.projects),
 			categoryDetails: await getDirectProjectCategories(db, row.projects.id),
 			screenshot: row.projects.screenshot,
-			github: {
-				owner: row.github_repositories.owner,
-				repo: row.github_repositories.repo,
-				stars: row.github_repositories.stars,
-				forks: row.github_repositories.forks,
-				fetchedAt: row.github_repositories.fetchedAt,
-			},
+			github: githubDetail(row.github_repositories),
 		}
 	}
 )

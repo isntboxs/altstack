@@ -2,7 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import type { SearchSortType } from '@altstack/shared/schemas'
 
-import { projectORPC } from '@/utils/orpc'
+import { projectORPC } from '#/utils/orpc'
 
 export interface SearchProjectsParams {
 	page?: number

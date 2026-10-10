@@ -33,6 +33,9 @@ const mocks = vi.hoisted(() => {
 })
 vi.mock('#/features/admin-projects/queries', () => {
 	return {
+		useAdminProjectGithubRefresh: () => {
+			return { mutate: vi.fn(), isPending: false }
+		},
 		useAdminProjectGithubReadme: () => {
 			return { mutateAsync: mocks.fetch }
 		},
@@ -217,6 +220,10 @@ const draft: ORPCRouterOutputs['admin']['project']['getById'] = {
 		stars: 10,
 		forks: 1,
 		fetchedAt: new Date(),
+		lastCommitAt: null,
+		repositoryCreatedAt: null,
+		latestReleaseTag: null,
+		metadataFetchedAt: null,
 	},
 }
 const metadata: Metadata = {

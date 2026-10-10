@@ -9,6 +9,8 @@ import {
 	adminDeleteProjectOutputSchema,
 	adminGetProjectByIdInputSchema,
 	adminGithubMetadataInputSchema,
+	adminGithubRefreshInputSchema,
+	adminGithubRefreshOutputSchema,
 	adminGithubReadmeInputSchema,
 	adminGithubReadmeOutputSchema,
 	adminGithubMetadataOutputSchema,
@@ -195,7 +197,28 @@ const githubReadmeAdminProjectContract = baseContract
 	.input(adminGithubReadmeInputSchema)
 	.output(adminGithubReadmeOutputSchema)
 
+const githubRefreshAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/{id}/github-refresh',
+			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
+			paramsStyles: { id: 'primitive' },
+			summary: 'Admin refresh GitHub statistics',
+			description:
+				'Atomically refresh stored statistics and metadata. Failed fetches preserve the previous snapshot. Repository changes or canonical identity conflicts return 409.',
+			tags: ['AdminProjects'],
+			operationId: 'githubRefreshAdminProject',
+			successStatus: 200,
+			successDescription: 'Stored GitHub statistics refreshed',
+		})
+	)
+	.input(adminGithubRefreshInputSchema)
+	.output(adminGithubRefreshOutputSchema)
+
 export const adminProjectContract = {
+	githubRefresh: githubRefreshAdminProjectContract,
 	githubReadme: githubReadmeAdminProjectContract,
 	githubMetadata: githubMetadataAdminProjectContract,
 	create: createAdminProjectContract,

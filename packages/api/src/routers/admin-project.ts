@@ -20,6 +20,12 @@ import {
 	fetchPublicGithubReadme,
 	fetchPublicGithubRepository,
 } from '@altstack/api/github'
+import {
+	emptyGithubMetadata,
+	enrichProjectGithubBestEffort,
+	githubDetail,
+	refreshProjectGithub,
+} from '@altstack/api/github-refresh'
 import { adminProcedure } from '@altstack/api/procedures'
 import {
 	lockCategoryIntegrity,
@@ -202,7 +208,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 		}
 
 		try {
-			return await db.transaction(async (tx) => {
+			const result = await db.transaction(async (tx) => {
 				await lockCategoryIntegrity(tx)
 				const categoryIds = await validateCategories(
 					tx,
@@ -268,9 +274,22 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					logo: rest.logo,
 					screenshot: rest.screenshot,
 					categories: uniqueCategorySlugs,
-					github: { owner, repo, stars, forks, fetchedAt },
+					github: {
+						owner,
+						repo,
+						stars,
+						forks,
+						fetchedAt,
+						...emptyGithubMetadata,
+					},
 				}
 			})
+			const enriched = await enrichProjectGithubBestEffort(
+				db,
+				result.id,
+				result.repositoryUrl
+			)
+			return { ...result, ...enriched }
 		} catch (error) {
 			// Promote already copied to final keys; clean them up so a failed
 			// insert (e.g. slug race → 409) doesn't leave orphan finals.
@@ -329,13 +348,7 @@ const adminGetProjectByIdHandler = adminProcedure.admin.project.getById.handler(
 			logo: rest.logo,
 			screenshot: rest.screenshot,
 			categories: categoryRows.map((categoryRow) => categoryRow.slug),
-			github: {
-				owner: githubRow.owner,
-				repo: githubRow.repo,
-				stars: githubRow.stars,
-				forks: githubRow.forks,
-				fetchedAt: githubRow.fetchedAt,
-			},
+			github: githubDetail(githubRow),
 		}
 	}
 )
@@ -411,7 +424,8 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 				throw errors.CONFLICT()
 			}
 			const refreshedGithub =
-				repository.canonicalUrl !== existing.repositoryUrl
+				repository.canonicalUrl !== existing.repositoryUrl ||
+				(status === 'published' && existing.status !== 'published')
 					? await fetchPublicGithubRepository(repository.owner, repository.repo)
 					: undefined
 			if (refreshedGithub) repository = refreshedGithub
@@ -569,6 +583,9 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					await tx
 						.update(githubRepository)
 						.set({
+							...(repository.canonicalUrl !== existing.repositoryUrl
+								? emptyGithubMetadata
+								: {}),
 							owner: refreshedGithub.owner,
 							repo: refreshedGithub.repo,
 							stars: refreshedGithub.stars,
@@ -606,16 +623,18 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					...rest,
 					submitter: await getSubmitter(tx, rest.submitterId),
 					categories: categorySlugs,
-					github: {
-						owner: githubRow.owner,
-						repo: githubRow.repo,
-						stars: githubRow.stars,
-						forks: githubRow.forks,
-						fetchedAt: githubRow.fetchedAt,
-					},
+					github: githubDetail(githubRow),
 				}
 			})
 			await deleteFinalKeysBestEffort(staleKeys)
+			if (refreshedGithub) {
+				const enriched = await enrichProjectGithubBestEffort(
+					db,
+					result.id,
+					result.repositoryUrl
+				)
+				return { ...result, ...enriched }
+			}
 			return result
 		} catch (error) {
 			await deleteFinalKeysBestEffort(promotedKeys)
@@ -882,6 +901,9 @@ const adminProjectReviewHistoryHandler =
 	)
 
 export const adminProjectRouter = {
+	githubRefresh: adminProcedure.admin.project.githubRefresh.handler(
+		({ context: { db }, input }) => refreshProjectGithub(db, input.params.id)
+	),
 	githubReadme: adminProcedure.admin.project.githubReadme.handler(
 		async ({ input }) => {
 			const { owner, repo } = canonicalizeGithubUrl(input.repositoryUrl)
