@@ -115,6 +115,47 @@ beforeEach(() => {
 })
 
 describe('admin draft review form', () => {
+	it('syncs pristine repository URLs across refreshes without replacing other edits', async () => {
+		const { rerender } = render(<EditProjectForm project={draft} />)
+		fireEvent.change(screen.getByLabelText('Tagline'), {
+			target: { value: 'Unsaved tagline' },
+		})
+		fireEvent.blur(screen.getByLabelText('Repository URL'))
+		rerender(
+			<EditProjectForm
+				project={{
+					...draft,
+					repositoryUrl: 'https://github.com/canonical/repository',
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Repository URL')).toHaveProperty(
+			'value',
+			'canonical/repository'
+		)
+		rerender(
+			<EditProjectForm
+				project={{
+					...draft,
+					repositoryUrl: 'https://github.com/canonical/renamed-repository',
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Repository URL')).toHaveProperty(
+			'value',
+			'canonical/renamed-repository'
+		)
+		expect(screen.getByLabelText('Tagline')).toHaveProperty(
+			'value',
+			'Unsaved tagline'
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }))
+		await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+		expect(mutateAsync.mock.calls[0]?.[0].body).toMatchObject({
+			repositoryUrl: 'canonical/renamed-repository',
+			tagline: 'Unsaved tagline',
+		})
+	})
 	it('keeps unsaved values when a GitHub refresh updates the detail query', () => {
 		const { rerender } = render(<EditProjectForm project={draft} />)
 		fireEvent.change(screen.getByLabelText('Tagline'), {

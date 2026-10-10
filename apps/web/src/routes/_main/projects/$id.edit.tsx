@@ -1,7 +1,7 @@
 import { IconArrowLeft, IconBrandGithub, IconPhoto } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form-start'
 import { ClientOnly, createFileRoute, Link } from '@tanstack/react-router'
-import { Suspense, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import type { z } from 'zod'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -325,6 +325,18 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 			}
 		},
 	})
+
+	useEffect(() => {
+		const repositoryUrl = toRepositoryShortForm(project.repositoryUrl)
+		if (
+			form.getFieldMeta('repositoryUrl')?.isPristine &&
+			form.getFieldValue('repositoryUrl') !== repositoryUrl
+		) {
+			form.setFieldValue('repositoryUrl', repositoryUrl, {
+				dontUpdateMeta: true,
+			})
+		}
+	}, [form, project.repositoryUrl])
 
 	// The slug is prefilled from the saved project, so auto-fill from name
 	// stays off unless the user edits the slug by hand (same listener as
