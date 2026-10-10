@@ -8,6 +8,8 @@ import {
 	adminDeleteProjectInputSchema,
 	adminDeleteProjectOutputSchema,
 	adminGetProjectByIdInputSchema,
+	adminGithubMetadataInputSchema,
+	adminGithubMetadataOutputSchema,
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
 	adminProjectReviewHistoryInputSchema,
@@ -153,7 +155,27 @@ const listAdminCategoriesContract = baseContract
 	.input(listCategoriesInputSchema)
 	.output(listCategoriesOutputSchema)
 
+const githubMetadataAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/github-metadata',
+			method: 'QUERY',
+			inputStructure: 'compact',
+			outputStructure: 'compact',
+			summary: 'Admin fetch GitHub metadata',
+			description:
+				'Preview description and HTTP(S) homepage from a public GitHub repository. Accepts {repositoryUrl} in the QUERY JSON body. Does not save or update the project.',
+			tags: ['AdminProjects'],
+			operationId: 'githubMetadataAdminProject',
+			successStatus: 200,
+			successDescription: 'GitHub metadata fetched',
+		})
+	)
+	.input(adminGithubMetadataInputSchema)
+	.output(adminGithubMetadataOutputSchema)
+
 export const adminProjectContract = {
+	githubMetadata: githubMetadataAdminProjectContract,
 	create: createAdminProjectContract,
 	getById: getAdminProjectByIdContract,
 	update: updateAdminProjectContract,

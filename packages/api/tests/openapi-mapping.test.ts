@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { contracts } from '@altstack/api/contracts'
 
+import metadataFixture from './fixtures/github-metadata.json'
 import baseline from './fixtures/openapi-wire-contract.json'
 
 const ID = '550e8400-e29b-41d4-a716-446655440000'
@@ -58,6 +59,7 @@ const pagination = {
 	hasPreviousPage: false,
 }
 const responses = {
+	githubMetadataAdminProject: metadataFixture.output,
 	listMySubmissions: { submissions: [], pagination },
 	createSubmission: { id: ID, status: 'draft' as const },
 	listAdminCategories: { categories: [adminNode] },
@@ -145,6 +147,13 @@ const probes = {
 			),
 		},
 		project: {
+			githubMetadata: o.admin.project.githubMetadata.handler(({ input }) =>
+				record(
+					'githubMetadataAdminProject',
+					input,
+					responses.githubMetadataAdminProject
+				)
+			),
 			create: o.admin.project.create.handler(({ input }) =>
 				record('createAdminProject', input, responses.createAdminProject)
 			),
@@ -286,6 +295,13 @@ interface MappingCase {
 	status?: number
 }
 const cases: Array<MappingCase> = [
+	{
+		operationId: 'githubMetadataAdminProject',
+		path: '/admin/projects/github-metadata',
+		method: 'QUERY',
+		body: metadataFixture.input,
+		input: metadataFixture.canonicalInput,
+	},
 	{
 		operationId: 'listMySubmissions',
 		path: '/submissions?q=%20Example%20&page=2&limit=10&submitterId=ignored',
@@ -504,6 +520,9 @@ describe('detailed REST mapping', () => {
 	it('excludes GET for every read endpoint migrated to QUERY', async () => {
 		const reads = cases.filter(({ method }) => method === undefined)
 		expect(reads).toHaveLength(13)
+		expect((await rest('/admin/projects/github-metadata', 'GET')).matched).toBe(
+			false
+		)
 		for (const { path } of reads) {
 			expect((await rest(path, 'GET')).matched).toBe(false)
 		}
@@ -632,6 +651,8 @@ describe('detailed REST mapping', () => {
 		})
 	})
 	it.each([
+		['/admin/projects/github-metadata', 'QUERY', undefined],
+		['/admin/projects/github-metadata', 'QUERY', { repositoryUrl: 'invalid' }],
 		['/categories/by-path', 'QUERY', undefined],
 		['/categories/by-path?path=', 'QUERY', undefined],
 		['/projects/search?sort=invalid', 'QUERY', undefined],
@@ -747,6 +768,42 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		const paths = spec.paths ?? {}
 		expect(spec.openapi).toBe('3.2.0')
+		const metadataOperation = paths['/admin/projects/github-metadata']?.query
+		expect(metadataOperation).toMatchObject({
+			operationId: 'githubMetadataAdminProject',
+			requestBody: {
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							required: ['repositoryUrl'],
+							properties: { repositoryUrl: { type: 'string' } },
+						},
+					},
+				},
+			},
+		})
+		expect(metadataOperation?.parameters ?? []).toEqual([])
+		expect(metadataOperation?.security ?? spec.security).toEqual(
+			baseline.security
+		)
+		expect(metadataOperation?.responses?.['200']).toMatchObject({
+			content: {
+				'application/json': {
+					schema: {
+						type: 'object',
+						required: ['repositoryUrl', 'description', 'websiteUrl'],
+						properties: {
+							description: { type: ['string', 'null'] },
+							websiteUrl: {
+								anyOf: [{ type: 'string', format: 'uri' }, { type: 'null' }],
+							},
+						},
+					},
+				},
+			},
+		})
 		const operations = Object.keys(paths)
 			.filter((path): path is `/${string}` => path.startsWith('/'))
 			.flatMap((path) =>
@@ -757,10 +814,10 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(26)
+		expect(operations).toHaveLength(27)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			13
+			14
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -851,11 +908,15 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(25)
+		expect(mapped).toHaveLength(26)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(13)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(14)
 		for (const meta of mapped) {
-			expect(meta?.inputStructure).toBe('detailed')
+			expect(meta?.inputStructure).toBe(
+				meta?.operationId === 'githubMetadataAdminProject'
+					? 'compact'
+					: 'detailed'
+			)
 			expect(meta?.outputStructure).toBe('compact')
 			const paramsStyles = meta?.path?.includes('{id}')
 				? { id: 'primitive' }

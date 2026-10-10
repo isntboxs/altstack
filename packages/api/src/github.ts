@@ -4,6 +4,7 @@ import { Octokit, RequestError } from 'octokit'
 import { env } from '@altstack/env/server'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
+import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 
 export const octokit: Octokit = new Octokit({
 	auth: env.GITHUB_TOKEN,
@@ -11,7 +12,10 @@ export const octokit: Octokit = new Octokit({
 	timeZone: 'Asia/Jakarta',
 })
 
-export async function fetchPublicGithubRepository(owner: string, repo: string) {
+async function fetchVerifiedPublicGithubRepository(
+	owner: string,
+	repo: string
+) {
 	try {
 		const { data } = await octokit.rest.repos.get({ owner, repo })
 		if (data.private) {
@@ -19,13 +23,9 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 				message: 'The GitHub repository must be public.',
 			})
 		}
-		// GitHub follows renamed/transferred repository URLs. Persist its current
-		// identity so old URLs cannot create a second listing of the same repo.
-		return {
-			...canonicalizeGithubUrl(`${data.owner.login}/${data.name}`),
-			stars: data.stargazers_count,
-			forks: data.forks_count,
-		}
+		// Resolve renamed/transferred repositories for every caller.
+		const identity = canonicalizeGithubUrl(`${data.owner.login}/${data.name}`)
+		return { data, identity }
 	} catch (error) {
 		if (error instanceof ORPCError) throw error
 		if (error instanceof RequestError) {
@@ -44,5 +44,33 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 		throw new ORPCError('INTERNAL_SERVER_ERROR', {
 			message: 'Unable to verify the GitHub repository. Please try again.',
 		})
+	}
+}
+
+export async function fetchPublicGithubRepository(owner: string, repo: string) {
+	const { data, identity } = await fetchVerifiedPublicGithubRepository(
+		owner,
+		repo
+	)
+	return {
+		...identity,
+		stars: data.stargazers_count,
+		forks: data.forks_count,
+	}
+}
+
+export async function fetchPublicGithubMetadata(owner: string, repo: string) {
+	const { data, identity } = await fetchVerifiedPublicGithubRepository(
+		owner,
+		repo
+	)
+	const description = data.description?.trim()
+	const homepage = data.homepage?.trim()
+	const website =
+		adminCreateProjectBodySchema.shape.websiteUrl.safeParse(homepage)
+	return {
+		repositoryUrl: identity.canonicalUrl,
+		description: description === '' ? null : (description ?? null),
+		websiteUrl: website.success ? (website.data ?? null) : null,
 	}
 }

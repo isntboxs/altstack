@@ -14,6 +14,7 @@ import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import { adminORPC } from '@/utils/orpc'
 
 export const adminProjectQueries = {
+	githubMetadata: () => adminORPC.project.githubMetadata.mutationOptions(),
 	create: () => adminORPC.project.create.mutationOptions(),
 	update: () => adminORPC.project.update.mutationOptions(),
 	delete: () => adminORPC.project.remove.mutationOptions(),
@@ -35,6 +36,10 @@ export const adminProjectQueries = {
 					: undefined,
 		}),
 }
+
+// An imperative read: fetching happens only when the admin clicks the button.
+export const useAdminProjectGithubMetadata = () =>
+	useMutation({ ...adminProjectQueries.githubMetadata(), retry: false })
 
 export const useAdminProjectReviewHistory = (input: { id: string }) =>
 	useInfiniteQuery(adminProjectQueries.reviewHistory(input))

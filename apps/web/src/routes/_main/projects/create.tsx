@@ -37,6 +37,7 @@ import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
 // Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
@@ -90,7 +91,7 @@ function isUploadConsumedError(error: unknown): boolean {
 }
 
 export const Route = createFileRoute('/_main/projects/create')({
-	component: RouteComponent,
+	component: CreateProjectForm,
 })
 
 function SectionHeading({
@@ -197,7 +198,7 @@ function ProjectPreviewCard({
 	)
 }
 
-function RouteComponent() {
+export function CreateProjectForm() {
 	const createProject = useAdminProjectCreate()
 	const [submitError, setSubmitError] = useState<string | null>(null)
 	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(null)
@@ -399,6 +400,53 @@ function RouteComponent() {
 														className="font-mono"
 													/>
 												</InputGroup>
+
+												<form.Subscribe
+													selector={(state) =>
+														[
+															state.values.repositoryUrl,
+															state.isSubmitting,
+														] as const
+													}
+												>
+													{([repositoryUrl, isSubmitting]) => (
+														<GithubMetadataPrefill
+															repositoryUrl={repositoryUrl}
+															disabled={isSubmitting || createProject.isPending}
+															getCurrentValues={() => {
+																return {
+																	repositoryUrl:
+																		form.getFieldValue('repositoryUrl'),
+																	description:
+																		form.getFieldValue('description'),
+																	websiteUrl: form.getFieldValue('websiteUrl'),
+																}
+															}}
+															onApply={(values) => {
+																if ('description' in values) {
+																	form.setFieldValue(
+																		'description',
+																		values.description
+																	)
+																	void form.validateField(
+																		'description',
+																		'change'
+																	)
+																}
+																if ('websiteUrl' in values) {
+																	form.setFieldValue(
+																		'websiteUrl',
+																		values.websiteUrl
+																	)
+																	void form.validateField(
+																		'websiteUrl',
+																		'change'
+																	)
+																}
+															}}
+														/>
+													)}
+												</form.Subscribe>
 
 												<FieldDescription>
 													Must be a public, actively maintained repository with

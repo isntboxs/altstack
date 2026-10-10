@@ -28,6 +28,9 @@ vi.mock('#/features/admin-projects/queries', () => {
 		useAdminProjectUpdate: () => {
 			return { mutateAsync }
 		},
+		useAdminProjectGithubMetadata: () => {
+			return { mutateAsync: vi.fn() }
+		},
 		adminProjectQueries: {},
 		useAdminProjectGet: vi.fn(),
 	}
