@@ -17,6 +17,7 @@ import { z } from 'zod'
 
 import {
 	fetchPublicGithubMetadata,
+	fetchPublicGithubReadme,
 	fetchPublicGithubRepository,
 } from '@altstack/api/github'
 import { adminProcedure } from '@altstack/api/procedures'
@@ -881,6 +882,12 @@ const adminProjectReviewHistoryHandler =
 	)
 
 export const adminProjectRouter = {
+	githubReadme: adminProcedure.admin.project.githubReadme.handler(
+		async ({ input }) => {
+			const { owner, repo } = canonicalizeGithubUrl(input.repositoryUrl)
+			return fetchPublicGithubReadme(owner, repo)
+		}
+	),
 	githubMetadata: adminProcedure.admin.project.githubMetadata.handler(
 		async ({ input }) => {
 			const { owner, repo } = canonicalizeGithubUrl(input.repositoryUrl)

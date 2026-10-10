@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { contracts } from '@altstack/api/contracts'
 
 import metadataFixture from './fixtures/github-metadata.json'
+import readmeFixture from './fixtures/github-readme.json'
 import baseline from './fixtures/openapi-wire-contract.json'
 
 const ID = '550e8400-e29b-41d4-a716-446655440000'
@@ -60,6 +61,7 @@ const pagination = {
 }
 const responses = {
 	githubMetadataAdminProject: metadataFixture.output,
+	githubReadmeAdminProject: readmeFixture.output,
 	listMySubmissions: { submissions: [], pagination },
 	createSubmission: { id: ID, status: 'draft' as const },
 	listAdminCategories: { categories: [adminNode] },
@@ -147,6 +149,13 @@ const probes = {
 			),
 		},
 		project: {
+			githubReadme: o.admin.project.githubReadme.handler(({ input }) =>
+				record(
+					'githubReadmeAdminProject',
+					input,
+					responses.githubReadmeAdminProject
+				)
+			),
 			githubMetadata: o.admin.project.githubMetadata.handler(({ input }) =>
 				record(
 					'githubMetadataAdminProject',
@@ -295,6 +304,13 @@ interface MappingCase {
 	status?: number
 }
 const cases: Array<MappingCase> = [
+	{
+		operationId: 'githubReadmeAdminProject',
+		path: '/admin/projects/github-readme',
+		method: 'QUERY',
+		body: readmeFixture.input,
+		input: readmeFixture.canonicalInput,
+	},
 	{
 		operationId: 'githubMetadataAdminProject',
 		path: '/admin/projects/github-metadata',
@@ -651,6 +667,8 @@ describe('detailed REST mapping', () => {
 		})
 	})
 	it.each([
+		['/admin/projects/github-readme', 'QUERY', undefined],
+		['/admin/projects/github-readme', 'QUERY', { repositoryUrl: 'invalid' }],
 		['/admin/projects/github-metadata', 'QUERY', undefined],
 		['/admin/projects/github-metadata', 'QUERY', { repositoryUrl: 'invalid' }],
 		['/categories/by-path', 'QUERY', undefined],
@@ -768,6 +786,29 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		const paths = spec.paths ?? {}
 		expect(spec.openapi).toBe('3.2.0')
+		const readmeOperation = paths['/admin/projects/github-readme']?.query
+		expect(readmeOperation).toMatchObject({
+			operationId: 'githubReadmeAdminProject',
+			requestBody: { required: true },
+			responses: {
+				'200': {
+					content: {
+						'application/json': {
+							schema: {
+								required: [
+									'repositoryUrl',
+									'sourceUrl',
+									'path',
+									'commitSha',
+									'markdown',
+									'warnings',
+								],
+							},
+						},
+					},
+				},
+			},
+		})
 		const metadataOperation = paths['/admin/projects/github-metadata']?.query
 		expect(metadataOperation).toMatchObject({
 			operationId: 'githubMetadataAdminProject',
@@ -814,10 +855,10 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(27)
+		expect(operations).toHaveLength(28)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			14
+			15
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -908,12 +949,14 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(26)
+		expect(mapped).toHaveLength(27)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(14)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(15)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
-				meta?.operationId === 'githubMetadataAdminProject'
+				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(
+					meta?.operationId ?? ''
+				)
 					? 'compact'
 					: 'detailed'
 			)

@@ -46,7 +46,10 @@ describe('submission form', () => {
 			fireEvent.click(screen.getByRole('button', { name: 'Submit project' }))
 			await Promise.resolve()
 		})
-		expect(screen.getByRole('alert').textContent).toContain('1:01')
+		expect(screen.getByRole('alert').textContent).toContain(
+			'5 submission attempts'
+		)
+		expect(screen.getByText(/in 1:01\./)).toBeTruthy()
 		expect(
 			screen.getByRole('button', { name: 'Submit project' })
 		).toHaveProperty('disabled', true)
@@ -78,7 +81,7 @@ describe('submission form', () => {
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1_000)
 		})
-		expect(screen.getByRole('alert').textContent).toContain('1:00')
+		expect(screen.getByText(/in 1:00\./)).toBeTruthy()
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(60_000)
 		})

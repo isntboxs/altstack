@@ -38,6 +38,7 @@ import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
+import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
 // Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
@@ -574,6 +575,25 @@ export function CreateProjectForm() {
 
 						<section className="space-y-4">
 							<SectionHeading title="Content" />
+
+							<form.Subscribe
+								selector={(state) =>
+									[state.values.repositoryUrl, state.isSubmitting] as const
+								}
+							>
+								{([repositoryUrl, isSubmitting]) => (
+									<ClientOnly>
+										<GithubReadmeImport
+											repositoryUrl={repositoryUrl}
+											disabled={isSubmitting || createProject.isPending}
+											getRepositoryUrl={() =>
+												form.getFieldValue('repositoryUrl')
+											}
+											getEditor={() => editorRef.current}
+										/>
+									</ClientOnly>
+								)}
+							</form.Subscribe>
 
 							<form.Field
 								name="content"

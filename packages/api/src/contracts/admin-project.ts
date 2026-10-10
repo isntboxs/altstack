@@ -9,6 +9,8 @@ import {
 	adminDeleteProjectOutputSchema,
 	adminGetProjectByIdInputSchema,
 	adminGithubMetadataInputSchema,
+	adminGithubReadmeInputSchema,
+	adminGithubReadmeOutputSchema,
 	adminGithubMetadataOutputSchema,
 	adminListProjectInputSchema,
 	adminListProjectOutputSchema,
@@ -174,7 +176,27 @@ const githubMetadataAdminProjectContract = baseContract
 	.input(adminGithubMetadataInputSchema)
 	.output(adminGithubMetadataOutputSchema)
 
+const githubReadmeAdminProjectContract = baseContract
+	.meta(
+		openapi({
+			path: '/admin/projects/github-readme',
+			method: 'QUERY',
+			inputStructure: 'compact',
+			outputStructure: 'compact',
+			summary: 'Admin import GitHub README preview',
+			description:
+				'Fetch and sanitize the preferred README of a public repository at its default branch commit. Accepts {repositoryUrl} in the QUERY JSON body. Returns normalized Markdown, source and warnings. Does not save or update the project.',
+			tags: ['AdminProjects'],
+			operationId: 'githubReadmeAdminProject',
+			successStatus: 200,
+			successDescription: 'GitHub README fetched',
+		})
+	)
+	.input(adminGithubReadmeInputSchema)
+	.output(adminGithubReadmeOutputSchema)
+
 export const adminProjectContract = {
+	githubReadme: githubReadmeAdminProjectContract,
 	githubMetadata: githubMetadataAdminProjectContract,
 	create: createAdminProjectContract,
 	getById: getAdminProjectByIdContract,
