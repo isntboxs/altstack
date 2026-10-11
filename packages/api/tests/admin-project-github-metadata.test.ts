@@ -49,6 +49,7 @@ function client(role: string | null = 'admin') {
 function github(overrides: Record<string, unknown> = {}) {
 	vi.mocked(octokit.rest.repos.get).mockResolvedValue({
 		data: {
+			id: 123,
 			private: false,
 			owner: { login: 'NewOwner' },
 			name: 'NewRepo',
@@ -103,9 +104,10 @@ describe('admin GitHub metadata', () => {
 			repo: 'oldrepo',
 		})
 	})
-	it('preserves the existing repository helper shape without exposing metadata', async () => {
+	it('returns stable repository identity and stats without exposing metadata', async () => {
 		expect(await fetchPublicGithubRepository('oldowner', 'oldrepo')).toEqual({
 			canonicalUrl: fixture.output.repositoryUrl,
+			githubRepositoryId: 123,
 			owner: 'newowner',
 			repo: 'newrepo',
 			stars: 123,

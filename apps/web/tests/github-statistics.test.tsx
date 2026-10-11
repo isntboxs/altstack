@@ -9,6 +9,15 @@ import type { ORPCRouterOutputs } from '@altstack/api/routers'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 
+const history: ORPCRouterOutputs['project']['getBySlug']['githubStarsHistory'] =
+	{
+		timezone: 'Asia/Jakarta',
+		windowStartDate: '2026-09-10',
+		windowEndDate: '2026-10-10',
+		points: [],
+		comparison: null,
+	}
+
 const now = Date.parse('2026-10-10T12:00:00Z')
 const github: ORPCRouterOutputs['project']['getBySlug']['github'] = {
 	owner: 'owner',
@@ -27,8 +36,26 @@ afterEach(() => {
 })
 
 describe('GitHub aside statistics', () => {
+	it('marks statistics stale after 36 hours without changing the stored refresh time', () => {
+		const { rerender } = render(
+			<GithubStatistics
+				history={history}
+				github={github}
+				now={github.fetchedAt.getTime() + 36 * 60 * 60 * 1000}
+			/>
+		)
+		expect(screen.queryByText('Data may be outdated')).toBeNull()
+		rerender(
+			<GithubStatistics
+				history={history}
+				github={github}
+				now={github.fetchedAt.getTime() + 36 * 60 * 60 * 1000 + 1}
+			/>
+		)
+		expect(screen.getByText('Data may be outdated')).toBeTruthy()
+	})
 	it('formats relative commit, completed calendar age, version and refreshed time with UTC full-date tooltips', () => {
-		render(<GithubStatistics github={github} now={now} />)
+		render(<GithubStatistics history={history} github={github} now={now} />)
 		expect(screen.getByText('12,345')).toBeTruthy()
 		expect(screen.getByText('1,234')).toBeTruthy()
 		expect(screen.getByText('9 hours ago').title).toBe(
@@ -43,6 +70,7 @@ describe('GitHub aside statistics', () => {
 	it('labels legacy/never-fetched metadata as Unknown', () => {
 		render(
 			<GithubStatistics
+				history={history}
 				github={{
 					...github,
 					lastCommitAt: null,
@@ -60,6 +88,7 @@ describe('GitHub aside statistics', () => {
 	it('distinguishes successfully fetched empty repos and missing releases', () => {
 		render(
 			<GithubStatistics
+				history={history}
 				github={{ ...github, lastCommitAt: null, latestReleaseTag: null }}
 				now={now}
 			/>
@@ -69,7 +98,9 @@ describe('GitHub aside statistics', () => {
 		expect(screen.getByText('2 years')).toBeTruthy()
 	})
 	it('hydrates exactly the server markup even when client clock and timezone differ', async () => {
-		const element = <GithubStatistics github={github} now={now} />
+		const element = (
+			<GithubStatistics history={history} github={github} now={now} />
+		)
 		const originalTimezone = process.env.TZ
 		process.env.TZ = 'UTC'
 		const container = document.createElement('div')

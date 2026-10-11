@@ -5,8 +5,14 @@ import { fetchPublicGithubStatistics } from '@altstack/api/github'
 import { isUniqueViolation } from '@altstack/api/queries/pg-error'
 
 import type { db } from '@altstack/db'
-import { githubRepository, project } from '@altstack/db/schemas'
+import {
+	githubRepository,
+	githubStarHistory,
+	project,
+} from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
+
+import { githubSnapshotDate } from '@altstack/shared/lib/github-stars'
 
 export const emptyGithubMetadata = {
 	lastCommitAt: null,
@@ -74,7 +80,10 @@ export async function refreshProjectGithub(
 				.for('update')
 			if (!currentProject) throw new ORPCError('NOT_FOUND')
 			const [currentGithub] = await tx
-				.select({ revision: sql<string>`xmin::text` })
+				.select({
+					revision: sql<string>`xmin::text`,
+					githubRepositoryId: githubRepository.githubRepositoryId,
+				})
 				.from(githubRepository)
 				.where(eq(githubRepository.projectId, id))
 				.limit(1)
@@ -99,6 +108,11 @@ export async function refreshProjectGithub(
 				)
 				.limit(1)
 			if (other) throw new ORPCError('CONFLICT')
+			if (currentGithub.githubRepositoryId !== fetched.githubRepositoryId) {
+				await tx
+					.delete(githubStarHistory)
+					.where(eq(githubStarHistory.projectId, id))
+			}
 			if (fetched.canonicalUrl !== snapshot.repositoryUrl) {
 				await tx
 					.update(project)
@@ -108,6 +122,7 @@ export async function refreshProjectGithub(
 			const [stored] = await tx
 				.update(githubRepository)
 				.set({
+					githubRepositoryId: fetched.githubRepositoryId,
 					owner: fetched.owner,
 					repo: fetched.repo,
 					stars: fetched.stars,
@@ -121,6 +136,18 @@ export async function refreshProjectGithub(
 				.where(eq(githubRepository.projectId, id))
 				.returning()
 			if (!stored) throw new ORPCError('NOT_FOUND')
+			await tx
+				.insert(githubStarHistory)
+				.values({
+					projectId: id,
+					snapshotDate: githubSnapshotDate(fetchedAt),
+					stars: stored.stars,
+					observedAt: fetchedAt,
+				})
+				.onConflictDoUpdate({
+					target: [githubStarHistory.projectId, githubStarHistory.snapshotDate],
+					set: { stars: stored.stars, observedAt: fetchedAt },
+				})
 			return {
 				repositoryUrl: fetched.canonicalUrl,
 				github: githubDetail(stored),

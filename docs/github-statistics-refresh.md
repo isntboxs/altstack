@@ -3,7 +3,58 @@
 Scope tambahan ini disetujui pada 10 Oktober 2026: stars/forks diperbarui harian
 dan secara manual oleh admin; aside menampilkan HEAD commit default branch, umur
 repository, dan tag latest release. Halaman publik membaca snapshot PostgreSQL.
-Tidak ada graph, histori pertumbuhan 30 hari, license, atau self-hosted.
+Penambahan histori stars 30 hari mengikuti aturan di bawah. License dan
+self-hosted tidak termasuk scope.
+
+## Grafik stars 30 hari
+
+Migration additive `github-stars-history` menambahkan `github_repository_id`
+nullable pada `github_repositories` dan tabel kosong `github_star_history`.
+Terapkan melalui `vp run db:migrate` dari checkout release, sebelum deploy
+server/web dari revision yang sama. Migration ini tidak dijalankan oleh startup
+aplikasi dan tidak menyalin snapshot lama menjadi histori.
+
+Titik pertama berasal dari refresh **lengkap yang berhasil** setelah deployment,
+baik manual, enrichment best effort, maupun job harian existing. Tidak ada
+rekonstruksi/backfill 30 hari dari timestamp stargazer atau jumlah stars baru.
+Snapshot mencatat total stars saat pengamatan, termasuk penurunan akibat unstar.
+Refresh manual beberapa kali dalam satu tanggal mengganti satu titik hari itu
+dengan hasil sukses terakhir. Snapshot statistik, URL canonical, dan titik histori
+disimpan dalam transaksi yang sama; kegagalan mempertahankan snapshot sebelumnya.
+
+Bucket menggunakan `Asia/Jakarta` secara eksplisit. Detail publik mengambil window
+tanggal hari ini WIB dikurangi 30 sampai hari ini, inklusif: maksimal 31 titik,
+termasuk baseline untuk interval 30 hari. API detail membaca statistik dan histori
+dalam transaksi read-only repeatable read. Payload histori hanya ada pada
+`project.getBySlug` sebagai `githubStarsHistory`; list/search/admin tetap ringkas.
+
+Cold start menampilkan `No star history for this period`; satu titik menampilkan
+`Collecting daily history` tanpa delta. Setelah dua titik, delta membandingkan
+pengamatan pertama dan terakhir dalam window, dengan label durasi sebenarnya
+ketika endpoint 30 hari belum tersedia. Baseline nol menampilkan persen `—`.
+Tidak ada interpolasi atau forward-fill: hari gagal tidak memiliki titik dan
+memutus garis. Tooltip memakai tanggal/waktu WIB; acuan loader menjaga SSR dan
+hydration konsisten. Snapshot lebih tua dari 36 jam diberi label
+`Data may be outdated`; window tetap mengikuti hari ini.
+
+GitHub repository ID menjaga identitas histori. Rename/transfer ID sama
+mempertahankan histori. ID berbeda menghapus histori sebelumnya, termasuk repo
+baru pada URL yang sama dan A → B → A. Verifikasi dasar saat approval/edit URL
+untuk ID sama mempertahankan snapshot lengkap lama sampai enrichment berhasil;
+repo berbeda boleh menampilkan stats dasar sambil menunggu histori pertama.
+
+Retensi adalah 90 tanggal WIB, termasuk hari ini. Setelah memperoleh advisory
+lock existing, job menghapus histori sebelum hari ini dikurangi 89, termasuk
+proyek nonpublished, sebelum memproses refresh. Event `github-history-pruned`
+memuat `cutoff` dan jumlah `deleted`; kegagalan cleanup menjadi kegagalan fatal
+job dan lock tetap dilepas. Cleanup baru berlangsung ketika job memperoleh lock;
+data lebih tua dapat tersimpan sementara bila scheduler sedang gagal.
+
+Schedule Dokploy existing **02:00 Asia/Jakarta** tidak perlu diganti atau
+ditambahkan. Pantau `github-history-pruned`, `github-refresh-failure`,
+`github-refresh-fatal`, dan `github-refresh-summary`. Jalankan refresh manual
+sesudah deployment untuk memverifikasi titik awal, lalu tunggu koleksi harian;
+delta 30 hari memerlukan dua endpoint berjarak 30 tanggal.
 
 ## Rollout
 
@@ -89,8 +140,9 @@ atau package. Repo kosong menyimpan commit null; repo tanpa release menyimpan ta
 null. Respons sementara dan kegagalan akses mempertahankan snapshot sebelumnya.
 
 Rename/transfer memperbarui URL proyek dan owner/repo bersama, dengan pemeriksaan
-uniqueness proyek dan constraint GitHub. Perubahan repo yang disimpan admin
-menghapus metadata repo lama. Refresh yang sedang berjalan memeriksa URL dan
+uniqueness proyek dan constraint GitHub. Perubahan GitHub repository ID menghapus
+metadata dan histori repo lama; rename/transfer ID sama mempertahankannya.
+Refresh yang sedang berjalan memeriksa URL dan
 revisi row, termasuk urutan repo A → B → A, sebelum menulis.
 
 Aside memakai waktu acuan loader yang ikut diserialisasi untuk SSR/hydration dan

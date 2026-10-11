@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
 import { githubDetail } from '@altstack/api/github-refresh'
 import { publicProcedure } from '@altstack/api/procedures'
@@ -7,14 +7,17 @@ import {
 	listPublicCategories,
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
+import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 
 import {
 	category,
 	githubRepository,
+	githubStarHistory,
 	project,
 	projectCategory,
 } from '@altstack/db/schemas'
 
+import { githubStarsWindow } from '@altstack/shared/lib/github-stars'
 import { projectSchema } from '@altstack/shared/schemas/common'
 
 const publicFields = projectSchema.omit({ categories: true })
@@ -22,29 +25,56 @@ const publicFields = projectSchema.omit({ categories: true })
 const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 	async ({ context, errors, input }) => {
 		const { db } = context
+		const window = githubStarsWindow(new Date())
+		return db.transaction(
+			async (tx) => {
+				const [row] = await tx
+					.select()
+					.from(project)
+					.where(
+						and(
+							eq(project.slug, input.params.slug),
+							eq(project.status, 'published')
+						)
+					)
+					.innerJoin(
+						githubRepository,
+						eq(project.id, githubRepository.projectId)
+					)
+					.limit(1)
 
-		const [row] = await db
-			.select()
-			.from(project)
-			.where(
-				and(
-					eq(project.slug, input.params.slug),
-					eq(project.status, 'published')
-				)
-			)
-			.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-			.limit(1)
+				if (!row) {
+					throw errors.NOT_FOUND()
+				}
+				const points = await tx
+					.select({
+						date: githubStarHistory.snapshotDate,
+						stars: githubStarHistory.stars,
+						observedAt: githubStarHistory.observedAt,
+					})
+					.from(githubStarHistory)
+					.where(
+						and(
+							eq(githubStarHistory.projectId, row.projects.id),
+							gte(githubStarHistory.snapshotDate, window.windowStartDate),
+							lte(githubStarHistory.snapshotDate, window.windowEndDate)
+						)
+					)
+					.orderBy(asc(githubStarHistory.snapshotDate))
 
-		if (!row) {
-			throw errors.NOT_FOUND()
-		}
-
-		return {
-			...publicFields.parse(row.projects),
-			categoryDetails: await getDirectProjectCategories(db, row.projects.id),
-			screenshot: row.projects.screenshot,
-			github: githubDetail(row.github_repositories),
-		}
+				return {
+					...publicFields.parse(row.projects),
+					categoryDetails: await getDirectProjectCategories(
+						tx,
+						row.projects.id
+					),
+					screenshot: row.projects.screenshot,
+					github: githubDetail(row.github_repositories),
+					githubStarsHistory: buildGithubStarsHistory(window, points),
+				}
+			},
+			{ isolationLevel: 'repeatable read', accessMode: 'read only' }
+		)
 	}
 )
 

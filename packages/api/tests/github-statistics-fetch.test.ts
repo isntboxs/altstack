@@ -21,6 +21,7 @@ function upstream(status: number, message = 'Upstream failure') {
 function repository(overrides: Record<string, unknown> = {}) {
 	return {
 		data: {
+			id: 123,
 			private: false,
 			owner: { login: 'CanonicalOwner' },
 			name: 'CanonicalRepo',
@@ -51,9 +52,21 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('GitHub statistics fetch', () => {
+	it('rejects an identity replacement at the same URL during no-release verification', async () => {
+		vi.mocked(octokit.rest.repos.getLatestRelease).mockRejectedValue(
+			upstream(404)
+		)
+		vi.mocked(octokit.rest.repos.get)
+			.mockResolvedValueOnce(repository({ id: 123 }))
+			.mockResolvedValueOnce(repository({ id: 456 }))
+		await expect(
+			fetchPublicGithubStatistics('old', 'repo')
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+	})
 	it('reads the default branch HEAD committer date and latest release with canonical identity', async () => {
 		expect(await fetchPublicGithubStatistics('old', 'repo')).toEqual({
 			canonicalUrl: 'https://github.com/canonicalowner/canonicalrepo',
+			githubRepositoryId: 123,
 			owner: 'canonicalowner',
 			repo: 'canonicalrepo',
 			stars: 123,

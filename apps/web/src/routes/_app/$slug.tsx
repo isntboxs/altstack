@@ -272,7 +272,11 @@ function RouteComponent() {
 					)}
 				</div>
 
-				<GithubStatistics github={projectData.github} now={statisticsNow} />
+				<GithubStatistics
+					github={projectData.github}
+					history={projectData.githubStarsHistory}
+					now={statisticsNow}
+				/>
 			</div>
 		</div>
 	)

@@ -23,7 +23,10 @@ beforeAll(async () => {
 	scope = await postgres.createSchema()
 	baselineFolder = await mkdtemp(join(tmpdir(), 'altstack-github-migration-'))
 	for (const name of await readdir(migrationsFolder)) {
-		if (!name.endsWith('_github-statistics-metadata')) {
+		if (
+			!name.endsWith('_github-statistics-metadata') &&
+			!name.endsWith('_github-stars-history')
+		) {
 			await cp(join(migrationsFolder, name), join(baselineFolder, name), {
 				recursive: true,
 			})

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { RequestError } from 'octokit'
 import {
 	afterAll,
+	afterEach,
 	beforeAll,
 	beforeEach,
 	describe,
@@ -30,11 +31,17 @@ import { routers } from '@altstack/api/routers'
 import {
 	category,
 	githubRepository,
+	githubStarHistory,
 	project,
 	projectCategory,
 	user,
 } from '@altstack/db/schemas'
 import { seedTaxonomy } from '@altstack/db/seed-taxonomy'
+
+import {
+	githubSnapshotDate,
+	shiftGithubDate,
+} from '@altstack/shared/lib/github-stars'
 
 import { connectTestPostgres } from '../../db/tests/helpers/postgres'
 
@@ -59,9 +66,14 @@ function context(role: string | null = 'admin'): ORPCContext {
 function client(role: string | null = 'admin') {
 	return createRouterClient(routers, { context: context(role) })
 }
-function repository(owner = 'old', repo = 'repo') {
+function repository(
+	owner = 'old',
+	repo = 'repo',
+	id = owner === 'old' ? 123 : 456
+) {
 	return {
 		data: {
+			id,
 			private: false,
 			owner: { login: owner },
 			name: repo,
@@ -172,6 +184,269 @@ afterAll(async () => {
 	await scope.close()
 	await postgres.close()
 }, 60_000)
+afterEach(() => vi.useRealTimers())
+
+async function history(id: string) {
+	return scope.db
+		.select()
+		.from(githubStarHistory)
+		.where(eq(githubStarHistory.projectId, id))
+		.orderBy(githubStarHistory.snapshotDate)
+}
+
+describe('daily total-star snapshots', () => {
+	it('upserts the last successful manual refresh and buckets midnight in WIB', async () => {
+		const item = await fixture()
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(new Date('2026-10-10T16:59:59Z'))
+		await refreshProjectGithub(scope.db, item.id)
+		vi.setSystemTime(new Date('2026-10-10T17:00:00Z'))
+		await refreshProjectGithub(scope.db, item.id)
+		const newer = repository('old', `repo-${item.id}`)
+		newer.data.stargazers_count = 80
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(newer)
+		vi.setSystemTime(new Date('2026-10-10T17:01:00Z'))
+		await client().admin.project.githubRefresh({ params: { id: item.id } })
+		expect(await history(item.id)).toMatchObject([
+			{ snapshotDate: '2026-10-10', stars: 90 },
+			{
+				snapshotDate: '2026-10-11',
+				stars: 80,
+				observedAt: new Date('2026-10-10T17:01:00Z'),
+			},
+		])
+		const detail = await client(null).project.getBySlug({
+			params: { slug: item.slug },
+		})
+		expect(detail.githubStarsHistory).toMatchObject({
+			windowStartDate: '2026-09-11',
+			windowEndDate: '2026-10-11',
+			comparison: { days: 1, deltaStars: -10 },
+		})
+		expect(detail.github.stars).toBe(
+			detail.githubStarsHistory.points.at(-1)?.stars
+		)
+		expect(
+			await client().admin.project.getById({ params: { id: item.id } })
+		).not.toHaveProperty('githubStarsHistory')
+		expect(
+			(await client(null).project.search({ query: {} })).projects[0]
+		).not.toHaveProperty('githubStarsHistory')
+		vi.mocked(octokit.rest.repos.getCommit).mockRejectedValue(
+			new Error('temporary')
+		)
+		await expect(refreshProjectGithub(scope.db, item.id)).rejects.toMatchObject(
+			{ code: 'INTERNAL_SERVER_ERROR' }
+		)
+		expect(await history(item.id)).toHaveLength(2)
+	})
+
+	it('rolls back statistics, canonical URL, and history deletion if the history write fails', async () => {
+		const item = await fixture()
+		await refreshProjectGithub(scope.db, item.id)
+		const before = await stored(item.id)
+		const points = await history(item.id)
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(
+			repository('replacement', 'repo', 789)
+		)
+		await scope.pool.query(
+			"CREATE FUNCTION reject_history() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'history unavailable'; END $$"
+		)
+		await scope.pool.query(
+			'CREATE TRIGGER reject_history BEFORE INSERT ON github_star_history FOR EACH ROW EXECUTE FUNCTION reject_history()'
+		)
+		try {
+			await expect(
+				refreshProjectGithub(scope.db, item.id)
+			).rejects.toMatchObject({ cause: { code: 'P0001' } })
+			expect(await stored(item.id)).toEqual(before)
+			expect(await history(item.id)).toEqual(points)
+			expect(
+				(
+					await scope.db.select().from(project).where(eq(project.id, item.id))
+				)[0]?.repositoryUrl
+			).toBe(item.repositoryUrl)
+		} finally {
+			await scope.pool.query(
+				'DROP TRIGGER reject_history ON github_star_history'
+			)
+			await scope.pool.query('DROP FUNCTION reject_history()')
+		}
+	})
+
+	it('preserves history on rename, resets reused URLs and A → B → A, and keeps same-ID basic edits consistent', async () => {
+		const item = await fixture()
+		await refreshProjectGithub(scope.db, item.id)
+		const yesterday = shiftGithubDate(githubSnapshotDate(new Date()), -1)
+		await scope.db.insert(githubStarHistory).values({
+			projectId: item.id,
+			snapshotDate: yesterday,
+			stars: 50,
+			observedAt: oldTime,
+		})
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(
+			repository('renamed', 'repo', 123)
+		)
+		await refreshProjectGithub(scope.db, item.id)
+		expect(await history(item.id)).toHaveLength(2)
+		const before = await stored(item.id)
+		const basic = repository('again', 'repo', 123)
+		basic.data.stargazers_count = 999
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(basic)
+		vi.mocked(octokit.rest.repos.getLatestRelease).mockRejectedValue(
+			new Error('temporary')
+		)
+		const same = await client().admin.project.update({
+			params: { id: item.id },
+			body: { repositoryUrl: 'again/repo' },
+		})
+		expect(same.github).toMatchObject({
+			stars: 90,
+			latestReleaseTag: 'v2',
+			fetchedAt: before?.fetchedAt,
+		})
+		expect(await history(item.id)).toHaveLength(2)
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(
+			repository('again', 'repo', 456)
+		)
+		vi.mocked(octokit.rest.repos.getLatestRelease).mockResolvedValue({
+			data: { tag_name: 'v2' },
+		} as unknown as ReleaseResponse)
+		await refreshProjectGithub(scope.db, item.id)
+		expect(await history(item.id)).toHaveLength(1)
+		await scope.db.insert(githubStarHistory).values({
+			projectId: item.id,
+			snapshotDate: yesterday,
+			stars: 20,
+			observedAt: oldTime,
+		})
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(
+			repository('old', `repo-${item.id}`, 123)
+		)
+		await client().admin.project.update({
+			params: { id: item.id },
+			body: { repositoryUrl: item.repositoryUrl },
+		})
+		expect(await history(item.id)).toHaveLength(1)
+	})
+
+	it('rejects an older manual completion after the daily job wins the revision race', async () => {
+		const item = await fixture()
+		let started!: () => void
+		let resume!: () => void
+		const entered = new Promise<void>((resolve) => {
+			started = resolve
+		})
+		const gate = new Promise<void>((resolve) => {
+			resume = resolve
+		})
+		vi.mocked(octokit.rest.repos.getLatestRelease).mockImplementationOnce(
+			async () => {
+				started()
+				await gate
+				return {
+					data: { tag_name: 'old-delayed' },
+				} as unknown as ReleaseResponse
+			}
+		)
+		const pending = refreshProjectGithub(scope.db, item.id).catch(
+			(error: unknown) => error
+		)
+		await entered
+		try {
+			expect(await runGithubRefreshBatch(scope.db)).toMatchObject({
+				succeeded: 1,
+			})
+		} finally {
+			resume()
+		}
+		expect(await pending).toMatchObject({ code: 'CONFLICT' })
+		expect((await stored(item.id))?.latestReleaseTag).toBe('v2')
+		expect(await history(item.id)).toHaveLength(1)
+	})
+
+	it('reads statistics and history from the same snapshot during a concurrent write', async () => {
+		const item = await fixture()
+		await refreshProjectGithub(scope.db, item.id)
+		const writer = await scope.pool.connect()
+		let pending:
+			| ReturnType<ReturnType<typeof client>['project']['getBySlug']>
+			| undefined
+		try {
+			await writer.query('BEGIN')
+			await writer.query(
+				'LOCK TABLE github_star_history IN ACCESS EXCLUSIVE MODE'
+			)
+			pending = client(null).project.getBySlug({ params: { slug: item.slug } })
+			let blocked = false
+			for (let attempt = 0; attempt < 100; attempt++) {
+				const lock = await writer.query<{ blocked: boolean }>(
+					"SELECT EXISTS (SELECT 1 FROM pg_locks WHERE relation = 'github_star_history'::regclass AND NOT granted) AS blocked"
+				)
+				if (lock.rows[0]?.blocked) {
+					blocked = true
+					break
+				}
+				await new Promise((resolve) => setTimeout(resolve, 20))
+			}
+			expect(blocked).toBe(true)
+			await writer.query(
+				'UPDATE github_repositories SET stars = 150 WHERE project_id = $1',
+				[item.id]
+			)
+			await writer.query(
+				'UPDATE github_star_history SET stars = 150 WHERE project_id = $1',
+				[item.id]
+			)
+			await writer.query('COMMIT')
+			const detail = await pending
+			expect(detail.github.stars).toBe(90)
+			expect(detail.githubStarsHistory.points.at(-1)?.stars).toBe(90)
+			expect(
+				(await client(null).project.getBySlug({ params: { slug: item.slug } }))
+					.github.stars
+			).toBe(150)
+		} finally {
+			await writer.query('ROLLBACK')
+			writer.release()
+			if (pending) await pending
+		}
+	})
+
+	it('bounds public reads to 31 dates and prunes the 90-day boundary for nonpublished projects too', async () => {
+		vi.useFakeTimers({ toFake: ['Date'] })
+		vi.setSystemTime(new Date('2026-10-11T02:00:00+07:00'))
+		const item = await fixture()
+		const draft = await fixture('draft')
+		const today = githubSnapshotDate(new Date())
+		for (const id of [item.id, draft.id]) {
+			await scope.db.insert(githubStarHistory).values(
+				[-90, -89, -31, -30, -10, 0, 1].map((days) => {
+					return {
+						projectId: id,
+						snapshotDate: shiftGithubDate(today, days),
+						stars: 100,
+						observedAt: oldTime,
+					}
+				})
+			)
+		}
+		const detail = await client(null).project.getBySlug({
+			params: { slug: item.slug },
+		})
+		expect(detail.githubStarsHistory.points.map((point) => point.date)).toEqual(
+			['2026-09-11', '2026-10-01', '2026-10-11']
+		)
+		expect(detail.githubStarsHistory.comparison?.days).toBe(30)
+		await runGithubRefreshBatch(scope.db)
+		expect(
+			(await history(draft.id)).map((point) => point.snapshotDate)
+		).not.toContain(shiftGithubDate(today, -90))
+		expect(
+			(await history(draft.id)).map((point) => point.snapshotDate)
+		).toContain(shiftGithubDate(today, -89))
+	})
+})
 
 describe('admin refresh endpoint and atomic storage', () => {
 	it.each([
@@ -371,6 +646,20 @@ describe('admin refresh endpoint and atomic storage', () => {
 })
 
 describe('daily batch', () => {
+	it('releases the advisory lock and fails fatally when history cleanup fails', async () => {
+		const remove = vi.spyOn(scope.db, 'delete').mockImplementationOnce(() => {
+			throw new Error('Cleanup unavailable')
+		})
+		const refresh = vi.fn<typeof refreshProjectGithub>()
+		await expect(runGithubRefreshBatch(scope.db, { refresh })).rejects.toThrow(
+			'Cleanup unavailable'
+		)
+		expect(refresh).not.toHaveBeenCalled()
+		remove.mockRestore()
+		expect(await runGithubRefreshBatch(scope.db)).toMatchObject({
+			skipped: false,
+		})
+	})
 	it('selects every published project only and continues sequentially after individual errors', async () => {
 		const first = await fixture(
 			'published',

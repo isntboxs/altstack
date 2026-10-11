@@ -109,7 +109,7 @@ export const submissionRouter = {
 			await requireCapacity(db)
 
 			// Quality guidelines are reviewed by an admin; stars are never a gate.
-			const { canonicalUrl, owner, repo, stars, forks } =
+			const { canonicalUrl, owner, repo, stars, forks, githubRepositoryId } =
 				await fetchPublicGithubRepository(submitted.owner, submitted.repo)
 			const [resolvedExisting] = await db
 				.select({ id: project.id })
@@ -158,6 +158,7 @@ export const submissionRouter = {
 					}
 					await tx.insert(githubRepository).values({
 						projectId: inserted.id,
+						githubRepositoryId,
 						owner,
 						repo,
 						stars,

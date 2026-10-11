@@ -174,6 +174,13 @@ const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 		metadataFetchedAt: null,
 	},
 	categoryDetails: [ai, general],
+	githubStarsHistory: {
+		timezone: 'Asia/Jakarta',
+		windowStartDate: '2026-09-11',
+		windowEndDate: '2026-10-11',
+		points: [],
+		comparison: null,
+	},
 }
 let visibleNodes = nodes
 let total = 1

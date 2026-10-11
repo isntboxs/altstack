@@ -37,6 +37,9 @@ async function fetchVerifiedPublicGithubRepository(
 				message: 'The GitHub repository must be public.',
 			})
 		}
+		if (!Number.isSafeInteger(data.id) || data.id <= 0) {
+			throw new Error('GitHub returned an invalid repository ID')
+		}
 		// Resolve renamed/transferred repositories for every caller.
 		const identity = canonicalizeGithubUrl(`${data.owner.login}/${data.name}`)
 		return { data, identity }
@@ -56,6 +59,7 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 	)
 	return {
 		...identity,
+		githubRepositoryId: data.id,
 		stars: data.stargazers_count,
 		forks: data.forks_count,
 	}
@@ -115,7 +119,10 @@ export async function fetchPublicGithubStatistics(owner: string, repo: string) {
 				resolved.repo,
 				githubStatisticsRequestError
 			)
-			if (verified.identity.canonicalUrl !== identity.canonicalUrl) {
+			if (
+				verified.identity.canonicalUrl !== identity.canonicalUrl ||
+				verified.data.id !== repository.id
+			) {
 				throw new ORPCError('CONFLICT', {
 					message: 'The GitHub repository moved during refresh. Please retry.',
 				})
@@ -123,6 +130,7 @@ export async function fetchPublicGithubStatistics(owner: string, repo: string) {
 		}
 		return {
 			...identity,
+			githubRepositoryId: repository.id,
 			stars: repository.stargazers_count,
 			forks: repository.forks_count,
 			repositoryCreatedAt,
