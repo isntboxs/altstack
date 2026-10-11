@@ -22,8 +22,11 @@ export const listPublicCategoriesOutputSchema = z.object({
 
 // Preserve the supplied path exactly: mismatched hierarchy paths must not be
 // silently normalized to a different category or treated as a bare leaf slug.
-export const getCategoryByPathInputSchema = z.object({
+export const getCategoryByPathQuerySchema = z.object({
 	path: z.string().min(1),
+})
+export const getCategoryByPathInputSchema = z.object({
+	query: getCategoryByPathQuerySchema,
 })
 export const getCategoryByPathOutputSchema = z.object({
 	category: categoryNodeSchema,

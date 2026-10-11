@@ -1,47 +1,80 @@
-import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 
+import { githubDetail } from '@altstack/api/github-refresh'
 import { publicProcedure } from '@altstack/api/procedures'
 import {
 	getDirectProjectCategories,
 	listPublicCategories,
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
+import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 
 import {
 	category,
 	githubRepository,
+	githubStarHistory,
 	project,
 	projectCategory,
 } from '@altstack/db/schemas'
 
+import { githubStarsWindow } from '@altstack/shared/lib/github-stars'
+import { projectSchema } from '@altstack/shared/schemas/common'
+
+const publicFields = projectSchema.omit({ categories: true })
+
 const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 	async ({ context, errors, input }) => {
 		const { db } = context
+		const window = githubStarsWindow(new Date())
+		return db.transaction(
+			async (tx) => {
+				const [row] = await tx
+					.select()
+					.from(project)
+					.where(
+						and(
+							eq(project.slug, input.params.slug),
+							eq(project.status, 'published')
+						)
+					)
+					.innerJoin(
+						githubRepository,
+						eq(project.id, githubRepository.projectId)
+					)
+					.limit(1)
 
-		const [row] = await db
-			.select()
-			.from(project)
-			.where(and(eq(project.slug, input.slug), eq(project.status, 'published')))
-			.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-			.limit(1)
+				if (!row) {
+					throw errors.NOT_FOUND()
+				}
+				const points = await tx
+					.select({
+						date: githubStarHistory.snapshotDate,
+						stars: githubStarHistory.stars,
+						observedAt: githubStarHistory.observedAt,
+					})
+					.from(githubStarHistory)
+					.where(
+						and(
+							eq(githubStarHistory.projectId, row.projects.id),
+							gte(githubStarHistory.snapshotDate, window.windowStartDate),
+							lte(githubStarHistory.snapshotDate, window.windowEndDate)
+						)
+					)
+					.orderBy(asc(githubStarHistory.snapshotDate))
 
-		if (!row) {
-			throw errors.NOT_FOUND()
-		}
-
-		return {
-			...row.projects,
-			categoryDetails: await getDirectProjectCategories(db, row.projects.id),
-			logo: row.projects.logo,
-			screenshot: row.projects.screenshot,
-			github: {
-				owner: row.github_repositories.owner,
-				repo: row.github_repositories.repo,
-				stars: row.github_repositories.stars,
-				forks: row.github_repositories.forks,
-				fetchedAt: row.github_repositories.fetchedAt,
+				return {
+					...publicFields.parse(row.projects),
+					categoryDetails: await getDirectProjectCategories(
+						tx,
+						row.projects.id
+					),
+					screenshot: row.projects.screenshot,
+					github: githubDetail(row.github_repositories),
+					githubStarsHistory: buildGithubStarsHistory(window, points),
+				}
 			},
-		}
+			{ isolationLevel: 'repeatable read', accessMode: 'read only' }
+		)
 	}
 )
 
@@ -49,8 +82,8 @@ const listHandler = publicProcedure.project.list.handler(
 	async ({ context, input }) => {
 		const { db } = context
 
-		const page = input.page
-		const limit = input.limit
+		const page = input.query.page
+		const limit = input.query.limit
 		const offset = (page - 1) * limit
 		const where = eq(project.status, 'published')
 		let total = 0
@@ -81,8 +114,7 @@ const listHandler = publicProcedure.project.list.handler(
 		return {
 			projects: rows.map((row) => {
 				return {
-					...row.projects,
-					logo: row.projects.logo,
+					...publicFields.parse(row.projects),
 					screenshot: row.projects.screenshot,
 					github: {
 						owner: row.github_repositories.owner,
@@ -119,22 +151,22 @@ const searchHandler = publicProcedure.project.search.handler(
 	async ({ context, input }) => {
 		const { db } = context
 
-		const page = input.page
-		const limit = input.limit
+		const page = input.query.page
+		const limit = input.query.limit
 		const offset = (page - 1) * limit
 
 		// Visibility is decided here, never in the UI: every branch stays
 		// limited to published projects.
 		const conditions = [eq(project.status, 'published')]
 
-		if (input.category) {
+		if (input.query.category) {
 			// An unknown slug naturally yields zero matches through EXISTS.
-			conditions.push(projectInCategorySubtree(input.category))
+			conditions.push(projectInCategorySubtree(input.query.category))
 		}
 
-		if (input.q) {
+		if (input.query.q) {
 			conditions.push(
-				sql`${project.searchVector} @@ websearch_to_tsquery('english', ${input.q})`
+				sql`${project.searchVector} @@ websearch_to_tsquery('english', ${input.query.q})`
 			)
 		}
 
@@ -146,7 +178,7 @@ const searchHandler = publicProcedure.project.search.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-				.orderBy(...searchSortOrder[input.sort])
+				.orderBy(...searchSortOrder[input.query.sort])
 				.limit(limit)
 				.offset(offset),
 
@@ -188,8 +220,7 @@ const searchHandler = publicProcedure.project.search.handler(
 		return {
 			projects: rows.map((row) => {
 				return {
-					...row.projects,
-					logo: row.projects.logo,
+					...publicFields.parse(row.projects),
 					github: {
 						owner: row.github_repositories.owner,
 						repo: row.github_repositories.repo,

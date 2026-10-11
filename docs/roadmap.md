@@ -50,7 +50,9 @@ R0 catalogue data
 ### GitHub data
 
 - Canonicalise an accepted URL to `https://github.com/<owner>/<repo>` before dedupe.
-- Store only owner, repo, stars, forks, and `fetchedAt` through R5.
+- Store owner, repo, stars, forks, and `fetchedAt`, plus nullable last commit,
+  repository creation, latest release tag, and `metadataFetchedAt` under the
+  authorized 2026-10-10 statistics expansion below.
 - A service token can fetch public metadata. It cannot verify that a user has permission to claim a repository.
 
 ### Lifecycle (R4 minimal intake + R5 enrich)
@@ -222,7 +224,24 @@ Guest submission, anonymous-IP retention/rate limiting, tagline/description/logo
 
 ### Explicitly not in R5
 
-Full dashboard CRUD, audit events for auth activity, featured projects, category management, analytics, queues, or scheduled sync.
+Full dashboard CRUD, audit events for auth activity, featured projects, category management, analytics, or queues. The authorized statistics expansion below permits daily GitHub sync.
+
+### Authorized scope expansion — GitHub statistics (2026-10-10)
+
+- [x] Add nullable metadata migration and populate last commit, repository age,
+      and latest release version in the existing aside; public reads DB snapshots.
+- [x] Share atomic refresh between admin POST and a sequential published-project
+      CLI, with PostgreSQL batch lock and rate-limit stop.
+- [x] Enrich create/approval/repository changes best effort; preserve failed
+      snapshots and protect repository changes/rename/transfer identity conflicts.
+- [x] Add focused fetch, endpoint, batch, migration, aside/hydration, and admin UI tests.
+- [x] Document nullable migration → deploy → first backfill → daily 02:00
+      Asia/Jakarta Dokploy schedule and runtime token in
+      [the rollout guide](github-statistics-refresh.md).
+- [ ] Operator applies migration, deploys, reviews the first backfill, and enables schedule.
+
+Graphs, 30-day growth, license, and self-hosted remain out of scope. This expansion
+does not introduce trending or growth rankings.
 
 ---
 

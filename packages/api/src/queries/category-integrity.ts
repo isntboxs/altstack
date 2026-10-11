@@ -12,8 +12,9 @@ import { category, categoryPath } from '@altstack/db/schemas'
 
 import type {
 	AdminCategoryNode,
-	AdminCreateCategoryInput,
-	AdminUpdateCategoryInput,
+	AdminCategoryParams,
+	AdminCreateCategoryBody,
+	AdminUpdateCategoryBody,
 } from '@altstack/shared/schemas/admin-category'
 
 type CategoryTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -129,7 +130,7 @@ async function requireUpdatedNode(tx: CategoryTransaction, id: string) {
 
 export async function createAdminCategory(
 	database: typeof db,
-	input: AdminCreateCategoryInput
+	input: AdminCreateCategoryBody
 ) {
 	return database.transaction(async (tx) => {
 		await lockCategoryIntegrity(tx)
@@ -161,7 +162,7 @@ export async function createAdminCategory(
 
 export async function updateAdminCategory(
 	database: typeof db,
-	input: AdminUpdateCategoryInput
+	input: AdminUpdateCategoryBody & AdminCategoryParams
 ) {
 	return database.transaction(async (tx) => {
 		await lockCategoryIntegrity(tx)

@@ -62,18 +62,27 @@ export const adminProjectColumns = columnHelper.columns([
 					render={
 						<Link
 							from="/projects"
-							to="/$slug"
-							params={{ slug: project.slug }}
+							to="/projects/$id/edit"
+							params={{ id: project.id }}
 							viewTransition
 						/>
 					}
 					nativeButton={false}
 				>
-					<img
-						src={resolveFileUrl(project.logo)}
-						alt={`${project.name} logo`}
-						className="size-4 rounded"
-					/>
+					{project.logo ? (
+						<img
+							src={resolveFileUrl(project.logo)}
+							alt={`${project.name} logo`}
+							className="size-4 rounded"
+						/>
+					) : (
+						<span
+							aria-hidden="true"
+							className="flex size-5 items-center justify-center rounded bg-muted text-xs"
+						>
+							{project.name.charAt(0).toUpperCase()}
+						</span>
+					)}
 					{project.name}
 				</Button>
 			)
@@ -85,7 +94,11 @@ export const adminProjectColumns = columnHelper.columns([
 		cell: ({ row }) => {
 			const project = row.original
 
-			return <p className="w-full max-w-xs truncate">{project.tagline}</p>
+			return (
+				<p className="w-full max-w-xs truncate">
+					{project.tagline ?? 'Awaiting content'}
+				</p>
+			)
 		},
 	}),
 
@@ -100,6 +113,22 @@ export const adminProjectColumns = columnHelper.columns([
 				</div>
 			)
 		},
+	}),
+
+	columnHelper.display({
+		id: 'submitter',
+		header: 'Submitted by',
+		cell: ({ row }) =>
+			row.original.submitter ? (
+				<div className="text-sm">
+					<p>{row.original.submitter.name}</p>
+					<p className="text-xs text-muted-foreground">
+						{row.original.submitter.email}
+					</p>
+				</div>
+			) : (
+				<span className="text-muted-foreground">Admin</span>
+			),
 	}),
 
 	columnHelper.accessor('createdAt', {

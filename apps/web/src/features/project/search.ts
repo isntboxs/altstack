@@ -1,18 +1,18 @@
 import { z } from 'zod'
 
 import {
-	searchProjectsInputSchema,
+	searchProjectsQuerySchema,
 	searchSortSchema,
 } from '@altstack/shared/schemas/project'
 
-export const projectFilterSearchSchema = searchProjectsInputSchema
+export const projectFilterSearchSchema = searchProjectsQuerySchema
 	.pick({ q: true })
 	.extend({
-		q: searchProjectsInputSchema.shape.q.catch(undefined),
+		q: searchProjectsQuerySchema.shape.q.catch(undefined),
 		sort: searchSortSchema.optional().catch('newest'),
 		page: z.coerce.number().int().min(1).optional().catch(1),
 	})
 
 export const homeProjectSearchSchema = projectFilterSearchSchema.extend({
-	category: searchProjectsInputSchema.shape.category.catch(undefined),
+	category: searchProjectsQuerySchema.shape.category.catch(undefined),
 })

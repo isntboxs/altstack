@@ -22,6 +22,8 @@ const requestLogoUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/logo',
 			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Request logo upload URL',
 			tags: ['AdminUploads'],
 			operationId: 'requestLogoUpload',
@@ -37,6 +39,8 @@ const removeLogoUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/logo',
 			method: 'DELETE',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Remove logo upload',
 			tags: ['AdminUploads'],
 			operationId: 'removeLogoUpload',
@@ -52,6 +56,8 @@ const changeLogoUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/logo/change',
 			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Change logo upload',
 			tags: ['AdminUploads'],
 			operationId: 'changeLogoUpload',
@@ -67,6 +73,8 @@ const requestScreenshotUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/screenshot',
 			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Request screenshot upload URL',
 			tags: ['AdminUploads'],
 			operationId: 'requestScreenshotUpload',
@@ -82,6 +90,8 @@ const removeScreenshotUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/screenshot',
 			method: 'DELETE',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Remove screenshot upload',
 			tags: ['AdminUploads'],
 			operationId: 'removeScreenshotUpload',
@@ -97,6 +107,8 @@ const changeScreenshotUploadContract = baseContract
 		openapi({
 			path: '/admin/uploads/screenshot/change',
 			method: 'POST',
+			inputStructure: 'detailed',
+			outputStructure: 'compact',
 			summary: 'Change screenshot upload',
 			tags: ['AdminUploads'],
 			operationId: 'changeScreenshotUpload',

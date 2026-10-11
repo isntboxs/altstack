@@ -1,5 +1,4 @@
 import '@blocknote/core/fonts/inter.css'
-import { BlockNoteSchema, SyntaxHighlightingExtension } from '@blocknote/core'
 import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/shadcn/style.css'
 import { BlockNoteView } from '@blocknote/shadcn'
@@ -59,25 +58,14 @@ import {
 } from '@altstack/ui/components/tooltip'
 
 import {
-	BNCustomCodeBlock,
-	DEFAULT_CODE_BLOCK_LANGUAGE,
-	SUPPORTED_CODE_BLOCK_LANGUAGES,
-} from '#/components/block-note/code-block'
-import {
-	CODE_BLOCK_SHIKI_THEME,
-	createHighlighter,
-	withFontStyleHtmlStyles,
-} from '#/utils/shiki.bundle'
-
-const schema = BlockNoteSchema.create().extend({
-	blockSpecs: {
-		codeBlock: BNCustomCodeBlock({
-			indentLineWithTab: true,
-			defaultLanguage: DEFAULT_CODE_BLOCK_LANGUAGE,
-			supportedLanguages: SUPPORTED_CODE_BLOCK_LANGUAGES,
-		}),
-	},
-})
+	blockNoteSchema,
+	contentExtensions,
+	prepareReadmeImport,
+} from '#/components/block-note/schema'
+import type {
+	ReadmeImportMode,
+	ReadmeImportPreview,
+} from '#/components/block-note/schema'
 
 interface Props {
 	value?: string
@@ -92,6 +80,16 @@ export interface BlockNoteEditorHandle {
 	// the field value (e.g. form submit) so the latest edits are included.
 	// Safe outside BlockNote's change callback, where React is idle.
 	flush: () => void
+	readMarkdown: () => string
+	previewImport: (
+		markdown: string,
+		mode: ReadmeImportMode
+	) => ReadmeImportPreview
+	importMarkdown: (
+		markdown: string,
+		mode: ReadmeImportMode,
+		expectedMarkdown: string
+	) => ReadmeImportPreview & { applied: boolean }
 }
 
 export default function BlockNoteEditor({
@@ -103,16 +101,8 @@ export default function BlockNoteEditor({
 }: Props) {
 	const { resolvedTheme } = useTheme()
 	const editor = useCreateBlockNote({
-		schema,
-		extensions: [
-			SyntaxHighlightingExtension({
-				createHighlighter: () =>
-					createHighlighter({
-						themes: [CODE_BLOCK_SHIKI_THEME],
-						langs: [],
-					}).then(withFontStyleHtmlStyles),
-			}),
-		],
+		schema: blockNoteSchema,
+		extensions: contentExtensions(),
 	})
 
 	// Initial content loads once: re-running on every parent value change
@@ -163,12 +153,38 @@ export default function BlockNoteEditor({
 	// task as the last keystroke would otherwise read the field before the
 	// macrotask above runs and silently drop the latest edits.
 	useImperativeHandle(ref, () => {
+		const cancelExport = () => {
+			if (pendingExportRef.current === null) return
+			window.clearTimeout(pendingExportRef.current)
+			pendingExportRef.current = null
+		}
+		const flush = () => {
+			if (pendingExportRef.current === null) return
+			cancelExport()
+			onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
+		}
 		return {
-			flush: () => {
-				if (pendingExportRef.current === null) return
-				window.clearTimeout(pendingExportRef.current)
-				pendingExportRef.current = null
-				onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
+			flush,
+			readMarkdown: () => {
+				flush()
+				return editor.blocksToMarkdownLossy(editor.document)
+			},
+			previewImport: (markdown, mode) => {
+				flush()
+				return prepareReadmeImport(editor, markdown, mode)
+			},
+			importMarkdown: (markdown, mode, expectedMarkdown) => {
+				flush()
+				const preview = prepareReadmeImport(editor, markdown, mode)
+				// Recheck the latest document. If it changed, review the new preview
+				// before applying rather than overwriting unseen edits.
+				if (preview.markdown !== expectedMarkdown) {
+					return { ...preview, applied: false }
+				}
+				editor.replaceBlocks(editor.document, preview.blocks)
+				cancelExport()
+				onChangeRef.current?.(preview.markdown)
+				return { ...preview, applied: true }
 			},
 		}
 	}, [editor])

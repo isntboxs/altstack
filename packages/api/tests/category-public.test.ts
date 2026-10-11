@@ -15,6 +15,7 @@ import {
 
 import type { ORPCContext } from '@altstack/api/context'
 import { openApiHandler, rpcHandler } from '@altstack/api/handler'
+import { getDirectProjectCategories } from '@altstack/api/queries/category'
 import { routers } from '@altstack/api/routers'
 
 import {
@@ -65,7 +66,7 @@ async function zed(status: 'draft' | 'published' = 'published') {
 async function rest(
 	path: string,
 	auth: ORPCContext['auth'] = null,
-	method = 'GET'
+	method = 'QUERY'
 ) {
 	return openApiHandler.handle(
 		new Request(`http://localhost/api/reference${path}`, { method }),
@@ -83,7 +84,7 @@ async function rpc(
 ) {
 	return rpcHandler.handle(
 		new Request(`http://localhost/api/rpc/${path}`, {
-			method: 'POST',
+			method: 'QUERY',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ json: input }),
 		}),
@@ -131,7 +132,9 @@ describe('public category hierarchy', () => {
 		for (const node of result.categories) {
 			expect(categoryNodeSchema.parse(node)).toEqual(node)
 			expect(node.projectCount).toBe(1)
-			const search = await client.project.search({ category: node.slug })
+			const search = await client.project.search({
+				query: { category: node.slug },
+			})
 			expect(search.projects.map((item) => item.id)).toEqual([
 				fixture.projectId,
 			])
@@ -161,7 +164,9 @@ describe('public category hierarchy', () => {
 	it('returns only direct leaf badges with current names and paths on project detail', async () => {
 		const fixture = await zed()
 		const client = clientWith()
-		const detail = await client.project.getBySlug({ slug: fixture.slug })
+		const detail = await client.project.getBySlug({
+			params: { slug: fixture.slug },
+		})
 		expect(getProjectBySlugOutputSchema.parse(detail)).toEqual(detail)
 		expect(detail.categoryDetails).toHaveLength(2)
 		expect(detail.categoryDetails.map((node) => node.id).toSorted()).toEqual(
@@ -176,7 +181,7 @@ describe('public category hierarchy', () => {
 				(node) => node.depth === 3 && node.isLeaf && node.projectCount === 1
 			)
 		).toBe(true)
-		const search = await client.project.search({ category: ROOT })
+		const search = await client.project.search({ query: { category: ROOT } })
 		expect(search.projects[0]?.categories.toSorted()).toEqual([
 			'ai-powered-editors',
 			'general-purpose-editors',
@@ -193,7 +198,9 @@ describe('public category hierarchy', () => {
 			.delete(projectCategory)
 			.where(eq(projectCategory.projectId, fixture.projectId))
 		const client = clientWith()
-		const detail = await client.project.getBySlug({ slug: fixture.slug })
+		const detail = await client.project.getBySlug({
+			params: { slug: fixture.slug },
+		})
 		expect(detail.categoryDetails).toEqual([])
 		await expect(client.category.list({})).resolves.toEqual({ categories: [] })
 		const { categoryDetails, ...missingRequiredField } = detail
@@ -208,9 +215,9 @@ describe('public category hierarchy', () => {
 		for (const auth of [null, adminAuth]) {
 			const client = clientWith(auth)
 			await expect(
-				client.project.getBySlug({ slug: draft.slug })
+				client.project.getBySlug({ params: { slug: draft.slug } })
 			).rejects.toMatchObject({ code: 'NOT_FOUND' })
-			expect(await client.project.list({})).toMatchObject({
+			expect(await client.project.list({ query: {} })).toMatchObject({
 				projects: [],
 				pagination: { totalItems: 0 },
 			})
@@ -221,14 +228,18 @@ describe('public category hierarchy', () => {
 				'ai-powered-editors',
 			]) {
 				expect(
-					await client.project.search({ category: categorySlug, q: 'Zed' })
+					await client.project.search({
+						query: { category: categorySlug, q: 'Zed' },
+					})
 				).toMatchObject({ projects: [], pagination: { totalItems: 0 } })
 			}
 			expect(await client.category.list({})).toEqual({ categories: [] })
 			expect(await client.project.listCategories({})).toEqual({
 				categories: [],
 			})
-			expect(await client.category.getByPath({ path: ROOT })).toMatchObject({
+			expect(
+				await client.category.getByPath({ query: { path: ROOT } })
+			).toMatchObject({
 				category: { projectCount: 0, isLeaf: false },
 				ancestors: [],
 				children: [],
@@ -247,16 +258,16 @@ describe('public category hierarchy', () => {
 				)
 			)
 		const client = clientWith()
-		const empty = await client.category.getByPath({ path: AI })
+		const empty = await client.category.getByPath({ query: { path: AI } })
 		expect(empty.category).toMatchObject({ projectCount: 0, isLeaf: true })
 		expect(empty.children).toEqual([])
-		const parent = await client.category.getByPath({ path: EDITORS })
+		const parent = await client.category.getByPath({ query: { path: EDITORS } })
 		expect(parent.category.isLeaf).toBe(false)
 		expect(parent.children.map((node) => node.path)).toEqual([GENERAL])
 		expect(
 			(await client.category.list({})).categories.map((node) => node.path)
 		).not.toContain(AI)
-		const root = await client.category.getByPath({ path: 'backend' })
+		const root = await client.category.getByPath({ query: { path: 'backend' } })
 		expect(root).toMatchObject({
 			category: { projectCount: 0 },
 			ancestors: [],
@@ -268,7 +279,7 @@ describe('public category hierarchy', () => {
 			.set({ description: null })
 			.where(eq(category.slug, 'backend'))
 		expect(
-			(await client.category.getByPath({ path: 'backend' })).category
+			(await client.category.getByPath({ query: { path: 'backend' } })).category
 				.description
 		).toBeNull()
 	})
@@ -276,13 +287,15 @@ describe('public category hierarchy', () => {
 	it('returns root-first ancestors and immediate children without grandchildren', async () => {
 		await zed()
 		const client = clientWith()
-		const root = await client.category.getByPath({ path: ROOT })
+		const root = await client.category.getByPath({ query: { path: ROOT } })
 		expect(root.ancestors).toEqual([])
 		expect(root.children.map((node) => node.path)).toEqual([EDITORS])
-		const editors = await client.category.getByPath({ path: EDITORS })
+		const editors = await client.category.getByPath({
+			query: { path: EDITORS },
+		})
 		expect(editors.ancestors.map((node) => node.path)).toEqual([ROOT])
 		expect(editors.children.map((node) => node.path)).toEqual([AI, GENERAL])
-		const leaf = await client.category.getByPath({ path: GENERAL })
+		const leaf = await client.category.getByPath({ query: { path: GENERAL } })
 		expect(leaf.ancestors.map((node) => node.path)).toEqual([ROOT, EDITORS])
 		expect(leaf.children).toEqual([])
 	})
@@ -298,13 +311,15 @@ describe('public category hierarchy', () => {
 			`/${AI}`,
 			`${EDITORS}/unknown`,
 		]) {
-			await expect(client.category.getByPath({ path })).rejects.toMatchObject({
+			await expect(
+				client.category.getByPath({ query: { path } })
+			).rejects.toMatchObject({
 				code: 'NOT_FOUND',
 			})
 		}
-		await expect(client.category.getByPath({ path: '' })).rejects.toMatchObject(
-			{ code: 'BAD_REQUEST' }
-		)
+		await expect(
+			client.category.getByPath({ query: { path: '' } })
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 	})
 
 	it('resolves historical paths directly to current ancestry after synthetic rename and reparent', async () => {
@@ -331,9 +346,13 @@ describe('public category hierarchy', () => {
 			.where(eq(category.slug, 'ides-code-editors'))
 		const client = clientWith()
 		const currentPath = 'workbench/editors/smart-editors'
-		const current = await client.category.getByPath({ path: currentPath })
+		const current = await client.category.getByPath({
+			query: { path: currentPath },
+		})
 		for (const path of [AI, intermediate, currentPath]) {
-			expect(await client.category.getByPath({ path })).toEqual(current)
+			expect(await client.category.getByPath({ query: { path } })).toEqual(
+				current
+			)
 		}
 		expect(current.category).toMatchObject({
 			id: aiLeaf.id,
@@ -351,23 +370,30 @@ describe('public category hierarchy', () => {
 		expect(historicalHttp.response?.headers.has('location')).toBe(false)
 		expect(await historicalHttp.response?.json()).toEqual(current)
 		expect(
-			(await client.category.getByPath({ path: EDITORS })).category.path
+			(await client.category.getByPath({ query: { path: EDITORS } })).category
+				.path
 		).toBe('workbench/editors')
 		expect(
-			(await client.project.getBySlug({ slug: fixture.slug })).categoryDetails
+			(
+				await client.project.getBySlug({ params: { slug: fixture.slug } })
+			).categoryDetails
 				.map((node) => node.path)
 				.toSorted()
 		).toEqual(['workbench/editors/general-purpose-editors', currentPath])
 		expect(
-			(await client.project.search({ category: 'editors' })).pagination
-				.totalItems
+			(await client.project.search({ query: { category: 'editors' } }))
+				.pagination.totalItems
 		).toBe(1)
 		expect(
-			(await client.project.search({ category: 'ides-code-editors' }))
-				.pagination.totalItems
+			(
+				await client.project.search({
+					query: { category: 'ides-code-editors' },
+				})
+			).pagination.totalItems
 		).toBe(0)
 		expect(
-			(await client.project.search({ category: ROOT })).pagination.totalItems
+			(await client.project.search({ query: { category: ROOT } })).pagination
+				.totalItems
 		).toBe(0)
 	})
 
@@ -395,7 +421,9 @@ describe('public category hierarchy', () => {
 		if (!current) throw new Error('Missing current backend category')
 
 		const client = clientWith()
-		const detail = await client.category.getByPath({ path: 'backend' })
+		const detail = await client.category.getByPath({
+			query: { path: 'backend' },
+		})
 		expect(detail.category).toMatchObject({
 			id: current.id,
 			path: 'backend',
@@ -405,11 +433,13 @@ describe('public category hierarchy', () => {
 		expect(response.response?.status).toBe(200)
 		expect(await response.response?.json()).toEqual(detail)
 		const canonical = await client.category.getByPath({
-			path: 'current-backend',
+			query: {
+				path: 'current-backend',
+			},
 		})
 		expect(canonical.category.id).toBe(original.id)
 		expect(
-			await client.category.getByPath({ path: 'previous-backend' })
+			await client.category.getByPath({ query: { path: 'previous-backend' } })
 		).toEqual(canonical)
 	})
 
@@ -433,7 +463,7 @@ describe('public category hierarchy', () => {
 			)
 		).toBe(false)
 		await expect(
-			clientWith().category.getByPath({ path: 'too-deep-history' })
+			clientWith().category.getByPath({ query: { path: 'too-deep-history' } })
 		).rejects.toMatchObject({ code: 'NOT_FOUND' })
 		await database.db
 			.update(category)
@@ -441,15 +471,18 @@ describe('public category hierarchy', () => {
 			.where(eq(category.slug, ROOT))
 		const client = clientWith()
 		expect(await client.category.list({})).toEqual({ categories: [] })
-		await expect(client.category.getByPath({ path: AI })).rejects.toMatchObject(
-			{ code: 'NOT_FOUND' }
-		)
-		expect(await client.project.search({ category: ROOT })).toMatchObject({
+		await expect(
+			client.category.getByPath({ query: { path: AI } })
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		expect(
+			await client.project.search({ query: { category: ROOT } })
+		).toMatchObject({
 			projects: [],
 			pagination: { totalItems: 0 },
 		})
 		expect(
-			(await client.project.getBySlug({ slug: fixture.slug })).categoryDetails
+			(await client.project.getBySlug({ params: { slug: fixture.slug } }))
+				.categoryDetails
 		).toEqual([])
 	})
 
@@ -475,11 +508,13 @@ describe('public category hierarchy', () => {
 			const pages = await Promise.all(
 				[1, 2, 3].map((page) =>
 					client.project.search({
-						category: ROOT,
-						q: 'qxhierarchyfilter',
-						sort,
-						page,
-						limit: 1,
+						query: {
+							category: ROOT,
+							q: 'qxhierarchyfilter',
+							sort,
+							page,
+							limit: 1,
+						},
 					})
 				)
 			)
@@ -504,18 +539,22 @@ describe('public category hierarchy', () => {
 			})
 		}
 		expect(
-			(await client.category.getByPath({ path: ROOT })).category.projectCount
+			(await client.category.getByPath({ query: { path: ROOT } })).category
+				.projectCount
 		).toBe(3)
 		expect(
-			(await client.project.search({ category: ROOT, q: 'unmatchedtoken' }))
-				.pagination.totalItems
+			(
+				await client.project.search({
+					query: { category: ROOT, q: 'unmatchedtoken' },
+				})
+			).pagination.totalItems
 		).toBe(0)
 		expect(
-			(await client.project.search({ category: ROOT, q: '   ' })).pagination
-				.totalItems
+			(await client.project.search({ query: { category: ROOT, q: '   ' } }))
+				.pagination.totalItems
 		).toBe(3)
 		expect(
-			await client.project.search({ category: 'unknown', page: 2 })
+			await client.project.search({ query: { category: 'unknown', page: 2 } })
 		).toMatchObject({
 			projects: [],
 			pagination: {
@@ -525,7 +564,9 @@ describe('public category hierarchy', () => {
 				hasPreviousPage: true,
 			},
 		})
-		await expect(client.project.search({ limit: 51 })).rejects.toMatchObject({
+		await expect(
+			client.project.search({ query: { limit: 51 } })
+		).rejects.toMatchObject({
 			code: 'BAD_REQUEST',
 		})
 	})
@@ -564,7 +605,9 @@ describe('public category hierarchy', () => {
 		expect(
 			(await admin.admin.project.listCategories({})).categories
 		).toHaveLength(10)
-		const detail = await admin.admin.project.getById({ id: fixture.projectId })
+		const detail = await admin.admin.project.getById({
+			params: { id: fixture.projectId },
+		})
 		expect(detail.categories.toSorted()).toEqual([
 			'ai-powered-editors',
 			'frontend',
@@ -580,11 +623,11 @@ describe('public category hierarchy', () => {
 			await client.category.list({})
 			expect(query).toHaveBeenCalledTimes(1)
 			query.mockClear()
-			await client.category.getByPath({ path: AI })
+			await client.category.getByPath({ query: { path: AI } })
 			expect(query).toHaveBeenCalledTimes(1)
 			query.mockClear()
-			await client.project.getBySlug({ slug: fixture.slug })
-			expect(query).toHaveBeenCalledTimes(2)
+			await getDirectProjectCategories(database.db, fixture.projectId)
+			expect(query).toHaveBeenCalledTimes(1)
 		} finally {
 			query.mockRestore()
 		}
@@ -605,11 +648,11 @@ describe('public category HTTP and OpenAPI', () => {
 		)
 		expect(detail.response?.status).toBe(200)
 		expect(await detail.response?.json()).toEqual(
-			await clientWith().category.getByPath({ path: AI })
+			await clientWith().category.getByPath({ query: { path: AI } })
 		)
 		for (const [path, input] of [
 			['category/list', {}],
-			['category/getByPath', { path: AI }],
+			['category/getByPath', { query: { path: AI } }],
 			['project/listCategories', {}],
 		] as const) {
 			const result = await rpc(path, input)
@@ -643,8 +686,8 @@ describe('public category HTTP and OpenAPI', () => {
 				(await rest(`/projects/${draft.slug}`, auth)).response?.status
 			).toBe(404)
 			expect(
-				(await rpc('project/getBySlug', { slug: draft.slug }, auth)).response
-					?.status
+				(await rpc('project/getBySlug', { params: { slug: draft.slug } }, auth))
+					.response?.status
 			).toBe(404)
 			expect(await (await rest('/categories', auth)).response?.json()).toEqual({
 				categories: [],
@@ -658,18 +701,20 @@ describe('public category HTTP and OpenAPI', () => {
 				.response?.status
 		).toBe(404)
 		expect(
-			(await rpc('category/getByPath', { path: 'unknown' })).response?.status
+			(await rpc('category/getByPath', { query: { path: 'unknown' } })).response
+				?.status
 		).toBe(404)
 		expect((await rest('/categories/by-path')).response?.status).toBe(400)
 		expect(
-			(await rpc('category/getByPath', { path: '' })).response?.status
+			(await rpc('category/getByPath', { query: { path: '' } })).response
+				?.status
 		).toBe(400)
 		expect((await rest('/projects/search?limit=51')).response?.status).toBe(400)
 		expect((await rest('/admin/categories')).response?.status).toBe(401)
 	})
 
-	it('generates explicit anonymous public operations, one categories GET, and protected admin operations', async () => {
-		const response = await rest('/spec.json')
+	it('generates explicit anonymous public operations, one categories QUERY, and protected admin operations', async () => {
+		const response = await rest('/spec.json', null, 'GET')
 		expect(response.response?.status).toBe(200)
 		type Security = Array<Record<string, Array<string>>>
 		type Operation = { operationId?: string; security?: Security }
@@ -694,10 +739,10 @@ describe('public category HTTP and OpenAPI', () => {
 			'/health',
 			'/list-commits',
 		]) {
-			expect(spec.paths[path]?.get?.security).toEqual([])
+			expect(spec.paths[path]?.query?.security).toEqual([])
 		}
-		expect(Object.keys(spec.paths['/categories']!)).toEqual(['get'])
-		expect(spec.paths['/categories']?.get?.operationId).toBe(
+		expect(Object.keys(spec.paths['/categories']!)).toEqual(['query'])
+		expect(spec.paths['/categories']?.query?.operationId).toBe(
 			'listPublicCategories'
 		)
 		expect(spec.paths['/project/listCategories']).toBeUndefined()

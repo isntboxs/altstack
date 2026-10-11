@@ -11,6 +11,7 @@
 # Runtime env (set in Dokploy, NOT baked into the image):
 #   NODE_ENV, PORT, DATABASE_URL, APP_NAME, BETTER_AUTH_URL,
 #   BETTER_AUTH_SECRET, CORS_ORIGINS, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+#   GITHUB_TOKEN (required for daily statistics refresh), TZ=Asia/Jakarta
 #
 # DB migrations are NOT run here — run once against the external Postgres:
 #   DATABASE_URL=<prod-url> bun run --filter @altstack/db db:migrate

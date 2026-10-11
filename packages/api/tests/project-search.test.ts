@@ -154,7 +154,7 @@ describe('searchProjects', () => {
 		'finds published projects by text query with categories attached',
 		{ timeout: TEST_TIMEOUT },
 		async () => {
-			const result = await client.project.search({ q: TOKEN })
+			const result = await client.project.search({ query: { q: TOKEN } })
 
 			const slugs = result.projects.map((item) => item.slug)
 			expect(slugs).toContain('test-r2-alpha')
@@ -173,11 +173,15 @@ describe('searchProjects', () => {
 		// with concurrent inserts/deletes from unrelated fixtures.
 		const [blank, none] = await Promise.all([
 			client.project.search({
-				q: '   ',
-				category: 'test-r2-tools',
-				limit: 50,
+				query: {
+					q: '   ',
+					category: 'test-r2-tools',
+					limit: 50,
+				},
 			}),
-			client.project.search({ category: 'test-r2-tools', limit: 50 }),
+			client.project.search({
+				query: { category: 'test-r2-tools', limit: 50 },
+			}),
 		])
 
 		expect(blank.pagination.totalItems).toBe(none.pagination.totalItems)
@@ -192,8 +196,10 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			const result = await client.project.search({
-				category: 'test-r2-tools',
-				limit: 50,
+				query: {
+					category: 'test-r2-tools',
+					limit: 50,
+				},
 			})
 
 			const slugs = result.projects.map((item) => item.slug).toSorted()
@@ -206,11 +212,13 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			const first = await client.project.search({
-				q: TOKEN,
-				category: 'test-r2-tools',
-				sort: 'name',
-				page: 1,
-				limit: 1,
+				query: {
+					q: TOKEN,
+					category: 'test-r2-tools',
+					sort: 'name',
+					page: 1,
+					limit: 1,
+				},
 			})
 
 			expect(first.projects.map((item) => item.slug)).toEqual(['test-r2-alpha'])
@@ -223,11 +231,13 @@ describe('searchProjects', () => {
 			})
 
 			const second = await client.project.search({
-				q: TOKEN,
-				category: 'test-r2-tools',
-				sort: 'name',
-				page: 2,
-				limit: 1,
+				query: {
+					q: TOKEN,
+					category: 'test-r2-tools',
+					sort: 'name',
+					page: 2,
+					limit: 1,
+				},
 			})
 
 			expect(second.projects.map((item) => item.slug)).toEqual(['test-r2-zulu'])
@@ -240,8 +250,8 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			const [byText, byCategory] = await Promise.all([
-				client.project.search({ q: TOKEN, limit: 50 }),
-				client.project.search({ category: 'test-r2-draftonly' }),
+				client.project.search({ query: { q: TOKEN, limit: 50 } }),
+				client.project.search({ query: { category: 'test-r2-draftonly' } }),
 			])
 
 			expect(byText.projects.map((item) => item.slug)).not.toContain(
@@ -257,7 +267,9 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			const result = await client.project.search({
-				category: 'test-r2-no-such-category',
+				query: {
+					category: 'test-r2-no-such-category',
+				},
 			})
 
 			expect(result.projects).toEqual([])
@@ -270,9 +282,11 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			const byName = await client.project.search({
-				q: TOKEN,
-				category: 'test-r2-tools',
-				sort: 'name',
+				query: {
+					q: TOKEN,
+					category: 'test-r2-tools',
+					sort: 'name',
+				},
 			})
 			expect(byName.projects.map((item) => item.slug)).toEqual([
 				'test-r2-alpha',
@@ -280,9 +294,11 @@ describe('searchProjects', () => {
 			])
 
 			const byStars = await client.project.search({
-				q: TOKEN,
-				category: 'test-r2-tools',
-				sort: 'most-stars',
+				query: {
+					q: TOKEN,
+					category: 'test-r2-tools',
+					sort: 'most-stars',
+				},
 			})
 			expect(byStars.projects.map((item) => item.slug)).toEqual([
 				'test-r2-zulu',
@@ -290,7 +306,7 @@ describe('searchProjects', () => {
 			])
 
 			await expect(
-				client.project.search({ sort: 'createdAt' as never })
+				client.project.search({ query: { sort: 'createdAt' as never } })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 		}
 	)
@@ -300,10 +316,12 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				client.project.search({ sort: 'trending' as never })
+				client.project.search({ query: { sort: 'trending' as never } })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 
-			await expect(client.project.search({ page: 0 })).rejects.toMatchObject({
+			await expect(
+				client.project.search({ query: { page: 0 } })
+			).rejects.toMatchObject({
 				code: 'BAD_REQUEST',
 			})
 		}
@@ -316,7 +334,9 @@ describe('searchProjects', () => {
 			const request = new Request('http://localhost/api/rpc/project/search', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ json: { sort: 'trending', page: 0 } }),
+				body: JSON.stringify({
+					json: { query: { sort: 'trending', page: 0 } },
+				}),
 			})
 
 			const { matched, response } = await rpcHandler.handle(request, {
@@ -330,7 +350,7 @@ describe('searchProjects', () => {
 			const valid = new Request('http://localhost/api/rpc/project/search', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ json: { q: TOKEN } }),
+				body: JSON.stringify({ json: { query: { q: TOKEN } } }),
 			})
 
 			const validResult = await rpcHandler.handle(valid, {

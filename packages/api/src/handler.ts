@@ -7,8 +7,8 @@ import {
 } from '@orpc/openapi'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { OpenAPIReferenceHandlerPlugin } from '@orpc/openapi/plugins'
+import { RateLimitHandlerPlugin } from '@orpc/ratelimit'
 import { RPCHandler } from '@orpc/server/fetch'
-import { GetMethodCsrfProtectionHandlerPlugin } from '@orpc/server/plugins'
 import { RPC_DEFAULT_ALLOW_METHODS } from '@orpc/server/standard'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
 
@@ -17,10 +17,9 @@ import { routers } from '@altstack/api/routers'
 import { env } from '@altstack/env/server'
 
 export const rpcHandler = new RPCHandler(routers, {
-	allowMethods: ['GET', 'QUERY', ...RPC_DEFAULT_ALLOW_METHODS],
+	allowMethods: ['QUERY', ...RPC_DEFAULT_ALLOW_METHODS],
 	plugins: [
-		new GetMethodCsrfProtectionHandlerPlugin(),
-
+		new RateLimitHandlerPlugin(),
 		new EvlogHandlerPlugin({
 			drain: undefined, // <- custom Evlog drain
 			plugins: [], // <- additional Evlog plugins
@@ -38,6 +37,7 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 	// procedures must not acquire fallback paths in the matcher or reference.
 	filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 	plugins: [
+		new RateLimitHandlerPlugin(),
 		new EvlogHandlerPlugin({
 			drain: undefined, // <- custom Evlog drain
 			plugins: [], // <- additional Evlog plugins

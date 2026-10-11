@@ -11,6 +11,7 @@ import { altstackRouter } from '@altstack/api/routers/altstack'
 import { categoryRouter } from '@altstack/api/routers/category'
 import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
+import { submissionRouter } from '@altstack/api/routers/submission'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
 export const routers = o.router({
@@ -19,6 +20,7 @@ export const routers = o.router({
 		project: adminProjectRouter,
 		upload: uploadRouter,
 	},
+	submission: submissionRouter,
 	altstack: altstackRouter,
 	category: categoryRouter,
 	health: healthRouter,

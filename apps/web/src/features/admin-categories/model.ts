@@ -3,14 +3,14 @@ import { z } from 'zod'
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import {
-	adminCreateCategoryInputSchema,
+	adminCreateCategoryBodySchema,
 	adminUpdateCategoryInputSchema,
 } from '@altstack/shared/schemas/admin-category'
 import { slugSchema } from '@altstack/shared/schemas/common'
 
 export type AdminCategory =
 	ORPCRouterOutputs['admin']['category']['list']['categories'][number]
-export type CategoryFormValues = z.input<typeof adminCreateCategoryInputSchema>
+export type CategoryFormValues = z.input<typeof adminCreateCategoryBodySchema>
 
 export function categoryAncestry(
 	category: AdminCategory,
@@ -106,8 +106,8 @@ export function categoryPathChanges(
 }
 
 export function categoryFormSchema(edited?: AdminCategory) {
-	const description = adminCreateCategoryInputSchema.shape.description
-	return adminCreateCategoryInputSchema.extend({
+	const description = adminCreateCategoryBodySchema.shape.description
+	return adminCreateCategoryBodySchema.extend({
 		description:
 			edited?.description === null
 				? description.or(z.literal(''))
@@ -121,15 +121,17 @@ export function categoryUpdatePayload(
 ) {
 	const parsed = categoryFormSchema(edited).parse(values)
 	return adminUpdateCategoryInputSchema.parse({
-		id: edited.id,
-		...(parsed.name !== edited.name ? { name: parsed.name } : {}),
-		...(parsed.slug !== edited.slug ? { slug: parsed.slug } : {}),
-		...(parsed.parentId !== edited.parentId
-			? { parentId: parsed.parentId }
-			: {}),
-		...(parsed.description !== (edited.description ?? '')
-			? { description: parsed.description }
-			: {}),
+		params: { id: edited.id },
+		body: {
+			...(parsed.name !== edited.name ? { name: parsed.name } : {}),
+			...(parsed.slug !== edited.slug ? { slug: parsed.slug } : {}),
+			...(parsed.parentId !== edited.parentId
+				? { parentId: parsed.parentId }
+				: {}),
+			...(parsed.description !== (edited.description ?? '')
+				? { description: parsed.description }
+				: {}),
+		},
 	})
 }
 

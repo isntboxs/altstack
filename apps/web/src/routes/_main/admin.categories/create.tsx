@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { adminCreateCategoryInputSchema } from '@altstack/shared/schemas/admin-category'
+import { adminCreateCategoryBodySchema } from '@altstack/shared/schemas/admin-category'
 
 import { CategoryForm } from '#/features/admin-categories/components/category-form'
 import {
@@ -24,7 +24,9 @@ function CreateCategory() {
 			categories={data.categories}
 			pending={mutation.isPending}
 			onSubmit={async (values) => {
-				await mutation.mutateAsync(adminCreateCategoryInputSchema.parse(values))
+				await mutation.mutateAsync({
+					body: adminCreateCategoryBodySchema.parse(values),
+				})
 			}}
 		/>
 	)

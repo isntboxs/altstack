@@ -97,7 +97,7 @@ export function CategoryActions({
 							disabled={!!reason || mutation.isPending}
 							onClick={() =>
 								mutation.mutate(
-									{ id: category.id },
+									{ params: { id: category.id } },
 									{ onSuccess: () => setOpen(false) }
 								)
 							}

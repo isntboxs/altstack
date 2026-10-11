@@ -1,0 +1,12 @@
+{
+	"input": { "repositoryUrl": "OldOwner/OldRepo.git" },
+	"canonicalInput": { "repositoryUrl": "https://github.com/oldowner/oldrepo" },
+	"output": {
+		"repositoryUrl": "https://github.com/newowner/newrepo",
+		"sourceUrl": "https://github.com/newowner/newrepo/blob/0123456789abcdef0123456789abcdef01234567/docs/README.md",
+		"path": "docs/README.md",
+		"commitSha": "0123456789abcdef0123456789abcdef01234567",
+		"markdown": "# Example\n\nA public README.",
+		"warnings": []
+	}
+}

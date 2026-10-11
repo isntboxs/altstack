@@ -44,7 +44,8 @@
 		"db:studio": "drizzle-kit studio",
 		"dev": "vp pack --watch",
 		"test": "vp test",
-		"test:isolated": "bun run ./tests/run-isolated.ts"
+		"test:isolated": "bun run ./tests/run-isolated.ts",
+		"test:scoped": "bun run ./tests/run-scoped.ts"
 	},
 	"dependencies": {
 		"@altstack/env": "workspace:*",

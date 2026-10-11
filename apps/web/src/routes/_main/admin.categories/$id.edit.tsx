@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
-import { adminGetCategoryByIdInputSchema } from '@altstack/shared/schemas/admin-category'
+import { adminCategoryParamsSchema } from '@altstack/shared/schemas/admin-category'
 
 import { CategoryForm } from '#/features/admin-categories/components/category-form'
 import { categoryUpdatePayload } from '#/features/admin-categories/model'
@@ -13,7 +13,7 @@ import {
 
 export const Route = createFileRoute('/_main/admin/categories/$id/edit')({
 	loader: async ({ context, params }) => {
-		if (!adminGetCategoryByIdInputSchema.safeParse(params).success) {
+		if (!adminCategoryParamsSchema.safeParse(params).success) {
 			throw notFound()
 		}
 		try {

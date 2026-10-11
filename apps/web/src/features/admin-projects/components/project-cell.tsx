@@ -40,7 +40,7 @@ export const ProjectCellActions: FC<ProjectCellProps> = ({ project }) => {
 
 	const handleClick = () => {
 		deleteMutation.mutate(
-			{ id: project.id },
+			{ params: { id: project.id } },
 			{ onSettled: () => setOpen(false) }
 		)
 	}

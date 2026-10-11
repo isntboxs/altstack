@@ -1,28 +1,78 @@
 import {
+	useInfiniteQuery,
 	useMutation,
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
-import type { ORPCRouterInputs } from '@altstack/api/routers'
+import type { ORPCRouterInputs, ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { toast } from '@altstack/ui/components/toast'
 
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
-import { adminORPC } from '@/utils/orpc'
+import { adminORPC } from '#/utils/orpc'
 
 export const adminProjectQueries = {
+	githubRefresh: () => adminORPC.project.githubRefresh.mutationOptions(),
+	githubReadme: () => adminORPC.project.githubReadme.mutationOptions(),
+	githubMetadata: () => adminORPC.project.githubMetadata.mutationOptions(),
 	create: () => adminORPC.project.create.mutationOptions(),
 	update: () => adminORPC.project.update.mutationOptions(),
 	delete: () => adminORPC.project.remove.mutationOptions(),
-	list: (input: ORPCRouterInputs['admin']['project']['list'] = {}) =>
-		adminORPC.project.list.queryOptions({ input }),
+	list: (input: ORPCRouterInputs['admin']['project']['list']['query'] = {}) =>
+		adminORPC.project.list.queryOptions({ input: { query: input } }),
 	listCategories: () =>
 		adminORPC.project.listCategories.queryOptions({ input: {} }),
 	get: (input: { id: string }) =>
-		adminORPC.project.getById.queryOptions({ input }),
+		adminORPC.project.getById.queryOptions({ input: { params: input } }),
+	reviewHistory: (input: { id: string }) =>
+		adminORPC.project.reviewHistory.infiniteOptions({
+			input: (page: number) => {
+				return { params: input, query: { page, limit: 20 } }
+			},
+			initialPageParam: 1,
+			getNextPageParam: (lastPage) =>
+				lastPage.pagination.hasNextPage
+					? lastPage.pagination.page + 1
+					: undefined,
+		}),
 }
+
+// An imperative read: fetching happens only when the admin clicks the button.
+export const useAdminProjectGithubReadme = () =>
+	useMutation({ ...adminProjectQueries.githubReadme(), retry: false })
+
+export const useAdminProjectGithubMetadata = () =>
+	useMutation({ ...adminProjectQueries.githubMetadata(), retry: false })
+
+export const useAdminProjectGithubRefresh = () => {
+	const queryClient = useQueryClient()
+	return useMutation({
+		...adminProjectQueries.githubRefresh(),
+		retry: false,
+		onSuccess: async (statistics, variables) => {
+			queryClient.setQueryData<
+				ORPCRouterOutputs['admin']['project']['getById']
+			>(
+				adminProjectQueries.get({ id: variables.params.id }).queryKey,
+				(previous) => (previous ? { ...previous, ...statistics } : previous)
+			)
+			await invalidateCatalog(queryClient)
+			toast.add({ type: 'success', title: 'GitHub statistics refreshed' })
+		},
+		onError: (error) => {
+			toast.add({
+				type: 'error',
+				title: 'GitHub refresh failed',
+				description: error.message,
+			})
+		},
+	})
+}
+
+export const useAdminProjectReviewHistory = (input: { id: string }) =>
+	useInfiniteQuery(adminProjectQueries.reviewHistory(input))
 
 export const useAdminProjectList = (
 	input?: Parameters<typeof adminProjectQueries.list>[0]
@@ -105,20 +155,18 @@ export const useAdminProjectUpdate = () => {
 				description: error.message,
 			})
 		},
-		onSuccess: async () => {
+		onSuccess: async (updated, variables) => {
 			toast.add({
 				type: 'success',
 				title: 'Project updated successfully',
 				description: 'Project updated successfully',
 			})
 
+			queryClient.setQueryData(
+				adminProjectQueries.get({ id: variables.params.id }).queryKey,
+				updated
+			)
 			await invalidateCatalog(queryClient)
-
-			await router.navigate({
-				to: '/projects',
-				replace: true,
-				viewTransition: true,
-			})
 			await router.invalidate()
 		},
 	})
@@ -138,7 +186,7 @@ export const useAdminProjectDelete = () => {
 			})
 
 			queryClient.removeQueries({
-				queryKey: adminProjectQueries.get({ id: variables.id }).queryKey,
+				queryKey: adminProjectQueries.get({ id: variables.params.id }).queryKey,
 			})
 
 			await invalidateCatalog(queryClient)

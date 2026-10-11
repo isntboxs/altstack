@@ -29,7 +29,7 @@ describe('admin getById', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				adminClient.admin.project.getById({ id: MISSING_ID })
+				adminClient.admin.project.getById({ params: { id: MISSING_ID } })
 			).rejects.toMatchObject({ code: 'NOT_FOUND' })
 		}
 	)
@@ -39,7 +39,7 @@ describe('admin getById', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				adminClient.admin.project.getById({ id: 'not-a-uuid' })
+				adminClient.admin.project.getById({ params: { id: 'not-a-uuid' } })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 		}
 	)
@@ -49,7 +49,7 @@ describe('admin getById', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				anonClient.admin.project.getById({ id: MISSING_ID })
+				anonClient.admin.project.getById({ params: { id: MISSING_ID } })
 			).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
 		}
 	)
@@ -59,7 +59,7 @@ describe('admin getById', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				userClient.admin.project.getById({ id: MISSING_ID })
+				userClient.admin.project.getById({ params: { id: MISSING_ID } })
 			).rejects.toMatchObject({ code: 'FORBIDDEN' })
 		}
 	)

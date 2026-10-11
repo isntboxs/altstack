@@ -40,19 +40,62 @@ const githubField = {
 	fetchedAt: z.coerce.date(),
 }
 
-export const getProjectBySlugInputSchema = z.object({
+export const githubDetailSchema = z.object({
+	...githubField,
+	lastCommitAt: z.coerce.date().nullable(),
+	repositoryCreatedAt: z.coerce.date().nullable(),
+	latestReleaseTag: z.string().nullable(),
+	metadataFetchedAt: z.coerce.date().nullable(),
+})
+
+export const githubStarsHistorySchema = z.object({
+	timezone: z.literal('Asia/Jakarta'),
+	windowStartDate: z.iso.date(),
+	windowEndDate: z.iso.date(),
+	points: z
+		.array(
+			z.object({
+				date: z.iso.date(),
+				stars: z.number().int().nonnegative(),
+				observedAt: z.coerce.date(),
+			})
+		)
+		.max(31),
+	comparison: z
+		.object({
+			fromDate: z.iso.date(),
+			toDate: z.iso.date(),
+			days: z.number().int().min(1).max(30),
+			deltaStars: z.number().int(),
+			deltaPercent: z.number().nullable(),
+		})
+		.nullable(),
+})
+
+export type GithubStarsHistory = z.infer<typeof githubStarsHistorySchema>
+
+export const getProjectBySlugParamsSchema = z.object({
 	slug: slugSchema,
+})
+
+export const getProjectBySlugInputSchema = z.object({
+	params: getProjectBySlugParamsSchema,
 })
 
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
-	github: z.object(githubField),
+	github: githubDetailSchema,
+	githubStarsHistory: githubStarsHistorySchema,
 	categoryDetails: z.array(categoryNodeSchema),
 })
 
-export const listProjectsInputSchema = z.object({
+export const listProjectsQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const listProjectsInputSchema = z.object({
+	query: listProjectsQuerySchema,
 })
 
 const listProjectItemSchema = z
@@ -86,7 +129,7 @@ export const searchSortSchema = z.enum([
 
 export type SearchSortType = z.infer<typeof searchSortSchema>
 
-export const searchProjectsInputSchema = z.object({
+export const searchProjectsQuerySchema = z.object({
 	q: z
 		.string()
 		.trim()
@@ -98,6 +141,10 @@ export const searchProjectsInputSchema = z.object({
 	sort: searchSortSchema.optional().default('newest'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
+})
+
+export const searchProjectsInputSchema = z.object({
+	query: searchProjectsQuerySchema,
 })
 
 export const searchProjectsOutputSchema = z.object({

@@ -15,7 +15,9 @@ import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
+import { Route as AppSubmitRouteImport } from './routes/_app/submit'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
+import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
@@ -55,9 +57,19 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppSubmitRoute = AppSubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const MainProjectsRoute = MainProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainSubmissionRoute = MainSubmissionRouteImport.update({
+  id: '/submission',
+  path: '/submission',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const AuthSignInRoute = AuthSignInRouteImport.update({
@@ -119,7 +131,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/submit': typeof AppSubmitRoute
   '/projects': typeof MainProjectsRouteWithChildren
+  '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
@@ -136,6 +150,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/submit': typeof AppSubmitRoute
+  '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/projects/create': typeof MainProjectsCreateRoute
@@ -153,7 +169,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
+  '/_app/submit': typeof AppSubmitRoute
   '/_main/projects': typeof MainProjectsRouteWithChildren
+  '/_main/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
@@ -173,7 +191,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/$slug'
     | '/activity'
+    | '/submit'
     | '/projects'
+    | '/submission'
     | '/auth/sign-in'
     | '/categories/$'
     | '/admin/categories'
@@ -190,6 +210,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/$slug'
     | '/activity'
+    | '/submit'
+    | '/submission'
     | '/auth/sign-in'
     | '/categories/$'
     | '/projects/create'
@@ -206,7 +228,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_app/$slug'
     | '/_app/activity'
+    | '/_app/submit'
     | '/_main/projects'
+    | '/_main/submission'
     | '/auth/sign-in'
     | '/_app/'
     | '/_app/categories/$'
@@ -270,11 +294,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/submit': {
+      id: '/_app/submit'
+      path: '/submit'
+      fullPath: '/submit'
+      preLoaderRoute: typeof AppSubmitRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_main/projects': {
       id: '/_main/projects'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof MainProjectsRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/submission': {
+      id: '/_main/submission'
+      path: '/submission'
+      fullPath: '/submission'
+      preLoaderRoute: typeof MainSubmissionRouteImport
       parentRoute: typeof MainRouteRoute
     }
     '/auth/sign-in': {
@@ -353,6 +391,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppSlugRoute: typeof AppSlugRoute
   AppActivityRoute: typeof AppActivityRoute
+  AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
   AppCategoriesIndexRoute: typeof AppCategoriesIndexRoute
@@ -361,6 +400,7 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSlugRoute: AppSlugRoute,
   AppActivityRoute: AppActivityRoute,
+  AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
   AppCategoriesIndexRoute: AppCategoriesIndexRoute,
@@ -403,11 +443,13 @@ const MainAdminCategoriesRouteWithChildren =
 
 interface MainRouteRouteChildren {
   MainProjectsRoute: typeof MainProjectsRouteWithChildren
+  MainSubmissionRoute: typeof MainSubmissionRoute
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainProjectsRoute: MainProjectsRouteWithChildren,
+  MainSubmissionRoute: MainSubmissionRoute,
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
 }
 

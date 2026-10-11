@@ -1,6 +1,5 @@
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/shadcn/style.css'
-import { BlockNoteSchema, SyntaxHighlightingExtension } from '@blocknote/core'
 import { useCreateBlockNote } from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/shadcn'
 import { useEffect } from 'react'
@@ -8,49 +7,30 @@ import { useEffect } from 'react'
 import { useTheme } from '@altstack/ui/components/customs/theme-provider'
 
 import {
-	BNCustomCodeBlock,
-	DEFAULT_CODE_BLOCK_LANGUAGE,
-	SUPPORTED_CODE_BLOCK_LANGUAGES,
-} from '#/components/block-note/code-block'
-import {
-	CODE_BLOCK_SHIKI_THEME,
-	createHighlighter,
-	withFontStyleHtmlStyles,
-} from '#/utils/shiki.bundle'
+	blockNoteSchema,
+	contentExtensions,
+} from '#/components/block-note/schema'
+import type { ReadmeImportPreview } from '#/components/block-note/schema'
 
 interface BlockNoteViewProps {
-	content: string
+	content?: string
+	blocks?: ReadmeImportPreview['blocks']
 }
 
-const schema = BlockNoteSchema.create().extend({
-	blockSpecs: {
-		codeBlock: BNCustomCodeBlock({
-			indentLineWithTab: true,
-			defaultLanguage: DEFAULT_CODE_BLOCK_LANGUAGE,
-			supportedLanguages: SUPPORTED_CODE_BLOCK_LANGUAGES,
-		}),
-	},
-})
-
-export const BlockNoteViewBlocks = ({ content }: BlockNoteViewProps) => {
+export const BlockNoteViewBlocks = ({
+	content,
+	blocks,
+}: BlockNoteViewProps) => {
 	const { resolvedTheme } = useTheme()
 	const editor = useCreateBlockNote({
-		schema,
-		extensions: [
-			SyntaxHighlightingExtension({
-				createHighlighter: () =>
-					createHighlighter({
-						themes: [CODE_BLOCK_SHIKI_THEME],
-						langs: [],
-					}).then(withFontStyleHtmlStyles),
-			}),
-		],
+		schema: blockNoteSchema,
+		extensions: contentExtensions(),
 	})
 
 	useEffect(() => {
-		const blocks = editor.tryParseMarkdownToBlocks(content)
-		editor.replaceBlocks(editor.document, blocks)
-	}, [content, editor])
+		const next = blocks ?? editor.tryParseMarkdownToBlocks(content ?? '')
+		editor.replaceBlocks(editor.document, structuredClone(next))
+	}, [content, blocks, editor])
 
 	return (
 		<BlockNoteView

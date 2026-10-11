@@ -14,8 +14,8 @@ import { adminORPC, orpc } from '#/utils/orpc'
 
 export const adminCategoryQueries = {
 	list: () => adminORPC.category.list.queryOptions({ input: {} }),
-	get: (input: ORPCRouterInputs['admin']['category']['getById']) =>
-		adminORPC.category.getById.queryOptions({ input }),
+	get: (input: ORPCRouterInputs['admin']['category']['getById']['params']) =>
+		adminORPC.category.getById.queryOptions({ input: { params: input } }),
 	create: () => adminORPC.category.create.mutationOptions(),
 	update: () => adminORPC.category.update.mutationOptions(),
 	remove: () => adminORPC.category.remove.mutationOptions(),
@@ -24,7 +24,7 @@ export const adminCategoryQueries = {
 export const useAdminCategoryList = () =>
 	useSuspenseQuery(adminCategoryQueries.list())
 export const useAdminCategoryGet = (
-	input: ORPCRouterInputs['admin']['category']['getById']
+	input: ORPCRouterInputs['admin']['category']['getById']['params']
 ) => useSuspenseQuery(adminCategoryQueries.get(input))
 
 function useCategorySaved() {
@@ -53,10 +53,10 @@ export function useAdminCategoryDelete() {
 	const router = useRouter()
 	return useMutation({
 		...adminCategoryQueries.remove(),
-		onSuccess: async (_, { id }) => {
+		onSuccess: async (_, { params: { id } }) => {
 			for (const queryKey of [
-				adminORPC.category.getById.key({ input: { id } }),
-				orpc.admin.category.getById.key({ input: { id } }),
+				adminORPC.category.getById.key({ input: { params: { id } } }),
+				orpc.admin.category.getById.key({ input: { params: { id } } }),
 			]) {
 				await queryClient.cancelQueries({ queryKey })
 				queryClient.removeQueries({ queryKey })

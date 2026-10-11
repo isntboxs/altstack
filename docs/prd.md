@@ -49,7 +49,8 @@ Claiming ownership, editing, featured projects, and curated feed sections are va
 
 - Collections, bookmarks, comparisons, reviews, ratings, follows, profiles, and social activity.
 - “Quality score”, “Hidden gems”, “Fast growing”, or any other derived ranking.
-- Cron-based GitHub refresh, queues, webhooks, or background workers.
+- Queues, webhooks, or background workers beyond the authorized GitHub statistics
+  daily CLI expansion (2026-10-10; see roadmap and rollout guide).
 - Guest submission and anonymous-IP rate limiting.
 - File upload, Cloudflare R2, Cloudflare Images, or a gallery.
 - Meilisearch, analytics dashboards, newsletters, extensions, SDKs, or public APIs.
@@ -193,5 +194,7 @@ Only prioritise these after observing launch behaviour:
 
 - Claim/edit polish, featured sections, and category management.
 - Guest submission with durable rate limiting and abuse controls.
-- GitHub refresh via scheduler/webhooks, additional repository metadata, and true trending.
+- GitHub webhooks, additional metadata beyond last commit/repository age/latest
+  release, and true trending. Daily/manual statistics refresh was authorized on
+  2026-10-10; see [the rollout guide](github-statistics-refresh.md).
 - Images, screenshots, video, collections, bookmarks, compare, quality score, analytics, newsletter/RSS, profiles, reviews, API/SDK, and extensions.

@@ -5,7 +5,7 @@ import { Suspense, useRef, useState } from 'react'
 import type { z } from 'zod'
 
 import { slugify } from '@altstack/shared/lib/slug'
-import { adminCreateProjectInputSchema } from '@altstack/shared/schemas/admin-project'
+import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
@@ -37,30 +37,32 @@ import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
+import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
-// Mirrors the max() in adminCreateProjectInputSchema; display-only counters.
+// Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
 const TAGLINE_MAX_LENGTH = 100
 const DESCRIPTION_MAX_LENGTH = 300
 
-const defaultValues: z.input<typeof adminCreateProjectInputSchema> = {
+const defaultValues: z.input<typeof adminCreateProjectBodySchema> = {
 	name: '',
 	slug: '',
 	repositoryUrl: '',
 	tagline: '',
 	description: '',
-	logo: '',
+	logo: undefined,
 	screenshot: undefined,
 	websiteUrl: undefined,
 	content: undefined,
 	categorySlugs: [],
 	// Explicit default: new projects publish immediately unless saved as
 	// draft (hidden from the public catalogue). Mirrors the
-	// `.default('published')` in adminCreateProjectInputSchema.
+	// `.default('published')` in adminCreateProjectBodySchema.
 	status: 'published',
 }
 
-type CreateProjectValues = z.input<typeof adminCreateProjectInputSchema>
+type CreateProjectValues = z.input<typeof adminCreateProjectBodySchema>
 
 function isUploadExpiredError(error: unknown): boolean {
 	return (
@@ -90,7 +92,7 @@ function isUploadConsumedError(error: unknown): boolean {
 }
 
 export const Route = createFileRoute('/_main/projects/create')({
-	component: RouteComponent,
+	component: CreateProjectForm,
 })
 
 function SectionHeading({
@@ -121,8 +123,8 @@ function ProjectPreviewCard({
 }) {
 	const name = values.name.trim() || 'Untitled project'
 	const slug = values.slug.trim() || 'your-slug'
-	const tagline = values.tagline.trim()
-	const description = values.description.trim()
+	const tagline = (values.tagline ?? '').trim()
+	const description = (values.description ?? '').trim()
 	const repository = values.repositoryUrl.trim()
 
 	return (
@@ -181,7 +183,7 @@ function ProjectPreviewCard({
 				</div>
 
 				<div className="flex flex-wrap gap-1.5">
-					<ProjectCategoryBadges slugs={values.categorySlugs} />
+					<ProjectCategoryBadges slugs={values.categorySlugs ?? []} />
 				</div>
 
 				<div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
@@ -197,7 +199,7 @@ function ProjectPreviewCard({
 	)
 }
 
-function RouteComponent() {
+export function CreateProjectForm() {
 	const createProject = useAdminProjectCreate()
 	const [submitError, setSubmitError] = useState<string | null>(null)
 	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(null)
@@ -208,13 +210,13 @@ function RouteComponent() {
 	const form = useForm({
 		defaultValues,
 		validators: {
-			onChange: adminCreateProjectInputSchema,
-			onSubmit: adminCreateProjectInputSchema,
+			onChange: adminCreateProjectBodySchema,
+			onSubmit: adminCreateProjectBodySchema,
 		},
 		onSubmit: async ({ value, formApi }) => {
 			setSubmitError(null)
 			try {
-				await createProject.mutateAsync(value)
+				await createProject.mutateAsync({ body: value })
 			} catch (error) {
 				setSubmitError(
 					error instanceof Error ? error.message : 'Unable to save project.'
@@ -231,7 +233,7 @@ function RouteComponent() {
 					// failures after partial promotion. Preflight CONFLICT and
 					// plain BAD_REQUEST (repository URL, category validation)
 					// keep the uploaded images.
-					formApi.setFieldValue('logo', '')
+					formApi.setFieldValue('logo', undefined)
 					formApi.setFieldValue('screenshot', undefined)
 					setLogoDisplayUrl(null)
 					setScreenshotDisplayUrl(null)
@@ -400,6 +402,53 @@ function RouteComponent() {
 													/>
 												</InputGroup>
 
+												<form.Subscribe
+													selector={(state) =>
+														[
+															state.values.repositoryUrl,
+															state.isSubmitting,
+														] as const
+													}
+												>
+													{([repositoryUrl, isSubmitting]) => (
+														<GithubMetadataPrefill
+															repositoryUrl={repositoryUrl}
+															disabled={isSubmitting || createProject.isPending}
+															getCurrentValues={() => {
+																return {
+																	repositoryUrl:
+																		form.getFieldValue('repositoryUrl'),
+																	description:
+																		form.getFieldValue('description'),
+																	websiteUrl: form.getFieldValue('websiteUrl'),
+																}
+															}}
+															onApply={(values) => {
+																if ('description' in values) {
+																	form.setFieldValue(
+																		'description',
+																		values.description
+																	)
+																	void form.validateField(
+																		'description',
+																		'change'
+																	)
+																}
+																if ('websiteUrl' in values) {
+																	form.setFieldValue(
+																		'websiteUrl',
+																		values.websiteUrl
+																	)
+																	void form.validateField(
+																		'websiteUrl',
+																		'change'
+																	)
+																}
+															}}
+														/>
+													)}
+												</form.Subscribe>
+
 												<FieldDescription>
 													Must be a public, actively maintained repository with
 													at least 10 stars.
@@ -464,14 +513,15 @@ function RouteComponent() {
 											<div className="flex items-baseline justify-between gap-2">
 												<FieldLabel htmlFor={field.name}>Tagline</FieldLabel>
 												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{field.state.value.length}/{TAGLINE_MAX_LENGTH}
+													{(field.state.value ?? '').length}/
+													{TAGLINE_MAX_LENGTH}
 												</span>
 											</div>
 
 											<Input
 												id={field.name}
 												name={field.name}
-												value={field.state.value}
+												value={field.state.value ?? ''}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												aria-invalid={isInvalid}
@@ -499,14 +549,15 @@ function RouteComponent() {
 													Description
 												</FieldLabel>
 												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{field.state.value.length}/{DESCRIPTION_MAX_LENGTH}
+													{(field.state.value ?? '').length}/
+													{DESCRIPTION_MAX_LENGTH}
 												</span>
 											</div>
 
 											<Textarea
 												id={field.name}
 												name={field.name}
-												value={field.state.value}
+												value={field.state.value ?? ''}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												aria-invalid={isInvalid}
@@ -525,6 +576,25 @@ function RouteComponent() {
 						<section className="space-y-4">
 							<SectionHeading title="Content" />
 
+							<form.Subscribe
+								selector={(state) =>
+									[state.values.repositoryUrl, state.isSubmitting] as const
+								}
+							>
+								{([repositoryUrl, isSubmitting]) => (
+									<ClientOnly>
+										<GithubReadmeImport
+											repositoryUrl={repositoryUrl}
+											disabled={isSubmitting || createProject.isPending}
+											getRepositoryUrl={() =>
+												form.getFieldValue('repositoryUrl')
+											}
+											getEditor={() => editorRef.current}
+										/>
+									</ClientOnly>
+								)}
+							</form.Subscribe>
+
 							<form.Field
 								name="content"
 								children={(field) => {
@@ -536,7 +606,7 @@ function RouteComponent() {
 											<ClientOnly>
 												<BlockNoteEditor
 													ref={editorRef}
-													value={field.state.value}
+													value={field.state.value ?? ''}
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e)}
 													className="rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
@@ -555,7 +625,7 @@ function RouteComponent() {
 						<section className="space-y-4">
 							<SectionHeading
 								title="Media"
-								description="Logo is required. Screenshots are cropped to 16:9."
+								description="Logo is required to publish. Screenshots are cropped to 16:9."
 							/>
 
 							<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -570,8 +640,10 @@ function RouteComponent() {
 												<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
 												<LogoUploader
-													value={field.state.value}
-													onChange={(next) => field.handleChange(next)}
+													value={field.state.value ?? ''}
+													onChange={(next) =>
+														field.handleChange(next === '' ? undefined : next)
+													}
 													onDisplayUrlChange={setLogoDisplayUrl}
 												/>
 
@@ -594,7 +666,7 @@ function RouteComponent() {
 												<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
 
 												<ScreenshotUploader
-													value={field.state.value}
+													value={field.state.value ?? ''}
 													onChange={(next) =>
 														field.handleChange(next === '' ? undefined : next)
 													}
@@ -630,7 +702,7 @@ function RouteComponent() {
 											<Suspense fallback={<Skeleton className="h-10 w-full" />}>
 												<CategoryCombobox
 													id={field.name}
-													value={field.state.value}
+													value={field.state.value ?? []}
 													onValueChange={(next) => field.handleChange(next)}
 												/>
 											</Suspense>

@@ -114,7 +114,7 @@ async function waitForServer() {
 		)
 		try {
 			if (
-				(await fetch(apiOrigin)).ok &&
+				(await fetch(apiOrigin, { method: 'QUERY' })).ok &&
 				(await fetch(origin + '/categories')).ok
 			) {
 				return
@@ -193,6 +193,36 @@ try {
 	)
 	await waitForServer()
 
+	const rootResponse = await fetch(apiOrigin, { method: 'QUERY' })
+	assert.equal(rootResponse.status, 200)
+	assert.equal(await rootResponse.text(), 'Altstack server is running!')
+	assert.equal((await fetch(apiOrigin)).status, 404)
+	const healthUrl = apiOrigin + '/api/reference/health'
+	const health = await fetch(healthUrl, { method: 'QUERY' })
+	assert.equal(health.status, 200)
+	assert.deepEqual(await health.json(), { message: 'OK' })
+	assert.equal((await fetch(healthUrl)).status, 404)
+	const rpcHealthUrl = apiOrigin + '/api/rpc/health'
+	const rpcHealth = await fetch(rpcHealthUrl, { method: 'QUERY' })
+	assert.equal(rpcHealth.status, 200)
+	assert.deepEqual(await rpcHealth.json(), { json: { message: 'OK' } })
+	assert.equal((await fetch(rpcHealthUrl)).status, 404)
+	const preflight = await fetch(healthUrl, {
+		method: 'OPTIONS',
+		headers: {
+			origin,
+			'access-control-request-method': 'QUERY',
+		},
+	})
+	assert.equal(preflight.status, 204)
+	assert.equal(preflight.headers.get('access-control-allow-origin'), origin)
+	assert.ok(
+		preflight.headers.get('access-control-allow-methods')?.includes('QUERY')
+	)
+	checks.push(
+		'QUERY root/REST/RPC preserve 200 bodies, reject GET, and allow CORS'
+	)
+
 	const rootPath = 'developer-tools'
 	const parentPath = rootPath + '/ides-code-editors'
 	const aiPath = parentPath + '/ai-powered-editors'
@@ -206,10 +236,12 @@ try {
 	checks.push('SSR index groups roots/direct children and reserves /categories')
 
 	for (const path of [rootPath, parentPath, aiPath, generalPath]) {
-		const detail = await client.category.getByPath({ path })
+		const detail = await client.category.getByPath({ query: { path } })
 		assert.equal(detail.category.projectCount, 1)
 		const search = await client.project.search({
-			category: detail.category.slug,
+			query: {
+				category: detail.category.slug,
+			},
 		})
 		assert.equal(search.pagination.totalItems, 1)
 		assert.deepEqual(
@@ -304,9 +336,11 @@ try {
 		generalPath,
 	})
 
-	const root = (await client.category.getByPath({ path: rootPath })).category
-	const parent = (await client.category.getByPath({ path: parentPath }))
+	const root = (await client.category.getByPath({ query: { path: rootPath } }))
 		.category
+	const parent = (
+		await client.category.getByPath({ query: { path: parentPath } })
+	).category
 	const history = [aiPath]
 	await updateAdminCategory(database.db, {
 		id: root.id,
@@ -352,13 +386,16 @@ try {
 		canonical(current.html, '/categories/' + currentPath)
 		hasHeading(current.html, 'Open Source AI-Powered Editors')
 	}
-	const latest = await client.project.getBySlug({ slug: publishedRow.slug })
+	const latest = await client.project.getBySlug({
+		params: { slug: publishedRow.slug },
+	})
 	assert.deepEqual(
 		latest.categoryDetails.map((node) => node.path),
 		[currentPath, 'test-workbench/test-code-editors/general-purpose-editors']
 	)
 	assert.equal(
-		(await client.category.getByPath({ path: rootPath })).category.projectCount,
+		(await client.category.getByPath({ query: { path: rootPath } })).category
+			.projectCount,
 		0
 	)
 	const oldParent = await http('/categories/' + parentPath + query)

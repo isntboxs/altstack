@@ -52,6 +52,12 @@ export const env = createEnv({
 		GITHUB_CLIENT_ID: z.string(),
 		GITHUB_CLIENT_SECRET: z.string().min(32),
 		GITHUB_TOKEN: z.string().min(32).optional(),
+		UPSTASH_REDIS_REST_URL: z
+			.url()
+			.refine((url) => url.startsWith('https://'), {
+				message: 'Upstash Redis REST URL must use HTTPS',
+			}),
+		UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
 		S3_ENDPOINT: z.url(),
 		S3_REGION: z.string().min(1),
 		S3_BUCKET: z.string().min(1),

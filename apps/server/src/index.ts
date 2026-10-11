@@ -41,6 +41,12 @@ app.use(
 		origin: env.CORS_ORIGINS,
 		allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'QUERY', 'OPTIONS'],
 		allowHeaders: ['Content-Type', 'Authorization'],
+		exposeHeaders: [
+			'RateLimit-Limit',
+			'RateLimit-Remaining',
+			'RateLimit-Reset',
+			'Retry-After',
+		],
 		credentials: true,
 	})
 )
@@ -72,7 +78,7 @@ app.all('/api/reference*', async (c, next) => {
 	await next()
 })
 
-app.get('/', (c) => c.text('Altstack server is running!'))
+app.on('QUERY', '/', (c) => c.text('Altstack server is running!'))
 
 export default {
 	port: env.PORT,
