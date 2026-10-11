@@ -48,6 +48,32 @@ export const githubDetailSchema = z.object({
 	metadataFetchedAt: z.coerce.date().nullable(),
 })
 
+export const githubStarsHistorySchema = z.object({
+	timezone: z.literal('Asia/Jakarta'),
+	windowStartDate: z.iso.date(),
+	windowEndDate: z.iso.date(),
+	points: z
+		.array(
+			z.object({
+				date: z.iso.date(),
+				stars: z.number().int().nonnegative(),
+				observedAt: z.coerce.date(),
+			})
+		)
+		.max(31),
+	comparison: z
+		.object({
+			fromDate: z.iso.date(),
+			toDate: z.iso.date(),
+			days: z.number().int().min(1).max(30),
+			deltaStars: z.number().int(),
+			deltaPercent: z.number().nullable(),
+		})
+		.nullable(),
+})
+
+export type GithubStarsHistory = z.infer<typeof githubStarsHistorySchema>
+
 export const getProjectBySlugParamsSchema = z.object({
 	slug: slugSchema,
 })
@@ -59,6 +85,7 @@ export const getProjectBySlugInputSchema = z.object({
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
 	github: githubDetailSchema,
+	githubStarsHistory: githubStarsHistorySchema,
 	categoryDetails: z.array(categoryNodeSchema),
 })
 

@@ -46,6 +46,7 @@ function client(role: string | null = 'admin') {
 function github(overrides: Record<string, unknown> = {}) {
 	vi.mocked(octokit.rest.repos.get).mockResolvedValue({
 		data: {
+			id: 123,
 			private: false,
 			owner: { login: 'NewOwner' },
 			name: 'NewRepo',

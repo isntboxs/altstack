@@ -117,7 +117,17 @@ const responses = {
 	listPublicCategories: { categories: [node] },
 	getCategoryByPath: { category: node, ancestors: [], children: [] },
 	checkHealth: { message: 'OK' },
-	getProjectBySlug: { ...project, categoryDetails: [node] },
+	getProjectBySlug: {
+		...project,
+		categoryDetails: [node],
+		githubStarsHistory: {
+			timezone: 'Asia/Jakarta' as const,
+			windowStartDate: '2026-09-11',
+			windowEndDate: '2026-10-11',
+			points: [],
+			comparison: null,
+		},
+	},
 	listProjects: { projects: [], pagination },
 	searchProjects: { projects: [], pagination },
 }

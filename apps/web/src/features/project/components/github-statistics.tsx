@@ -17,13 +17,16 @@ import {
 } from '@altstack/ui/components/card'
 import { Separator } from '@altstack/ui/components/separator'
 
+import { GithubStarsHistory } from '#/features/project/components/github-stars-history'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 
 export const GithubStatistics = ({
 	github,
+	history,
 	now,
 }: {
 	github: ORPCRouterOutputs['project']['getBySlug']['github']
+	history: ORPCRouterOutputs['project']['getBySlug']['githubStarsHistory']
 	now: number
 }) => {
 	const known = github.metadataFetchedAt !== null
@@ -82,6 +85,7 @@ export const GithubStatistics = ({
 				</CardHeader>
 
 				<CardContent className="grid grid-cols-1 gap-2.5">
+					<GithubStarsHistory history={history} />
 					{githubStatsItem.map((item, idx) => (
 						<div key={idx} className="flex items-center justify-between gap-2">
 							<div className="flex shrink-0 items-center gap-1.5">
@@ -126,6 +130,11 @@ export const GithubStatistics = ({
 					>
 						Last refreshed {githubElapsed(github.fetchedAt, now, true)}
 					</p>
+					{now - github.fetchedAt.getTime() > 36 * 60 * 60 * 1000 && (
+						<p className="text-xs text-amber-600 dark:text-amber-400">
+							Data may be outdated
+						</p>
+					)}
 				</CardContent>
 			</Card>
 		</div>

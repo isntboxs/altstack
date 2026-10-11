@@ -101,6 +101,7 @@ beforeEach(() => {
 	select.mockClear()
 	transaction.mockClear()
 	vi.mocked(fetchPublicGithubRepository).mockReset().mockResolvedValue({
+		githubRepositoryId: 123,
 		canonicalUrl: 'https://github.com/example/tool',
 		owner: 'example',
 		repo: 'tool',

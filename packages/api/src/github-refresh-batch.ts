@@ -1,10 +1,15 @@
 import { ORPCError } from '@orpc/server'
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, lt } from 'drizzle-orm'
 
 import { refreshProjectGithub } from '@altstack/api/github-refresh'
 
 import type { db } from '@altstack/db'
-import { project } from '@altstack/db/schemas'
+import { githubStarHistory, project } from '@altstack/db/schemas'
+
+import {
+	githubSnapshotDate,
+	shiftGithubDate,
+} from '@altstack/shared/lib/github-stars'
 
 export const GITHUB_REFRESH_LOCK = 'altstack.github-refresh'
 
@@ -46,6 +51,11 @@ export async function runGithubRefreshBatch(
 			summary.skipped = true
 			return summary
 		}
+		const cutoff = shiftGithubDate(githubSnapshotDate(new Date()), -89)
+		const pruned = await database
+			.delete(githubStarHistory)
+			.where(lt(githubStarHistory.snapshotDate, cutoff))
+		log({ event: 'github-history-pruned', cutoff, deleted: pruned.rowCount })
 		const projects = await database
 			.select({ id: project.id })
 			.from(project)

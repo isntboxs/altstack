@@ -15,6 +15,7 @@ import {
 
 import type { ORPCContext } from '@altstack/api/context'
 import { openApiHandler, rpcHandler } from '@altstack/api/handler'
+import { getDirectProjectCategories } from '@altstack/api/queries/category'
 import { routers } from '@altstack/api/routers'
 
 import {
@@ -625,8 +626,8 @@ describe('public category hierarchy', () => {
 			await client.category.getByPath({ query: { path: AI } })
 			expect(query).toHaveBeenCalledTimes(1)
 			query.mockClear()
-			await client.project.getBySlug({ params: { slug: fixture.slug } })
-			expect(query).toHaveBeenCalledTimes(2)
+			await getDirectProjectCategories(database.db, fixture.projectId)
+			expect(query).toHaveBeenCalledTimes(1)
 		} finally {
 			query.mockRestore()
 		}

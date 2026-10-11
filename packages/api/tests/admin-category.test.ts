@@ -143,6 +143,7 @@ beforeEach(async () => {
 	vi.spyOn(octokit.rest.repos, 'get').mockImplementation((parameters) =>
 		Promise.resolve({
 			data: {
+				id: 123,
 				owner: { login: parameters?.owner },
 				name: parameters?.repo,
 				stargazers_count: 10,

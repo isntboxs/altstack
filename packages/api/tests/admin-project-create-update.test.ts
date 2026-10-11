@@ -71,6 +71,7 @@ function mockGithubRepoGet() {
 	vi.mocked(octokit.rest.repos.get).mockImplementation((parameters) =>
 		Promise.resolve({
 			data: {
+				id: 123,
 				owner: { login: parameters?.owner },
 				name: parameters?.repo,
 				stargazers_count: MOCK_STARS,

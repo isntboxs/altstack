@@ -208,7 +208,7 @@ describe('cloud test schema lifecycle', () => {
 			const ledger = await scope.pool.query<{ name: string }>(
 				'SELECT name FROM __drizzle_migrations ORDER BY id'
 			)
-			expect(ledger.rows.at(-1)?.name).toMatch(/_github-statistics-metadata$/)
+			expect(ledger.rows.at(-1)?.name).toMatch(/_github-stars-history$/)
 		} finally {
 			await scope.close()
 		}

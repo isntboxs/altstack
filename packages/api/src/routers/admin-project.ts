@@ -45,6 +45,7 @@ import {
 	auditLog,
 	category,
 	githubRepository,
+	githubStarHistory,
 	project,
 	projectCategory,
 	user,
@@ -240,6 +241,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				await tx.insert(githubRepository).values({
 					projectId: inserted.id,
+					githubRepositoryId: resolved.githubRepositoryId,
 					owner,
 					repo,
 					stars,
@@ -580,17 +582,35 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					}
 				}
 				if (refreshedGithub) {
+					const [currentGithub] = await tx
+						.select()
+						.from(githubRepository)
+						.where(eq(githubRepository.projectId, existing.id))
+						.limit(1)
+						.for('update')
+					if (!currentGithub) throw errors.INTERNAL_SERVER_ERROR()
+					const sameRepository =
+						currentGithub.githubRepositoryId ===
+						refreshedGithub.githubRepositoryId
+					if (!sameRepository) {
+						await tx
+							.delete(githubStarHistory)
+							.where(eq(githubStarHistory.projectId, existing.id))
+					}
 					await tx
 						.update(githubRepository)
 						.set({
-							...(repository.canonicalUrl !== existing.repositoryUrl
-								? emptyGithubMetadata
+							...(!sameRepository
+								? {
+										...emptyGithubMetadata,
+										stars: refreshedGithub.stars,
+										forks: refreshedGithub.forks,
+										fetchedAt: new Date(),
+									}
 								: {}),
+							githubRepositoryId: refreshedGithub.githubRepositoryId,
 							owner: refreshedGithub.owner,
 							repo: refreshedGithub.repo,
-							stars: refreshedGithub.stars,
-							forks: refreshedGithub.forks,
-							fetchedAt: new Date(),
 						})
 						.where(eq(githubRepository.projectId, existing.id))
 				}

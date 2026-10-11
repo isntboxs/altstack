@@ -130,6 +130,7 @@ beforeEach(async () => {
 		.mockImplementation((parameters) =>
 			Promise.resolve({
 				data: {
+					id: 123,
 					private: false,
 					owner: { login: parameters?.owner },
 					name: parameters?.repo,
@@ -289,6 +290,7 @@ describe('protected submissions', () => {
 	it('stores the repository identity resolved by GitHub and rejects old aliases without modifying it', async () => {
 		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
 			data: {
+				id: 123,
 				private: false,
 				owner: { login: 'NewOrg' },
 				name: 'CurrentTool',
@@ -317,6 +319,7 @@ describe('protected submissions', () => {
 	it('allows one winner when two different aliases resolve concurrently to one repository', async () => {
 		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
 			data: {
+				id: 123,
 				private: false,
 				owner: { login: 'current-owner' },
 				name: 'current-repo',
@@ -658,6 +661,7 @@ describe('admin review', () => {
 	it('uses resolved GitHub identity in admin create/update and blocks aliases owned by another project before promotion', async () => {
 		vi.mocked(octokit.rest.repos.get).mockResolvedValue({
 			data: {
+				id: 123,
 				private: false,
 				owner: { login: 'current' },
 				name: 'one',
@@ -679,6 +683,7 @@ describe('admin review', () => {
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
 			data: {
+				id: 123,
 				private: false,
 				owner: { login: 'current' },
 				name: 'two',
@@ -696,6 +701,7 @@ describe('admin review', () => {
 		expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
 		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
 			data: {
+				id: 123,
 				private: false,
 				owner: { login: 'TransferredOrg' },
 				name: 'NewName',
@@ -710,7 +716,8 @@ describe('admin review', () => {
 			})
 		).toMatchObject({
 			repositoryUrl: 'https://github.com/transferredorg/newname',
-			github: { owner: 'transferredorg', repo: 'newname', stars: 6, forks: 3 },
+			// Same GitHub ID: basic verification must not replace the saved snapshot.
+			github: { owner: 'transferredorg', repo: 'newname', stars: 4, forks: 2 },
 		})
 	})
 	it.each(['github', 'promotion'] as const)(
@@ -729,6 +736,7 @@ describe('admin review', () => {
 					await release.promise
 					return {
 						data: {
+							id: 123,
 							private: false,
 							owner: { login: 'review' },
 							name: 'changed',
