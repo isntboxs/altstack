@@ -2,17 +2,17 @@
 
 Importer menambahkan project, kategori, path kategori, metadata GitHub, dan relasi
 melalui Drizzle + PostgreSQL. Tidak ada reset database atau migration baru.
-`vp run db:seed` tetap menjalankan seed bawaan yang sudah ada.
+`vp run db:seed` menjalankan importer file. Seed demo lama sudah dihapus.
 
 ## Pemakaian
 
 Dari root repository:
 
 ```sh
-vp run db:seed:file -- --projects ./data/projects.csv --categories ./data/categories.csv
-vp run db:seed:file -- --projects ./data/projects.json --github
-vp run db:seed:file -- --categories ./data/categories.json --dry-run
-vp run db:seed:file -- --help
+vp run db:seed -- --projects ./data/projects.csv --categories ./data/categories.csv
+vp run db:seed -- --projects ./data/projects.json --github
+vp run db:seed -- --categories ./data/categories.json --dry-run
+vp run db:seed -- --help
 ```
 
 Minimal satu dari `--projects` dan `--categories` wajib diberikan. Root script
@@ -21,7 +21,7 @@ mengacu pada direktori pemanggil. Dari package database:
 
 ```sh
 cd packages/db
-vp run db:seed:file -- --projects ../../data/projects.json --categories ../../data/categories.json --dry-run
+vp run db:seed -- --projects ../../data/projects.json --categories ../../data/categories.json --dry-run
 ```
 
 CLI memuat `.env` root tanpa menimpa environment pemanggil. Hanya `DATABASE_URL`
@@ -133,8 +133,7 @@ code nonzero.
 ## Validasi aman
 
 Ikuti root README sebagai sumber utama verifikasi. Jangan memakai
-`test:isolated`, menjalankan demo seed yang mengakses jaringan, atau mengimpor
-template ke schema aplikasi untuk pengujian.
+`test:isolated` atau mengimpor template ke schema aplikasi untuk pengujian.
 
 ```sh
 vp install

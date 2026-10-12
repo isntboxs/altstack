@@ -11,7 +11,7 @@ import { createSeedGithubClient } from './seed-file-github'
 import { importSeedFiles } from './seed-file-import'
 import { readSeedFiles } from './seed-file-parser'
 
-const usage = `Pemakaian: vp run db:seed:file -- --projects ./data/projects.csv --categories ./data/categories.csv
+const usage = `Pemakaian: vp run db:seed -- --projects ./data/projects.csv --categories ./data/categories.csv
   --projects <file.csv|file.json>    Impor project
   --categories <file.csv|file.json>  Impor kategori
   --github                          Ambil statistik dan README project baru

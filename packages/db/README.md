@@ -57,8 +57,8 @@ vp run --filter @altstack/db test:scoped -- vp run ready
 
 The wrapper defaults to the recursive test suite when no command is supplied.
 It cleans its temporary schema after success or failure. It never resets
-application `public`/`drizzle`, never runs the network-based demo seed, and does
-not rewrite the root `.env`. DB cases remain in their own temporary schemas.
+application `public`/`drizzle` and does not rewrite the root `.env`. DB cases remain
+in their own temporary schemas.
 Cleanup failure is reported as failure. Do not use the historical `test:isolated`
 wrapper: it resets application schemas and deletes development data.
 

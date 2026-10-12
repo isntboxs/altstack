@@ -547,7 +547,7 @@ describe('transactional file seeding in disposable PostgreSQL schemas', () => {
 					'vp',
 					[
 						'run',
-						'db:seed:file',
+						'db:seed',
 						'--',
 						'--projects',
 						relative(cwd, projects),
