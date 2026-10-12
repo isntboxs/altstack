@@ -1,0 +1,4 @@
+name,slug,description,parentSlug
+AI Editors,ai-editors,Editors with AI assistance.,code-editors
+Developer Tools,developer-tools,Tools for software development.,
+Code Editors,code-editors,Editors for working with source code.,developer-tools
