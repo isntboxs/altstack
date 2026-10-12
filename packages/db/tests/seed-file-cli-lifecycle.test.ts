@@ -44,6 +44,24 @@ describe('file seed CLI lifecycle', () => {
 		expect(mocks.create).not.toHaveBeenCalled()
 		expect(mocks.github).not.toHaveBeenCalled()
 	})
+	it('reports the PostgreSQL missing-table cause rather than only the failed query', async () => {
+		vi.stubEnv('DATABASE_URL', 'postgres://test/scoped')
+		const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+		const cause = Object.assign(
+			new Error('relation "categories" does not exist'),
+			{ code: '42P01' }
+		)
+		mocks.import.mockRejectedValueOnce(
+			new Error('Failed query: select from categories', { cause })
+		)
+		expect(await runSeedFileCli(['--categories', 'input.json'])).toBe(1)
+		expect(stderr).toHaveBeenCalledWith(
+			expect.stringContaining(
+				'Schema database belum lengkap (42P01): relation "categories" does not exist'
+			)
+		)
+		expect(mocks.end).toHaveBeenCalledOnce()
+	})
 	it.each([false, true])(
 		'closes its pool when importer failure is %s',
 		async (failure) => {

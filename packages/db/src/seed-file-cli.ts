@@ -65,6 +65,16 @@ export function loadSeedEnvironment(
 	return environment
 }
 
+function seedFailureMessage(error: unknown) {
+	const cause =
+		error instanceof Error && error.cause instanceof Error ? error.cause : error
+	if (!(cause instanceof Error)) return 'Kesalahan tidak diketahui'
+	if ('code' in cause && (cause.code === '42P01' || cause.code === '42703')) {
+		return `Schema database belum lengkap (${cause.code}): ${cause.message}. Periksa DATABASE_URL dan migration pada database tersebut.`
+	}
+	return cause.message
+}
+
 export async function runSeedFileCli(args = process.argv.slice(2)) {
 	let pool: Pool | undefined
 	try {
@@ -108,9 +118,7 @@ export async function runSeedFileCli(args = process.argv.slice(2)) {
 		return 0
 	} catch (error) {
 		// Do not dump connection configuration or credentials on failure.
-		process.stderr.write(
-			`Impor gagal: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}\n`
-		)
+		process.stderr.write(`Impor gagal: ${seedFailureMessage(error)}\n`)
 		return 1
 	} finally {
 		await pool?.end()

@@ -36,6 +36,19 @@ dan [categories.json](../data/categories.json). Ganti record contoh dengan data
 sendiri sebelum impor. URL repository contoh bukan repository yang diverifikasi;
 gunakan `--dry-run` tanpa `--github` untuk memeriksa struktur template.
 
+## Jika perintah gagal
+
+Jalankan contoh root dari direktori yang mempunyai `package.json` dan folder
+`data/`. Jika sedang di `packages/db`, gunakan path `../../data/...` seperti
+contoh di atas. `ENOENT` berarti file tidak ditemukan pada path tersebut.
+
+Error `Schema database belum lengkap (42P01)` berarti tabel belum tersedia;
+`42703` berarti kolom yang diperlukan belum tersedia. Periksa `DATABASE_URL` yang
+digunakan, lalu jalankan `vp run db:migrate` pada database yang sama. Bila migration
+melaporkan sukses tetapi tabel tetap hilang, journal migration dapat sudah berisi
+catatan migration untuk schema yang kini kosong. Kondisi ini perlu pemulihan
+schema setelah pemeriksaan, bukan pengulangan seeding atau reset data aplikasi.
+
 ## Format dan kolom
 
 Ekstensi `.csv` atau `.json` menentukan parser. JSON harus berupa array object;
