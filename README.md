@@ -8,7 +8,7 @@ Impor kategori, project, dan relasinya tanpa reset database atau migration baru:
 
 ```sh
 vp run db:seed -- --projects ./data/projects.csv --categories ./data/categories.csv
-vp run db:seed -- --projects ./data/projects.json --github
+vp run db:seed -- --projects ./data/projects.json --categories ./data/categories.json --github
 vp run db:seed -- --categories ./data/categories.json --dry-run
 ```
 
