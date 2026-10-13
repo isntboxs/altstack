@@ -2,6 +2,22 @@
 
 A starter for creating a Vite+ monorepo.
 
+## Seeding CSV dan JSON
+
+Impor kategori, project, dan relasinya tanpa reset database atau migration baru:
+
+```sh
+vp run db:seed -- --projects ./data/projects.csv --categories ./data/categories.csv
+vp run db:seed -- --projects ./data/projects.json --categories ./data/categories.json --github
+vp run db:seed -- --categories ./data/categories.json --dry-run
+```
+
+Default project `draft`, record lama dilewati, dan GitHub hanya diakses dengan
+`--github`. CLI hanya membutuhkan `DATABASE_URL` secara default; path file relatif
+terhadap direktori pemanggil. `db:seed` menjalankan importer file; minimal satu
+path project atau kategori wajib diberikan.
+Lihat [format kolom, template, konsistensi transaksi, dan pengujian aman](docs/file-seeding.md).
+
 ## Development
 
 Database development menggunakan PostgreSQL cloud. Konfigurasikan `.env` dari

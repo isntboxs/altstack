@@ -1,0 +1,19 @@
+[
+	{
+		"name": "AI Editors",
+		"slug": "ai-editors",
+		"description": "Editors with AI assistance.",
+		"parentSlug": "code-editors"
+	},
+	{
+		"name": "Developer Tools",
+		"slug": "developer-tools",
+		"description": "Tools for software development."
+	},
+	{
+		"name": "Code Editors",
+		"slug": "code-editors",
+		"description": "Editors for working with source code.",
+		"parentSlug": "developer-tools"
+	}
+]

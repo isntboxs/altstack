@@ -15,7 +15,11 @@
 		"./schemas/category": "./src/schemas/category.ts",
 		"./schemas/github": "./src/schemas/github.ts",
 		"./schemas/project": "./src/schemas/project.ts",
-		"./seed": "./src/seed.ts",
+		"./seed-file-cli": "./src/seed-file-cli.ts",
+		"./seed-file-github": "./src/seed-file-github.ts",
+		"./seed-file-import": "./src/seed-file-import.ts",
+		"./seed-file-parser": "./src/seed-file-parser.ts",
+		"./seed-file-validation": "./src/seed-file-validation.ts",
 		"./seed-taxonomy": "./src/seed-taxonomy.ts",
 		"./package.json": "./package.json"
 	},
@@ -29,7 +33,11 @@
 			"./schemas/category": "./dist/schemas/category.mjs",
 			"./schemas/github": "./dist/schemas/github.mjs",
 			"./schemas/project": "./dist/schemas/project.mjs",
-			"./seed": "./dist/seed.mjs",
+			"./seed-file-cli": "./dist/seed-file-cli.mjs",
+			"./seed-file-github": "./dist/seed-file-github.mjs",
+			"./seed-file-import": "./dist/seed-file-import.mjs",
+			"./seed-file-parser": "./dist/seed-file-parser.mjs",
+			"./seed-file-validation": "./dist/seed-file-validation.mjs",
 			"./seed-taxonomy": "./dist/seed-taxonomy.mjs",
 			"./package.json": "./package.json"
 		}
@@ -40,7 +48,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
-		"db:seed": "bun run ./src/seed.ts",
+		"db:seed": "bun run ./src/seed-file-cli.ts",
 		"db:studio": "drizzle-kit studio",
 		"dev": "vp pack --watch",
 		"test": "vp test",
@@ -50,6 +58,7 @@
 	"dependencies": {
 		"@altstack/env": "workspace:*",
 		"@altstack/shared": "workspace:*",
+		"csv-parse": "^7.0.3",
 		"dotenv": "catalog:",
 		"drizzle-orm": "catalog:",
 		"octokit": "catalog:",
