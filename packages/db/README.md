@@ -1,5 +1,9 @@
 # Category hierarchy database foundation (PR1)
 
+Untuk importer CSV/JSON, lihat [panduan file seeding](../../docs/file-seeding.md).
+Root [README](../../README.md#development) adalah sumber verifikasi saat ini:
+gunakan `test:scoped` yang menjaga data aplikasi.
+
 `categories.parentId` is nullable, indexed, and references `categories.id` with
 `ON DELETE RESTRICT`. The self-parent check is the only new hierarchy check.
 Globally unique slugs and `project_categories` are unchanged. Drizzle exposes
@@ -30,46 +34,38 @@ paths are retained. A path owned by another category aborts the whole transactio
 Cycle detection only prevents the seed path walk from looping; API hierarchy
 validation and advisory locking belong to PR3.
 
-## Isolated verification
+## Disposable-schema verification
 
-The test helper connects to the cloud `DATABASE_URL` from the root `.env` and
-preserves its SSL and connection parameters. Both URL validation and a server
-identity query require `altstack_development`. Each DB case creates an
-`altstack_test_<uuid>` schema in that database, with its own connection search path
-and Drizzle migration ledger. The search path excludes `public`; case teardown
-closes the pool and drops only its schema, including after assertion failures.
-Direct DB tests do not reset the application schemas.
+Root [README](../../README.md#development) is the verification source of truth.
+The test helper connects using `DATABASE_URL` from the root `.env`, preserving
+SSL and connection parameters. URL validation and a server identity query require
+`altstack_development`. Each direct DB case creates an `altstack_test_<uuid>`
+schema with its own search path and Drizzle migration ledger. The search path
+excludes `public`; teardown closes the pool and drops only its test schema.
+
+Existing API tests require a published backend fixture. Run workspace verification
+through `test:scoped`, which gives the entire child command another disposable
+schema, applies the real migration chain, seeds the taxonomy, and inserts a
+synthetic backend project:
 
 ```sh
 vp install
-vp run --filter @altstack/db test
 vp check
+vp run --filter @altstack/db test:scoped -- vp run -r test
+vp run --filter @altstack/db test:scoped -- vp run ready
 ```
 
-Existing API tests use the application schemas and expect a published backend
-project. Run workspace verification through this wrapper:
+The wrapper defaults to the recursive test suite when no command is supplied.
+It cleans its temporary schema after success or failure. It never resets
+application `public`/`drizzle` and does not rewrite the root `.env`. DB cases remain
+in their own temporary schemas.
+Cleanup failure is reported as failure. Do not use the historical `test:isolated`
+wrapper: it resets application schemas and deletes development data.
 
-```sh
-vp run --filter @altstack/db test:isolated -- vp test
-vp run --filter @altstack/db test:isolated -- vp run ready
-```
-
-The wrapper resets `public` and `drizzle` in `altstack_development` before running
-verification. Existing development data is deleted. It applies the real migration
-chain, seeds the taxonomy, and inserts a synthetic backend project. External
-GitHub/storage credentials are replaced with synthetic values for the child
-command. The root `.env` remains unchanged.
-
-After success, a nonzero command exit, or a thrown verification error, the wrapper
-resets those application schemas again, applies the migrations, and seeds only the
-taxonomy. The final database contains the current schema and ten categories/path
-mappings, with no project fixtures. DB cases remain isolated in temporary schemas
-while API tests use `public`. Tests use 30-second timeouts and 60-second hooks.
-
-The wrapper defaults to `vp run ready` when no command is supplied. It never runs
-the network-based project seed. A cleanup or migration failure is reported as a
-failure rather than a successful restoration. The target guard rejects databases
-other than `altstack_development` before attempting to reset them.
+CSV/JSON importer tests also create disposable schemas and use mock GitHub
+clients. Coverage includes parser errors, hierarchy planning, historical path
+ownership, leaf assignments, one-transaction rollback, idempotent preservation,
+GitHub rename/conflict checks, dry-run, caller-relative CLI paths, and pool cleanup.
 
 The reusable `tests/fixtures/category-hierarchy.ts` fixture creates Zed with
 synthetic repository metadata and two direct sibling leaf assignments. Its default

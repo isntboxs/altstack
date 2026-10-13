@@ -1,0 +1,15 @@
+[
+	{
+		"name": "Example Editor",
+		"slug": "example-editor",
+		"repositoryUrl": "https://github.com/example/editor",
+		"tagline": "A useful code editor.",
+		"description": "Replace this example with your own project.",
+		"logo": "https://example.com/logo.png",
+		"screenshot": "https://example.com/screenshot.png",
+		"websiteUrl": "https://example.com",
+		"content": "# Example Editor\nContent from this file takes precedence over GitHub README.",
+		"status": "draft",
+		"categorySlugs": ["ai-editors"]
+	}
+]
