@@ -7,6 +7,8 @@
 
 R5a implementation updated on **2026-10-14** from baseline `8127d34`.
 R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
+L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
+Merged-revision and production acceptance remain open.
 
 ## Operating rules
 
@@ -24,6 +26,7 @@ R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 - **R3 — Sign in:** OAuth configuration, session-aware navigation, private route guards, and API authorization implemented; real OAuth smoke remains open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
+- **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -229,13 +232,12 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-Recommended remaining order: **L1 → L2 → launch acceptance**. R5a/R5b are
-implemented. L1/L2 are recommended
-public-release completion work identified during this reconciliation.
+Recommended remaining order: **L2 → launch acceptance**. R5a/R5b and L1 are
+implemented and merged; their open acceptance gates still apply before release.
 
 ### L1 — Catalogue SEO and link previews
 
-**Implemented locally:** route-specific SEO/GEO and static/dynamic social cards.
+**Implemented and merged at `a650dd0`:** route-specific SEO/GEO and static/dynamic social cards.
 The baseline root already used the configured app name and deployed icons;
 the earlier starter-title diagnosis was stale. Release-domain/social-crawler
 acceptance remains separate from implementation.
@@ -254,15 +256,16 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [ ] Remove or clearly disable Verify/Bookmark/Report/Embed until implemented; remove the unsupported verification/ranking promise.
-- [ ] Replace starter branding/manifest copy and generic screenshot placeholders with AltStack copy or honest empty states.
+- [ ] Remove or clearly disable Verify/Bookmark/Report/Embed and the account menu's Bookmarks action until implemented; remove the unsupported verification/ranking promise.
+- [x] AltStack branding, icons and manifest copy replace starter identity.
+- [ ] Replace generic screenshot placeholders with honest empty states.
 - [ ] Verify keyboard/mobile navigation, loading/error/not-found states, images, and external links.
 
 **Done when:** every enabled action works and public copy matches the product.
 
 ### Launch acceptance and operations
 
-- [ ] Complete L1/L2, pass R5a/R5b staging acceptance, and resolve the intake-account policy.
+- [ ] Finish L2, pass L1 release-domain/social-crawler and R5a/R5b staging acceptance, and resolve the intake-account policy.
 - [ ] Verify at least 20 accurate published listings and real media/links.
 - [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
 - [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.
