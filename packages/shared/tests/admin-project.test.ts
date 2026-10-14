@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
+	adminCreateProjectBodySchema,
 	adminDeleteProjectInputSchema,
 	adminListProjectInputSchema,
 	adminProjectReviewHistoryInputSchema,
 	adminUpdateProjectInputSchema,
+	rejectProjectSchema,
 } from '@altstack/shared/schemas/admin-project'
 import {
 	projectLogoKeySchema,
@@ -171,6 +173,59 @@ describe('adminUpdateProjectInputSchema', () => {
 				body: { categorySlugs: [] },
 			}).success
 		).toBe(true)
+	})
+})
+
+describe('rejection feedback validation', () => {
+	it.each([undefined, null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'rejects invalid feedback %j in final state and direct creation',
+		(rejectionReason) => {
+			expect(rejectProjectSchema.safeParse({ rejectionReason }).success).toBe(
+				false
+			)
+			const result = adminCreateProjectBodySchema.safeParse({
+				name: 'Review Tool',
+				slug: 'review-tool',
+				repositoryUrl: 'review/example',
+				status: 'rejected',
+				rejectionReason,
+			})
+			expect(result.success).toBe(false)
+			expect(result.error?.issues[0]?.path).toEqual(['rejectionReason'])
+		}
+	)
+	it.each([null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'rejects explicitly invalid rejected PATCH feedback %j',
+		(rejectionReason) => {
+			expect(
+				adminUpdateProjectInputSchema.safeParse({
+					params: { id: PROJECT_ID },
+					body: { status: 'rejected', rejectionReason },
+				}).success
+			).toBe(false)
+		}
+	)
+	it('allows omission in a PATCH for server-side validation of retained feedback', () => {
+		expect(
+			adminUpdateProjectInputSchema.parse({
+				params: { id: PROJECT_ID },
+				body: { status: 'rejected' },
+			}).body
+		).toEqual({ status: 'rejected' })
+	})
+	it('trims feedback and accepts the 1000-character boundary', () => {
+		expect(
+			rejectProjectSchema.parse({ rejectionReason: '  Needs documentation  ' })
+		).toEqual({ rejectionReason: 'Needs documentation' })
+		expect(
+			adminCreateProjectBodySchema.parse({
+				name: 'Review Tool',
+				slug: 'review-tool',
+				repositoryUrl: 'review/example',
+				status: 'rejected',
+				rejectionReason: `  ${'a'.repeat(1000)}  `,
+			}).rejectionReason
+		).toBe('a'.repeat(1000))
 	})
 })
 

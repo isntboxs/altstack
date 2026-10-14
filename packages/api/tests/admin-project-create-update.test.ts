@@ -619,7 +619,12 @@ describe('admin update project', () => {
 			] as const) {
 				const updated = await adminClient.admin.project.update({
 					params: { id: created.id },
-					body: { status },
+					body: {
+						status,
+						...(status === 'rejected'
+							? { rejectionReason: 'Needs documentation' }
+							: {}),
+					},
 				})
 				expect(updated.status).toBe(status)
 			}

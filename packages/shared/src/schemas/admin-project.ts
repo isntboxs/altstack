@@ -28,6 +28,15 @@ const nullableCopy = (max: number) =>
 		.nullable()
 		.transform((value) => (value === '' ? null : value))
 
+// Validate the final rejected state, including a reason retained by a PATCH.
+export const rejectProjectSchema = z.object({
+	rejectionReason: z
+		.string({ error: 'A rejection reason is required.' })
+		.trim()
+		.min(1, 'A rejection reason is required.')
+		.max(1000, 'Rejection reason must be 1000 characters or fewer.'),
+})
+
 // Publish checks the complete merged record, including existing final media.
 export const publishProjectSchema = z.object({
 	name: z.string().trim().min(2).max(100),
@@ -63,27 +72,33 @@ export const adminProjectSchema = projectSchema.extend({
 
 export const adminProjectParamsSchema = z.object({ id: z.uuid() })
 
-export const adminCreateProjectBodySchema = z.object({
-	name: z.string().trim().min(2).max(100),
-	slug: slugSchema,
-	repositoryUrl: repositoryUrlSchema,
-	tagline: nullableCopy(100).optional(),
-	description: nullableCopy(300).optional(),
-	logo: logoKeySchema.nullable().optional(),
-	screenshot: screenshotKeySchema.optional(),
-	websiteUrl: z.url({ protocol: /^https?$/ }).optional(),
-	content: z
-		.string()
-		.trim()
-		.optional()
-		.transform((v) => v ?? undefined),
-	categorySlugs: categorySlugsSchema.default([]),
-	// Visibility at creation. Drafts stay hidden from the public catalogue
-	// (`status = 'published'` filter); omitted input defaults to
-	// 'published' to preserve the pre-status behaviour. The admin UI offers
-	// draft/published; the API accepts the full PROJECT_STATUS enum.
-	status: z.enum(PROJECT_STATUS).optional().default('published'),
-})
+export const adminCreateProjectBodySchema = z
+	.object({
+		name: z.string().trim().min(2).max(100),
+		slug: slugSchema,
+		repositoryUrl: repositoryUrlSchema,
+		tagline: nullableCopy(100).optional(),
+		description: nullableCopy(300).optional(),
+		logo: logoKeySchema.nullable().optional(),
+		screenshot: screenshotKeySchema.optional(),
+		websiteUrl: z.url({ protocol: /^https?$/ }).optional(),
+		content: z
+			.string()
+			.trim()
+			.optional()
+			.transform((v) => v ?? undefined),
+		categorySlugs: categorySlugsSchema.default([]),
+		// Visibility at creation. Drafts stay hidden from the public catalogue
+		// (`status = 'published'` filter); omitted input defaults to
+		// 'published' to preserve the pre-status behaviour. The admin UI offers
+		// draft/published; the API accepts the full PROJECT_STATUS enum.
+		status: z.enum(PROJECT_STATUS).optional().default('published'),
+		rejectionReason: nullableCopy(1000).optional(),
+	})
+	.refine(
+		(body) => body.status !== 'rejected' || Boolean(body.rejectionReason),
+		{ path: ['rejectionReason'], message: 'A rejection reason is required.' }
+	)
 
 export const adminCreateProjectInputSchema = z.object({
 	body: adminCreateProjectBodySchema,
@@ -131,29 +146,31 @@ export const adminListProjectOutputSchema = z.object({
 // Partial update: every body field is optional. Image fields accept
 // tmp/* keys only — omit to keep the current image, pass a new tmp key to
 // replace it. `screenshot: null` removes the screenshot.
-export const adminUpdateProjectBodySchema = z.object({
-	name: z.string().trim().min(2).max(100).optional(),
-	slug: slugSchema.optional(),
-	repositoryUrl: repositoryUrlSchema.optional(),
-	tagline: nullableCopy(100).optional(),
-	description: nullableCopy(300).optional(),
-	logo: logoKeySchema.nullable().optional(),
-	screenshot: screenshotKeySchema.nullable().optional(),
-	websiteUrl: z
-		.url({ protocol: /^https?$/ })
-		.nullable()
-		.optional(),
-	content: z.string().trim().nullable().optional(),
-	categorySlugs: categorySlugsSchema.optional(),
-	status: z.enum(PROJECT_STATUS).optional(),
-	rejectionReason: z
-		.string()
-		.trim()
-		.max(1000)
-		.nullable()
-		.transform((value) => (value === '' ? null : value))
-		.optional(),
-})
+export const adminUpdateProjectBodySchema = z
+	.object({
+		name: z.string().trim().min(2).max(100).optional(),
+		slug: slugSchema.optional(),
+		repositoryUrl: repositoryUrlSchema.optional(),
+		tagline: nullableCopy(100).optional(),
+		description: nullableCopy(300).optional(),
+		logo: logoKeySchema.nullable().optional(),
+		screenshot: screenshotKeySchema.nullable().optional(),
+		websiteUrl: z
+			.url({ protocol: /^https?$/ })
+			.nullable()
+			.optional(),
+		content: z.string().trim().nullable().optional(),
+		categorySlugs: categorySlugsSchema.optional(),
+		status: z.enum(PROJECT_STATUS).optional(),
+		rejectionReason: nullableCopy(1000).optional(),
+	})
+	.refine(
+		(body) =>
+			body.status !== 'rejected' ||
+			body.rejectionReason === undefined ||
+			body.rejectionReason !== null,
+		{ path: ['rejectionReason'], message: 'A rejection reason is required.' }
+	)
 
 export const adminUpdateProjectInputSchema = z.object({
 	params: adminProjectParamsSchema,

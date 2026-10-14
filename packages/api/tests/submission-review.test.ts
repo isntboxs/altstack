@@ -350,7 +350,7 @@ describe('protected submissions', () => {
 		expect(await scope.db.select().from(auditLog)).toEqual([])
 		await client('admin').admin.project.update({
 			params: { id: rows[0]!.id },
-			body: { status: 'rejected' },
+			body: { status: 'rejected', rejectionReason: 'Review closed' },
 		})
 		expect(await client('user').submission.create(input())).toMatchObject({
 			status: 'draft',
@@ -546,6 +546,267 @@ describe('protected submissions', () => {
 			await scope.pool.query('DROP FUNCTION fail_submission_audit()')
 		}
 	})
+})
+
+describe('mandatory rejection feedback', () => {
+	it.each([undefined, null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'blocks direct rejected creation with feedback %j before external work',
+		async (rejectionReason) => {
+			await expect(
+				client('admin').admin.project.create({
+					body: {
+						...input(),
+						slug: 'rejected-create',
+						status: 'rejected',
+						rejectionReason,
+						logo: complete.logo,
+					},
+				})
+			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+			expect(octokit.rest.repos.get).not.toHaveBeenCalled()
+			expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+			expect(await scope.db.select().from(project)).toEqual([])
+			expect(await scope.db.select().from(auditLog)).toEqual([])
+		}
+	)
+	it('retains rejected creation feedback in history after restoration', async () => {
+		const created = await client('admin').admin.project.create({
+			body: {
+				...input(),
+				slug: 'rejected-create',
+				status: 'rejected',
+				rejectionReason: '  Needs documentation  ',
+			},
+		})
+		expect(created).toMatchObject({
+			status: 'rejected',
+			rejectionReason: 'Needs documentation',
+		})
+		const params = { id: created.id }
+		expect(
+			await client('admin').admin.project.update({
+				params,
+				body: { status: 'draft' },
+			})
+		).toMatchObject({
+			status: 'draft',
+			rejectionReason: null,
+		})
+		const history = await client('admin').admin.project.reviewHistory({
+			params,
+			query: {},
+		})
+		expect(history.events).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					action: 'project_created',
+					toStatus: 'rejected',
+					reason: 'Needs documentation',
+				}),
+				expect.objectContaining({
+					action: 'project_status_changed',
+					fromStatus: 'rejected',
+					toStatus: 'draft',
+					reason: null,
+				}),
+			])
+		)
+	})
+	it.each([undefined, null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'blocks rejection with feedback %j before GitHub changes or media promotion',
+		async (rejectionReason) => {
+			const draft = await client('user').submission.create(input())
+			vi.mocked(octokit.rest.repos.get).mockClear()
+			const before = await scope.db.select().from(project)
+			const audits = await scope.db.select().from(auditLog)
+			await expect(
+				client('admin').admin.project.update({
+					params: { id: draft.id },
+					body: {
+						status: 'rejected',
+						rejectionReason,
+						repositoryUrl: 'review/changed',
+						logo: complete.logo,
+					},
+				})
+			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+			expect(octokit.rest.repos.get).not.toHaveBeenCalled()
+			expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+			expect(await scope.db.select().from(project)).toEqual(before)
+			expect(await scope.db.select().from(auditLog)).toEqual(audits)
+		}
+	)
+	it.each([null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'cannot clear retained feedback with %j while staying rejected without a status field',
+		async (rejectionReason) => {
+			const draft = await client('user').submission.create(input())
+			const params = { id: draft.id }
+			await client('admin').admin.project.update({
+				params,
+				body: { status: 'rejected', rejectionReason: 'Needs documentation' },
+			})
+			vi.mocked(octokit.rest.repos.get).mockClear()
+			const before = await scope.db.select().from(project)
+			const audits = await scope.db.select().from(auditLog)
+			await expect(
+				client('admin').admin.project.update({
+					params,
+					body: {
+						rejectionReason,
+						logo: complete.logo,
+						repositoryUrl: 'review/changed',
+					},
+				})
+			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+			expect(await scope.db.select().from(project)).toEqual(before)
+			expect(await scope.db.select().from(auditLog)).toEqual(audits)
+			expect(octokit.rest.repos.get).not.toHaveBeenCalled()
+			expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+		}
+	)
+	it('preserves an omitted valid reason and audits a corrected reason', async () => {
+		const draft = await client('user').submission.create(input())
+		const params = { id: draft.id }
+		await client('admin').admin.project.update({
+			params,
+			body: { status: 'rejected', rejectionReason: '  Needs documentation  ' },
+		})
+		for (const body of [
+			undefined,
+			{ name: 'Edited project' },
+			{ status: 'rejected' as const },
+		]) {
+			expect(
+				await client('admin').admin.project.update({ params, body })
+			).toMatchObject({
+				status: 'rejected',
+				rejectionReason: 'Needs documentation',
+			})
+		}
+		const reason = 'a'.repeat(1000)
+		expect(
+			await client('admin').admin.project.update({
+				params,
+				body: { rejectionReason: `  ${reason}  ` },
+			})
+		).toMatchObject({ rejectionReason: reason })
+		expect(
+			(await client('user').submission.list({ query: {} })).submissions[0]
+		).toMatchObject({ rejectionReason: reason })
+		expect(
+			(await client('admin').admin.project.reviewHistory({ params, query: {} }))
+				.events
+		).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					reason: 'Needs documentation',
+					fromStatus: 'draft',
+					toStatus: 'rejected',
+				}),
+				expect.objectContaining({
+					reason,
+					fromStatus: 'rejected',
+					toStatus: 'rejected',
+				}),
+			])
+		)
+	})
+	it.each([null, ' \n\t ', 'a'.repeat(1001)])(
+		'keeps legacy rejected feedback %j readable and allows restoration but requires a reason to remain rejected',
+		async (rejectionReason) => {
+			const draft = await client('user').submission.create(input())
+			const params = { id: draft.id }
+			await scope.db
+				.update(project)
+				.set({ status: 'rejected', rejectionReason })
+				.where(eq(project.id, draft.id))
+			expect(
+				await client('admin').admin.project.getById({ params })
+			).toMatchObject({ status: 'rejected', rejectionReason })
+			expect(
+				(await client('user').submission.list({ query: {} })).submissions[0]
+			).toMatchObject({ status: 'rejected', rejectionReason })
+			const before = await scope.db.select().from(project)
+			const audits = await scope.db.select().from(auditLog)
+			vi.mocked(octokit.rest.repos.get).mockClear()
+			for (const body of [
+				undefined,
+				{},
+				{ name: 'Edited legacy', logo: complete.logo },
+				{ status: 'rejected' as const },
+			]) {
+				await expect(
+					client('admin').admin.project.update({ params, body })
+				).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+			}
+			expect(await scope.db.select().from(project)).toEqual(before)
+			expect(await scope.db.select().from(auditLog)).toEqual(audits)
+			expect(octokit.rest.repos.get).not.toHaveBeenCalled()
+			expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
+			expect(
+				await client('admin').admin.project.update({
+					params,
+					body: { status: 'draft' },
+				})
+			).toMatchObject({ status: 'draft', rejectionReason: null })
+		}
+	)
+	it.each(['draft', 'rejected'] as const)(
+		'rejects a stale retained-reason update when a concurrent reviewer changes status to %s',
+		async (status) => {
+			const draft = await client('user').submission.create(input())
+			const params = { id: draft.id }
+			await client('admin').admin.project.update({
+				params,
+				body: { status: 'rejected', rejectionReason: 'Original feedback' },
+			})
+			const started = Promise.withResolvers<void>()
+			const release = Promise.withResolvers<void>()
+			vi.mocked(octokit.rest.repos.get).mockImplementationOnce(async () => {
+				started.resolve()
+				await release.promise
+				return {
+					data: {
+						id: 456,
+						private: false,
+						owner: { login: 'review' },
+						name: 'changed',
+						stargazers_count: 0,
+						forks_count: 0,
+					},
+				} as GithubResult
+			})
+			const pending = client('admin').admin.project.update({
+				params,
+				body: { repositoryUrl: 'review/changed' },
+			})
+			const outcome = pending.catch((error: unknown) => error)
+			let audits
+			try {
+				await started.promise
+				await client('admin').admin.project.update({
+					params,
+					body: {
+						status,
+						rejectionReason:
+							status === 'rejected' ? 'Corrected feedback' : null,
+					},
+				})
+				audits = await scope.db.select().from(auditLog)
+			} finally {
+				release.resolve()
+			}
+			expect(await outcome).toMatchObject({ code: 'CONFLICT' })
+			expect(
+				await client('admin').admin.project.getById({ params })
+			).toMatchObject({
+				status,
+				repositoryUrl: 'https://github.com/review/example',
+				rejectionReason: status === 'rejected' ? 'Corrected feedback' : null,
+			})
+			expect(await scope.db.select().from(auditLog)).toEqual(audits)
+		}
+	)
 })
 
 describe('admin review', () => {
@@ -973,7 +1234,13 @@ describe('admin review', () => {
 			const draft = await client('user').submission.create(input())
 			await client('admin').admin.project.update({
 				params: { id: draft.id },
-				body: { status, categorySlugs: ['backend'] },
+				body: {
+					status,
+					categorySlugs: ['backend'],
+					...(status === 'rejected'
+						? { rejectionReason: 'Needs documentation' }
+						: {}),
+				},
 			})
 			await expect(
 				client(null).project.getBySlug({ params: { slug: 'review-tool' } })

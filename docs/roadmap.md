@@ -5,6 +5,8 @@
 > not deployed or verified in production. Open acceptance/rollout items remain
 > release gates.
 
+R5a implementation updated on **2026-10-14** from baseline `8127d34`.
+
 ## Operating rules
 
 1. Deliver vertical slices: schema/migration → API contract and authorization → UI → focused tests → deployable demo.
@@ -20,11 +22,11 @@
 - **R2 — Find:** full-text search, filters, sorting, pagination, public category pages, and admin taxonomy implemented.
 - **R3 — Sign in:** OAuth configuration, session-aware navigation, private route guards, and API authorization implemented; real OAuth smoke remains open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
-- **R5 — Moderate + enrich:** admin review, publish validation, history, and enrichment implemented; required rejection feedback and submitter resubmission remain open.
+- **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, and enrichment implemented; submitter resubmission remains open.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
-Next: finish R5 feedback, public discovery, and release acceptance before adding
+Next: finish R5b resubmission, public discovery, and release acceptance before adding
 ownership, bookmarks, or editorial sections.
 
 ## Repository conventions and validation
@@ -75,7 +77,7 @@ replacement before routine release use.
 - Publish requires name, slug, canonical repository, tagline, description, logo, and **1–3 leaf categories**. Drafts can be incomplete.
 - Intake suffixes colliding slugs numerically. Admin create/edit returns `409` for slug/repository conflicts or a concurrent edit.
 - Audit covers create, update, remove, submit, and status change. Admin update writes `project_updated` plus `project_status_changed` when status or reason changes, transactionally. The original exactly-one-event moderation design is superseded.
-- Rejection reasons remain optional in API and UI; required feedback is unfinished.
+- Rejection requires a trimmed, nonblank reason of at most 1000 characters in API and UI. Both admin create and the final merged PATCH state are checked before GitHub/media work. A PATCH may retain a valid stored reason but cannot clear it while remaining rejected. Legacy rejected records remain readable; restoring them clears the current note while audit history retains prior feedback.
 - Homepage validates `q`, `category`, `sort`, and `page`; only these values are loader dependencies. Filter changes preserve other filters and reset pagination.
 - Search uses PostgreSQL generated `tsvector` + GIN. Category filtering includes descendants; direct assignments use leaves in a maximum three-level hierarchy.
 - Canonical URLs and GitHub-resolved identity constraints protect duplicates. A service token validates public data, not maintainer ownership.
@@ -164,11 +166,25 @@ Evidence: submission router/rate limiter, web submission features, and
 
 ### R5a — Actionable rejection feedback
 
-- [ ] Require nonblank feedback in the server's final rejected state and admin UI, including direct API calls.
-- [ ] Keep feedback private and preserve previous reasons in audit history on restoration.
-- [ ] Cover reject without reason, valid reject, restore, and stale/concurrent updates. Do not invent reasons for legacy records.
+- [x] Require nonblank feedback in the server's final rejected state and admin UI, including direct API calls.
+- [x] Keep feedback private and preserve previous reasons in audit history on restoration, including initially rejected admin-created projects.
+- [x] Cover reject without reason, valid reject, restore, and stale/concurrent updates. Do not invent reasons for legacy records.
 
 **Done when:** every new rejection has actionable feedback in `/submission`.
+
+The review form shows inline feedback for an empty Reject and keeps draft/restore
+actions available after validation fails. No migration or legacy backfill is needed.
+
+Focused verification: shared schema/submission tests **82 passed**; scoped API
+submission/create-update/history tests **98 passed**; review form/history UI
+tests **18 passed**; OpenAPI/HTTP codec tests **66 passed**. The create contract
+now declares optional nullable feedback; runtime validation requires it whenever
+the final status is rejected.
+
+Final validation on 2026-10-14: `vp check` passed; disposable-schema root
+`vp test run` passed **828 tests, 1 skipped** across 52 files; `vp run -r build`
+passed with existing chunk-size/dependency directive warnings. The skipped case
+is opt-in real Upstash integration. Deployment/service smoke remains separate.
 
 ### R5b — Correct and resubmit
 
@@ -201,8 +217,8 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-Recommended order: **R5a → R5b → L1 → L2 → launch acceptance**. R5a/R5b
-complete the original submission feedback requirement; L1/L2 are recommended
+Recommended remaining order: **R5b → L1 → L2 → launch acceptance**. R5a is
+implemented; R5b completes the submission feedback loop. L1/L2 are recommended
 public-release completion work identified during this reconciliation.
 
 ### L1 — Catalogue SEO and link previews

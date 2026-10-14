@@ -613,7 +613,12 @@ describe('hierarchy mutation guards', () => {
 		] as const) {
 			await clientWith().admin.project.update({
 				params: { id: draft.id },
-				body: { status },
+				body: {
+					status,
+					...(status === 'rejected'
+						? { rejectionReason: 'Needs documentation' }
+						: {}),
+				},
 			})
 			await expect(
 				clientWith().admin.category.remove({ params: { id: assigned.id } })

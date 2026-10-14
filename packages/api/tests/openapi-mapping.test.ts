@@ -656,6 +656,43 @@ describe('detailed REST mapping', () => {
 			)
 		}
 	)
+	it.each([undefined, null, '', ' \n\t ', 'a'.repeat(1001)])(
+		'rejects rejected creation feedback %j over HTTP before invoking the handler',
+		async (rejectionReason) => {
+			const result = await rest('/admin/projects', 'POST', {
+				...projectBody,
+				status: 'rejected',
+				rejectionReason,
+			})
+			expect(result.response?.status).toBe(400)
+			expect(await result.response?.json()).toMatchObject({
+				code: 'BAD_REQUEST',
+			})
+			expect(observed).not.toHaveBeenCalled()
+		}
+	)
+	it('preserves and trims rejected creation feedback over HTTP up to the limit', async () => {
+		const rejectionReason = 'a'.repeat(1000)
+		const result = await rest('/admin/projects', 'POST', {
+			...projectBody,
+			status: 'rejected',
+			rejectionReason: `  ${rejectionReason}  `,
+		})
+		expect(result.response?.status).toBe(201)
+		expect(observed).toHaveBeenLastCalledWith('createAdminProject', {
+			body: {
+				name: 'Example',
+				slug: 'example-project',
+				repositoryUrl: 'https://github.com/example/project',
+				tagline: 'Tagline',
+				description: 'Description',
+				logo: LOGO,
+				categorySlugs: ['backend'],
+				status: 'rejected',
+				rejectionReason,
+			},
+		})
+	})
 	it.each(['/admin/categories', '/admin/projects'])(
 		'PATCH %s separates the path ID and preserves omission, null, and absent bodies',
 		async (path) => {

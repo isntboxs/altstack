@@ -2,7 +2,7 @@
 title: AltStack Product Requirements
 version: 2.1
 status: Pre-launch — implementation reconciled
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 ---
 
 # AltStack
@@ -74,7 +74,7 @@ capabilities/dependencies, not deferred proposals.
 - **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, and taxonomy management.
 - **R3 — Sign in:** GitHub OAuth, private routes, session-aware navigation, API checks.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
-- **R5 — Moderate + enrich:** admin listing enrichment/review/history; finish required feedback and submitter resubmission.
+- **R5 — Moderate + enrich:** admin listing enrichment/review/history and required feedback; finish submitter resubmission.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
 - **R6 — Own & edit:** verified ownership and maintainer editing after launch.
 - **R7 — Curate:** featured flags and editorial homepage sections after launch.
@@ -133,7 +133,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Verify fresh basic GitHub data before publication/repository changes; update the existing record transactionally with categories and audit.
 - Current UI supports save draft, publish, reject, restore, unpublish, and delete.
 - Audit records update/status changes; review history is paginated. One mutation can legitimately write both update and status-change events.
-- **Required before launch, not implemented:** reject must require actionable nonblank feedback in API and UI.
+- Rejection requires actionable nonblank feedback after trimming, with a 1000-character maximum, in admin create/update APIs and the review UI. Updates may retain a valid existing reason; legacy rejected records remain readable and restorable. Inline validation blocks empty Reject without preventing switching to draft/restore, and audit history retains feedback.
 - **Required before launch, not implemented:** original submitters can edit only rejected intake name/repository/website and atomically return it to `draft`, clearing current reason and preserving history.
 - Resubmission must enforce owner/status/conflict/concurrency checks, quotas/capacity, and private visibility. It does not confer ownership or permission to edit published content.
 
@@ -168,7 +168,7 @@ Current storage uses a single project record:
 
 - `draft`: hidden, awaiting review or an incomplete admin draft.
 - `published`: publicly visible, editable by admins.
-- `rejected`: hidden; current optional note is visible to submitter/admin.
+- `rejected`: hidden; required feedback is visible to submitter/admin. Historical records may have no note; keeping them rejected through an update requires valid feedback.
 - `removed`: supported hidden status.
 
 Admins can restore rejected records or unpublish to draft. Submitter-driven
