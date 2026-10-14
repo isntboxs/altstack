@@ -49,7 +49,10 @@ const select = vi.fn(() => {
 				where: () => {
 					const result = selectResults.shift() ?? []
 					return Object.assign(Promise.resolve(result), {
-						limit: () => Promise.resolve(result),
+						limit: () =>
+							Object.assign(Promise.resolve(result), {
+								for: () => Promise.resolve(result),
+							}),
 						orderBy: () => {
 							return {
 								limit: () => {
@@ -79,8 +82,42 @@ const transaction = vi.fn(async (work: (tx: unknown) => Promise<unknown>) =>
 					}),
 			}
 		},
+		update: () => {
+			return {
+				set: () => {
+					return { where: () => Promise.resolve() }
+				},
+			}
+		},
 	})
 )
+
+const resubmitInput = {
+	params: { id: ID },
+	body: { ...input, revision: '123' },
+}
+function prepareResubmit() {
+	const intake = {
+		id: ID,
+		...input,
+		websiteUrl: null,
+		status: 'rejected',
+		rejectionReason: 'Correct the name',
+		revision: '123',
+	}
+	selectResults = [
+		[intake],
+		[],
+		[],
+		[],
+		[],
+		[intake],
+		[],
+		[],
+		[],
+		[{ githubRepositoryId: 123 }],
+	]
+}
 
 function context(id: string | null = 'account-a', role = 'user'): ORPCContext {
 	return {
@@ -123,6 +160,75 @@ afterEach(() => {
 })
 
 describe('submission quota middleware', () => {
+	it('charges create and resubmit against the same account counter', async () => {
+		for (let attempt = 0; attempt < 3; attempt++) await client().create(input)
+		for (let attempt = 0; attempt < 2; attempt++) {
+			prepareResubmit()
+			await expect(client().resubmit(resubmitInput)).resolves.toEqual({
+				id: ID,
+				status: 'draft',
+			})
+		}
+		select.mockClear()
+		vi.mocked(fetchPublicGithubRepository).mockClear()
+		await expect(client().resubmit(resubmitInput)).rejects.toMatchObject({
+			code: 'TOO_MANY_REQUESTS',
+			data: { limit: 5, remaining: 0 },
+		})
+		await expect(client().create(input)).rejects.toMatchObject({
+			code: 'TOO_MANY_REQUESTS',
+			data: { limit: 5, remaining: 0 },
+		})
+		expect(counters.size).toBe(1)
+		expect(select).not.toHaveBeenCalled()
+		expect(fetchPublicGithubRepository).not.toHaveBeenCalled()
+	})
+	it('validates resubmit after authentication and before quota; private reads do not consume quota', async () => {
+		await expect(client(null).resubmit(resubmitInput)).rejects.toMatchObject({
+			code: 'UNAUTHORIZED',
+		})
+		await expect(
+			client(null).resubmit({
+				...resubmitInput,
+				body: { ...resubmitInput.body, name: '' },
+			})
+		).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+		await expect(
+			client().resubmit({
+				...resubmitInput,
+				body: { ...resubmitInput.body, name: '' },
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		await expect(
+			client().resubmit({
+				...resubmitInput,
+				body: { ...resubmitInput.body, status: 'published' },
+			} as typeof resubmitInput)
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		await expect(
+			client().getById({ params: { id: ID } })
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		expect(submissionRedis.evalsha).not.toHaveBeenCalled()
+	})
+	it('counts valid resubmit requests that fail ownership or GitHub checks', async () => {
+		for (let attempt = 0; attempt < 5; attempt++) {
+			if (attempt % 2 === 0) {
+				selectResults = [[]]
+			} else {
+				prepareResubmit()
+				vi.mocked(fetchPublicGithubRepository).mockRejectedValueOnce(
+					new ORPCError('INTERNAL_SERVER_ERROR')
+				)
+			}
+			await expect(client().resubmit(resubmitInput)).rejects.toMatchObject({
+				code: attempt % 2 === 0 ? 'NOT_FOUND' : 'INTERNAL_SERVER_ERROR',
+			})
+		}
+		await expect(client().create(input)).rejects.toMatchObject({
+			code: 'TOO_MANY_REQUESTS',
+			data: { limit: 5, remaining: 0 },
+		})
+	})
 	it('allows five attempts and denies the sixth before database/GitHub', async () => {
 		for (let attempt = 0; attempt < 5; attempt++) {
 			await expect(client().create(input)).resolves.toEqual({
@@ -332,6 +438,41 @@ describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 			createORPCClient(link)
 		return { caller, responses }
 	}
+	it('returns typed quota headers for resubmit success and denial', async () => {
+		prepareResubmit()
+		const { caller, responses } = httpClient()
+		await expect(caller.submission.resubmit(resubmitInput)).resolves.toEqual({
+			id: ID,
+			status: 'draft',
+		})
+		expect(responses[0]?.headers.get('ratelimit-limit')).toBe('5')
+		expect(responses[0]?.headers.get('ratelimit-remaining')).toBe('4')
+		vi.mocked(submissionRedis.evalsha).mockResolvedValue([-1, 5])
+		const rejection: unknown = await caller.submission
+			.resubmit(resubmitInput)
+			.catch((error: unknown) => error)
+		const reset = Number(responses[1]?.headers.get('ratelimit-reset'))
+		expect(rejection).toMatchObject({
+			code: 'TOO_MANY_REQUESTS',
+			data: { limit: 5, remaining: 0, reset },
+		})
+		expect(responses[1]?.status).toBe(429)
+		expect(Number(responses[1]?.headers.get('retry-after'))).toBe(
+			Math.ceil((reset - Date.now()) / 1_000)
+		)
+	})
+	it('fails closed on a resubmit Redis error before DB/GitHub work', async () => {
+		vi.mocked(submissionRedis.evalsha).mockRejectedValue(
+			new Error('Redis unavailable')
+		)
+		const { caller, responses } = httpClient()
+		await expect(
+			caller.submission.resubmit(resubmitInput)
+		).rejects.toHaveProperty('code', 'INTERNAL_SERVER_ERROR')
+		expect(responses[0]?.status).toBe(500)
+		expect(select).not.toHaveBeenCalled()
+		expect(fetchPublicGithubRepository).not.toHaveBeenCalled()
+	})
 	it('returns typed native 429 data and rate-limit/retry headers', async () => {
 		vi.mocked(submissionRedis.evalsha).mockResolvedValue([-1, 5])
 		const { caller, responses } = httpClient()

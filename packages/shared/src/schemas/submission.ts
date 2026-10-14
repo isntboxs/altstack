@@ -29,6 +29,29 @@ export const createSubmissionOutputSchema = z.object({
 	status: z.literal('draft'),
 })
 
+// Opaque PostgreSQL row revision, returned by the private prefill read. It is
+// required so an edit prepared before a new review cannot overwrite that review.
+const submissionRevisionSchema = z.string().regex(/^\d+$/).max(10)
+export const getSubmissionInputSchema = z.object({
+	params: z.object({ id: z.uuid() }).strict(),
+})
+export const getSubmissionOutputSchema = z.object({
+	id: z.uuid(),
+	name: z.string(),
+	repositoryUrl: z.url(),
+	websiteUrl: z.string().nullable(),
+	status: z.literal('rejected'),
+	rejectionReason: z.string().nullable(),
+	revision: submissionRevisionSchema,
+})
+export const resubmitSubmissionBodySchema = createSubmissionInputSchema
+	.extend({ revision: submissionRevisionSchema })
+	.strict()
+export const resubmitSubmissionInputSchema = getSubmissionInputSchema.extend({
+	body: resubmitSubmissionBodySchema,
+})
+export const resubmitSubmissionOutputSchema = createSubmissionOutputSchema
+
 export const submissionRateLimitDataSchema = z.object({
 	limit: z.number().int().positive(),
 	remaining: z.number().int().nonnegative(),

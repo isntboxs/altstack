@@ -130,7 +130,13 @@ beforeEach(async () => {
 		.mockImplementation((parameters) =>
 			Promise.resolve({
 				data: {
-					id: 123,
+					// Distinct repositories have distinct immutable GitHub IDs.
+					id:
+						[...`${parameters?.owner}/${parameters?.repo}`].reduce(
+							(value, character) =>
+								(value * 31 + character.charCodeAt(0)) % 2_000_000_000,
+							1
+						) + 1,
 					private: false,
 					owner: { login: parameters?.owner },
 					name: parameters?.repo,
@@ -944,7 +950,7 @@ describe('admin review', () => {
 		).rejects.toMatchObject({ code: 'CONFLICT' })
 		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
 			data: {
-				id: 123,
+				id: 456,
 				private: false,
 				owner: { login: 'current' },
 				name: 'two',
@@ -962,7 +968,7 @@ describe('admin review', () => {
 		expect(storage.promoteTempImageToProject).not.toHaveBeenCalled()
 		vi.mocked(octokit.rest.repos.get).mockResolvedValueOnce({
 			data: {
-				id: 123,
+				id: 456,
 				private: false,
 				owner: { login: 'TransferredOrg' },
 				name: 'NewName',

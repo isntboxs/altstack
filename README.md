@@ -54,18 +54,25 @@ vp run dev
 
 ## Submission rate limit
 
-`submission.create` uses the oRPC Upstash adapter with a sliding window of five
-attempts per ten minutes per authenticated account, including admins. Validated
+`submission.create` and `submission.resubmit` share the oRPC Upstash adapter and
+a sliding window of five attempts per ten minutes per authenticated account,
+including admins. Validated
 attempts consume quota even if duplicate detection, the ten-open-draft cap,
-GitHub verification, or storage later fails. Invalid and unauthenticated calls
-do not consume quota. Redis errors and the five-second Redis request deadline
+ownership/state/revision checks, GitHub verification, or storage later fails.
+Invalid and unauthenticated calls do not consume quota. Redis errors and the
+five-second Redis request deadline
 return a server error before submission work begins; there is no local fallback
 or local rate-limit cache.
 
 Set the required server-only `UPSTASH_REDIS_REST_URL` and
 `UPSTASH_REDIS_REST_TOKEN`. Use a dedicated development Redis database locally.
 Counters use `altstack:<NODE_ENV>:submission:create` prefixes, shared across all
-instances in that environment. No database migration is required.
+instances in that environment. The existing `submission:create` namespace is
+retained for both operations so deployment does not reset account counters.
+Both operations share the per-account transaction lock protecting the
+ten-open-draft cap and a GitHub identity lock protecting intake duplicates across
+rename races.
+No database migration is required.
 
 The RPC and REST handlers return HTTP 429 with `{ limit, remaining, reset }`
 for quota rejection, where `reset` is an epoch timestamp in milliseconds. Both
