@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="#000000">
+  <title>Altstack</title>
+  <style>@media (prefers-color-scheme: dark) { svg { fill: #ffffff; } }</style>
+  <path d="M16 16H160V80H128L64 144V176H16Z"/>
+  <path d="M240 240H96V176H128L192 112V80H240Z"/>
+</svg>

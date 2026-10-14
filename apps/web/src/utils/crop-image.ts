@@ -37,17 +37,13 @@ export async function getCroppedImageFile({
 		throw new Error('Failed to get canvas context')
 	}
 
-	context.drawImage(
-		image,
-		crop.x,
-		crop.y,
-		crop.width,
-		crop.height,
-		0,
-		0,
-		crop.width,
-		crop.height
-	)
+	// Zooming out can put part of the selection outside the source image.
+	// Preserve that padding; JPEG needs a solid background for those pixels.
+	if (mimeType === 'image/jpeg') {
+		context.fillStyle = '#ffffff'
+		context.fillRect(0, 0, canvas.width, canvas.height)
+	}
+	context.drawImage(image, -crop.x, -crop.y)
 
 	return new Promise((resolve, reject) => {
 		canvas.toBlob(

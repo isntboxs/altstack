@@ -1,309 +1,281 @@
 # AltStack Roadmap — Lean Releases
 
-> This is the execution companion to `docs/prd.md`. It describes the smallest deployable slices, their boundaries, and their definition of done. Complete releases in order. Do not start a later release because it is technically convenient.
+> Execution companion to [the PRD](prd.md). Reconciled on **2026-10-13** against
+> baseline commit `f876eb1`. Checked items mean implemented in this checkout,
+> not deployed or verified in production. Open acceptance/rollout items remain
+> release gates.
 
 ## Operating rules
 
-1. A release is a vertical slice: schema/migration → API contract and authorization → UI → focused tests → deployable demo.
-2. Target one focused outcome in 1–3 solo development days. If a release grows larger, split it before coding.
-3. Do not add an infrastructure dependency merely to support a hypothetical future release.
-4. Keep each migration forward-only and additive. Never make a schema field “temporary” if it represents a durable product concept.
-5. Document real limitations after each release; update this roadmap rather than silently expanding scope.
+1. Deliver vertical slices: schema/migration → API contract and authorization → UI → focused tests → deployable demo.
+2. Target one focused outcome in 1–3 solo development days; split larger work before coding.
+3. Reuse infrastructure unless an observed need justifies another dependency.
+4. Keep migrations forward-only and additive.
+5. Record implementation, tests, and operator rollout separately. Merged code is not deployment evidence.
 
-## Delivery map
+## Current delivery status
 
-```text
-R0 catalogue data
-  └─ R1 browse
-       ├─ R2 find
-       └─ R3 sign in
-            └─ R4 submit intake (minimal)
-                 └─ R5 moderate + enrich ───► LAUNCH
-                      ├─ R6 own & edit
-                      └─ R7 curate
-                           └─ later: automation and expansion
+- **R0 — Catalogue data:** schema and CSV/JSON importer implemented; real launch content needs verification.
+- **R1 — Browse:** public list/detail implemented.
+- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages, and admin taxonomy implemented.
+- **R3 — Sign in:** OAuth configuration, session-aware navigation, private route guards, and API authorization implemented; real OAuth smoke remains open.
+- **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
+- **R5 — Moderate + enrich:** admin review, publish validation, history, and enrichment implemented; required rejection feedback and submitter resubmission remain open.
+- **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
+- **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
+
+Next: finish R5 feedback, public discovery, and release acceptance before adding
+ownership, bookmarks, or editorial sections.
+
+## Repository conventions and validation
+
+- Use one branch and one checklist per vertical slice, such as `feat/r5-resubmit`.
+- Define oRPC contracts before handlers. API authorization is independent from route guards.
+- Public list/detail/search/category counts and future sitemap queries select `published` on the server.
+- Follow the root README's disposable-schema wrapper for database-dependent checks. It migrates a temporary schema in `altstack_development` without resetting application data in `public`.
+
+```sh
+vp install
+vp check
+vp run --filter @altstack/db test:scoped -- vp test run
+vp run --filter @altstack/db test:scoped -- vp run -r test
+vp run -r build
 ```
 
-## Repository conventions
+The root `ready` script combines check, recursive tests, and builds; run it through
+`test:scoped` for acceptance. The existing `test:categories-http` script uses
+`test:isolated`, which resets development application data; provide a safe scoped
+replacement before routine release use.
 
-- Use one branch per release: `feat/rN-short-name`.
-- Keep a single issue/checklist per release. Do not split database, API, and UI into separate release branches.
-- Run `vp install` before beginning a new release, then run `vp check`, `vp run -r test`, and `vp run -r build` before merging.
-- Existing worktree changes are not part of this roadmap unless explicitly included in the release issue.
+### Reconciliation evidence — 2026-10-13
+
+- `vp install`: passed, no dependency changes.
+- `vp check`: format, lint, and typecheck passed.
+- Scoped `vp test run`: **779 passed, 1 skipped** across 51 files, including server tests.
+- Scoped `vp run -r test`: **777 passed, 1 skipped** across the shared/database/API/web workspaces; server has no package test script.
+- The skipped case is opt-in real Upstash integration; mocked rate-limit tests passed.
+- `vp run -r build`: passed. Web build reports large client chunks and dependency module-level directive warnings; include real mobile loading in L2 acceptance.
+- Local documentation links and `git diff --check`: passed. Real OAuth/service smoke and production rollout remain unverified.
 
 ## Shared implementation decisions
 
-### API and authorization
+### Lifecycle and authorization
 
-- Define an oRPC contract before its router handler and test expected error codes.
-- Public list/detail procedures always apply `status = 'published'` on the server; the UI never decides visibility.
-- Protected procedures authenticate and authorize in the procedure/handler. `beforeLoad` is only the page-level UX guard.
-- Use `400` for invalid input, `401` for no session, `403` for inadequate permission, `404` for unavailable public data, and `409` for a duplicate repository or conflicting state transition.
+- One `projects` table stores `submitterId`, nullable enrichment fields, and `rejectionReason`. There is no active `project_submission` table.
+- `submission.create` atomically inserts a `draft` project, basic repository metadata, and `project_submitted` audit event. The UI labels the draft **Awaiting review**.
+- `submission.list` derives the submitter from the session and returns only that user's projects, statuses, and rejection notes.
+- Admin `admin.project.update` publishes, rejects, restores to draft, or unpublishes the existing project; publication does not create another listing.
+- `removed` is a supported hidden status. `admin.project.remove` physically deletes the project and cascades repository/category/history rows; its audit remains with the project FK set to null. Deletion is not a retained terminal submission record.
+- Submitters cannot edit/resubmit yet. Repeating create for an existing repository returns `409`, including rejected repositories. Only admins can restore them today.
+- Private procedures require a session; admin project/category/upload procedures also require role `admin`.
+- Intake accepts any authenticated session. GitHub OAuth is the primary sign-in UI, but enabled email/password accounts are not checked for a linked GitHub account. Resolve the launch policy explicitly.
 
-### Search state
+### Publish, audit, search, and GitHub
 
-- Home route owns validated `q`, `category`, `sort`, and `page` search params.
-- Use a typed schema with defaults. If the project uses Zod v3 plus `zodValidator`, use `fallback()` from `@tanstack/zod-adapter`; Zod v4 can use `.catch()`.
-- Search/sort/category changes preserve the other params and reset `page` to 1.
-- `loaderDeps` contains only `q`, `category`, `sort`, and `page`; do not pass the entire search object.
-
-### GitHub data
-
-- Canonicalise an accepted URL to `https://github.com/<owner>/<repo>` before dedupe.
-- Store owner, repo, stars, forks, and `fetchedAt`, plus nullable last commit,
-  repository creation, latest release tag, and `metadataFetchedAt` under the
-  authorized 2026-10-10 statistics expansion below.
-- A service token can fetch public metadata. It cannot verify that a user has permission to claim a repository.
-
-### Lifecycle (R4 minimal intake + R5 enrich)
-
-```text
-submission: pending ──approve (admin enrich)──► project published
-  │
-  └─reject──► rejected ──valid resubmit──► pending
-
-project: published ──remove──► removed (terminal)
-```
-
-`project.status = draft/rejected` is not used for user submissions in R4/R5; new projects are inserted as `published` on approval. All transitions are server-side checks. `removed` is terminal for users.
+- Publish requires name, slug, canonical repository, tagline, description, logo, and **1–3 leaf categories**. Drafts can be incomplete.
+- Intake suffixes colliding slugs numerically. Admin create/edit returns `409` for slug/repository conflicts or a concurrent edit.
+- Audit covers create, update, remove, submit, and status change. Admin update writes `project_updated` plus `project_status_changed` when status or reason changes, transactionally. The original exactly-one-event moderation design is superseded.
+- Rejection reasons remain optional in API and UI; required feedback is unfinished.
+- Homepage validates `q`, `category`, `sort`, and `page`; only these values are loader dependencies. Filter changes preserve other filters and reset pagination.
+- Search uses PostgreSQL generated `tsvector` + GIN. Category filtering includes descendants; direct assignments use leaves in a maximum three-level hierarchy.
+- Canonical URLs and GitHub-resolved identity constraints protect duplicates. A service token validates public data, not maintainer ownership.
+- Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations, not reconstructed data or a trending score.
 
 ---
 
 ## R0 — Catalogue data
 
-**Outcome:** there is enough clean content to make browsing and testing meaningful.
+**Outcome:** enough accurate content to make browsing useful.
 
-### Work
+- [x] Project/repository/category/path/assignment/audit schemas, migrations, and canonical uniqueness.
+- [x] CSV/JSON importer with dry-run, validation, transactional writes, idempotent skipping, and optional GitHub statistics/README fetch.
+- [x] Parser, importer, CLI, migration, and concurrency tests.
+- [ ] Import/review at least **20 real published projects** with correct copy, logo, links, and leaf categories.
+- [ ] Verify target migrations and repeat the curated import without duplicates or changes to existing records.
+- [ ] Verify real metadata/media. Committed `data/projects.*` files are draft templates with example URLs, not verified launch content.
 
-- [x] Add the smallest `project` schema required by R1: id, name, slug, tagline, short description, logo URL, repository URL, optional website URL, Markdown content, status, created/updated timestamps.
-- [x] Add `github_repository` with a one-to-one project relation and only owner, repo, stars, forks, fetched timestamp.
-- [x] Add unique constraints for project slug, canonical repository URL, project relation, and `(owner, repo)`.
-- [x] Export schemas and relations from `packages/db/src/schemas.ts` and `packages/db/src/relations.ts`; register relations in `packages/db/src/index.ts`.
-- [x] Add an idempotent seed path with 12–20 manually curated, `published` projects. Use deterministic identities so re-running does not create duplicates.
-- [x] Generate and apply a migration; do not use schema push as the only proof of migration safety.
-
-### Done when
-
-- [x] A clean database migration plus seed can run twice without duplicate rows.
-- [x] Each seed project has working GitHub data and a unique slug/repository URL.
-- [x] No category, owner, audit, feature, guest-submission, or score fields have been added yet.
-
-### Explicitly not in R0
-
-API, routes, search, categories, authentication, GitHub requests, or admin tools.
-
----
+Evidence: [file-seeding guide](file-seeding.md), `packages/db/src/seed-file-*.ts`,
+and `packages/db/tests/seed-file-*.test.ts`. The demo seed has been removed.
 
 ## R1 — Browse
 
-**Outcome:** a visitor can discover the catalogue without signing in.
+**Outcome:** visitors discover published projects without signing in.
 
-### Work
+- [x] `project.list` / `project.getBySlug`, pagination, published-only visibility, and generic not-found behavior.
+- [x] Homepage grid and `/$slug` detail with identity, links, Markdown, categories, optional screenshot, and GitHub statistics.
+- [x] Empty states, safe optional website handling, and API/UI visibility/statistics coverage.
+- [ ] Complete staging browse/detail/mobile smoke with real content and storage.
 
-- [x] Add `listProjects({ page, limit })` and `getProjectBySlug({ slug })` contracts and router procedures.
-- [x] Public procedures filter `published` in the query itself. A non-public slug produces the same generic `404` as a missing slug.
-- [x] Load stars/forks without N+1 queries.
-- [x] Replace static homepage content with a paginated project grid and card.
-- [x] Add `/$slug` with project identity, links, Markdown content, and repository stats.
-- [x] Add API/route tests for public visibility, pagination, and missing/non-public detail.
+Evidence: `packages/api/src/routers/project.ts`, `apps/web/src/routes/_app/`,
+`packages/api/tests/submission-review.test.ts`, and web GitHub statistics tests.
 
-### Done when
+## R2 — Find and taxonomy
 
-- [x] A visitor sees published projects only and can move between list and detail pages.
-- [x] A direct detail request for `draft`, `rejected`, or `removed` does not disclose its existence.
-- [x] Empty states and broken optional website URLs do not crash the page.
+**Outcome:** visitors narrow the catalogue and share the exact result.
 
-### Explicitly not in R1
+- [x] Full-text search; newest, oldest, name, most-stars, and most-forks sorts.
+- [x] Debounced search, filters, validated URL state, empty/reset/pagination states.
+- [x] Hierarchy/subtree filtering, published-only counts, `/categories` and nested category pages, breadcrumbs, canonical metadata, and historical-path redirects.
+- [x] Admin category CRUD at `/admin/categories` with depth/cycle/leaf/path integrity.
+- [x] API/model/route/form/catalogue UI tests; category HTTP acceptance script exists.
+- [ ] Verify shared URL, reload, back/forward, redirects, and combined filters in staging.
+- [ ] Record EXPLAIN/index evidence on a representative dataset; a declared index alone does not prove performance.
 
-Search, categories, sign-in, submit, moderation, home-feed sections.
-
----
-
-## R2 — Find
-
-**Outcome:** a visitor can narrow the catalogue and share the exact result.
-
-### Work
-
-- [x] Add `category` and `project_category` schemas, relations, migration, and idempotent seed assignments.
-- [x] Add a PostgreSQL full-text-search migration/index for name, tagline, and short description.
-- [x] Add `searchProjects` and `listCategories` contracts. `searchProjects` accepts optional query, one category slug, sort, page, and limit.
-- [x] Enforce `published` in every public search query and whitelist sort mappings rather than accepting a column name from the client.
-- [x] Add typed, validated URL state to the homepage. Search is debounced; category and sort preserve existing state and reset the page.
-- [x] Add loading, empty, reset-filter, and pagination states.
-- [x] Add query-builder tests, plus browser smoke coverage for back/forward and a shared URL.
-
-### Done when
-
-- [x] A URL such as `/?q=auth&category=backend&sort=most-stars&page=2` produces the equivalent result after reload, back/forward, and sharing.
-- [x] Text, category, sort, and pagination work together.
-- [x] Explain-plan checks show the intended index at a seed dataset large enough to be meaningful; do not impose a fixed latency target until a production-like data size exists.
-
-### Explicitly not in R2
-
-Tags/topics, maintainer/company search, Meilisearch, submit, and GitHub refresh.
-
----
+Evidence: project/category/admin-category routers, web category features/tests,
+and [admin category API notes](category-admin-api.md).
 
 ## R3 — Sign in
 
-**Outcome:** a developer can establish the GitHub identity needed for submissions.
+**Outcome:** developers establish sessions for private submission workflows.
 
-### Work
+- [x] Better Auth GitHub OAuth configuration, sign-in/out, session-aware navigation.
+- [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
+- [ ] Verify real GitHub login, refresh, logout, expired session, and return URL in staging.
+- [ ] Enforce GitHub-linked-only intake, or explicitly approve intake from any authenticated account; current API implements the latter behavior.
+- [ ] Document/verify OAuth callback and initial admin provisioning.
 
-- [x] Verify Better Auth GitHub OAuth configuration in development and production-like environments.
-- [x] Add a sign-in affordance and session-aware header state.
-- [x] Add an authenticated layout or per-route `beforeLoad` guard for future private pages, with a sanitized local return URL.
-- [x] Keep server/API permission checks independent from route guards.
-- [x] Add a protected “my submissions” shell route with an empty state; no ownership claim yet.
-- [x] Test successful login, logout, expired session, direct protected API request, and open-redirect rejection.
+Evidence: `packages/auth/src/server/config.ts`, API procedures, auth/main routes,
+and `apps/web/src/utils/return-to.ts`.
 
-### Done when
+## R4 — Submit intake
 
-- [x] Sign in, refresh, and logout reliably change the visible session state.
-- [x] Unauthenticated access to the private page redirects without revealing private loader data.
-- [x] The matching private API procedure returns `401` even if someone bypasses the route UI.
+**Outcome:** signed-in users suggest repositories without publishing them.
 
-### Explicitly not in R3
+- [x] Name + repository + optional HTTP(S) website; canonicalization, public GitHub verification, alias/duplicate checks, slug suffixes, atomic draft/metadata/audit creation.
+- [x] Protected `/submit`, confirmation, searchable/paginated private `/submission`.
+- [x] Upstash quota: five validated attempts per ten minutes/account; race-safe ten-open-draft cap.
+- [x] Typed `429` data and RPC/REST headers; editable form/countdown, no automatic retry, Redis failure stops creation.
+- [x] Tests for authorization, identity/races/capacity, rollback, visibility, quota, and cooldown.
+- [ ] Verify real Redis behavior with dedicated development/staging credentials; Upstash integration is opt-in.
 
-Email/password product work, roles beyond `user`/`admin`, claiming, editing, or GitHub repository permission checks.
-
----
-
-## R4 — Submit intake (minimal)
-
-**Outcome:** a signed-in developer can suggest a repository for review with minimal friction, without creating a public listing automatically.
-
-### Work
-
-- [x] Add `project_submission` table: id, `submitterId` (FK `user.id`), `projectName`, canonical `repositoryUrl` unique, optional `websiteUrl`, `status` (`pending`/`approved`/`rejected`), `submittedAt`, `moderatedAt`, `moderatedBy`, `rejectionReason`, timestamps. No tagline/description/logo/category columns here — enrichment is R5.
-- [x] Add `submitSubmission` contract and a protected router handler.
-- [x] Validate `projectName` (2–100 chars), canonicalise GitHub URLs to `https://github.com/<owner>/<repo>` (lowercased owner/repo, strip trailing slash/`.git`/extra path), and accept optional `websiteUrl` only as valid `http(s)` URL.
-- [x] Check the canonical repository URL against **both** `project.repositoryUrl` and `project_submission.repositoryUrl`. Return `409` for an existing project or submission. Rely on the DB unique constraints for races.
-- [x] Fetch public repository metadata once to validate existence and snapshot owner/repo/stars/forks. On not-found return a validation error; on GitHub availability/rate-limit failure return a retryable error and insert nothing. Do not hold a DB transaction open during the fetch.
-- [x] Insert the submission row only. Do not create `project`, `github_repository`, or `project_category` rows yet. Slug, tagline, description, logo, content, and categories are deferred to admin enrich in R5.
-- [x] Add a “submitted for review” confirmation and show the user’s own submissions with status in My Submissions (reads `project_submission`, not `project`).
-- [x] Test input validation, canonicalisation variants, duplicate in each table, GitHub not found, fetch failure inserts nothing, and absence from public browse/search.
-
-### Done when
-
-- [x] A signed-in GitHub user submits name + repository URL (+ optional website) and receives a pending confirmation.
-- [x] The submission is visible only to its submitter/admin and creates no public listing.
-- [x] A duplicate canonical repository cannot be submitted by another user (`409`).
-
-### Explicitly not in R4
-
-Guest submission, anonymous-IP retention/rate limiting, tagline/description/logo/category input, slug editing, README import, topics, license, screenshots, or cron refresh.
-
----
+Evidence: submission router/rate limiter, web submission features, and
+[rate-limit operations](../README.md#submission-rate-limit).
 
 ## R5 — Moderate, enrich, and launch
 
-**Outcome:** one admin can turn minimal submissions into complete published listings. This is the launch gate.
+**Outcome:** admins publish complete listings; submitters can act on feedback.
 
-### Work
+### Implemented
 
-- [ ] Keep moderation fields on `project_submission` (`rejectionReason`, `moderatedAt`, `moderatedBy`); do not add them to `project` for launch.
-- [ ] Add minimal `audit_log`: actor ID, action, target submission/project ID, optional metadata/reason, timestamp. It records moderation mutations only.
-- [ ] Add protected admin contracts: list pending submissions, `approveSubmission`, `rejectSubmission`. Keep remove as an internal admin operation on `project` if needed before launch.
-- [ ] `approveSubmission` input is the admin enrich step: tagline, short description, logo URL, optional website (prefilled from submission, editable), optional Markdown content, slug (prefilled from `projectName`, editable), and 1–3 existing category slugs.
-- [ ] `approveSubmission` handler re-checks canonical duplicate, refetches fresh GitHub metadata, then in one transaction inserts the `published` project + repository metadata + category links, marks the submission `approved`, and writes exactly one audit event. Slug collision resolves with a numeric suffix or `409` if unresolvable; document the choice in the issue.
-- [ ] Enforce admin authorization in each mutation. Ensure invalid state transitions return `409`.
-- [ ] Build the smallest usable admin surface: a paginated pending-submissions list, approve form (enrich fields), and reject dialog requiring a reason. It lives in the protected `/dashboard` route inside the `web` app.
-- [ ] Let the original submitter correct a rejected submission by editing only name/repository/website. Its narrow `resubmitSubmission` procedure atomically clears the rejection reason and sets status back to `pending`. General editing of published projects remains R6.
-- [ ] Add moderation and audit tests. Run the complete smoke journey: seed → browse → search → sign in → submit (3 fields) → enrich/approve/reject → public/private assertions.
-- [ ] Record deployment notes: required GitHub OAuth callback URL, admin bootstrap process, and known limitations.
+- [x] Admin list/create/edit at `/projects`, `/projects/create`, `/projects/$id/edit`; status and Needs Review filters, submitter identity.
+- [x] Save draft, publish complete merged state, reject, restore, unpublish, and delete with admin API authorization.
+- [x] Fresh basic GitHub verification on publish/repository changes, category validation, concurrent-edit checks, and transactional persistence.
+- [x] Update/status audit events, paginated review history, catalog invalidation, private rejection-note display, and focused tests.
 
-### Done when
+### R5a — Actionable rejection feedback
 
-- [ ] An admin enriches + approves a submission and it immediately appears in browse/search as a complete listing.
-- [ ] An admin rejects with a reason; the submitter sees it privately.
-- [ ] A valid re-submission moves `rejected` back to `pending` for another review.
-- [ ] Every moderation mutation creates exactly one audit event in the same transaction.
-- [ ] `vp check`, `vp run -r test`, and `vp run -r build` pass on the release branch.
+- [ ] Require nonblank feedback in the server's final rejected state and admin UI, including direct API calls.
+- [ ] Keep feedback private and preserve previous reasons in audit history on restoration.
+- [ ] Cover reject without reason, valid reject, restore, and stale/concurrent updates. Do not invent reasons for legacy records.
 
-### Explicitly not in R5
+**Done when:** every new rejection has actionable feedback in `/submission`.
 
-Full dashboard CRUD, audit events for auth activity, featured projects, category management, analytics, or queues. The authorized statistics expansion below permits daily GitHub sync.
+### R5b — Correct and resubmit
 
-### Authorized scope expansion — GitHub statistics (2026-10-10)
+- [ ] Add a narrow protected resubmit contract/handler and Edit & Resubmit action for the original submitter's rejected project.
+- [ ] Allow only name/repository/website changes. Derive identity from the session; validate GitHub/repository conflicts before writing.
+- [ ] Atomically return `rejected` → `draft`, clear current reason, update basic metadata as needed, and audit on the same project ID.
+- [ ] Apply a distributed quota and ten-open-draft cap; specify whether create/resubmit share quota. Recheck owner/status/revision transactionally.
+- [ ] Reject another user's project and draft/published/removed targets. Leave general published editing and claims in R6.
+- [ ] Test success/privacy, duplicate aliases, quota/cap, failed fetch, rollback, and concurrent admin review.
 
-- [x] Add nullable metadata migration and populate last commit, repository age,
-      and latest release version in the existing aside; public reads DB snapshots.
-- [x] Share atomic refresh between admin POST and a sequential published-project
-      CLI, with PostgreSQL batch lock and rate-limit stop.
-- [x] Enrich create/approval/repository changes best effort; preserve failed
-      snapshots and protect repository changes/rename/transfer identity conflicts.
-- [x] Add focused fetch, endpoint, batch, migration, aside/hydration, and admin UI tests.
-- [x] Document nullable migration → deploy → first backfill → daily 02:00
-      Asia/Jakarta Dokploy schedule and runtime token in
-      [the rollout guide](github-statistics-refresh.md).
-- [ ] Operator applies migration, deploys, reviews the first backfill, and enables schedule.
+**Done when:** submitters correct rejected intake and re-enter review without
+another listing or an admin restoration.
 
-Graphs, 30-day growth, license, and self-hosted remain out of scope. This expansion
-does not introduce trending or growth rankings.
+Evidence for current behavior: admin-project router/schema/features,
+`packages/api/tests/submission-review.test.ts`, and
+`apps/web/tests/admin-project-review-form.test.tsx`.
 
----
+## Delivered scope beyond the initial plan
+
+- [x] **Admin media:** logo/screenshot upload, crop, temporary-to-final promotion, replacement, and cleanup through S3-compatible storage.
+- [x] **Metadata prefill:** preview/apply GitHub description and website without automatically saving.
+- [x] **README import:** pinned sanitized Markdown, BlockNote preview, explicit replace/append, stale-request protection, Save-only persistence. See [README import](github-readme-import.md).
+- [x] **Statistics refresh:** shared admin POST and daily sequential CLI, batch lock, best-effort enrichment, rate-limit stop, identity/concurrency protection.
+- [x] **Star history:** additive migration, daily WIB observations, honest cold-start/gap/staleness states, detail chart/comparison, repository-ID continuity, and 90-date retention. This supersedes the earlier graphs/30-day-growth exclusion; trending rankings remain deferred.
+- [x] **CSV/JSON seeding:** replaces demo seed; categories/projects/relationships, optional GitHub enrichment, dry-run, repeat imports.
+- [x] **Project activity:** public `/activity` displays recent commits from the AltStack repository.
+- [ ] Apply metadata/history migrations, deploy matching revisions, inspect first refresh/history point, and verify daily **02:00 Asia/Jakarta** schedule. See [rollout guide](github-statistics-refresh.md).
+
+These implementations do not prove production service/schedule configuration.
+
+## Next public-release slices
+
+Recommended order: **R5a → R5b → L1 → L2 → launch acceptance**. R5a/R5b
+complete the original submission feedback requirement; L1/L2 are recommended
+public-release completion work identified during this reconciliation.
+
+### L1 — Catalogue SEO and link previews
+
+**Why now:** categories have basic metadata, but the root title remains
+`TanStack Start Starter`; home/project pages lack their own head metadata and
+`robots.txt` is generic.
+
+- [ ] AltStack defaults and per-project title/description/canonical from published loader data.
+- [ ] Open Graph/Twitter metadata for home/project/category pages, using existing images and a stable fallback.
+- [ ] Sitemap for public canonical pages/published projects only; exclude private/admin routes and query permutations.
+- [ ] Explicit indexing policy for auth/submission/admin and sitemap discovery in robots. API authorization remains the access boundary.
+- [ ] Verify SSR metadata, missing/nonpublic detail, and canonical redirects.
+
+**Done when:** public pages have correct search/link previews and sitemap URLs.
+A new image-generation service is unnecessary.
+
+### L2 — Finish public UI affordances
+
+- [ ] Remove or clearly disable Verify/Bookmark/Report/Embed until implemented; remove the unsupported verification/ranking promise.
+- [ ] Replace starter branding/manifest copy and generic screenshot placeholders with AltStack copy or honest empty states.
+- [ ] Verify keyboard/mobile navigation, loading/error/not-found states, images, and external links.
+
+**Done when:** every enabled action works and public copy matches the product.
+
+### Launch acceptance and operations
+
+- [ ] Complete R5a/R5b/L1/L2 and resolve the intake-account policy.
+- [ ] Verify at least 20 accurate published listings and real media/links.
+- [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
+- [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.
+- [ ] Verify direct API `401`/`403`, hidden draft/rejected/removed detail, quotas/capacity, and expired sessions.
+- [ ] Document OAuth callback/admin bootstrap/CORS/runtime secrets/S3 public URL and lifecycle/Redis without exposing secret values.
+- [ ] Apply migrations, confirm matching Docker tags and rollback/forward-fix procedure, verify backup/restore readiness.
+- [ ] Inspect statistics CLI, first history point, daily schedule, and failure logs. A full 30-day history is not a launch blocker; observations start after rollout.
+
+Keep operator items open until execution evidence exists.
 
 ## R6 — Own and edit (MVP+)
 
-Start only when maintainers request control over their listings.
+Start after launch when maintainers request control.
 
-### Work
+- [ ] Nullable `ownerId` / `claimedAt`, separate from submission provenance.
+- [ ] One claim policy verified with user-specific GitHub credentials, never service-token permissions.
+- [ ] Claim and owner/admin update procedures/UI for copy, links, media, content, categories.
+- [ ] Owner/non-owner/admin, unlinked account, verification failure, concurrent claim tests.
 
-- [ ] Add nullable `ownerId` and `claimedAt` to keep submitter history separate from ownership.
-- [ ] Define a single claim policy: repository owner, or owner plus verified admin collaborator. Record the policy in the API contract and UI copy.
-- [ ] Verify against a user-specific GitHub credential; do not use the service token’s permissions as proof.
-- [ ] Add claim and update procedures with owner/admin authorization checks.
-- [ ] Let owners edit project copy, links, logo URL, Markdown content, and categories. Published edits remain published in this version.
-- [ ] Test owner, non-owner, admin, unlinked GitHub account, failed permission check, and concurrent claim attempts.
-
-### Done when
-
-- [ ] Only a verified user or admin can change a listing.
-- [ ] A non-owner direct mutation returns `403`; UI guards are not relied upon for security.
-
----
+**Done when:** verified owners maintain listings; direct unauthorized mutations fail.
 
 ## R7 — Curate (MVP+)
 
-Start only after moderation is stable and there is enough catalogue data to make sections useful.
+Start after launch when catalogue size/feedback justifies editorial sections.
 
-### Work
+- [ ] `featured` plus admin-only feature/unfeature.
+- [ ] Most Starred, Recently Added, Editor's Picks with published-only data and matching search links.
+- [ ] Empty-state/visibility coverage; trending and score/personalized feeds stay separate.
 
-- [ ] Add `featured` to published projects and an admin-only mutation to set it.
-- [ ] Add homepage sections: Most Starred, Recently Added, and Editor’s Picks.
-- [ ] Reuse the same public-project query policy; section data never exposes non-public projects.
-- [ ] Add a link from each section to the corresponding search/sort URL.
-
-### Done when
-
-- [ ] Admins can feature/unfeature a published project.
-- [ ] Sections display accurate names and source data; empty sections have a safe empty state.
-
-### Explicitly not in R7
-
-Trending, recently updated, fast-growing, score-based, or personalised feeds.
-
----
+Existing most-stars/newest sorting is not implemented homepage sections.
 
 ## Later, only when justified
 
-| Need observed                                                 | Then add                                                 |
-| ------------------------------------------------------------- | -------------------------------------------------------- |
-| Legitimate maintainers cannot submit because they avoid OAuth | Guest submission, durable rate limiting, abuse workflow  |
-| GitHub values become stale enough to mislead                  | Scheduled refresh/webhook plus history snapshots         |
-| PostgreSQL search quality/latency fails on production data    | Meilisearch evaluation and migration plan                |
-| Many maintainers need rich media                              | Direct-upload and image-storage pipeline                 |
-| Users return to save/compare tools                            | Bookmarks, collections, then compare                     |
-| Manual ranking becomes unreliable                             | Explicit editorial workflow, then quality/ranking models |
+- Guest submission/abuse review when OAuth blocks legitimate submissions.
+- Bookmarks/collections/compare when users return to save/evaluate tools.
+- Report/correction workflow when catalogue errors create recurring support work.
+- Notifications when review turnaround/status checking becomes a problem.
+- Webhooks/trending when observed refresh/history data supports them.
+- Meilisearch when measured PostgreSQL search quality/latency is insufficient.
+- Galleries/video, scores, analytics, newsletter/RSS, profiles/reviews, SDKs, extensions after feedback.
 
 ## Release close-out template
 
-At the end of every release, add a short note here or in its issue:
-
-- What shipped and its deployment version.
-- What was deliberately not shipped.
-- Migration and rollback/forward-fix note.
-- Known limitations and the evidence needed to prioritise the next release.
-- Test commands and manual smoke steps that passed.
+- Shipped scope, commit, deployment version.
+- Deferred work and skipped checks.
+- Migration and rollback/forward-fix notes.
+- Test commands/results and manual smoke evidence.
+- Operator status, limitations, observed need for the next slice.
