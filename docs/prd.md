@@ -139,11 +139,9 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
 - Resubmission confers no ownership or permission to edit published content. Real OAuth/Redis and reject → correct → re-review staging smoke, keyboard/mobile acceptance and deployment remain separate release gates.
 
-R5b verification on 2026-10-14: clean format/lint/typecheck; disposable-schema
-root suite **914 passed, 1 opt-in Upstash integration skipped** across 55 files;
-all production builds passed with the existing chunk/dependency warnings.
-Focused results and policy are recorded in the roadmap; these automated checks
-do not establish staging or production acceptance.
+Merged-revision R5b verification remains a release gate. Record the tested merged
+commit and actual check, disposable-schema test, and production build results in
+the roadmap. Staging and production acceptance remain separate.
 
 ### Delivered enrichment and infrastructure
 

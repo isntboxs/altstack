@@ -205,22 +205,10 @@ previous identity. No synthetic history or media work. Slug stays unchanged.
 See [resubmission contract and policy](submission-resubmit.md), submission router,
 `packages/api/tests/submission-resubmit.test.ts`, and web resubmit/route tests.
 
-Verification on **2026-10-14**:
-
-- Focused schema/form/table/quota/OpenAPI tests: **176 passed** across six files;
-  rendered submission-route navigation: **2 passed**.
-- Disposable-schema resubmit + existing submission/review API tests:
-  **108 passed** across two files.
-- `vp check`: **368 files** formatted correctly; **302 files** linted/typechecked
-  with no warnings or errors.
-- `vp run --filter @altstack/db test:scoped -- vp test run`:
-  **914 passed, 1 skipped** across **55 files** (54 passed, one opt-in real
-  Upstash integration file skipped). The wrapper and fixture schemas cleaned up.
-- `vp run -r build`: passed for all eight tasks; existing web chunk-size and
-  dependency directive warnings remain. No new runtime dependency or migration.
-- OpenAPI fixture comparison: exactly the two intended procedure/schema
-  additions; existing operations, response schemas, security and errors unchanged.
-- `git diff --check`: passed. Work remains local on `feat/r5-resubmit`.
+**Merged-revision verification gate:** record the tested merged commit and actual
+results for `vp check`, the disposable-schema root test suite, and
+`vp run -r build` before release. Implementation-branch runs do not establish
+verification of the merged revision.
 
 **Separate R5b release gates:** real OAuth/Upstash and keyboard/mobile staging
 smoke, reject → correct → resubmit → re-review, and matching deployment remain
