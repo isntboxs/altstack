@@ -6,6 +6,7 @@
 > release gates.
 
 R5a implementation updated on **2026-10-14** from baseline `8127d34`.
+R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 
 ## Operating rules
 
@@ -22,11 +23,11 @@ R5a implementation updated on **2026-10-14** from baseline `8127d34`.
 - **R2 — Find:** full-text search, filters, sorting, pagination, public category pages, and admin taxonomy implemented.
 - **R3 — Sign in:** OAuth configuration, session-aware navigation, private route guards, and API authorization implemented; real OAuth smoke remains open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
-- **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, and enrichment implemented; submitter resubmission remains open.
+- **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
-Next: finish R5b resubmission, public discovery, and release acceptance before adding
+Next: finish public discovery and release acceptance before adding
 ownership, bookmarks, or editorial sections.
 
 ## Repository conventions and validation
@@ -68,7 +69,7 @@ replacement before routine release use.
 - `submission.list` derives the submitter from the session and returns only that user's projects, statuses, and rejection notes.
 - Admin `admin.project.update` publishes, rejects, restores to draft, or unpublishes the existing project; publication does not create another listing.
 - `removed` is a supported hidden status. `admin.project.remove` physically deletes the project and cascades repository/category/history rows; its audit remains with the project FK set to null. Deletion is not a retained terminal submission record.
-- Submitters cannot edit/resubmit yet. Repeating create for an existing repository returns `409`, including rejected repositories. Only admins can restore them today.
+- Original submitters can correct only their rejected intake through `submission.getById` / `submission.resubmit` and a private Edit & Resubmit modal. Name/repository/website changes retain ID, slug, provenance, enrichment and media; state returns to draft and current feedback clears transactionally. Repeating create still returns `409` for existing repositories, including rejected ones.
 - Private procedures require a session; admin project/category/upload procedures also require role `admin`.
 - Intake accepts any authenticated session. GitHub OAuth is the primary sign-in UI, but enabled email/password accounts are not checked for a linked GitHub account. Resolve the launch policy explicitly.
 
@@ -145,7 +146,7 @@ and `apps/web/src/utils/return-to.ts`.
 
 - [x] Name + repository + optional HTTP(S) website; canonicalization, public GitHub verification, alias/duplicate checks, slug suffixes, atomic draft/metadata/audit creation.
 - [x] Protected `/submit`, confirmation, searchable/paginated private `/submission`.
-- [x] Upstash quota: five validated attempts per ten minutes/account; race-safe ten-open-draft cap.
+- [x] Shared create/resubmit Upstash quota: five validated attempts per ten minutes/account; race-safe ten-open-draft cap.
 - [x] Typed `429` data and RPC/REST headers; editable form/countdown, no automatic retry, Redis failure stops creation.
 - [x] Tests for authorization, identity/races/capacity, rollback, visibility, quota, and cooldown.
 - [ ] Verify real Redis behavior with dedicated development/staging credentials; Upstash integration is opt-in.
@@ -188,19 +189,30 @@ is opt-in real Upstash integration. Deployment/service smoke remains separate.
 
 ### R5b — Correct and resubmit
 
-- [ ] Add a narrow protected resubmit contract/handler and Edit & Resubmit action for the original submitter's rejected project.
-- [ ] Allow only name/repository/website changes. Derive identity from the session; validate GitHub/repository conflicts before writing.
-- [ ] Atomically return `rejected` → `draft`, clear current reason, update basic metadata as needed, and audit on the same project ID.
-- [ ] Apply a distributed quota and ten-open-draft cap; specify whether create/resubmit share quota. Recheck owner/status/revision transactionally.
-- [ ] Reject another user's project and draft/published/removed targets. Leave general published editing and claims in R6.
-- [ ] Test success/privacy, duplicate aliases, quota/cap, failed fetch, rollback, and concurrent admin review.
+- [x] Protected original-submitter rejected-intake read/resubmit contracts and accessible private Edit & Resubmit modal.
+- [x] Only name/repository/website edits; session-derived authorization, public GitHub verification, canonical aliases/resolved identity and conflicts checked before writes.
+- [x] Atomic `rejected` → `draft`, current reason cleared, same ID/slug/provenance/enriched copy/media/categories retained, submitter transition audit with previous feedback; old audit events preserved.
+- [x] Shared five-attempt/ten-minute Upstash quota and ten-open-draft account lock; owner/status/client revision rechecked under a project row lock after external fetch. Intake repository-ID lock protects concurrent rename/alias identity conflicts.
+- [x] Foreign/missing records concealed with `404`; no session `401`; wrong state or stale revision `409`, including admins as submitters. Published editing and claims stay in R6.
+- [x] Schema/API/RPC/REST/OpenAPI/UI coverage for privacy, allowed fields, provenance/audit, duplicates, identity/history, quota/cap races, GitHub/Redis failures, rollback, concurrent admin decisions, correction/countdown and in-place navigation.
 
 **Done when:** submitters correct rejected intake and re-enter review without
 another listing or an admin restoration.
 
-Evidence for current behavior: admin-project router/schema/features,
-`packages/api/tests/submission-review.test.ts`, and
-`apps/web/tests/admin-project-review-form.test.tsx`.
+Repository policy: preserve snapshots/history for the same GitHub ID across
+rename/transfer; clear unrelated metadata/history for a different or unknown
+previous identity. No synthetic history or media work. Slug stays unchanged.
+See [resubmission contract and policy](submission-resubmit.md), submission router,
+`packages/api/tests/submission-resubmit.test.ts`, and web resubmit/route tests.
+
+**Merged-revision verification gate:** record the tested merged commit and actual
+results for `vp check`, the disposable-schema root test suite, and
+`vp run -r build` before release. Implementation-branch runs do not establish
+verification of the merged revision.
+
+**Separate R5b release gates:** real OAuth/Upstash and keyboard/mobile staging
+smoke, reject → correct → resubmit → re-review, and matching deployment remain
+unverified. Automated implementation completion does not close these gates.
 
 ## Delivered scope beyond the initial plan
 
@@ -217,8 +229,8 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-Recommended remaining order: **R5b → L1 → L2 → launch acceptance**. R5a is
-implemented; R5b completes the submission feedback loop. L1/L2 are recommended
+Recommended remaining order: **L1 → L2 → launch acceptance**. R5a/R5b are
+implemented. L1/L2 are recommended
 public-release completion work identified during this reconciliation.
 
 ### L1 — Catalogue SEO and link previews
@@ -246,7 +258,7 @@ A new image-generation service is unnecessary.
 
 ### Launch acceptance and operations
 
-- [ ] Complete R5a/R5b/L1/L2 and resolve the intake-account policy.
+- [ ] Complete L1/L2, pass R5a/R5b staging acceptance, and resolve the intake-account policy.
 - [ ] Verify at least 20 accurate published listings and real media/links.
 - [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
 - [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.

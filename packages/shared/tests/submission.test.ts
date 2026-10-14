@@ -10,7 +10,102 @@ import { projectSchema } from '@altstack/shared/schemas/common'
 import {
 	createSubmissionInputSchema,
 	listSubmissionInputSchema,
+	getSubmissionOutputSchema,
+	resubmitSubmissionInputSchema,
 } from '@altstack/shared/schemas/submission'
+
+describe('resubmit input', () => {
+	const input = {
+		params: { id: '550e8400-e29b-41d4-a716-446655440000' },
+		body: {
+			name: ' Corrected ',
+			repositoryUrl: 'OWNER/Repo.git',
+			websiteUrl: ' ',
+			revision: '123',
+		},
+	}
+	it('uses the intake rules and requires an opaque revision', () => {
+		expect(resubmitSubmissionInputSchema.parse(input)).toEqual({
+			params: input.params,
+			body: {
+				name: 'Corrected',
+				repositoryUrl: 'https://github.com/owner/repo',
+				websiteUrl: undefined,
+				revision: '123',
+			},
+		})
+	})
+	it.each([
+		'submitterId',
+		'status',
+		'slug',
+		'content',
+		'tagline',
+		'description',
+		'logo',
+		'screenshot',
+		'categorySlugs',
+		'rejectionReason',
+	])('rejects client control over %s', (field) => {
+		expect(
+			resubmitSubmissionInputSchema.safeParse({
+				...input,
+				body: { ...input.body, [field]: 'override' },
+			}).success
+		).toBe(false)
+	})
+	it.each([undefined, '', 'abc', '-1', '1.5', '12345678901', 123])(
+		'rejects invalid revision %s',
+		(revision) => {
+			expect(
+				resubmitSubmissionInputSchema.safeParse({
+					...input,
+					body: { ...input.body, revision },
+				}).success
+			).toBe(false)
+		}
+	)
+	it.each([
+		{ name: 'x' },
+		{ name: 'x'.repeat(101) },
+		{ repositoryUrl: 'https://gitlab.com/org/repo' },
+		{ websiteUrl: 'javascript:alert(1)' },
+	])('rejects invalid intake %j', (override) => {
+		expect(
+			resubmitSubmissionInputSchema.safeParse({
+				...input,
+				body: { ...input.body, ...override },
+			}).success
+		).toBe(false)
+	})
+	it('rejects an invalid ID and owner controls outside the body', () => {
+		expect(
+			resubmitSubmissionInputSchema.safeParse({
+				...input,
+				params: { id: 'bad' },
+			}).success
+		).toBe(false)
+		expect(
+			resubmitSubmissionInputSchema.parse({ ...input, submitterId: 'foreign' })
+		).not.toHaveProperty('submitterId')
+	})
+	it('keeps the private response narrow and tolerates legacy website/feedback', () => {
+		const data = getSubmissionOutputSchema.parse({
+			id: input.params.id,
+			name: 'Legacy',
+			repositoryUrl: 'https://github.com/org/repo',
+			websiteUrl: 'legacy-invalid-link',
+			rejectionReason: null,
+			status: 'rejected',
+			revision: '123',
+			content: 'private admin copy',
+			submitterId: 'foreign',
+		})
+		expect(data).not.toHaveProperty('submitterId')
+		expect(data).not.toHaveProperty('content')
+		expect(data.websiteUrl).toBe('legacy-invalid-link')
+	})
+})
 
 describe('submission input', () => {
 	it('trims name, canonicalizes the repository and omits blank websites', () => {

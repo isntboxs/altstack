@@ -41,7 +41,11 @@ const fields = [
 
 export function SubmissionForm({
 	onSubmit,
+	initialValues,
+	resubmit = false,
 }: {
+	initialValues?: z.input<typeof createSubmissionInputSchema>
+	resubmit?: boolean
 	onSubmit: (
 		input: z.output<typeof createSubmissionInputSchema>
 	) => Promise<unknown>
@@ -61,11 +65,12 @@ export function SubmissionForm({
 		}, 1_000)
 		return () => clearInterval(timer)
 	}, [resetAt])
-	const defaultValues: z.input<typeof createSubmissionInputSchema> = {
-		name: '',
-		websiteUrl: '',
-		repositoryUrl: '',
-	}
+	const defaultValues: z.input<typeof createSubmissionInputSchema> =
+		initialValues ?? {
+			name: '',
+			websiteUrl: '',
+			repositoryUrl: '',
+		}
 	const form = useForm({
 		defaultValues,
 		validators: {
@@ -78,7 +83,7 @@ export function SubmissionForm({
 			setSuccess(false)
 			try {
 				await onSubmit(createSubmissionInputSchema.parse(value))
-				formApi.reset()
+				if (!resubmit) formApi.reset()
 				setSuccess(true)
 			} catch (failure) {
 				if (
@@ -122,7 +127,9 @@ export function SubmissionForm({
 						aria-busy={pending}
 						className="space-y-6"
 					>
-						<legend className="sr-only">Submit a project</legend>
+						<legend className="sr-only">
+							{resubmit ? 'Edit & Resubmit' : 'Submit a project'}
+						</legend>
 						<div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 							{fields.map(({ name, label, placeholder, required }) => (
 								<form.Field
@@ -185,7 +192,8 @@ export function SubmissionForm({
 						{cooldown && (
 							<>
 								<p role="alert" className="text-sm text-destructive">
-									You can make 5 submission attempts every 10 minutes. Try again
+									You can make 5 submission attempts every 10 minutes, including
+									resubmissions. Try again
 								</p>
 
 								<p className="text-sm text-destructive">
@@ -206,8 +214,10 @@ export function SubmissionForm({
 						>
 							{pending ? (
 								<>
-									<Spinner /> Submitting…
+									<Spinner /> {resubmit ? 'Resubmitting…' : 'Submitting…'}
 								</>
+							) : resubmit ? (
+								'Resubmit project'
 							) : (
 								'Submit project'
 							)}

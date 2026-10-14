@@ -1,5 +1,5 @@
 {
-	"source": "Local development API baseline, updated for Content Management v1 and the admin Needs review filter. Read methods are compared as QUERY. Detail GitHub schemas expanded for authorized statistics metadata (2026-10-10); list/search remain unchanged. Public detail adds observed 30-day GitHub star history (2026-10-11). Mandatory rejection feedback adds nullable optional rejectionReason (max 1000) to admin create; rejected status requires nonblank feedback at runtime (2026-10-14).",
+	"source": "Local development API baseline, updated for Content Management v1 and the admin Needs review filter. Read methods are compared as QUERY. Detail GitHub schemas expanded for authorized statistics metadata (2026-10-10); list/search remain unchanged. Public detail adds observed 30-day GitHub star history (2026-10-11). Mandatory rejection feedback adds nullable optional rejectionReason (max 1000) to admin create; rejected status requires nonblank feedback at runtime (2026-10-14). Original-submitter rejected intake read and strict resubmit contract added (2026-10-14).",
 	"security": [
 		{
 			"apiKeyCookie": []
@@ -1363,6 +1363,100 @@
 					"content": {
 						"application/json": {
 							"schema": "listMySubmissions"
+						}
+					}
+				}
+			}
+		},
+		"getMyRejectedSubmission": {
+			"path": "/submissions/{id}",
+			"method": "query",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": null,
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "getMyRejectedSubmission"
+						}
+					}
+				}
+			}
+		},
+		"resubmitSubmission": {
+			"path": "/submissions/{id}/resubmit",
+			"method": "post",
+			"parameters": [
+				{
+					"in": "path",
+					"required": true,
+					"name": "id",
+					"schema": {
+						"type": "string",
+						"format": "uuid",
+						"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+					}
+				}
+			],
+			"requestBody": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"minLength": 2,
+									"maxLength": 100
+								},
+								"repositoryUrl": {
+									"type": "string",
+									"minLength": 1
+								},
+								"websiteUrl": {
+									"type": "string"
+								},
+								"revision": {
+									"type": "string",
+									"maxLength": 10,
+									"pattern": "^\\d+$"
+								}
+							},
+							"required": ["name", "repositoryUrl", "revision"],
+							"additionalProperties": false
+						}
+					}
+				}
+			},
+			"security": [
+				{
+					"apiKeyCookie": []
+				}
+			],
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": "resubmitSubmission"
 						}
 					}
 				}
@@ -3661,6 +3755,64 @@
 				}
 			},
 			"required": ["submissions", "pagination"],
+			"additionalProperties": false
+		},
+		"getMyRejectedSubmission": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"name": {
+					"type": "string"
+				},
+				"repositoryUrl": {
+					"type": "string",
+					"format": "uri"
+				},
+				"websiteUrl": {
+					"type": ["string", "null"]
+				},
+				"status": {
+					"type": "string",
+					"const": "rejected"
+				},
+				"rejectionReason": {
+					"type": ["string", "null"]
+				},
+				"revision": {
+					"type": "string",
+					"maxLength": 10,
+					"pattern": "^\\d+$"
+				}
+			},
+			"required": [
+				"id",
+				"name",
+				"repositoryUrl",
+				"websiteUrl",
+				"status",
+				"rejectionReason",
+				"revision"
+			],
+			"additionalProperties": false
+		},
+		"resubmitSubmission": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"format": "uuid",
+					"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+				},
+				"status": {
+					"type": "string",
+					"const": "draft"
+				}
+			},
+			"required": ["id", "status"],
 			"additionalProperties": false
 		}
 	}

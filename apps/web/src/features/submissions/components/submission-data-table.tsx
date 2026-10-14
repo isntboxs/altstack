@@ -147,17 +147,38 @@ export function SubmissionDataTable({
 	onQueryChange,
 	onPageChange,
 	onPageSizeChange,
+	onResubmit,
 }: {
 	data: SubmissionList
 	query: string
 	onQueryChange: (query: string) => void
 	onPageChange: (page: number) => void
 	onPageSizeChange: (limit: number) => void
+	onResubmit?: (id: string) => void
 }) {
 	const [rowSelection, setRowSelection] = useState({})
 	const table = useTable({
 		features,
-		columns,
+		columns: [
+			...columns,
+			column.display({
+				id: 'actions',
+				header: 'Actions',
+				cell: ({ row }) =>
+					row.original.status === 'rejected' ? (
+						<Button
+							aria-label={`Edit & Resubmit ${row.original.name}`}
+							variant="outline"
+							size="sm"
+							disabled={!onResubmit}
+							onClick={() => onResubmit?.(row.original.id)}
+						>
+							Edit &amp; Resubmit
+							<span className="sr-only"> {row.original.name}</span>
+						</Button>
+					) : null,
+			}),
+		],
 		data: data.submissions,
 		manualPagination: true,
 		manualFiltering: true,
