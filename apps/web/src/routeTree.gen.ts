@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
@@ -19,11 +21,15 @@ import { Route as AppSubmitRouteImport } from './routes/_app/submit'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
+import { Route as OgCategoryIdRouteImport } from './routes/og.category.$id'
+import { Route as OgProjectIdRouteImport } from './routes/og.project.$id'
+import { Route as SitemapsProjectsPageRouteImport } from './routes/sitemaps.projects.$page'
 import { Route as MainAdminCategoriesIndexRouteImport } from './routes/_main/admin.categories/index'
 import { Route as MainAdminCategoriesCreateRouteImport } from './routes/_main/admin.categories/create'
 import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
@@ -40,6 +46,16 @@ const MainRouteRoute = MainRouteRouteImport.update({
 const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -77,6 +93,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const SitemapsPagesDotxmlRoute = SitemapsPagesDotxmlRouteImport.update({
+  id: '/sitemaps/pages.xml',
+  path: '/sitemaps/pages.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppCategoriesIndexRoute = AppCategoriesIndexRouteImport.update({
   id: '/categories/',
   path: '/categories/',
@@ -101,6 +122,21 @@ const MainProjectsCreateRoute = MainProjectsCreateRouteImport.update({
   id: '/create',
   path: '/create',
   getParentRoute: () => MainProjectsRoute,
+} as any)
+const OgCategoryIdRoute = OgCategoryIdRouteImport.update({
+  id: '/og/category/$id',
+  path: '/og/category/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OgProjectIdRoute = OgProjectIdRouteImport.update({
+  id: '/og/project/$id',
+  path: '/og/project/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapsProjectsPageRoute = SitemapsProjectsPageRouteImport.update({
+  id: '/sitemaps/projects/$page',
+  path: '/sitemaps/projects/$page',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MainAdminCategoriesIndexRoute =
   MainAdminCategoriesIndexRouteImport.update({
@@ -129,15 +165,21 @@ const MainAdminCategoriesIdEditRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/auth': typeof AuthRouteRouteWithChildren
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
   '/projects': typeof MainProjectsRouteWithChildren
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/projects/create': typeof MainProjectsCreateRoute
+  '/og/category/$id': typeof OgCategoryIdRoute
+  '/og/project/$id': typeof OgProjectIdRoute
+  '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories/': typeof AppCategoriesIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -148,13 +190,19 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/auth': typeof AuthRouteRouteWithChildren
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/projects/create': typeof MainProjectsCreateRoute
+  '/og/category/$id': typeof OgCategoryIdRoute
+  '/og/project/$id': typeof OgProjectIdRoute
+  '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories': typeof AppCategoriesIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -167,16 +215,22 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteRouteWithChildren
   '/_main': typeof MainRouteRouteWithChildren
   '/auth': typeof AuthRouteRouteWithChildren
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
   '/_app/submit': typeof AppSubmitRoute
   '/_main/projects': typeof MainProjectsRouteWithChildren
   '/_main/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/projects/create': typeof MainProjectsCreateRoute
+  '/og/category/$id': typeof OgCategoryIdRoute
+  '/og/project/$id': typeof OgProjectIdRoute
+  '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/_app/categories/': typeof AppCategoriesIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -189,15 +243,21 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/$slug'
     | '/activity'
     | '/submit'
     | '/projects'
     | '/submission'
     | '/auth/sign-in'
+    | '/sitemaps/pages.xml'
     | '/categories/$'
     | '/admin/categories'
     | '/projects/create'
+    | '/og/category/$id'
+    | '/og/project/$id'
+    | '/sitemaps/projects/$page'
     | '/categories/'
     | '/projects/'
     | '/admin/categories/create'
@@ -208,13 +268,19 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/$slug'
     | '/activity'
     | '/submit'
     | '/submission'
     | '/auth/sign-in'
+    | '/sitemaps/pages.xml'
     | '/categories/$'
     | '/projects/create'
+    | '/og/category/$id'
+    | '/og/project/$id'
+    | '/sitemaps/projects/$page'
     | '/categories'
     | '/projects'
     | '/admin/categories/create'
@@ -226,16 +292,22 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_main'
     | '/auth'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/_app/$slug'
     | '/_app/activity'
     | '/_app/submit'
     | '/_main/projects'
     | '/_main/submission'
     | '/auth/sign-in'
+    | '/sitemaps/pages.xml'
     | '/_app/'
     | '/_app/categories/$'
     | '/_main/admin/categories'
     | '/_main/projects/create'
+    | '/og/category/$id'
+    | '/og/project/$id'
+    | '/sitemaps/projects/$page'
     | '/_app/categories/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
@@ -248,6 +320,12 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   MainRouteRoute: typeof MainRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SitemapsPagesDotxmlRoute: typeof SitemapsPagesDotxmlRoute
+  OgCategoryIdRoute: typeof OgCategoryIdRoute
+  OgProjectIdRoute: typeof OgProjectIdRoute
+  SitemapsProjectsPageRoute: typeof SitemapsProjectsPageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +349,20 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -322,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/sitemaps/pages.xml': {
+      id: '/sitemaps/pages.xml'
+      path: '/sitemaps/pages.xml'
+      fullPath: '/sitemaps/pages.xml'
+      preLoaderRoute: typeof SitemapsPagesDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/categories/': {
       id: '/_app/categories/'
       path: '/categories'
@@ -356,6 +455,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/create'
       preLoaderRoute: typeof MainProjectsCreateRouteImport
       parentRoute: typeof MainProjectsRoute
+    }
+    '/og/category/$id': {
+      id: '/og/category/$id'
+      path: '/og/category/$id'
+      fullPath: '/og/category/$id'
+      preLoaderRoute: typeof OgCategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/project/$id': {
+      id: '/og/project/$id'
+      path: '/og/project/$id'
+      fullPath: '/og/project/$id'
+      preLoaderRoute: typeof OgProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemaps/projects/$page': {
+      id: '/sitemaps/projects/$page'
+      path: '/sitemaps/projects/$page'
+      fullPath: '/sitemaps/projects/$page'
+      preLoaderRoute: typeof SitemapsProjectsPageRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_main/admin/categories/': {
       id: '/_main/admin/categories/'
@@ -473,6 +593,12 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   MainRouteRoute: MainRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SitemapsPagesDotxmlRoute: SitemapsPagesDotxmlRoute,
+  OgCategoryIdRoute: OgCategoryIdRoute,
+  OgProjectIdRoute: OgProjectIdRoute,
+  SitemapsProjectsPageRoute: SitemapsProjectsPageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

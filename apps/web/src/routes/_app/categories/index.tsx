@@ -8,10 +8,11 @@ import {
 } from '#/features/category/components/public-category'
 import { categoriesIntro, categoryHead } from '#/features/category/meta'
 import { categoryQueries } from '#/features/category/queries'
+import { unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/categories/')({
 	loader: ({ context }) => context.queryClient.query(categoryQueries.list()),
-	head: () => categoryHead(),
+	head: ({ loaderData }) => (loaderData ? categoryHead() : unavailableHead()),
 	pendingComponent: CategoriesPending,
 	errorComponent: CategoriesError,
 	component: CategoriesIndex,

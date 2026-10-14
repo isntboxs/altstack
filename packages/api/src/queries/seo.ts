@@ -1,0 +1,57 @@
+import { and, asc, count, eq } from 'drizzle-orm'
+
+import { db } from '@altstack/db'
+import { githubRepository, project } from '@altstack/db/schemas'
+
+import { getPublicCategoryById, listPublicCategories } from './category'
+
+// Match public detail/list visibility, including its required repository row.
+// Select public fields explicitly; never serialize the underlying project row.
+const published = eq(project.status, 'published')
+const fields = {
+	id: project.id,
+	slug: project.slug,
+	name: project.name,
+	tagline: project.tagline,
+	description: project.description,
+	updatedAt: project.updatedAt,
+}
+export const sitemapPageSize = 1000
+
+export async function publicOgProject(id: string) {
+	const rows = await db
+		.select(fields)
+		.from(project)
+		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+		.where(and(published, eq(project.id, id)))
+		.limit(1)
+	return rows.at(0)
+}
+
+export async function publicOgCategory(id: string) {
+	return getPublicCategoryById(db, id)
+}
+
+export async function sitemapProjectCount() {
+	const [row] = await db
+		.select({ total: count() })
+		.from(project)
+		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+		.where(published)
+	return row?.total ?? 0
+}
+
+export async function sitemapProjects(page: number) {
+	return db
+		.select({ slug: project.slug, updatedAt: project.updatedAt })
+		.from(project)
+		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+		.where(published)
+		.orderBy(asc(project.id))
+		.limit(sitemapPageSize)
+		.offset((page - 1) * sitemapPageSize)
+}
+
+export async function sitemapCategories() {
+	return listPublicCategories(db)
+}

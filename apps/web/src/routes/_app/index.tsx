@@ -6,6 +6,13 @@ import { HomeFilterSection } from '#/features/project/components/home-filters'
 import { homeProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
 import { homeProjectSearchSchema } from '#/features/project/search'
+import {
+	cataloguePolicy,
+	publicUrl,
+	seoHead,
+	siteDescription,
+	unavailableHead,
+} from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/')({
 	validateSearch: homeProjectSearchSchema,
@@ -19,6 +26,26 @@ export const Route = createFileRoute('/_app/')({
 	},
 	loader: ({ context, deps }) =>
 		context.queryClient.query(projectQueries.search(deps)),
+	head: ({ loaderData, match }) => {
+		if (!loaderData) return unavailableHead()
+		const policy = cataloguePolicy(
+			'/',
+			match.search,
+			loaderData.pagination.totalPages
+		)
+		return seoHead({
+			title: `AltStack — Discover open-source software${policy.pageSuffix}`,
+			description: siteDescription,
+			...policy,
+			entities: [
+				{
+					'@type': 'CollectionPage',
+					name: 'Discover open-source software',
+					url: publicUrl(policy.path),
+				},
+			],
+		})
+	},
 	component: Home,
 })
 

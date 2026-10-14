@@ -441,18 +441,18 @@ describe('public category routes and hierarchy UI', () => {
 		await screen.findByRole('heading', { name: 'Open Source ' + ai.name })
 	})
 	it('uses clean absolute canonical URLs and descriptions, including the null fallback', () => {
-		expect(categoryHead(ai)).toEqual({
-			meta: [
-				{ title: 'Open Source AI-Powered Editors | Altstack' },
-				{ name: 'description', content: ai.description },
-			],
-			links: [
-				{
-					rel: 'canonical',
-					href: 'https://altstack.test/categories/' + ai.path,
-				},
-			],
+		const head = categoryHead(ai)
+		expect(head.meta).toContainEqual({
+			title: 'Open Source AI-Powered Editors | Altstack',
 		})
+		expect(head.meta).toContainEqual({
+			name: 'description',
+			content: ai.description,
+		})
+		expect(head.links).toEqual([
+			{ rel: 'canonical', href: 'https://altstack.test/categories/' + ai.path },
+		])
+
 		expect(
 			categoryHead({ ...ai, description: null }).meta[1]?.content
 		).toContain('AI-Powered Editors')

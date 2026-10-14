@@ -31,19 +31,23 @@ import {
 	TooltipTrigger,
 } from '@altstack/ui/components/tooltip'
 
+import { PublicContent } from '#/components/block-note/public-content'
 import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
+import { unavailableHead } from '#/features/seo/meta'
+import { projectHead } from '#/features/seo/project-meta'
 import { resolveFileUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$slug')({
 	loader: async ({ context, params }) => {
 		try {
-			await context.queryClient.query({
+			const project = await context.queryClient.query({
 				...projectQueries.bySlug(params.slug),
 				retry: false,
 			})
+			return { project, statisticsNow: Date.now() }
 		} catch (error) {
 			if (
 				typeof error === 'object' &&
@@ -55,8 +59,9 @@ export const Route = createFileRoute('/_app/$slug')({
 			}
 			throw error
 		}
-		return { statisticsNow: Date.now() }
 	},
+	head: ({ loaderData }) =>
+		loaderData ? projectHead(loaderData.project) : unavailableHead(),
 	notFoundComponent: () => (
 		<div className="container mx-auto max-w-6xl space-y-4 px-4 pt-28 lg:px-16">
 			<h1 className="text-3xl font-medium">Project not found</h1>
@@ -266,7 +271,9 @@ function RouteComponent() {
 					<PublicProjectCategories categories={projectData.categoryDetails} />
 
 					{projectData.content && (
-						<ClientOnly>
+						<ClientOnly
+							fallback={<PublicContent content={projectData.content} />}
+						>
 							<BlockNoteViewBlocks content={projectData.content} />
 						</ClientOnly>
 					)}

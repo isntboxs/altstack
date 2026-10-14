@@ -21,6 +21,7 @@ export default defineConfig({
 	// `require("react")` calls once emitted, so the external direction is used.
 	rollupConfig: {
 		external: [
+			'@vercel/og',
 			'react',
 			'react-dom',
 			'react-dom/server',
