@@ -230,13 +230,13 @@ describe('admin review history UI', () => {
 		expect(
 			screen.getByRole('button', { name: 'Reject' }).hasAttribute('disabled')
 		).toBe(false)
-		fireEvent.change(screen.getByLabelText('Rejection reason (optional)'), {
+		fireEvent.change(screen.getByLabelText('Rejection reason'), {
 			target: { value: 'Preserved reason' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
 		expect(await screen.findByText('No review history yet.')).toBeTruthy()
 		expect(historyCalls()).toHaveLength(2)
-		expect(screen.getByLabelText('Rejection reason (optional)')).toHaveProperty(
+		expect(screen.getByLabelText('Rejection reason')).toHaveProperty(
 			'value',
 			'Preserved reason'
 		)
@@ -356,7 +356,7 @@ describe('admin review history UI', () => {
 			})
 			mount(true)
 			await screen.findByText('No review history yet.')
-			fireEvent.change(screen.getByLabelText('Rejection reason (optional)'), {
+			fireEvent.change(screen.getByLabelText('Rejection reason'), {
 				target: { value: 'Needs documentation' },
 			})
 			fireEvent.click(screen.getByRole('button', { name: action }))
@@ -383,10 +383,18 @@ describe('admin review history UI', () => {
 					event(22, { toStatus: 'rejected', reason: 'Newest rejection' }),
 					...events,
 				]
-				return Promise.resolve({ ...draft, status: 'rejected' })
+				return Promise.resolve({
+					...draft,
+					status: 'rejected',
+					rejectionReason: 'Newest rejection',
+				})
 			}
 			if (path.at(-1) === 'getById') {
-				return Promise.resolve({ ...draft, status: 'rejected' })
+				return Promise.resolve({
+					...draft,
+					status: 'rejected',
+					rejectionReason: 'Newest rejection',
+				})
 			}
 			const { query } =
 				input as ORPCRouterInputs['admin']['project']['reviewHistory']
@@ -404,6 +412,9 @@ describe('admin review history UI', () => {
 			await screen.findByRole('button', { name: 'Load older entries' })
 		)
 		await screen.findByText('Showing 21 of 21 review events.')
+		fireEvent.change(screen.getByLabelText('Rejection reason'), {
+			target: { value: 'Newest rejection' },
+		})
 		fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
 		expect(
 			await screen.findByText('Showing 22 of 22 review events.')

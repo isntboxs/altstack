@@ -58,6 +58,7 @@ import {
 	adminProjectReviewActionSchema,
 	adminUpdateProjectBodySchema,
 	publishProjectSchema,
+	rejectProjectSchema,
 } from '@altstack/shared/schemas/admin-project'
 
 function requirePublishable(value: unknown) {
@@ -71,6 +72,16 @@ function requirePublishable(value: unknown) {
 					.join('; '),
 		})
 	}
+}
+
+function requireRejectionReason(value: unknown) {
+	const result = rejectProjectSchema.safeParse({ rejectionReason: value })
+	if (!result.success) {
+		throw new ORPCError('BAD_REQUEST', {
+			message: result.error.issues.map((issue) => issue.message).join('; '),
+		})
+	}
+	return result.data.rejectionReason
 }
 
 async function getSubmitter(
@@ -115,6 +126,15 @@ async function validateCategories(
 const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 	async ({ context, errors, input }) => {
 		const { auth, db } = context
+		const rejectionReason =
+			input.body.status === 'rejected'
+				? requireRejectionReason(input.body.rejectionReason)
+				: null
+		if (input.body.status !== 'rejected' && input.body.rejectionReason) {
+			throw errors.BAD_REQUEST({
+				message: 'A rejection reason requires rejected status.',
+			})
+		}
 
 		let canonicalUrl: string
 		let owner: string
@@ -232,6 +252,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 						// schema when omitted; draft stays hidden from the
 						// public catalogue.
 						status: input.body.status,
+						rejectionReason,
 					})
 					.returning()
 
@@ -264,6 +285,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					actorId: auth.user.id,
 					action: 'project_created',
 					projectId: inserted.id,
+					reason: rejectionReason,
 					metadata: { status: inserted.status },
 				})
 
@@ -377,6 +399,14 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 			let repository = submitted
 			const targetSlug = body.slug ?? existing.slug
 			const status = body.status ?? existing.status
+			const rejectionReason =
+				status === 'rejected'
+					? requireRejectionReason(
+							body.rejectionReason === undefined
+								? existing.rejectionReason
+								: body.rejectionReason
+						)
+					: null
 			const originalCategorySlugs = await assignedCategorySlugs(db, existing.id)
 			const categorySlugs = body.categorySlugs ?? originalCategorySlugs
 			const merged = {
@@ -556,12 +586,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 								: body.websiteUrl,
 						content:
 							body.content === undefined ? existing.content : body.content,
-						rejectionReason:
-							status === 'rejected'
-								? body.rejectionReason === undefined
-									? existing.rejectionReason
-									: body.rejectionReason
-								: null,
+						rejectionReason,
 					})
 					.where(eq(project.id, existing.id))
 					.returning()

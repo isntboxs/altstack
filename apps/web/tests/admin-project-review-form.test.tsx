@@ -67,8 +67,25 @@ vi.mock('#/components/project-category-badges', () => {
 })
 vi.mock('#/components/image-uploader', () => {
 	return {
-		LogoUploader: () => <span>No logo uploaded</span>,
-		ScreenshotUploader: () => null,
+		LogoUploader: ({ onChange }: { onChange: (key: string) => void }) => (
+			<>
+				<span>No logo uploaded</span>
+				<button
+					type="button"
+					onClick={() => onChange('tmp/logos/review-1.png')}
+				>
+					Upload test logo
+				</button>
+			</>
+		),
+		ScreenshotUploader: ({ onChange }: { onChange: (key: string) => void }) => (
+			<button
+				type="button"
+				onClick={() => onChange('tmp/screenshots/review-1.png')}
+			>
+				Upload test screenshot
+			</button>
+		),
 	}
 })
 vi.mock('#/utils/storage', () => {
@@ -214,9 +231,95 @@ describe('admin draft review form', () => {
 			'Edited tagline'
 		)
 	})
-	it('sends an optional rejection reason and provides restore and unpublish actions', async () => {
+	it.each(['', ' \n\t '])(
+		'blocks Reject with blank feedback %j and submits a trimmed correction without losing edits or uploads',
+		async (rejectionReason) => {
+			render(<EditProjectForm project={draft} />)
+			fireEvent.change(screen.getByLabelText('Tagline'), {
+				target: { value: 'Unsaved tagline' },
+			})
+			fireEvent.click(screen.getByRole('button', { name: 'Upload test logo' }))
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Upload test screenshot' })
+			)
+			const reason = screen.getByLabelText('Rejection reason')
+			fireEvent.change(reason, { target: { value: rejectionReason } })
+			fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
+			await waitFor(() =>
+				expect(screen.getByRole('alert').textContent).toBe(
+					'A rejection reason is required.'
+				)
+			)
+			expect(mutateAsync).not.toHaveBeenCalled()
+			expect(reason.getAttribute('aria-invalid')).toBe('true')
+			expect(reason.getAttribute('aria-describedby')).toContain(
+				screen.getByRole('alert').id
+			)
+			expect(screen.getByLabelText('Tagline')).toHaveProperty(
+				'value',
+				'Unsaved tagline'
+			)
+			fireEvent.change(reason, { target: { value: '  Needs documentation  ' } })
+			await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+			fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
+			await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+			expect(mutateAsync.mock.calls[0]?.[0].body).toMatchObject({
+				status: 'rejected',
+				rejectionReason: 'Needs documentation',
+				tagline: 'Unsaved tagline',
+				logo: 'tmp/logos/review-1.png',
+				screenshot: 'tmp/screenshots/review-1.png',
+			})
+		}
+	)
+	it.each(['draft', 'rejected'] as const)(
+		'allows saving or restoring %s after a blank Reject without entering a reason',
+		async (status) => {
+			render(<EditProjectForm project={{ ...draft, status }} />)
+			fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
+			await waitFor(() =>
+				expect(screen.getByRole('alert').textContent).toBe(
+					'A rejection reason is required.'
+				)
+			)
+			expect(mutateAsync).not.toHaveBeenCalled()
+			fireEvent.click(
+				screen.getByRole('button', {
+					name: status === 'rejected' ? 'Restore to Draft' : 'Save Draft',
+				})
+			)
+			await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+			expect(mutateAsync.mock.calls[0]?.[0].body).toMatchObject({
+				status: 'draft',
+				rejectionReason: null,
+			})
+			await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+		}
+	)
+	it('uses existing feedback when saving a rejected project', async () => {
+		render(
+			<EditProjectForm
+				project={{
+					...draft,
+					status: 'rejected',
+					rejectionReason: 'Needs documentation',
+				}}
+			/>
+		)
+		expect(screen.getByLabelText('Rejection reason')).toHaveProperty(
+			'value',
+			'Needs documentation'
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Reject' }))
+		await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
+		expect(mutateAsync.mock.calls[0]?.[0].body).toMatchObject({
+			status: 'rejected',
+			rejectionReason: 'Needs documentation',
+		})
+	})
+	it('sends a required rejection reason and provides restore and unpublish actions', async () => {
 		const { rerender } = render(<EditProjectForm project={draft} />)
-		fireEvent.change(screen.getByLabelText('Rejection reason (optional)'), {
+		fireEvent.change(screen.getByLabelText('Rejection reason'), {
 			target: { value: 'Needs documentation' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Reject' }))

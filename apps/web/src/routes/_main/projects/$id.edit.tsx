@@ -7,7 +7,10 @@ import type { z } from 'zod'
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { slugify } from '@altstack/shared/lib/slug'
-import { adminUpdateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
+import {
+	adminUpdateProjectBodySchema,
+	rejectProjectSchema,
+} from '@altstack/shared/schemas/admin-project'
 
 import { Button } from '@altstack/ui/components/button'
 import { Card, CardContent } from '@altstack/ui/components/card'
@@ -47,7 +50,21 @@ import { resolveFileUrl } from '#/utils/storage'
 
 // Same form as create, minus the id. Every field is optional: omitted image
 // fields keep the current image, `screenshot: null` removes it.
-const editProjectFormSchema = adminUpdateProjectBodySchema
+const editProjectFormSchema = adminUpdateProjectBodySchema.superRefine(
+	(value, context) => {
+		if (value.status !== 'rejected') return
+		const result = rejectProjectSchema.safeParse(value)
+		if (!result.success) {
+			for (const issue of result.error.issues) {
+				context.addIssue({
+					code: 'custom',
+					message: issue.message,
+					path: issue.path,
+				})
+			}
+		}
+	}
+)
 
 // Mirrors the max() in the schema; display-only counters.
 const TAGLINE_MAX_LENGTH = 100
@@ -278,7 +295,9 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 					body: {
 						...value,
 						rejectionReason:
-							value.status === 'rejected' ? value.rejectionReason : null,
+							value.status === 'rejected'
+								? rejectProjectSchema.parse(value).rejectionReason
+								: null,
 					},
 				})
 				form.reset({
@@ -868,24 +887,42 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 						)}
 						<form.Field
 							name="rejectionReason"
-							children={(field) => (
-								<Field>
-									<FieldLabel htmlFor="rejectionReason">
-										Rejection reason (optional)
-									</FieldLabel>
-									<Textarea
-										id="rejectionReason"
-										value={field.state.value ?? ''}
-										maxLength={1000}
-										onBlur={field.handleBlur}
-										onChange={(event) => field.handleChange(event.target.value)}
-									/>
-									<FieldDescription>
-										Recorded when you reject this project. Restore rejected
-										projects to draft to reopen review.
-									</FieldDescription>
-								</Field>
-							)}
+							children={(field) => {
+								const isInvalid =
+									field.state.meta.isTouched && !field.state.meta.isValid
+								return (
+									<Field data-invalid={isInvalid}>
+										<FieldLabel htmlFor="rejectionReason">
+											Rejection reason
+										</FieldLabel>
+										<Textarea
+											id="rejectionReason"
+											value={field.state.value ?? ''}
+											maxLength={1000}
+											aria-invalid={isInvalid}
+											aria-describedby={
+												isInvalid
+													? 'rejectionReason-description rejectionReason-error'
+													: 'rejectionReason-description'
+											}
+											onBlur={field.handleBlur}
+											onChange={(event) =>
+												field.handleChange(event.target.value)
+											}
+										/>
+										<FieldDescription id="rejectionReason-description">
+											Required when rejecting a project, up to 1000 characters.
+											Restore rejected projects to draft to reopen review.
+										</FieldDescription>
+										{isInvalid && (
+											<FieldError
+												id="rejectionReason-error"
+												errors={field.state.meta.errors}
+											/>
+										)}
+									</Field>
+								)
+							}}
 						/>
 					</section>
 
@@ -898,11 +935,11 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 					)}
 					<ClientOnly fallback={<Button disabled>Save Draft</Button>}>
 						<form.Subscribe
-							selector={(state) => [state.canSubmit, state.isSubmitting]}
-							children={([canSubmit, isSubmitting]) => (
+							selector={(state) => state.isSubmitting}
+							children={(isSubmitting) => (
 								<ProjectReviewActions
 									status={project.status}
-									disabled={!canSubmit}
+									disabled={false}
 									pending={isSubmitting}
 									onAction={(status) => {
 										form.setFieldValue('status', status)
