@@ -22,6 +22,7 @@ export default defineConfig({
 	rollupConfig: {
 		external: [
 			'@vercel/og',
+			'sharp',
 			'react',
 			'react-dom',
 			'react-dom/server',

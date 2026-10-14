@@ -14,11 +14,14 @@ copied unchanged. There is no runtime/build dependency on the brand repository.
 
 The 1200 × 630 family uses black/white, the complete outlined signature,
 Inter 400/500, a 64 px text margin and the unmodified symbol as a cropped
-motif on the right. Default copy follows the supplied brief. Project cards use
-the public name and tagline (description fallback); category cards use the
-canonical category name/description. No counts, rankings, ratings or UI mockups
-are generated. Images deliberately fetch no project logos/screenshots: a missing
-or hostile asset URL cannot affect the render or become an SSRF request.
+motif on the right. Default copy follows the supplied brief. Project cards put
+the real project logo/name first, description (tagline fallback) below, stored
+GitHub stars/forks at the upper right, and the complete AltStack signature in
+the footer. Repository name and UTC snapshot date identify the source/freshness
+of those counts. Missing/invalid statistics are omitted; zero is retained.
+Category cards use the canonical category name/description. No rankings, ratings
+or UI mockups are generated. The home/category designs are unchanged by the
+project-logo extension.
 
 - Static deployment asset: `apps/web/public/og/default.png`.
 - Shared layout, fitting and renderer: `apps/web/src/features/seo/og/card.tsx`.
@@ -44,6 +47,19 @@ WASM. Vite SSR and Nitro keep this dependency external, matching the existing
 Docker prod `node_modules` layout. Fonts/signature are inlined into a server
 chunk; neither requires the original source path. Route handlers import the
 renderer lazily and are stripped from client builds.
+
+Project logos are optional. `logo.server.ts` accepts only promoted final logo
+keys under the configured `VITE_S3_PUBLIC_URL` (or their equivalent absolute
+URLs), and existing numeric-account avatars on `avatars.githubusercontent.com`.
+Avatar URLs are reconstructed with a fixed 192 px size. Arbitrary hosts, paths,
+query inputs, redirects, SVG and embedded URLs are rejected. Fetches have a 2 s
+deadline and 3 MiB byte limit, with MIME/magic-byte agreement. **Sharp 0.35.5**
+normalizes only PNG/JPEG/WebP/GIF buffers into metadata-free PNG, first frame,
+at most 192 × 192, with a 4,194,304 input-pixel limit and 1 s decoder timeout.
+Failures use a typographic project initial; they do not prevent card rendering.
+No GitHub API request is made by the image endpoint. Sharp stays external and
+server-only; its native optional packages must be present in the production
+dependency install, as in the existing Docker layout.
 
 ## Metadata and indexing
 
@@ -71,10 +87,14 @@ configuration. `VITE_SERVER_URL` still identifies the separate auth/API service.
 - SSR HTML is private/no-store because navigation includes session state.
   Existing API authorization and R5b return guards are unchanged.
 
-Project image URLs contain a layout/content revision; category revisions derive
-from public copy. Every image request checks live public visibility before the
-32-entry single-flight render cache. Cache keys use rendered content; at most two
-new renders run concurrently. Responses are **no-store**, including failures,
+Project image URLs contain a layout/content revision and the GitHub snapshot
+revision, so a stats refresh changes the SSR-selected URL even when the listing
+has not been edited. Category revisions derive from public copy. Every image
+request checks live public visibility before the 32-entry single-flight render
+cache. Cache keys include public copy, logo key, repository counts and snapshot;
+entries expire after 60 s, bounding same-key logo replacements/fallbacks. At most
+two new renders (including asset download/decoding) run concurrently. Responses
+are **no-store**, including failures,
 so AltStack does not serve a stale CDN image after unpublish/delete. Old revision
 URLs also return current public copy or generic 404. Social platforms may retain
 their own copies; their purge/recrawl behavior is outside the application's
@@ -116,10 +136,14 @@ vp run --filter web test:seo-http
 The HTTP acceptance command owns a disposable schema, builds workspaces, creates
 synthetic public/private fixtures and installs a prod-only hoisted dependency
 tree. It runs Node/Nitro from a relocated `.output` with no source checkout.
-Outbound fetch is limited to the local existing auth API and inline data assets.
+Outbound fetch is limited to the local existing auth API, synthetic local raster
+asset server and inline data assets. Production logo policy is exercised using
+the configured local storage base; no genuine external image is downloaded.
 It checks actual SSR tags/content/JSON-LD, canonical/indexing/308 behavior, public
 sitemap changes, PNG bytes/MIME/dimensions, revisions, long/missing/Unicode copy,
 old URLs after changes/unpublish/delete, cold restart and client bundle separation.
+Logo cases include raster formats, unsafe URL rejection, corrupt/missing/oversize
+inputs, successful production decoding, cache reuse, and changed logo/statistics.
 Evidence is written to a private local cache directory; temporary runtimes are
 removed on completion. `--preview` on the underlying acceptance script keeps
 synthetic fixtures alive for collaborative browser QA. Never use reset/seed or
@@ -134,11 +158,13 @@ Primary references: [TanStack SEO](https://tanstack.com/start/latest/docs/framew
 [GEO](https://tanstack.com/start/latest/docs/framework/react/guide/geo),
 [Vercel OG](https://vercel.com/docs/og-image-generation),
 [Satori](https://github.com/vercel/satori),
+[Sharp constructor](https://sharp.pixelplumbing.com/api-constructor/),
+[Sharp installation](https://sharp.pixelplumbing.com/install/),
 [Inter](https://github.com/rsms/inter),
 [SoftwareSourceCode](https://schema.org/SoftwareSourceCode),
 [CollectionPage](https://schema.org/CollectionPage).
 
-### Verified locally on 2026-10-14
+### Historical L1 verification on 2026-10-14
 
 Tested revision: baseline **`fe73d53` plus the L1 working-tree changes** on
 `feat/l1-seo-og`, not a new merged commit. SHA-256 of changed implementation,
@@ -167,11 +193,9 @@ and README files):
   fields. Signature proportions/channel, margin, contrast, word wrapping and
   clipping were inspected. Static output also matches a fresh render in tests.
 
-Full dynamic fixture renders: [project](brand/og/project-fixture.png),
-[category](brand/og/category-fixture.png). Reduced visual QA:
-[contact sheet](brand/og/preview-qa.png). These are explicitly synthetic public
-fixtures captured from the real endpoints, not catalogue entries or marketing
-claims. Test processes/runtimes were stopped and disposable schemas removed.
+Original fixture captures were inspected at both sizes. The maintained project
+preview and contact sheet are updated by the follow-up verification below.
+Test processes/runtimes were stopped and disposable schemas removed.
 
 An earlier run hit the `/tmp` quota while copying repeated runtime dependency
 trees; its affected tests were rerun successfully after cleanup. The final
@@ -179,3 +203,44 @@ acceptance harness uses the local cache and removes its runtime copy in `finally
 The earlier 918-test run and historical R5b counts are not substituted for the
 920-test result above. Real production-domain/social-crawler acceptance remains
 unverified.
+
+### Verified locally on 2026-10-15 — project logos and GitHub statistics
+
+Tested revision: **`8d51af6` plus the project-card working-tree changes** on
+`feat/l1-seo-og`. Implementation/test/lockfile fingerprint using the same
+sorted-path algorithm above:
+`0559ca938addb1edc1c0d66a89d07c8eb9ef1868106a59bae785dd8d06d60ffa`.
+These results verify the follow-up locally, not a merged or deployed revision.
+
+- `vp install`: passed; added pinned production dependency `sharp@0.35.5`.
+- `vp check --fix`: formatting, lint and types passed with zero warnings/errors.
+- Disposable-schema `vp test run`: **925 passed, 1 skipped**, 58 files.
+  The skip remains the existing opt-in Upstash integration.
+- Disposable-schema `seo-http.acceptance.ts --preview`: **11 HTTP acceptance
+  groups passed**, including the full 8-task production build, prod-only install
+  and relocated Node/Nitro runtime. Native Sharp decoding works with packaged
+  production dependencies. The test fetches only its synthetic local assets;
+  corrupt raster/SVG spoofing falls back, nonpublic projects fetch no logo,
+  repeated requests reuse the render, and changed logos/stats refresh the PNG.
+  A GitHub snapshot refresh alone also changes the SSR image revision. Original
+  metadata/indexing/sitemap/visibility/error/cold-start checks still pass.
+  Existing build notices remain; Docker itself was not invoked.
+- Viewed the actual endpoint rasters at **1200 × 630** and **320 × 168**,
+  including long names, absent copy, Unicode, non-square WebP and corrupt/missing
+  logo fallbacks. Inspected title/stat separation, contrast, logo aspect ratio,
+  approved symbol geometry/cropping and the complete footer signature. The
+  unchanged static default still matches a fresh deterministic render in tests.
+- T3 navigation opened the production page, but snapshots twice returned
+  `Preview automation snapshot timed out after 15000ms.` and the reopen stalled.
+  Browser QA therefore used Chromium headless/CDP with a disposable separate
+  profile. Home → project navigation retained a window marker, a single title,
+  canonical, OG image and JSON-LD graph; the real project logo loaded, there was
+  no horizontal overflow or runtime exception, and the metadata-selected PNG
+  loaded as 1200 × 630. Page and image screenshots were inspected.
+
+Maintained endpoint captures: [project](brand/og/project-fixture.png),
+[category](brand/og/category-fixture.png),
+[320 px contact sheet](brand/og/preview-qa.png). Names, logos and statistics in
+these examples are synthetic test fixtures, not actual listings or claims.
+Real production-domain and social-provider crawl/cache acceptance remains
+unverified; no push, PR or deployment was performed.

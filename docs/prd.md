@@ -157,7 +157,7 @@ the roadmap. Staging and production acceptance remain separate.
 L1 is implemented locally on the merged R5b baseline; L2 and release-domain
 acceptance remain separate. See [L1 implementation and verification](seo-og.md).
 
-- L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards, published-only sitemap and robots discovery.
+- L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
 - Remove or clearly disable unimplemented Verify/Bookmark/Report/Embed actions and unsupported ranking promises.
 - Replace starter branding/placeholders and verify mobile, keyboard, empty/error/not-found states.

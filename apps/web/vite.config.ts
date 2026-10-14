@@ -21,7 +21,7 @@ const config = defineConfig({
 	envDir: resolve(__dirname, '../..'),
 	resolve: { tsconfigPaths: true },
 	server: { port: 3010 },
-	ssr: { external: ['@vercel/og'] },
+	ssr: { external: ['@vercel/og', 'sharp'] },
 	optimizeDeps: {
 		include: ['@tanstack/react-form-start'],
 	},

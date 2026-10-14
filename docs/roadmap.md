@@ -242,6 +242,7 @@ acceptance remains separate from implementation.
 
 - [x] AltStack defaults and per-project title/description/canonical from published loader data.
 - [x] Complete OG/Twitter metadata, committed deterministic 1200 × 630 default PNG and content-specific project/category PNG endpoints using the approved brandkit and local Inter.
+- [x] Project cards include trusted public logos, stored GitHub stars/forks and snapshot dates, with bounded raster decoding, missing-logo fallbacks and content-sensitive cache revisions.
 - [x] Live sitemap index with bounded published-project shards and current public category paths; exclude private/admin routes and query permutations.
 - [x] Explicit private/auth/admin, filtered/paginated and empty-category indexing policy; configured-origin robots sitemap discovery and crawlable OG endpoints. API authorization remains the access boundary.
 - [x] Safe truthful JSON-LD and readable project Markdown in SSR while preserving the BlockNote viewer.

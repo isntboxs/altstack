@@ -4,6 +4,7 @@ import regularUrl from './assets/inter-400.ttf?inline'
 import mediumUrl from './assets/inter-500.ttf?inline'
 import signature from './assets/signature.svg?raw'
 import { renderCard } from './card'
+import { loadProjectLogo } from './logo.server'
 
 const resources = {
 	regular: Buffer.from(regularUrl.split(',')[1], 'base64'),
@@ -23,7 +24,10 @@ export function missingImage() {
 
 // A small single-flight cache avoids repeated rendering. Every hit first checks
 // current public data, so unpublish/delete is effective on the next request.
-const cache = new Map<string, Promise<Uint8Array>>()
+const cache = new Map<
+	string,
+	{ rendering: Promise<Uint8Array>; expiresAt: number }
+>()
 let activeRenders = 0
 export async function ogResponse(kind: 'project' | 'category', id: string) {
 	if (
@@ -37,12 +41,13 @@ export async function ogResponse(kind: 'project' | 'category', id: string) {
 				? await publicOgProject(id)
 				: await publicOgCategory(id)
 		if (!row) return missingImage()
-		const description =
-			'tagline' in row ? (row.tagline ?? row.description) : row.description
-		const card = { kind, title: row.name, description, fallback: row.slug }
-		const key = JSON.stringify(card)
-		let rendering = cache.get(key)
-		if (!rendering) {
+		const key = JSON.stringify({ kind, row })
+		let entry = cache.get(key)
+		if (entry && entry.expiresAt <= Date.now()) {
+			cache.delete(key)
+			entry = undefined
+		}
+		if (!entry) {
 			if (activeRenders >= 2) {
 				return new Response('Image temporarily unavailable', {
 					status: 503,
@@ -51,13 +56,39 @@ export async function ogResponse(kind: 'project' | 'category', id: string) {
 			}
 			if (cache.size >= 32) cache.delete(cache.keys().next().value!)
 			activeRenders++
-			rendering = renderCard(card, resources).finally(() => {
+			const rendering = (async () => {
+				if ('github' in row) {
+					return renderCard(
+						{
+							kind: 'project',
+							title: row.name,
+							fallback: row.slug,
+							description: row.description?.trim()
+								? row.description
+								: row.tagline,
+							github: row.github,
+							logo: await loadProjectLogo(row.logo),
+						},
+						resources
+					)
+				}
+				return renderCard(
+					{
+						kind: 'category',
+						title: row.name,
+						fallback: row.slug,
+						description: row.description,
+					},
+					resources
+				)
+			})().finally(() => {
 				activeRenders--
 			})
-			cache.set(key, rendering)
+			entry = { rendering, expiresAt: Date.now() + 60_000 }
+			cache.set(key, entry)
 			rendering.catch(() => cache.delete(key))
 		}
-		return new Response(new Uint8Array(await rendering).buffer, {
+		return new Response(new Uint8Array(await entry.rendering).buffer, {
 			headers: { ...headers, 'Content-Type': 'image/png' },
 		})
 	} catch {

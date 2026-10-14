@@ -19,6 +19,7 @@ import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Pool } from 'pg'
+import sharp from 'sharp'
 
 import {
 	createAdminCategory,
@@ -50,12 +51,18 @@ const env = {
 	VITE_APP_NAME: 'AltStack',
 	VITE_APP_URL: canonicalOrigin,
 	VITE_SERVER_URL: 'http://localhost:3411',
-	VITE_S3_PUBLIC_URL: canonicalOrigin,
+	VITE_S3_PUBLIC_URL: 'http://localhost:3412/storage',
 	CORS_ORIGINS: canonicalOrigin,
 	BETTER_AUTH_URL: 'http://localhost:3411',
 }
 const children: Array<ReturnType<typeof spawn>> = []
 const checks: Array<string> = []
+const logoKey =
+	'projects/test-l1-atlas/logo-00000000-0000-4000-8000-000000000001.png'
+const secondLogoKey =
+	'projects/test-l1-atlas/logo-00000000-0000-4000-8000-000000000002.webp'
+const corruptLogoKey =
+	'projects/test-l1-atlas/logo-00000000-0000-4000-8000-000000000003.png'
 let server: ReturnType<typeof spawn> | undefined
 
 function start(
@@ -188,7 +195,7 @@ try {
 			status: 'published',
 			tagline: 'A practical open-source workspace.',
 			description: publicCopy,
-			logo: 'brand/altstack-symbol.svg',
+			logo: logoKey,
 			repositoryUrl: 'https://github.com/altstack-test-fixtures/l1-atlas',
 			content:
 				'# Getting started\n\nCrawler-readable documentation.\n\n- Install locally\n- Read the [source](https://github.com/altstack-test-fixtures/l1-atlas)\n\n<script>privateSentinel()</script>\n\n[unsafe](javascript:alert(1))',
@@ -200,7 +207,9 @@ try {
 		projectId: published.id,
 		owner: 'altstack-test-fixtures',
 		repo: 'l1-atlas',
-		fetchedAt: new Date(),
+		stars: 91699,
+		forks: 5412,
+		fetchedAt: new Date('2026-10-14T00:00:00Z'),
 	})
 	await db
 		.insert(projectCategory)
@@ -291,9 +300,30 @@ try {
 	await cp(join(workspace, 'apps/web/.output'), join(runtime, '.output'), {
 		recursive: true,
 	})
+	const fixtureLogo = await sharp(
+		Buffer.from(
+			'<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg"><rect width="192" height="192" rx="28" fill="#111"/><g fill="none" stroke="#fff" stroke-width="7"><circle cx="96" cy="96" r="55"/><ellipse cx="96" cy="96" rx="25" ry="55"/><path d="M43 77h106M43 115h106"/></g></svg>'
+		)
+	)
+		.png()
+		.toBuffer()
+	await writeFile(join(runtime, 'logo.png'), fixtureLogo)
+	await writeFile(
+		join(runtime, 'logo.webp'),
+		await sharp({
+			create: { width: 192, height: 96, channels: 4, background: '#287f9b' },
+		})
+			.webp()
+			.toBuffer()
+	)
+	await writeFile(
+		join(runtime, 'assets.mjs'),
+		`import { createServer } from 'node:http'; import { readFile } from 'node:fs/promises'; const image = await readFile('./logo.png'); const other = await readFile('./logo.webp'); let requests = 0; createServer((req,res) => { if (req.url === '/requests') {res.setHeader('Content-Type','application/json'); res.end(JSON.stringify({requests})); return;} requests++; if(req.url === '/storage/${logoKey}') {res.setHeader('Content-Type','image/png');res.end(image);} else if(req.url === '/storage/${secondLogoKey}') {res.setHeader('Content-Type','image/webp');res.end(other);} else if(req.url === '/storage/${corruptLogoKey}') {res.setHeader('Content-Type','image/png');res.end('<svg><image href="http://169.254.169.254/private"/></svg>');} else {res.statusCode=404;res.end('Not found');} }).listen(3412,'127.0.0.1');`
+	)
+	start('node', ['assets.mjs'], runtime, 'assets')
 	await writeFile(
 		join(runtime, 'network-guard.mjs'),
-		'const original = globalThis.fetch; globalThis.fetch = (input, init) => { const url = new URL(typeof input === "string" ? input : input.url ?? input); if (url.protocol === "data:" || url.origin === "http://localhost:3411") return original(input, init); throw new Error("Unexpected outbound HTTP from production SSR/OG"); };\n'
+		'const original = globalThis.fetch; globalThis.fetch = (input, init) => { const url = new URL(typeof input === "string" ? input : input.url ?? input); if (url.protocol === "data:" || (url.origin === "http://localhost:3411" || url.origin === "http://localhost:3412")) return original(input, init); throw new Error("Unexpected outbound HTTP from production SSR/OG"); };\n'
 	)
 	start(
 		'bun',
@@ -312,7 +342,7 @@ try {
 	)
 	await ready()
 	checks.push(
-		'Cold Node production startup from only output + prod dependencies; outbound HTTP restricted to local auth API'
+		'Cold Node production startup from only output + prod dependencies; outbound HTTP restricted to local auth API and fixture storage'
 	)
 	const home = await page('/')
 	canonical(home.document, '/')
@@ -388,6 +418,15 @@ try {
 	const imageUrl = meta(detail.document, 'og:image')
 	assert.ok(imageUrl.includes(`/og/project/${published.id}?v=`))
 	const firstImage = await png(imageUrl, 'project.png')
+	const logoFetches = async () =>
+		Number(
+			(
+				(await (await fetch('http://localhost:3412/requests')).json()) as {
+					requests: number
+				}
+			).requests
+		)
+	assert.equal(await logoFetches(), 1, 'Trusted project logo is fetched once')
 	assert.equal(firstImage.response.headers.get('cache-control'), 'no-store')
 	assert.ok(
 		(
@@ -401,6 +440,52 @@ try {
 	)
 	checks.push(
 		'SSR project metadata/JSON-LD use real public data, escape script terminators, documentation is readable without JavaScript, dynamic PNG is content-specific'
+	)
+	assert.equal(
+		await logoFetches(),
+		1,
+		'Cached render reuses the normalized logo'
+	)
+	const beforeRefresh = await page('/' + published.slug)
+	await db
+		.update(githubRepository)
+		.set({
+			stars: 92700,
+			forks: 5500,
+			fetchedAt: new Date('2026-10-15T00:00:00Z'),
+		})
+		.where(eq(githubRepository.projectId, published.id))
+	const refreshed = await page('/' + published.slug)
+	assert.notEqual(
+		meta(refreshed.document, 'og:image'),
+		meta(beforeRefresh.document, 'og:image'),
+		'Stats refresh alone changes image revision'
+	)
+	const refreshedPng = await png(imageUrl, 'project-stats-updated.png')
+	assert.ok(
+		!refreshedPng.bytes.equals(firstImage.bytes),
+		'Stored GitHub stats change card bytes even at old image URL'
+	)
+	await db
+		.update(project)
+		.set({ logo: secondLogoKey })
+		.where(eq(project.id, published.id))
+	const changedLogo = await png(imageUrl, 'project-logo-updated.png')
+	assert.ok(
+		!changedLogo.bytes.equals(refreshedPng.bytes),
+		'Changed WebP logo is decoded and rendered'
+	)
+	await db
+		.update(project)
+		.set({ logo: corruptLogoKey })
+		.where(eq(project.id, published.id))
+	await png(imageUrl, 'project-logo-fallback.png')
+	await db
+		.update(project)
+		.set({ logo: logoKey })
+		.where(eq(project.id, published.id))
+	checks.push(
+		'Trusted logo fetch, raster normalization, cache reuse, corrupt-logo fallback and standalone GitHub snapshot refresh work in packaged production'
 	)
 	const categoryPage = await page('/categories/test-l1-category')
 	canonical(categoryPage.document, '/categories/test-l1-category')
@@ -437,6 +522,7 @@ try {
 	checks.push(
 		'Category cards are distinct and refresh after rename; historical category paths keep one-hop 308 and exact query'
 	)
+	const visibleLogoFetches = await logoFetches()
 	for (const item of hidden) {
 		const missing = await page('/' + item.slug, 404)
 		assert.match(meta(missing.document, 'robots'), /^noindex/)
@@ -446,6 +532,11 @@ try {
 		assert.equal(image.status, 404)
 		assert.equal(await image.text(), 'Not found')
 	}
+	assert.equal(
+		await logoFetches(),
+		visibleLogoFetches,
+		'Nonpublic projects never trigger logo fetches'
+	)
 	for (const path of [
 		'/og/project/invalid',
 		'/og/project/00000000-0000-0000-0000-000000000000',
@@ -543,6 +634,17 @@ try {
 	await png(imageUrl, 'project-cold.png')
 	await db
 		.update(project)
+		.set({
+			name: 'Synthetic Atlas',
+			tagline: 'An open-source workspace.',
+			description:
+				'An open-source workspace for your projects, notes, and everyday developer tools. Built for a calmer, more organized workflow.',
+			logo: logoKey,
+		})
+		.where(eq(project.id, published.id))
+	await png(imageUrl, 'project-preview.png')
+	await db
+		.update(project)
 		.set({ status: 'draft' })
 		.where(eq(project.id, published.id))
 	assert.equal(
@@ -604,7 +706,7 @@ try {
 			'utf8'
 		)
 		assert.ok(
-			!/resvg\.wasm|@vercel\/og|inter-400\.ttf|inter-500\.ttf|Geist-Regular\.ttf/.test(
+			!/resvg\.wasm|@vercel\/og|inter-400\.ttf|inter-500\.ttf|Geist-Regular\.ttf|sharp-libvips|@img\/sharp/.test(
 				js
 			),
 			`Renderer leaked to client: ${filename}`
@@ -631,7 +733,7 @@ try {
 			status: 'published',
 			tagline: published.tagline,
 			description: 'Synthetic preview fixture for the L1 acceptance checks.',
-			logo: 'brand/altstack-symbol.svg',
+			logo: logoKey,
 			repositoryUrl: published.repositoryUrl,
 			content: '# Getting started\n\nCrawler-readable documentation.',
 		})
@@ -639,7 +741,9 @@ try {
 			projectId: published.id,
 			owner: 'altstack-test-fixtures',
 			repo: 'l1-atlas',
-			fetchedAt: new Date(),
+			stars: 91699,
+			forks: 5412,
+			fetchedAt: new Date('2026-10-14T00:00:00Z'),
 		})
 		await db
 			.insert(projectCategory)

@@ -3,7 +3,7 @@ import { env } from '@altstack/env/web'
 export const siteDescription =
 	'Find quality open-source projects, compare alternatives, and explore developer tools.'
 export const defaultImage = '/og/default.png'
-export const ogVersion = '1'
+export const ogVersion = '2'
 
 export function publicUrl(path: string) {
 	return new URL(path, new URL(env.VITE_APP_URL).origin).href
@@ -120,8 +120,12 @@ export function cataloguePolicy(
 	}
 }
 
-export function projectImage(id: string, revision: string | Date) {
-	return `/og/project/${encodeURIComponent(id)}?v=${ogVersion}-${encodeURIComponent(new Date(revision).toISOString())}`
+export function projectImage(
+	id: string,
+	revision: string | Date,
+	githubRevision?: string | Date
+) {
+	return `/og/project/${encodeURIComponent(id)}?v=${ogVersion}-${encodeURIComponent(new Date(revision).toISOString())}${githubRevision ? '-' + encodeURIComponent(new Date(githubRevision).toISOString()) : ''}`
 }
 
 export function categoryImage(

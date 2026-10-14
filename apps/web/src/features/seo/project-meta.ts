@@ -14,7 +14,11 @@ export function projectHead(
 		title: `${project.name}${project.tagline ? ` — ${project.tagline}` : ''} | AltStack`,
 		description,
 		path,
-		image: projectImage(project.id, project.updatedAt),
+		image: projectImage(
+			project.id,
+			project.updatedAt,
+			project.github.fetchedAt
+		),
 		imageAlt: `${project.name} on AltStack${project.tagline ? ` — ${project.tagline}` : ''}`,
 		entities: [
 			{

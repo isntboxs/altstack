@@ -3,7 +3,12 @@ import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { jsonLd } from '#/features/seo/meta'
-import { cardText, fitLines, renderCard } from '#/features/seo/og/card'
+import {
+	cardText,
+	fitLines,
+	githubCount,
+	renderCard,
+} from '#/features/seo/og/card'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -24,6 +29,14 @@ describe('OG rendering boundaries', () => {
 		expect(lines[2]).toMatch(/…$/)
 		expect(lines.every((line) => line.length < 20)).toBe(true)
 	})
+	it('formats stored GitHub counts without turning unknown values into zero', () => {
+		expect(githubCount(91699)).toBe('91,699')
+		expect(githubCount(0)).toBe('0')
+		expect(githubCount(1_234_567)).toBe('1.2M')
+		for (const count of [-1, NaN, Infinity, 1.5]) {
+			expect(githubCount(count)).toBeNull()
+		}
+	})
 	it('renders deterministic 1200 × 630 PNGs offline, including missing and Unicode copy', async () => {
 		vi.stubGlobal('fetch', () => {
 			throw new Error('OG must render without outbound fetch')
@@ -41,6 +54,13 @@ describe('OG rendering boundaries', () => {
 			title: '工具 🚀',
 			fallback: 'public-project',
 			description: null,
+			github: {
+				owner: 'fixture',
+				repo: 'public',
+				stars: 91699,
+				forks: 5412,
+				fetchedAt: '2026-10-15T00:00:00Z',
+			},
 		}
 		const first = Buffer.from(await renderCard(input, resources))
 		expect(first.equals(Buffer.from(await renderCard(input, resources)))).toBe(

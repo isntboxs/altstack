@@ -20,7 +20,17 @@ export const sitemapPageSize = 1000
 
 export async function publicOgProject(id: string) {
 	const rows = await db
-		.select(fields)
+		.select({
+			...fields,
+			logo: project.logo,
+			github: {
+				owner: githubRepository.owner,
+				repo: githubRepository.repo,
+				stars: githubRepository.stars,
+				forks: githubRepository.forks,
+				fetchedAt: githubRepository.fetchedAt,
+			},
+		})
 		.from(project)
 		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
 		.where(and(published, eq(project.id, id)))
