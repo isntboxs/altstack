@@ -13,6 +13,8 @@ import { createMiddleware } from '@tanstack/react-start'
 import { TableDevtoolsPanel } from '@tanstack/react-table-devtools'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
+import { env } from '@altstack/env/web'
+
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 import { Toaster } from '@altstack/ui/components/toast'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
@@ -50,13 +52,33 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 						'width=device-width, initial-scale=1, interactive-widget=resizes-content',
 				},
 				{
-					title: 'TanStack Start Starter',
+					title: env.VITE_APP_NAME,
 				},
 			],
 			links: [
 				{
 					rel: 'stylesheet',
 					href: appCss,
+				},
+				{
+					rel: 'icon',
+					href: '/favicon.ico',
+					sizes: '16x16 32x32 48x48',
+				},
+				{
+					rel: 'icon',
+					href: '/favicon.svg',
+					type: 'image/svg+xml',
+					sizes: 'any',
+				},
+				{
+					rel: 'apple-touch-icon',
+					href: '/apple-touch-icon.png',
+					sizes: '180x180',
+				},
+				{
+					rel: 'manifest',
+					href: '/manifest.json',
 				},
 			],
 		}

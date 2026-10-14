@@ -4,7 +4,6 @@ import {
 } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import type { ComponentProps, FC } from 'react'
-import { Layers, Layers2 } from 'reicon-react'
 
 import { env } from '@altstack/env/web'
 
@@ -15,6 +14,8 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
+
+import { BrandMark } from '#/components/brand-mark'
 
 type MainSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
 
@@ -29,20 +30,12 @@ export const MainSidebarHeader: FC<MainSidebarHeaderProps> = ({ ...props }) => {
 					<SidebarMenuButton
 						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
 						render={
-							<Link
-								to="."
-								className="group/logo flex items-center gap-2"
-								viewTransition
-							>
-								<div className="flex size-fit items-center justify-center">
-									<Layers className="size-5 rotate-0 opacity-100 transition-all duration-300 ease-in-out group-hover/logo:rotate-180 group-hover/logo:opacity-0" />
-									<Layers2
-										className="absolute size-5 -rotate-180 opacity-0 transition-all duration-300 ease-in-out group-hover/logo:rotate-0 group-hover/logo:opacity-100"
-										weight="Filled"
-									/>
-								</div>
+							<Link to="." className="flex items-center gap-2" viewTransition>
+								<BrandMark className="size-5!" />
 
-								<h1 className="text-xl font-bold">{env.VITE_APP_NAME}</h1>
+								<h1 className="text-xl font-bold lowercase">
+									{env.VITE_APP_NAME}
+								</h1>
 							</Link>
 						}
 					/>
