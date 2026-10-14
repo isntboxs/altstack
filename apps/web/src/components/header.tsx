@@ -2,7 +2,7 @@ import { IconMenu2 } from '@tabler/icons-react'
 import { Link, useLocation, useRouter } from '@tanstack/react-router'
 import { log } from 'evlog/client'
 import { useState } from 'react'
-import { Layers2, Layers, Bookmark2, Logout4 } from 'reicon-react'
+import { Bookmark2, Logout4 } from 'reicon-react'
 
 import { authClient } from '@altstack/auth/client'
 
@@ -25,6 +25,7 @@ import {
 } from '@altstack/ui/components/navigation-menu'
 
 import { AuthDialog } from '#/components/auth-dialog'
+import { BrandMark } from '#/components/brand-mark'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
 
@@ -83,20 +84,12 @@ export const Header = ({
 							</DropdownMenuContent>
 						</DropdownMenu>
 
-						<Link
-							to="/"
-							viewTransition
-							className="group/logo flex items-center gap-1.5"
-						>
-							<div className="flex size-fit items-center justify-center">
-								<Layers className="size-5 rotate-0 opacity-100 transition-all duration-300 ease-in-out group-hover/logo:rotate-180 group-hover/logo:opacity-0" />
-								<Layers2
-									className="absolute size-5 -rotate-180 opacity-0 transition-all duration-300 ease-in-out group-hover/logo:rotate-0 group-hover/logo:opacity-100"
-									weight="Filled"
-								/>
-							</div>
+						<Link to="/" viewTransition className="flex items-center gap-1.5">
+							<BrandMark />
 
-							<h1 className="text-base font-medium">{env.VITE_APP_NAME}</h1>
+							<h1 className="text-base font-medium lowercase">
+								{env.VITE_APP_NAME}
+							</h1>
 						</Link>
 
 						<NavigationMenu className="max-lg:hidden">
