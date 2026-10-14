@@ -235,18 +235,22 @@ public-release completion work identified during this reconciliation.
 
 ### L1 — Catalogue SEO and link previews
 
-**Why now:** categories have basic metadata, but the root title remains
-`TanStack Start Starter`; home/project pages lack their own head metadata and
-`robots.txt` is generic.
+**Implemented locally:** route-specific SEO/GEO and static/dynamic social cards.
+The baseline root already used the configured app name and deployed icons;
+the earlier starter-title diagnosis was stale. Release-domain/social-crawler
+acceptance remains separate from implementation.
 
-- [ ] AltStack defaults and per-project title/description/canonical from published loader data.
-- [ ] Open Graph/Twitter metadata for home/project/category pages, using existing images and a stable fallback.
-- [ ] Sitemap for public canonical pages/published projects only; exclude private/admin routes and query permutations.
-- [ ] Explicit indexing policy for auth/submission/admin and sitemap discovery in robots. API authorization remains the access boundary.
-- [ ] Verify SSR metadata, missing/nonpublic detail, and canonical redirects.
+- [x] AltStack defaults and per-project title/description/canonical from published loader data.
+- [x] Complete OG/Twitter metadata, committed deterministic 1200 × 630 default PNG and content-specific project/category PNG endpoints using the approved brandkit and local Inter.
+- [x] Project cards include trusted public logos, stored GitHub stars/forks and snapshot dates, with bounded raster decoding, missing-logo fallbacks and content-sensitive cache revisions.
+- [x] Live sitemap index with bounded published-project shards and current public category paths; exclude private/admin routes and query permutations.
+- [x] Explicit private/auth/admin, filtered/paginated and empty-category indexing policy; configured-origin robots sitemap discovery and crawlable OG endpoints. API authorization remains the access boundary.
+- [x] Safe truthful JSON-LD and readable project Markdown in SSR while preserving the BlockNote viewer.
+- [x] Verify real SSR HTTP metadata, missing/nonpublic detail, canonical redirects, image updates/unpublish, offline resource packaging and cold Node/Nitro runtime.
 
-**Done when:** public pages have correct search/link previews and sitemap URLs.
-A new image-generation service is unnecessary.
+Implementation/regeneration, indexing/cache policy, actual verification and
+remaining release checks: [L1 notes](seo-og.md). Images are generated locally
+with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 

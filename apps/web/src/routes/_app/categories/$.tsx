@@ -17,6 +17,7 @@ import { categoryRequestMiddleware } from '#/features/category/request'
 import { categoryProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
 import { projectFilterSearchSchema } from '#/features/project/search'
+import { unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/categories/$')({
 	server: { middleware: [categoryRequestMiddleware] },
@@ -65,8 +66,14 @@ export const Route = createFileRoute('/_app/categories/$')({
 		)
 		return { ...detail, projects }
 	},
-	head: ({ loaderData }) =>
-		loaderData ? categoryHead(loaderData.category) : {},
+	head: ({ loaderData, match }) =>
+		loaderData
+			? categoryHead(
+					loaderData.category,
+					match.search,
+					loaderData.projects.pagination.totalPages
+				)
+			: unavailableHead(),
 	pendingComponent: CategoriesPending,
 	notFoundComponent: CategoryNotFound,
 	errorComponent: CategoriesError,

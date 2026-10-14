@@ -13,13 +13,13 @@ import { createMiddleware } from '@tanstack/react-start'
 import { TableDevtoolsPanel } from '@tanstack/react-table-devtools'
 import { evlogErrorHandler } from 'evlog/nitro/v3'
 
-import { env } from '@altstack/env/web'
-
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 import { Toaster } from '@altstack/ui/components/toast'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { LogProvider } from '#/components/log-provider'
+import { indexingMiddleware } from '#/features/seo/indexing'
+import { unavailableHead } from '#/features/seo/meta'
 import { getAuthFn } from '#/functions/get-auth-fn'
 import { useAuthIdentity } from '#/hooks/use-auth-identity'
 import appCss from '#/styles.css?url'
@@ -32,17 +32,34 @@ interface RouterAppContext {
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
 	server: {
-		middleware: [createMiddleware().server(evlogErrorHandler)],
+		middleware: [
+			createMiddleware().server(evlogErrorHandler),
+			indexingMiddleware,
+		],
 	},
 	beforeLoad: async () => {
 		const auth = await getAuthFn()
 		return { auth }
 	},
+	notFoundComponent: () => (
+		<main>
+			<h1>Page not found</h1>
+			<a href="/">Browse projects</a>
+		</main>
+	),
+	errorComponent: () => (
+		<main>
+			<h1>Page unavailable</h1>
+			<p>Please try again later.</p>
+			<a href="/">Browse projects</a>
+		</main>
+	),
 	shellComponent: RootDocument,
 	component: RootComponent,
 	head: () => {
 		return {
 			meta: [
+				...unavailableHead().meta,
 				{
 					charSet: 'utf-8',
 				},
@@ -50,9 +67,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 					name: 'viewport',
 					content:
 						'width=device-width, initial-scale=1, interactive-widget=resizes-content',
-				},
-				{
-					title: env.VITE_APP_NAME,
 				},
 			],
 			links: [
