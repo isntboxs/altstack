@@ -34,5 +34,6 @@ export function createSubmissionRateLimiter(redis: Redis, prefix: string) {
 
 export const submissionRateLimiter = createSubmissionRateLimiter(
 	submissionRedis,
+	// Retain the deployed key namespace. Create and resubmit share these counters.
 	`altstack:${env.NODE_ENV}:submission:create`
 )

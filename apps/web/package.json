@@ -8,9 +8,11 @@
 	"scripts": {
 		"dev": "vp dev",
 		"generate-routes": "tsr generate",
+		"generate:og": "bun run scripts/generate-og.ts",
 		"preview": "vp preview",
 		"test": "vp test run",
-		"test:categories-http": "vp run --filter @altstack/db test:isolated -- bun run apps/web/tests/category-http.acceptance.ts"
+		"test:categories-http": "vp run --filter @altstack/db test:isolated -- bun run apps/web/tests/category-http.acceptance.ts",
+		"test:seo-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/seo-http.acceptance.ts"
 	},
 	"dependencies": {
 		"@altstack/api": "workspace:*",
@@ -41,6 +43,7 @@
 		"@tanstack/react-table": "catalog:",
 		"@tanstack/react-table-devtools": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
+		"@vercel/og": "0.8.6",
 		"better-auth": "catalog:",
 		"cn": "catalog:",
 		"date-fns": "^4.4.0",
@@ -50,7 +53,10 @@
 		"react-dom": "catalog:",
 		"react-dropzone": "^20.1.2",
 		"react-easy-crop": "^6.2.3",
+		"react-markdown": "10.1.0",
 		"reicon-react": "catalog:",
+		"remark-gfm": "4.0.1",
+		"sharp": "0.35.5",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
@@ -63,12 +69,16 @@
 		"@tanstack/router-cli": "catalog:",
 		"@testing-library/dom": "catalog:",
 		"@testing-library/react": "catalog:",
+		"@types/jsdom": "30.0.0",
 		"@types/node": "catalog:",
+		"@types/pg": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
 		"babel-plugin-react-compiler": "catalog:",
+		"drizzle-orm": "catalog:",
 		"jsdom": "catalog:",
+		"pg": "catalog:",
 		"tailwindcss": "catalog:",
 		"typescript": "catalog:",
 		"vite": "catalog:",

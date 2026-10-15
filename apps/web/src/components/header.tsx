@@ -87,9 +87,9 @@ export const Header = ({
 						<Link to="/" viewTransition className="flex items-center gap-1.5">
 							<BrandMark />
 
-							<h1 className="text-base font-medium lowercase">
+							<span className="text-base font-medium lowercase">
 								{env.VITE_APP_NAME}
-							</h1>
+							</span>
 						</Link>
 
 						<NavigationMenu className="max-lg:hidden">

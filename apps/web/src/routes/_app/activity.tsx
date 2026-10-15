@@ -43,17 +43,33 @@ import {
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
 
+import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
 import { orpc } from '#/utils/orpc'
 
 const REPO_URL = 'https://github.com/isntboxs/altstack'
 const TREE_URL = `${REPO_URL}/tree/`
 
 export const Route = createFileRoute('/_app/activity')({
-	component: RouteComponent,
 	loader: ({ context }) =>
 		context.queryClient
 			.query(context.orpc.altstack.listCommits.queryOptions())
 			.catch(noop),
+	component: RouteComponent,
+	head: ({ loaderData }) =>
+		loaderData
+			? seoHead({
+					title: 'Project activity | AltStack',
+					description: "Recent commits to AltStack's source repository.",
+					path: '/activity',
+					entities: [
+						{
+							'@type': 'CollectionPage',
+							name: 'AltStack project activity',
+							url: publicUrl('/activity'),
+						},
+					],
+				})
+			: unavailableHead(),
 })
 
 function RouteComponent() {

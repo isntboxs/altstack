@@ -63,6 +63,7 @@ const callbacks = () => {
 		onQueryChange: vi.fn<(query: string) => void>(),
 		onPageChange: vi.fn<(page: number) => void>(),
 		onPageSizeChange: vi.fn<(limit: number) => void>(),
+		onResubmit: vi.fn<(id: string) => void>(),
 	}
 }
 
@@ -116,9 +117,37 @@ describe('owner submission table', () => {
 			'https://github.com/example/Rejected',
 			'https://github.com/example/Removed',
 		])
+		expect(screen.queryByRole('button', { name: /Publish|^Reject/ })).toBeNull()
 		expect(
-			screen.queryByRole('button', { name: /Publish|Reject|Edit/ })
-		).toBeNull()
+			screen.getAllByRole('button', { name: /Edit & Resubmit/ })
+		).toHaveLength(1)
+		expect(
+			screen.getByRole('button', { name: 'Edit & Resubmit Rejected' })
+		).toHaveProperty('disabled', false)
+	})
+	it('opens correction only for rejected rows', () => {
+		const props = callbacks()
+		render(
+			<SubmissionDataTable
+				data={data([
+					row('Rejected', 'rejected'),
+					row('Draft'),
+					row('Live', 'published'),
+					row('Removed', 'removed'),
+				])}
+				query=""
+				{...props}
+			/>
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Edit & Resubmit Rejected' })
+		)
+		expect(props.onResubmit).toHaveBeenCalledExactlyOnceWith('Rejected')
+		for (const name of ['Draft', 'Live', 'Removed']) {
+			expect(
+				screen.queryByRole('button', { name: `Edit & Resubmit ${name}` })
+			).toBeNull()
+		}
 	})
 	it('sends search and page requests to server-controlled navigation', () => {
 		const props = callbacks()

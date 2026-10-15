@@ -1,6 +1,6 @@
 ---
 title: AltStack Product Requirements
-version: 2.1
+version: 2.2
 status: Pre-launch — implementation reconciled
 last_updated: 2026-10-14
 ---
@@ -74,7 +74,7 @@ capabilities/dependencies, not deferred proposals.
 - **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, and taxonomy management.
 - **R3 — Sign in:** GitHub OAuth, private routes, session-aware navigation, API checks.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
-- **R5 — Moderate + enrich:** admin listing enrichment/review/history and required feedback; finish submitter resubmission.
+- **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback and original-submitter rejected-intake resubmission.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
 - **R6 — Own & edit:** verified ownership and maintainer editing after launch.
 - **R7 — Curate:** featured flags and editorial homepage sections after launch.
@@ -122,7 +122,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Verify public repository existence/identity and canonicalize aliases; duplicates return `409`.
 - Atomically create one `draft` project with submitter ID, basic repository metadata, and submission audit. It remains private; the UI calls it Awaiting review.
 - Assign a slug, suffixing collisions numerically.
-- Limit validated create attempts to five per ten minutes/account via Upstash, and open drafts to ten/account.
+- Limit validated create/resubmit attempts together to five per ten minutes/account via the existing Upstash counter, and open drafts to ten/account under a shared transaction lock. Invalid/unauthenticated inputs and private reads consume no quota; accepted attempts count even if later checks fail. Redis failure stops work; typed quota `429` data/headers drive an editable countdown with no automatic retry.
 - Do not create partial records after GitHub, Redis, or transaction failure.
 - Private submission tracking exposes only the current user's records and feedback.
 
@@ -134,8 +134,14 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Current UI supports save draft, publish, reject, restore, unpublish, and delete.
 - Audit records update/status changes; review history is paginated. One mutation can legitimately write both update and status-change events.
 - Rejection requires actionable nonblank feedback after trimming, with a 1000-character maximum, in admin create/update APIs and the review UI. Updates may retain a valid existing reason; legacy rejected records remain readable and restorable. Inline validation blocks empty Reject without preventing switching to draft/restore, and audit history retains feedback.
-- **Required before launch, not implemented:** original submitters can edit only rejected intake name/repository/website and atomically return it to `draft`, clearing current reason and preserving history.
-- Resubmission must enforce owner/status/conflict/concurrency checks, quotas/capacity, and private visibility. It does not confer ownership or permission to edit published content.
+- Original submitters can edit only rejected intake name/repository/website in a prefilled private Edit & Resubmit modal and atomically return it to `draft`, clearing the current reason. Preserve project ID, slug, submission provenance, enriched copy/media/categories and previous audit events; the submitter transition event records previous feedback and intake changes.
+- Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
+- Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
+- Resubmission confers no ownership or permission to edit published content. Real OAuth/Redis and reject → correct → re-review staging smoke, keyboard/mobile acceptance and deployment remain separate release gates.
+
+Merged-revision R5b verification remains a release gate. Record the tested merged
+commit and actual check, disposable-schema test, and production build results in
+the roadmap. Staging and production acceptance remain separate.
 
 ### Delivered enrichment and infrastructure
 
@@ -148,12 +154,14 @@ See the roadmap for checked implementation items versus unverified acceptance.
 
 ### L1 / L2 — Public release completion
 
-These are recommended pre-launch slices identified during reconciliation.
+L1 is implemented and merged into `dev` at `a650dd0`; L2, merged-revision checks
+and release-domain acceptance remain open. See [L1 implementation and verification](seo-og.md).
 
-- Add AltStack defaults, per-project canonical/title/description, social-preview metadata, and published-only sitemap.
-- Define indexing policy for private/auth/admin pages and verify server-rendered metadata.
+- L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
+- L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
 - Remove or clearly disable unimplemented Verify/Bookmark/Report/Embed actions and unsupported ranking promises.
-- Replace starter branding/placeholders and verify mobile, keyboard, empty/error/not-found states.
+- Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. See [L2 implementation brief and reference research](l2-ui-spec.md); research completion does not close UI acceptance or expand launch scope.
 
 ### R6 / R7 — MVP+
 
@@ -171,8 +179,8 @@ Current storage uses a single project record:
 - `rejected`: hidden; required feedback is visible to submitter/admin. Historical records may have no note; keeping them rejected through an update requires valid feedback.
 - `removed`: supported hidden status.
 
-Admins can restore rejected records or unpublish to draft. Submitter-driven
-`rejected` → `draft` is planned, not currently available. All duplicate create
+Admins can restore rejected records or unpublish to draft. Original submitters
+can correct and resubmit their rejected record to `draft`. All duplicate create
 attempts still conflict, regardless of status.
 
 Admin remove physically deletes the row and cascades related data. Its audit

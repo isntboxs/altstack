@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { Header } from '#/components/header'
+import { seoHead } from '#/features/seo/meta'
 import { resolveReturnTo } from '#/utils/return-to'
 
 const searchSchema = z.object({
@@ -19,6 +20,12 @@ export const Route = createFileRoute('/auth')({
 			throw redirect({ to: '/', replace: true, viewTransition: true })
 		}
 	},
+	head: () =>
+		seoHead({
+			title: 'Sign in | AltStack',
+			description: 'Sign in to AltStack.',
+			noindex: true,
+		}),
 	component: RouteComponent,
 })
 

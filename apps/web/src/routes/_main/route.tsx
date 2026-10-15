@@ -13,6 +13,7 @@ import {
 } from '@altstack/ui/components/sidebar'
 
 import { MainSidebar } from '#/components/main-sidebar'
+import { seoHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_main')({
 	beforeLoad: ({ context: { auth }, location }) => {
@@ -27,6 +28,12 @@ export const Route = createFileRoute('/_main')({
 
 		return { auth }
 	},
+	head: () =>
+		seoHead({
+			title: 'Your workspace | AltStack',
+			description: 'Manage your AltStack workspace.',
+			noindex: true,
+		}),
 	component: RouteComponent,
 })
 

@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 
+import { ResubmitSubmissionDialog } from '#/features/submissions/components/resubmit-submission-dialog'
 import { SubmissionDataTable } from '#/features/submissions/components/submission-data-table'
 import { submissionQueries } from '#/features/submissions/queries'
 import { submissionSearchSchema } from '#/features/submissions/search'
@@ -17,6 +19,9 @@ export const Route = createFileRoute('/_main/submission')({
 })
 
 function SubmissionPage() {
+	const [editingId, setEditingId] = useState<string | null>(null)
+	const [resubmitted, setResubmitted] = useState(false)
+	const { auth } = Route.useRouteContext()
 	const data = Route.useLoaderData()
 	const { q } = Route.useSearch()
 	const navigate = Route.useNavigate()
@@ -28,9 +33,30 @@ function SubmissionPage() {
 					Track your submitted projects and their review status.
 				</p>
 			</div>
+			{resubmitted && (
+				<output className="block rounded-lg border bg-muted p-4 text-sm">
+					Your project has been resubmitted and is awaiting review.
+				</output>
+			)}
+			{editingId && (
+				<ResubmitSubmissionDialog
+					key={editingId}
+					id={editingId}
+					userId={auth.user.id}
+					onClose={() => setEditingId(null)}
+					onSuccess={() => {
+						setEditingId(null)
+						setResubmitted(true)
+					}}
+				/>
+			)}
 			<SubmissionDataTable
 				data={data}
 				query={q ?? ''}
+				onResubmit={(id) => {
+					setResubmitted(false)
+					setEditingId(id)
+				}}
 				onQueryChange={(nextQuery) =>
 					void navigate({
 						search: (previous) => {

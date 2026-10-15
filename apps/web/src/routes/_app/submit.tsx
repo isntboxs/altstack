@@ -7,6 +7,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 
+import { seoHead } from '#/features/seo/meta'
 import { SubmissionForm } from '#/features/submissions/components/submission-form'
 import { orpc } from '#/utils/orpc'
 
@@ -20,6 +21,12 @@ export const Route = createFileRoute('/_app/submit')({
 			})
 		}
 	},
+	head: () =>
+		seoHead({
+			title: 'Submit a project | AltStack',
+			description: 'Suggest an open-source project for the AltStack catalogue.',
+			noindex: true,
+		}),
 	component: SubmissionPage,
 })
 

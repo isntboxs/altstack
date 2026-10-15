@@ -60,6 +60,19 @@ export async function listPublicCategories(database: CategoryDatabase) {
 	return result.rows
 }
 
+// Known empty canonical categories have public detail pages too. Invalid
+// hierarchy nodes remain omitted by the same bounded public CTE.
+export async function getPublicCategoryById(
+	database: CategoryDatabase,
+	id: string
+) {
+	const result = await database.execute<CategoryNode>(sql`
+		${nodesCtes}
+		SELECT node.* FROM category_nodes node WHERE node.id = ${id} LIMIT 1
+	`)
+	return result.rows.at(0)
+}
+
 export async function getCategoryByPath(
 	database: CategoryDatabase,
 	path: string

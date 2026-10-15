@@ -72,6 +72,16 @@ const responses = {
 	githubReadmeAdminProject: readmeFixture.output,
 	listMySubmissions: { submissions: [], pagination },
 	createSubmission: { id: ID, status: 'draft' as const },
+	getMyRejectedSubmission: {
+		id: ID,
+		name: 'Example',
+		repositoryUrl: project.repositoryUrl,
+		websiteUrl: null,
+		status: 'rejected' as const,
+		rejectionReason: 'Correct the name.',
+		revision: '123',
+	},
+	resubmitSubmission: { id: ID, status: 'draft' as const },
 	listAdminCategories: { categories: [adminNode] },
 	getAdminCategoryById: { category: adminNode, ancestors: [], children: [] },
 	createAdminCategory: adminNode,
@@ -141,6 +151,16 @@ function record<T>(operationId: string, input: unknown, output: T) {
 const o = implement(contracts)
 const probes = {
 	submission: {
+		getById: o.submission.getById.handler(({ input }) =>
+			record(
+				'getMyRejectedSubmission',
+				input,
+				responses.getMyRejectedSubmission
+			)
+		),
+		resubmit: o.submission.resubmit.handler(({ input }) =>
+			record('resubmitSubmission', input, responses.resubmitSubmission)
+		),
 		list: o.submission.list.handler(({ input }) =>
 			record('listMySubmissions', input, responses.listMySubmissions)
 		),
@@ -329,6 +349,31 @@ interface MappingCase {
 	status?: number
 }
 const cases: Array<MappingCase> = [
+	{
+		operationId: 'getMyRejectedSubmission',
+		path: `/submissions/${ID}`,
+		input: { params: { id: ID } },
+	},
+	{
+		operationId: 'resubmitSubmission',
+		path: `/submissions/${ID}/resubmit`,
+		method: 'POST',
+		body: {
+			name: ' Example ',
+			repositoryUrl: 'Example/Project.GIT',
+			websiteUrl: '',
+			revision: '123',
+		},
+		input: {
+			params: { id: ID },
+			body: {
+				name: 'Example',
+				repositoryUrl: 'https://github.com/example/project',
+				websiteUrl: undefined,
+				revision: '123',
+			},
+		},
+	},
 	{
 		operationId: 'githubRefreshAdminProject',
 		path: `/admin/projects/${ID}/github-refresh`,
@@ -566,7 +611,7 @@ beforeEach(() => observed.mockClear())
 describe('detailed REST mapping', () => {
 	it('excludes GET for every read endpoint migrated to QUERY', async () => {
 		const reads = cases.filter(({ method }) => method === undefined)
-		expect(reads).toHaveLength(13)
+		expect(reads).toHaveLength(14)
 		expect((await rest('/admin/projects/github-metadata', 'GET')).matched).toBe(
 			false
 		)
@@ -923,10 +968,10 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(29)
+		expect(operations).toHaveLength(31)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			15
+			16
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -963,7 +1008,7 @@ describe('generated OpenAPI compatibility', () => {
 			)
 			expect(actual?.operation.responses).toEqual({
 				...baseline.errorResponses,
-				...(operationId === 'createSubmission'
+				...(['createSubmission', 'resubmitSubmission'].includes(operationId)
 					? {
 							'429': {
 								...baseline.errorResponses['429'],
@@ -1009,6 +1054,8 @@ describe('generated OpenAPI compatibility', () => {
 			...Object.values(contracts.category),
 			...Object.values(contracts.project),
 			contracts.submission.list,
+			contracts.submission.getById,
+			contracts.submission.resubmit,
 			...Object.values(contracts.admin.category),
 			...Object.values(contracts.admin.project),
 			...Object.values(contracts.admin.upload.logo),
@@ -1017,9 +1064,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(28)
+		expect(mapped).toHaveLength(30)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(15)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(16)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(
