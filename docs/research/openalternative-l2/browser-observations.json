@@ -1,0 +1,138 @@
+{
+	"observedAt": "2026-10-14T20:24:07Z",
+	"localDate": "2026-10-15 (Asia/Jakarta)",
+	"target": "https://openalternative.co",
+	"method": "T3 collaborative browser navigation, interaction, semantic snapshots and bounded DOM reads. REA supplied separate static and controlled runtime Evidence.",
+	"baselineCommit": "be5059f84de44fd3d46ef22bbb343b49823c0d13",
+	"findings": [
+		{
+			"id": "OA-01",
+			"url": "https://openalternative.co/supabase",
+			"type": "runtime-observed",
+			"result": "Desktop detail includes a real website CTA, real screenshot linked to website, repository/stats, and Verify/Save/Report/Embed actions.",
+			"controlNames": ["Verify", "Save", "Report", "Embed"]
+		},
+		{
+			"id": "OA-02",
+			"url": "https://openalternative.co/supabase?dialog=verify",
+			"type": "runtime-observed",
+			"result": "Unauthenticated Verify opens the Sign In dialog. The URL adds dialog=verify.",
+			"dialogText": "Sign In\n\nGet access to the dashboard and manage your submitted tools.\n\nSend me a Magic Link\n\nor\n\nContinue with Google\nContinue with Github\nClose",
+			"limitation": "Authenticated ownership verification was not executed."
+		},
+		{
+			"id": "OA-03",
+			"url": "https://openalternative.co/supabase",
+			"type": "runtime-observed",
+			"result": "Unauthenticated Save opens Sign In.",
+			"dialogText": "Sign In\n\nGet access to the dashboard and manage your submitted tools.\n\nSend me a Magic Link\n\nor\n\nContinue with Google\nContinue with Github\nClose",
+			"limitation": "No authenticated bookmark mutation or persistence was tested."
+		},
+		{
+			"id": "OA-04",
+			"url": "https://openalternative.co/supabase?dialog=report",
+			"type": "runtime-observed",
+			"result": "Report opens a form with email, a four-choice issue type, message, cancel and send. Escape closes the dialog, removes dialog query state, and restores focus to Report.",
+			"fields": [
+				"email",
+				"type: broken link / wrong category / outdated / other",
+				"message"
+			],
+			"limitation": "The form was inspected without submitting a report."
+		},
+		{
+			"id": "OA-05",
+			"url": "https://openalternative.co/supabase?dialog=embed",
+			"type": "runtime-observed",
+			"result": "Embed opens a badge builder with theme, width, height, preview and generated HTML. Copy changes its feedback to Copied!.",
+			"limitation": "Copied feedback was observed; clipboard contents and embedding on a second website were not read/tested.",
+			"configuration": {
+				"theme": "light",
+				"width": 200,
+				"height": 50,
+				"snippetReadonly": true
+			}
+		},
+		{
+			"id": "OA-06",
+			"url": "https://openalternative.co/supabase",
+			"type": "runtime-observed",
+			"viewport": {
+				"width": 390,
+				"height": 844
+			},
+			"result": "Mobile collapses detail actions into a named More menu with Save/Verify/Report/Embed. A fresh provider-owned REA Chromium scenario independently completed this interaction.",
+			"measurement": {
+				"focus": "SaveVerifyReportEmbed",
+				"menu": "Save\nVerify\nReport\nEmbed",
+				"scrollWidth": 375,
+				"width": 390
+			},
+			"reaEvidenceId": "ev_e5f2fd0df59e8bac269405363f69685d19f1d2bd091f9259afaa5208cfed5e4b"
+		},
+		{
+			"id": "OA-07",
+			"url": "https://openalternative.co/categories",
+			"type": "runtime-observed",
+			"result": "Mobile navigation opened, Categories link navigated successfully after waiting for the page heading; category index groups parent and child categories.",
+			"measurement": {
+				"scrollWidth": 375,
+				"url": "https://openalternative.co/categories",
+				"width": 390
+			},
+			"limitation": "Initial navigation attempts selected a link while the menu was closed and timed out. The corrected sequence succeeded; this is not evidence of a site defect."
+		},
+		{
+			"id": "OA-08",
+			"url": "https://openalternative.co/categories",
+			"type": "runtime-observed",
+			"result": "Control+K opens Command Menu. A sentinel query gives an explicit empty result; Escape closes the dialog.",
+			"emptyResultText": "Command Menu\nMeta\n⌘\nK\nNo results found.\nClose",
+			"limitation": "The transient loading label was found in bundle text, but its duration and server-error state were not verified at runtime."
+		},
+		{
+			"id": "OA-09",
+			"url": "https://openalternative.co/__l2_nonexistent_project__",
+			"type": "runtime-observed",
+			"result": "A missing slug renders a designed not-found page with a home recovery link.",
+			"limitation": "Browser-rendered state was verified; HTTP status was not captured."
+		},
+		{
+			"id": "OA-10",
+			"url": "https://openalternative.co/?q=l2-no-match-7e35b9",
+			"type": "runtime-observed",
+			"result": "Homepage search writes the sentinel into q in the URL; Reset returns the URL to the homepage.",
+			"limitation": "The homepage empty-result copy and combined filter/reload/history behavior were not conclusively captured."
+		}
+	],
+	"coverage": {
+		"complete": [
+			"public detail affordances",
+			"guest login gates",
+			"Report form opening/closing/focus return",
+			"Embed builder and copied feedback",
+			"mobile More",
+			"mobile category navigation",
+			"command search empty state",
+			"rendered 404"
+		],
+		"partial": ["homepage search/reset", "static bundle architecture"],
+		"unverified": [
+			"authenticated account menu/bookmark persistence",
+			"verification OTP delivery/authorization",
+			"report submission/processing",
+			"missing or broken screenshot on OpenAlternative",
+			"controlled HTTP 500/offline/slow loading",
+			"full keyboard focus trap audit",
+			"mobile hardware/touch user agent"
+		]
+	},
+	"limitations": [
+		"T3 viewport was measured in page JavaScript; its snapshot raster reports 1280x800 independently of the requested CSS viewport. Native screenshots were inspected but are not used to certify exact pixel geometry.",
+		"T3 snapshots cap the accessibility tree near 10 KB and omitted network/action sections. Conclusions use focused DOM reads or the complete requested REA accessibility capture.",
+		"Direct terminal script requests returned HTTP 403. Public scripts were acquired through same-origin browser fetch with credentials omitted, returning 200.",
+		"44 public script URLs were inventoried; only four relevant scripts were selected for static analysis. REA's complete inventory coverage applies to those four files, not the whole site.",
+		"REA did not recover bundled Turbopack module boundaries (modules=0); static endpoint observations are syntax facts, not proof of successful server execution.",
+		"REA inspect-analysis-view projection exited 143 without an output file. The static evidence extract is a bounded Python projection of the complete successful original Evidence."
+	]
+}

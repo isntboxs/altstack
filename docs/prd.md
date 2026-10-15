@@ -161,6 +161,7 @@ and release-domain acceptance remain open. See [L1 implementation and verificati
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
 - Remove or clearly disable unimplemented Verify/Bookmark/Report/Embed actions and unsupported ranking promises.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. See [L2 implementation brief and reference research](l2-ui-spec.md); research completion does not close UI acceptance or expand launch scope.
 
 ### R6 / R7 — MVP+
 

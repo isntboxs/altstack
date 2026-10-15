@@ -259,9 +259,17 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 - [ ] Remove or clearly disable Verify/Bookmark/Report/Embed and the account menu's Bookmarks action until implemented; remove the unsupported verification/ranking promise.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
 - [ ] Replace generic screenshot placeholders with honest empty states.
+- [ ] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
+- [ ] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
 - [ ] Verify keyboard/mobile navigation, loading/error/not-found states, images, and external links.
 
 **Done when:** every enabled action works and public copy matches the product.
+
+Implementation brief: [L2 UI specification](l2-ui-spec.md), based on live
+OpenAlternative exploration and REA Evidence on 2026-10-15. It maps current
+AltStack gaps to work packages and acceptance criteria. Verify, bookmarks,
+reporting and embedding have separate future contracts; the research does not
+mark those features or L2 as implemented.
 
 ### Launch acceptance and operations
 
