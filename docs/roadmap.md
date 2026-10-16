@@ -29,6 +29,7 @@ Merged-revision and production acceptance remain open.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
+- **Project Embed:** public URL-controlled dialog and SVG badges implemented and locally verified; deployment acceptance remains open.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -276,9 +277,36 @@ artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify, bookmarks, reporting and embedding
+decision to retain disabled controls. Verify, bookmarks and reporting
 remain future workflows and require separate implementation and verification.
 Release/staging acceptance remains a separate gate.
+
+### Public project Embed — 2026-10-17
+
+- [x] Enable only Embed on desktop and More; preserve disabled deferred siblings.
+- [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
+      dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
+- [x] Public SVG generator with approved AltStack signature, live published-only
+      visibility, generic errors and no-store / cross-origin embedding policy.
+- [x] Focused validation, route/history, UI, endpoint and production HTTP tests.
+- [x] Branch verification: `vp install`, `vp check` (zero warnings/errors),
+      disposable-schema root suite **992 passed / 1 skipped** across 61 files,
+      `vp run -r build` **8/8 tasks**, and **14** cold production HTTP acceptance groups.
+- [x] T3 browser QA at 1440 × 900, 320 × 568 and 390 × 844: direct/reload/history,
+      keyboard/focus/Escape/outside, validation/Copy failure, both themes and copied
+      HTML embedded on another origin. Dialog navigation preserved scroll and heading
+      identity with **zero project RPC refetches and zero new skeletons**.
+
+- [ ] Verify the future merged revision and deployment domain/CDN behavior.
+
+Tested on `feat/project-embed` from `46a1e0f` plus the uncommitted source/test tree
+fingerprint `8e29732b01051a149865f3c8515ff611fd0844087d6286c02f888b00be29efb6`.
+The skipped case is opt-in real Upstash integration. Existing dependency directive
+and large-chunk build warnings remain; no new dependency or migration was added.
+See the focused guide for fingerprint definition and evidence locations.
+
+See [Embed parameters, lifecycle and rollout](project-embed.md). L2's historical
+all-disabled decision above is superseded only for Embed by this slice.
 
 ### Launch acceptance and operations
 

@@ -18,6 +18,16 @@ const fields = {
 }
 export const sitemapPageSize = 1000
 
+export async function publicBadgeProject(slug: string) {
+	const rows = await db
+		.select({ name: project.name })
+		.from(project)
+		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+		.where(and(published, eq(project.slug, slug)))
+		.limit(1)
+	return rows.at(0)
+}
+
 export async function publicOgProject(id: string) {
 	const rows = await db
 		.select({

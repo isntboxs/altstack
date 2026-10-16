@@ -14,6 +14,7 @@ import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SlugBadgeDotsvgRouteImport } from './routes/$slug.badge[.]svg'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
@@ -56,6 +57,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlugBadgeDotsvgRoute = SlugBadgeDotsvgRouteImport.update({
+  id: '/$slug/badge.svg',
+  path: '/$slug/badge.svg',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
   '/_app/submit': typeof AppSubmitRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
     | '/submit'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
     | '/submit'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/$slug/badge.svg'
     | '/_app/$slug'
     | '/_app/activity'
     | '/_app/submit'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SlugBadgeDotsvgRoute: typeof SlugBadgeDotsvgRoute
   SitemapsPagesDotxmlRoute: typeof SitemapsPagesDotxmlRoute
   OgCategoryIdRoute: typeof OgCategoryIdRoute
   OgProjectIdRoute: typeof OgProjectIdRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$slug/badge.svg': {
+      id: '/$slug/badge.svg'
+      path: '/$slug/badge.svg'
+      fullPath: '/$slug/badge.svg'
+      preLoaderRoute: typeof SlugBadgeDotsvgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -595,6 +615,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SlugBadgeDotsvgRoute: SlugBadgeDotsvgRoute,
   SitemapsPagesDotxmlRoute: SitemapsPagesDotxmlRoute,
   OgCategoryIdRoute: OgCategoryIdRoute,
   OgProjectIdRoute: OgProjectIdRoute,

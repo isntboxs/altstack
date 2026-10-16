@@ -16,11 +16,16 @@ import {
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { ProjectActions } from '#/features/project/components/project-actions'
+import { projectDialogSearch } from '#/features/project/embed/badge'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 import { unavailableHead } from '#/features/seo/meta'
 import { projectHead } from '#/features/seo/project-meta'
 
 export const Route = createFileRoute('/_app/$slug')({
+	validateSearch: projectDialogSearch,
+	// Search-only transitions have no data dependencies. Invalidation and a new
+	// slug still load normally; opening/closing a dialog leaves detail data alone.
+	shouldReload: ({ cause }) => cause !== 'stay',
 	loader: async ({ context, params }) => {
 		try {
 			const project = await context.queryClient.query({
@@ -52,6 +57,8 @@ export const Route = createFileRoute('/_app/$slug')({
 
 function RouteComponent() {
 	const { slug } = Route.useParams()
+	const { dialog } = Route.useSearch()
+	const navigate = Route.useNavigate()
 	const { statisticsNow } = Route.useLoaderData()
 	const { data: projectData } = useProjectBySlug(slug)
 
@@ -83,7 +90,24 @@ function RouteComponent() {
 							<div className="pointer-events-none absolute inset-0 top-0 -z-10 h-full bg-linear-to-b from-background via-background via-85% to-transparent" />
 						</div>
 
-						<ProjectActions />
+						<ProjectActions
+							key={slug}
+							slug={slug}
+							name={projectData.name}
+							embedOpen={dialog === 'embed'}
+							onEmbedOpenChange={(open) => {
+								void navigate({
+									search: (previous) => {
+										return {
+											...previous,
+											dialog: open ? 'embed' : undefined,
+										}
+									},
+									resetScroll: false,
+									hash: true,
+								})
+							}}
+						/>
 					</div>
 
 					<div className="-mt-8 space-y-4">
