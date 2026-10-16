@@ -84,7 +84,15 @@ function ScreenshotImage({
 	websiteUrl: string | null
 }) {
 	const [state, setState] = useState<'loading' | 'loaded' | 'failed'>('loading')
-	if (!src || state === 'failed') return null
+	if (!src || state === 'failed') {
+		return (
+			<output className="block rounded-lg border border-dashed border-border px-4 py-4 text-sm text-muted-foreground">
+				{state === 'failed'
+					? 'Screenshot unavailable'
+					: 'No screenshot available.'}
+			</output>
+		)
+	}
 
 	const media = (
 		<div

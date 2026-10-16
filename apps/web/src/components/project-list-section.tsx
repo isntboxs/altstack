@@ -176,7 +176,10 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							</div>
 						</div>
 
-						<div className="absolute inset-0 flex flex-col justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+						<div
+							aria-hidden="true"
+							className="absolute inset-0 flex flex-col justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+						>
 							<p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
 								{projectData.description}
 							</p>

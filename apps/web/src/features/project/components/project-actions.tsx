@@ -38,7 +38,7 @@ export function ProjectActions() {
 						}
 					/>
 					<DropdownMenuContent align="end" className="w-60">
-						<DropdownMenuItem disabled aria-label="Verify - Coming Soon">
+						<DropdownMenuItem disabled aria-label="Verify — Coming soon">
 							<Verified aria-hidden="true" /> Verify
 							<span className="ml-auto text-xs">Coming soon</span>
 						</DropdownMenuItem>
@@ -62,25 +62,34 @@ export function ProjectActions() {
 			<div className="hidden flex-wrap gap-2 xl:flex">
 				<Tooltip>
 					<TooltipTrigger
+						disabled
 						render={
-							<Button disabled variant="outline">
+							<Button
+								disabled
+								variant="outline"
+								aria-describedby={explanationId}
+							>
 								<Verified aria-hidden="true" />
 								Verify
 							</Button>
 						}
 					/>
 
-					<TooltipContent>
-						Verify ownership to earn a trusted badge and rank higher in listings
-					</TooltipContent>
+					<TooltipContent>Project verification is coming soon.</TooltipContent>
 				</Tooltip>
 
 				<ButtonGroup>
 					{deferredActions.map(({ label, description, Icon }) => (
-						<Tooltip key={label} aria-describedby={explanationId}>
+						<Tooltip key={label}>
 							<TooltipTrigger
+								disabled
 								render={
-									<Button disabled variant="outline">
+									<Button
+										disabled
+										variant="outline"
+										aria-label={label}
+										aria-describedby={explanationId}
+									>
 										<Icon aria-hidden="true" />
 									</Button>
 								}
@@ -91,6 +100,12 @@ export function ProjectActions() {
 					))}
 				</ButtonGroup>
 			</div>
+			<p
+				id={explanationId}
+				className="hidden text-xs text-muted-foreground xl:block"
+			>
+				These actions are coming soon.
+			</p>
 		</div>
 	)
 }

@@ -154,15 +154,15 @@ the roadmap. Staging and production acceptance remain separate.
 
 ### L1 / L2 — Public release completion
 
-L1 is implemented and merged into `dev` at `a650dd0`. L2 local implementation
-and acceptance are tracked in [L2 local acceptance](l2-local-acceptance.md);
+L1 is implemented and merged into `dev` at `a650dd0`. L2 implementation and
+remaining release gates are tracked in [the roadmap](roadmap.md#l2--finish-public-ui-affordances);
 merged-revision checks and release-domain acceptance remain separate gates. See [L1 implementation and verification](seo-og.md).
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
 - Retain Verify/Bookmark/Report/Embed and account Bookmarks across desktop/compact/mobile as semantically disabled controls with visible, accessible “Coming soon” explanations. Preserve a functional named compact More menu. No login redirect, fake modal/toast, bookmark state or new workflow; remove unsupported trust/ranking promises. This user decision supersedes the research's original remove/hide recommendation.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. See [L2 implementation brief and reference research](l2-ui-spec.md). Ownership, bookmarks, reports and embed workflows remain backlog until separately implemented and verified; disabled controls do not expand launch scope.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership, bookmarks, reports and embed workflows remain backlog until separately implemented and verified; disabled controls do not expand launch scope.
 
 ### R6 / R7 — MVP+
 

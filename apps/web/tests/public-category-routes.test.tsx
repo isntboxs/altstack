@@ -961,7 +961,11 @@ describe('L2 public affordances and recovery', () => {
 		const card = screen.getByRole('heading', { name: 'Zed' }).closest('a')!
 		expect(card.getAttribute('href')).toBe('/test-zed')
 		expect(card.querySelector('a, button')).toBeNull()
-		expect(within(card).getByText('View project details')).toBeTruthy()
+		expect(
+			screen.getByRole('link', {
+				name: 'Zed Synthetic code editor. Stars 123 Forks 12 View project details',
+			})
+		).toBe(card)
 		expect(within(card).queryByRole('img')).toBeNull()
 	})
 })

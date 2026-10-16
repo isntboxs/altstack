@@ -27,7 +27,7 @@ Merged-revision and production acceptance remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
-- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented; local evidence below.
+- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented; scope and release gates below.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -264,20 +264,17 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 - [x] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
 - [x] Verify local keyboard/mobile browser navigation, loading/error/not-found states, images and external destinations; native devices/services remain release gates.
 
-**Implemented and locally accepted on 2026-10-16**, in this branch diff
-(fingerprint and exact checks in [L2 local acceptance](l2-local-acceptance.md)).
-No deferred feature workflow was enabled.
+**Implemented and locally accepted on 2026-10-16.** Validation results must
+identify the tested branch revision; merged-revision checks remain separate.
+No deferred feature workflow was enabled. Historical research and local evidence
+artifacts have been removed from the repository.
 
 **Done when:** every enabled action works and public copy matches the product.
 
-Implementation brief: [L2 UI specification](l2-ui-spec.md), based on live
-OpenAlternative exploration and REA Evidence on 2026-10-15. It maps current
-AltStack gaps to work packages and acceptance criteria. Verify, bookmarks,
-reporting and embedding have separate future contracts; the research does not
-mark those feature workflows as implemented. The user decision supersedes the
-initial research remove/hide recommendation: keep disabled controls. Local L2
-implementation evidence is recorded in [L2 local acceptance](l2-local-acceptance.md);
-release/staging acceptance remains a separate gate.
+The implementation followed the 2026-10-15 reference research and the user's
+decision to retain disabled controls. Verify, bookmarks, reporting and embedding
+remain future workflows and require separate implementation and verification.
+Release/staging acceptance remains a separate gate.
 
 ### Launch acceptance and operations
 
