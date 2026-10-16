@@ -1,7 +1,7 @@
 import { env } from '@altstack/env/web'
 
 export const siteDescription =
-	'Find quality open-source projects, compare alternatives, and explore developer tools.'
+	'Find quality open-source projects and explore developer tools.'
 export const defaultImage = '/og/default.png'
 export const ogVersion = '2'
 

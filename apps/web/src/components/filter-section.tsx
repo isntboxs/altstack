@@ -5,7 +5,7 @@ import {
 	IconX,
 } from '@tabler/icons-react'
 import { cn } from 'cn'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import type { SearchSortType } from '@altstack/shared/schemas/project'
@@ -98,9 +98,18 @@ export const FilterSection = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false)
 	const [inputValue, setInputValue] = useState(q ?? '')
+	const submittedQuery = useRef<{ value: string | undefined } | null>(null)
 
 	// URL changes from reset/back/forward must replace a pending local draft.
 	useEffect(() => {
+		if (
+			submittedQuery.current?.value === q &&
+			submittedQuery.current !== null
+		) {
+			submittedQuery.current = null
+			return
+		}
+		submittedQuery.current = null
 		// oxlint-disable-next-line react-hooks-js/set-state-in-effect -- Synchronize an external URL value with the editable, debounced draft.
 		setInputValue(q ?? '')
 	}, [q])
@@ -108,7 +117,10 @@ export const FilterSection = ({
 	useEffect(() => {
 		const timer = window.setTimeout(() => {
 			const nextQ = inputValue.trim() || undefined
-			if (nextQ !== q) onQueryChange(nextQ)
+			if (nextQ !== q) {
+				submittedQuery.current = { value: nextQ }
+				onQueryChange(nextQ)
+			}
 		}, 500)
 		return () => window.clearTimeout(timer)
 	}, [inputValue, onQueryChange, q])
@@ -130,8 +142,8 @@ export const FilterSection = ({
 			className="container mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 lg:px-16"
 		>
 			<div className="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
-				<ButtonGroup className="w-full">
-					<InputGroup>
+				<ButtonGroup className="w-full min-w-0">
+					<InputGroup className="min-w-0">
 						<InputGroupAddon>
 							<IconSearch />
 						</InputGroupAddon>
@@ -169,6 +181,11 @@ export const FilterSection = ({
 				<SelectSortBar sort={sort} onSortChange={onSortChange} />
 			</div>
 
+			{inputValue.trim() !== (q ?? '') && (
+				<output className="w-full text-sm text-muted-foreground">
+					Search update pending…
+				</output>
+			)}
 			{categorySelector && (
 				<CollapsibleContent className="h-(--collapsible-panel-height) w-full overflow-hidden transition-[height] duration-200 ease-in-out data-ending-style:h-0 data-starting-style:h-0">
 					{categorySelector}
