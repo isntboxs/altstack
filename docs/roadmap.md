@@ -27,6 +27,7 @@ Merged-revision and production acceptance remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
+- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented; local evidence below.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -232,7 +233,7 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-Recommended remaining order: **L2 → launch acceptance**. R5a/R5b and L1 are
+L2 is implemented and locally accepted; next is **launch acceptance**. R5a/R5b and L1 are
 implemented and merged; their open acceptance gates still apply before release.
 
 ### L1 — Catalogue SEO and link previews
@@ -256,12 +257,16 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [ ] Remove or clearly disable Verify/Bookmark/Report/Embed and the account menu's Bookmarks action until implemented; remove the unsupported verification/ranking promise.
+- [x] Retain Verify/Bookmark/Report/Embed and account Bookmarks on desktop/compact/mobile, semantically disabled with visible “Coming soon”; remove the unsupported verification/ranking promise.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
-- [ ] Replace generic screenshot placeholders with honest empty states.
-- [ ] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
-- [ ] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
-- [ ] Verify keyboard/mobile navigation, loading/error/not-found states, images, and external links.
+- [x] Replace generic screenshot placeholders with honest empty states.
+- [x] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
+- [x] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
+- [x] Verify local keyboard/mobile browser navigation, loading/error/not-found states, images and external destinations; native devices/services remain release gates.
+
+**Implemented and locally accepted on 2026-10-16**, in this branch diff
+(fingerprint and exact checks in [L2 local acceptance](l2-local-acceptance.md)).
+No deferred feature workflow was enabled.
 
 **Done when:** every enabled action works and public copy matches the product.
 
@@ -269,11 +274,14 @@ Implementation brief: [L2 UI specification](l2-ui-spec.md), based on live
 OpenAlternative exploration and REA Evidence on 2026-10-15. It maps current
 AltStack gaps to work packages and acceptance criteria. Verify, bookmarks,
 reporting and embedding have separate future contracts; the research does not
-mark those features or L2 as implemented.
+mark those feature workflows as implemented. The user decision supersedes the
+initial research remove/hide recommendation: keep disabled controls. Local L2
+implementation evidence is recorded in [L2 local acceptance](l2-local-acceptance.md);
+release/staging acceptance remains a separate gate.
 
 ### Launch acceptance and operations
 
-- [ ] Finish L2, pass L1 release-domain/social-crawler and R5a/R5b staging acceptance, and resolve the intake-account policy.
+- [ ] Pass L1 release-domain/social-crawler and R5a/R5b staging acceptance after local L2, and resolve the intake-account policy.
 - [ ] Verify at least 20 accurate published listings and real media/links.
 - [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
 - [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.

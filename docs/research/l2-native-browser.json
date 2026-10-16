@@ -1,0 +1,127 @@
+{
+	"date": "2026-10-16",
+	"method": "Dedicated headless Chromium CDP fallback after T3 desktop pointer step failed twice. Real Input.dispatchMouseEvent/KeyEvent and Emulation.setEmulatedMedia; disposable app runtime. Sessions explicitly mocked.",
+	"sourceFingerprintSHA256": "3766f6a45db750b45c46a35b44d1af7b15b7fe2b2c9a8950bcd3bc718141eff7",
+	"observations": [
+		{
+			"scenario": "desktop public menus with mocked session",
+			"role": "user",
+			"items": [
+				{
+					"text": "Submission",
+					"href": "/submission",
+					"disabled": null
+				},
+				{
+					"text": "Bookmarks Coming soon",
+					"href": null,
+					"disabled": "true"
+				},
+				{
+					"text": " Sign out",
+					"href": null,
+					"disabled": null
+				}
+			],
+			"actions": [
+				{
+					"text": "Verify",
+					"disabled": true
+				},
+				{
+					"text": "Bookmark",
+					"disabled": true
+				},
+				{
+					"text": "Report",
+					"disabled": true
+				},
+				{
+					"text": "Embed",
+					"disabled": true
+				}
+			],
+			"pointerDisabledInactive": true,
+			"enterSpaceInactive": true,
+			"escapeFocusReturned": true
+		},
+		{
+			"scenario": "desktop public menus with mocked session",
+			"role": "admin",
+			"items": [
+				{
+					"text": "Projects",
+					"href": "/projects",
+					"disabled": null
+				},
+				{
+					"text": "Bookmarks Coming soon",
+					"href": null,
+					"disabled": "true"
+				},
+				{
+					"text": " Sign out",
+					"href": null,
+					"disabled": null
+				}
+			],
+			"actions": [
+				{
+					"text": "Verify",
+					"disabled": true
+				},
+				{
+					"text": "Bookmark",
+					"disabled": true
+				},
+				{
+					"text": "Report",
+					"disabled": true
+				},
+				{
+					"text": "Embed",
+					"disabled": true
+				}
+			],
+			"pointerDisabledInactive": true,
+			"enterSpaceInactive": true,
+			"escapeFocusReturned": true
+		},
+		{
+			"scenario": "native Chromium media preference emulation",
+			"motion": {
+				"reduced": true,
+				"dark": true,
+				"transition": "1e-05s"
+			},
+			"menu": {
+				"animation": "1e-05s",
+				"transition": "1e-05s",
+				"items": [
+					{
+						"label": "Verify \u2014 Coming soon",
+						"disabled": "true"
+					},
+					{
+						"label": "Bookmark \u2014 Coming soon",
+						"disabled": "true"
+					},
+					{
+						"label": "Report \u2014 Coming soon",
+						"disabled": "true"
+					},
+					{
+						"label": "Embed \u2014 Coming soon",
+						"disabled": "true"
+					}
+				]
+			},
+			"viewport": {
+				"width": 390,
+				"height": 844,
+				"scrollWidth": 380
+			}
+		}
+	],
+	"chromiumVersion": "152.0.7977.82 (Arch Linux)"
+}

@@ -70,7 +70,7 @@ export const GithubStatistics = ({
 	const repoFullName = `${github.owner}/${github.repo}`
 
 	return (
-		<div className="space-y-8 py-5">
+		<div className="space-y-8 pt-5">
 			<Card className="sticky top-17 z-50">
 				<CardHeader>
 					<CardTitle className="flex items-center gap-1.5 font-normal">
@@ -117,7 +117,7 @@ export const GithubStatistics = ({
 						<a
 							href={`https://github.com/${repoFullName}`}
 							target="_blank"
-							rel="noreferrer"
+							rel="noopener noreferrer"
 							title={repoFullName}
 							className="max-w-[55%] min-w-0 truncate text-right text-sm font-medium underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
 						>

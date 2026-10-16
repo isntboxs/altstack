@@ -5,16 +5,20 @@ Research date: **2026-10-15, Asia/Jakarta**. AltStack baseline:
 
 This brief fills the implementation details for [L2 in the roadmap](roadmap.md#l2--finish-public-ui-affordances).
 It combines live browser exploration of OpenAlternative, REA analysis of public
-bundles, and inspection of the current AltStack source. **Research is complete;
-the UI work and its release acceptance remain open.**
+bundles, and inspection of the current AltStack source. **Research is complete. L2 implementation and local acceptance are tracked in
+[l2-local-acceptance.md](l2-local-acceptance.md); staging/release gates remain separate.**
 
 ## Scope and decisions
 
 Keep the existing launch outcome: every enabled action works and public copy
-matches the shipped product. The recommended L2 treatment is to **remove**
-unimplemented Verify, Bookmark, Report, Embed and account-menu Bookmarks.
-Do not leave an empty More menu. A disabled treatment is an alternative only
-when its unavailable state and explanation are accessible without hover.
+matches the shipped product. The authoritative user decision on 2026-10-15 is to
+**retain and disable** Verify, Bookmark, Report, Embed and account-menu Bookmarks
+on desktop and compact/mobile variants. This supersedes the research's initial
+remove/hide recommendation. Keep a working, named More menu on compact layouts.
+Use shared semantic disabled controls with visible “Coming soon” explanations
+and accessible names. Pointer, Enter/Space and menu activation must not trigger
+login, fake dialogs, success feedback, pretend persistence or backend workflows.
+Tooltips are optional supplements, never the only explanation.
 
 OpenAlternative implements those actions with real workflows. Their contracts
 are recorded below for future work; copying their buttons into AltStack would
@@ -38,8 +42,8 @@ Runtime observations and static inferences are deliberately separate.
   second unrelated destination. Adopt the hierarchy and destination consistency.
 - **OA-02 / OA-03 — Auth gates:** guest Verify and Save open a sign-in dialog.
   Verify also sets `dialog=verify` in the URL. Neither authenticated verification
-  nor bookmark persistence was executed. L2 should hide AltStack's unavailable
-  actions rather than send users through login to an unfinished feature.
+  nor bookmark persistence was executed. L2 retains AltStack's actions disabled, with “Coming soon”; it must not
+  send users through login to an unfinished feature.
 - **OA-04 — Corrections:** [Report](https://openalternative.co/supabase?dialog=report)
   opens email, issue-type and message fields. Issue types cover broken links,
   incorrect categories, stale information and other feedback. Escape dismisses
@@ -94,12 +98,17 @@ acceptance run against the local AltStack app.
 
 ## Implementation work packages
 
+Checked acceptance means local implementation, automated regressions and
+controlled browser evidence in [L2 local acceptance](l2-local-acceptance.md).
+It does not close staging, native-device or real-provider gates.
+
 ### L2-A — Honest actions and copy
 
 Primary files: `hero-section.tsx`, `header.tsx`, `routes/_app/$slug.tsx`.
 
-- Remove unfinished actions from desktop, compact/mobile, authenticated account
-  menus and tooltips together. Remove separators/groups that become empty.
+- Keep unfinished actions on desktop, compact/mobile and authenticated account
+  menus, disabled with visible “Coming soon” text. Name the functional More
+  trigger. Remove unsupported trust/ranking claims and enabled tooltip wrappers.
 - Make Introducing a noninteractive badge/text. Make Explore Projects a real
   anchor to the catalogue section, with a stable section ID and scroll margin
   below the fixed header. Keyboard activation must reach the same section.
@@ -114,10 +123,11 @@ Primary files: `hero-section.tsx`, `header.tsx`, `routes/_app/$slug.tsx`.
 
 Acceptance:
 
-- [ ] Guests, members and admins see only actions with working destinations or
-      handlers on desktop and mobile.
-- [ ] No unfinished action survives in the account menu or a compact breakpoint.
-- [ ] Explore Projects works with pointer and keyboard; Introducing is not a tab
+- [x] Guests, members and admins see working enabled actions plus the explicitly
+      disabled deferred actions on desktop and compact/mobile layouts.
+- [x] Verify/Bookmark/Report/Embed and account Bookmarks remain present and inactive;
+      unavailable explanations are readable without hover and by assistive technology.
+- [x] Explore Projects works with pointer and keyboard; Introducing is not a tab
       stop. No unsupported verification/ranking/compare/trending promise remains.
 
 ### L2-B — Screenshot and logo states
@@ -145,11 +155,11 @@ source changes. Required publish-time logos can still fail at display time.
 
 Acceptance:
 
-- [ ] With/without screenshot × with/without website all render truthful states.
-- [ ] Invalid or failed screenshot/logo URLs never display a broken-image glyph
+- [x] With/without screenshot × with/without website all render truthful states.
+- [x] Invalid or failed screenshot/logo URLs never display a broken-image glyph
       as the only identity or remove useful project content.
-- [ ] No public screenshot request goes to `placehold.co`; fallback is local.
-- [ ] New images, reloads and source replacements exit any old failure state.
+- [x] No public screenshot request goes to `placehold.co`; fallback is local.
+- [x] New images, reloads and source replacements exit any old failure state.
 
 ### L2-C — Mobile and keyboard navigation
 
@@ -174,11 +184,11 @@ components. Preserve their built-in keyboard behavior rather than reimplement it
 
 Acceptance:
 
-- [ ] At 320, 390, 768 and 1280 CSS px, no horizontal overflow or overlapping
+- [x] At 320, 390, 768 and 1280 CSS px, no horizontal overflow or overlapping
       identity/actions/header; long-name fixtures are included.
-- [ ] A keyboard-only pass reaches navigation, search/reset/sort/category,
+- [x] A keyboard-only pass reaches navigation, search/reset/sort/category,
       project cards, pagination, external links and recovery controls.
-- [ ] Menu/dialog open → keyboard interaction → Escape/close → correct focus
+- [x] Menu/dialog open → keyboard interaction → Escape/close → correct focus
       return succeeds. Sign-in modal remains usable on a short mobile viewport.
 
 ### L2-D — Pending, empty, error and not-found recovery
@@ -188,7 +198,9 @@ components and filters. Reuse the current Query-backed loaders and URL helpers.
 
 - Add visible home/detail pending states using TanStack route pending components
   and deliberate `pendingMs`/`pendingMinMs`. Categories already have one.
-  A brief request should not flash a full skeleton unnecessarily.
+  Use route pending boundaries; do not replace the outgoing catalogue because
+  global router loading changed. Fast/cached transitions must not flash its
+  skeleton. Keep search controls mounted while new results are pending.
 - Distinguish empty catalogue, empty category, no search matches and an out-of-range
   page. Provide an appropriate clear-filters, browse or earlier-page action.
   Never label a failed request as zero results.
@@ -207,13 +219,13 @@ components and filters. Reuse the current Query-backed loaders and URL helpers.
 
 Acceptance:
 
-- [ ] Delayed, empty, rejected and successful loader fixtures show the correct
+- [x] Delayed, empty, rejected and successful loader fixtures show the correct
       state; Try again recovers after the mock server becomes available.
-- [ ] Search + category + sort + page survive reload and back/forward. Search,
+- [x] Search + category + sort + page survive reload and back/forward. Search,
       sort/category changes and reset retain their existing page-reset policy.
-- [ ] Missing/nonpublic detail uses the same public message; an API outage uses
+- [x] Missing/nonpublic detail uses the same public message; an API outage uses
       the error state instead. No private feedback appears in either fallback.
-- [ ] Pending/error status is announced accessibly; recovery controls retain
+- [x] Pending/error status is announced accessibly; recovery controls retain
       visible focus and work on both theme modes.
 
 ### L2-E — Real links and factual card content
@@ -233,11 +245,11 @@ Primary files: detail route and catalogue cards; audit public content links too.
 
 Acceptance:
 
-- [ ] Every enabled public link leads to its documented destination, including
+- [x] Every enabled public link leads to its documented destination, including
       missing website and screenshot cases.
-- [ ] Keyboard/touch cards expose useful information without hover; decorative
+- [x] Keyboard/touch cards expose useful information without hover; decorative
       images do not duplicate the link name.
-- [ ] No metric claims fresh data or a comparison/ranking calculation it lacks.
+- [x] No metric claims fresh data or a comparison/ranking calculation it lacks.
 
 ## Future feature contracts captured from the reference
 
@@ -290,16 +302,16 @@ readonly snippet and copied/failure feedback; test an embedding on a separate
 fixture page. Badge inclusion does not assert verified ownership.
 
 A plain Copy link/Share action is also a possible small future addition. It is
-not necessary to remove today's dead controls, and must have success/failure
+not necessary for L2's disabled controls, and must have success/failure
 feedback and a canonical destination if selected.
 
 ## Implementation order and verification
 
-1. L2-A removes misleading affordances and fixes hero destinations/copy.
+1. L2-A disables deferred affordances and fixes hero destinations/copy.
 2. L2-B adds real media states; L2-E verifies links and card data in the same pass.
 3. L2-C verifies both breakpoints and keyboard behavior using real shared UI.
 4. L2-D fills loader/recovery gaps and preserves existing search/SEO contracts.
-5. Run the release checks and record browser acceptance on the implemented commit.
+5. Run the release checks and record browser acceptance on the implemented revision/fingerprint.
 
 Useful fixture set: guest/member/admin; long name; screenshot present/absent/broken;
 website present/absent/invalid; broken logo; zero results; page beyond the end;
@@ -344,5 +356,6 @@ them or mark L2 done.
 No login/account creation, verification email, report submission, checkout or
 production mutation was performed. Reference screenshot absence/failure, server
 errors and slow loading were not observed live; their L2 behaviors above are
-explicit AltStack recommendations. Full keyboard auditing and real mobile device
-testing also remain implementation acceptance tasks.
+explicit AltStack recommendations. Local AltStack keyboard/browser checks are recorded in [L2 local acceptance](l2-local-acceptance.md).
+A full assistive-technology audit and native mobile-device testing remain separate
+release checks.

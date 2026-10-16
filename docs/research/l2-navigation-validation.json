@@ -1,0 +1,47 @@
+{
+	"date": "2026-10-16",
+	"baseline": "9e800f39d7102c59e622e4aa6d8113bf91c2566e",
+	"sourceFingerprintSHA256": "3991283cd0c84e83853249eebfbaa4a3ccec918b009de78569bd2ea063f068b8",
+	"scope": "Outgoing catalogue skeleton regression only; local uncommitted diff, not a later merge/release",
+	"checks": [
+		{
+			"command": "vp install",
+			"exitCode": 0
+		},
+		{
+			"command": "vp test run apps/web/tests/public-category-routes.test.tsx",
+			"exitCode": 0,
+			"passed": 48
+		},
+		{
+			"command": "vp check",
+			"exitCode": 0,
+			"result": "No warnings, lint errors or type errors; formatting clean"
+		},
+		{
+			"command": "vp run --filter @altstack/db test:scoped -- vp test run",
+			"exitCode": 0,
+			"passed": 952,
+			"skipped": 1,
+			"files": 59
+		},
+		{
+			"command": "vp run -r build",
+			"exitCode": 0
+		},
+		{
+			"command": "bun .l2-acceptance.local/navigation-browser.mjs",
+			"exitCode": 0,
+			"passedScenarios": 14,
+			"evidence": "l2-navigation-browser.json",
+			"result": "12 outgoing transitions observed router loading without a homepage skeleton; 2 slow-search and cached-reset checks retained focus and hid stale results"
+		}
+	],
+	"skippedIntegration": "Opt-in real Upstash integration; no real OAuth/provider accounts exercised",
+	"notRepeated": "Workspace-script, packaged SEO HTTP and broad L2 browser acceptance retain their prior fingerprint in l2-validation.json and original browser ledgers",
+	"fixtureRuntime": {
+		"command": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/l2-ui.acceptance.ts",
+		"exitCode": 0,
+		"cleanup": "Stop-file shutdown completed; wrapper cleaned its disposable schema. All owned browser tabs/processes closed; no listener remained on ports 3420, 3421, 3422, 3423 or 9432."
+	}
+}
