@@ -154,8 +154,8 @@ the roadmap. Staging and production acceptance remain separate.
 
 ### L1 / L2 — Public release completion
 
-L1 is implemented and merged into `dev` at `a650dd0`. L2 implementation and
-remaining release gates are tracked in [the roadmap](roadmap.md#l2--finish-public-ui-affordances);
+L1 and L2 are implemented and merged into `dev` at `a650dd0` and `b83b448`,
+respectively. Remaining release gates are tracked in [the roadmap](roadmap.md#launch-acceptance-and-operations);
 merged-revision checks and release-domain acceptance remain separate gates. See [L1 implementation and verification](seo-og.md).
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.

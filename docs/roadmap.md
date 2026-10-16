@@ -8,6 +8,7 @@
 R5a implementation updated on **2026-10-14** from baseline `8127d34`.
 R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
+L2 implementation merged into `dev` at **`b83b448`**, reconciled on **2026-10-16**.
 Merged-revision and production acceptance remain open.
 
 ## Operating rules
@@ -27,11 +28,11 @@ Merged-revision and production acceptance remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
-- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented; scope and release gates below.
+- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
-Next: finish public discovery and release acceptance before adding
+Next: complete launch acceptance and operations before adding
 ownership, bookmarks, or editorial sections.
 
 ## Repository conventions and validation
@@ -233,8 +234,8 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-L2 is implemented and locally accepted; next is **launch acceptance**. R5a/R5b and L1 are
-implemented and merged; their open acceptance gates still apply before release.
+R5a/R5b, L1 and L2 are implemented and merged; next is **launch acceptance**.
+Their open acceptance gates still apply before release.
 
 ### L1 — Catalogue SEO and link previews
 
@@ -264,8 +265,11 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 - [x] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
 - [x] Verify local keyboard/mobile browser navigation, loading/error/not-found states, images and external destinations; native devices/services remain release gates.
 
-**Implemented and locally accepted on 2026-10-16.** Validation results must
-identify the tested branch revision; merged-revision checks remain separate.
+**Implemented and merged at `b83b448` on 2026-10-16.** The implementation thread
+reported passing check/build, **952 root tests**, **950 workspace tests** and
+five desktop/mobile browser scenarios on branch revision `357d536`; both test
+suites skipped the opt-in Upstash integration. These are branch verification
+results; merged-revision checks remain separate.
 No deferred feature workflow was enabled. Historical research and local evidence
 artifacts have been removed from the repository.
 
@@ -278,7 +282,7 @@ Release/staging acceptance remains a separate gate.
 
 ### Launch acceptance and operations
 
-- [ ] Pass L1 release-domain/social-crawler and R5a/R5b staging acceptance after local L2, and resolve the intake-account policy.
+- [ ] Pass L1 release-domain/social-crawler and R5a/R5b staging acceptance after merged L2, and resolve the intake-account policy.
 - [ ] Verify at least 20 accurate published listings and real media/links.
 - [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
 - [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.
