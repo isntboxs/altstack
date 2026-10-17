@@ -190,6 +190,15 @@ let total = 1
 const routers: Array<ReturnType<typeof getRouter>> = []
 
 beforeEach(() => {
+	// jsdom has no responsive media API; this fixture uses the compact viewport.
+	vi.stubGlobal('matchMedia', (media: string) => {
+		return {
+			matches: false,
+			media,
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		}
+	})
 	vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 	getAuthFn.mockReset().mockResolvedValue(null)
 	visibleNodes = nodes
@@ -259,6 +268,7 @@ afterEach(() => {
 		router.options.context.queryClient.clear()
 	}
 	vi.useRealTimers()
+	vi.unstubAllGlobals()
 })
 
 async function routerAt(url: string, show = false) {
@@ -738,10 +748,10 @@ describe('L2 public affordances and recovery', () => {
 			screen.queryByText(/compare alternatives|trending|Last commit/)
 		).toBeNull()
 	})
-	it('keeps desktop and compact actions present, disabled and unable to navigate or open a dialog', async () => {
+	it('keeps deferred desktop and compact actions disabled while Embed is available', async () => {
 		const router = await routerAt('/test-zed', true)
 		const before = rpc.mock.calls.length
-		for (const name of ['Verify', 'Bookmark', 'Report', 'Embed']) {
+		for (const name of ['Verify', 'Bookmark', 'Report']) {
 			const action = screen.getByRole('button', { name })
 			expect(action).toHaveProperty('disabled', true)
 			expect(
@@ -754,7 +764,7 @@ describe('L2 public affordances and recovery', () => {
 		}
 		const trigger = screen.getByRole('button', { name: 'More project actions' })
 		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
-		for (const name of ['Verify', 'Bookmark', 'Report', 'Embed']) {
+		for (const name of ['Verify', 'Bookmark', 'Report']) {
 			const action = await screen.findByRole('menuitem', {
 				name: name + ' — Coming soon',
 			})
@@ -768,6 +778,76 @@ describe('L2 public affordances and recovery', () => {
 		expect(rpc.mock.calls.length).toBe(before)
 		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 		await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+		await waitFor(() => expect(document.activeElement).toBe(trigger))
+		expect(screen.getByRole('button', { name: 'Embed' })).toHaveProperty(
+			'disabled',
+			false
+		)
+	})
+	it('opens/closes Embed through URL history without reloading stale project data and preserves other search state', async () => {
+		const router = await routerAt('/test-zed?ref=docs&dialog=report', true)
+		expect(screen.queryByRole('dialog')).toBeNull()
+		const before = rpc.mock.calls.filter(
+			([path]) => path.join('/') === 'project/getBySlug'
+		).length
+		// Make the query stale: dialog transitions must not invoke the loader.
+		router.options.context.queryClient.setQueryData(
+			projectQueries.bySlug('test-zed').queryKey,
+			zed,
+			{ updatedAt: 1 }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Embed' }))
+		await screen.findByRole('dialog', { name: 'Embed the Zed badge' })
+		expect(router.state.location.search).toMatchObject({
+			ref: 'docs',
+			dialog: 'embed',
+		})
+		fireEvent.change(screen.getByLabelText('Width'), {
+			target: { value: '320' },
+		})
+		act(() => router.history.back())
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		act(() => router.history.forward())
+		await screen.findByRole('dialog')
+		expect(screen.getByLabelText('Width')).toHaveProperty('value', '320')
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(router.state.location.search).toMatchObject({ ref: 'docs' })
+		expect(router.state.location.search.dialog).toBeUndefined()
+		act(() => router.history.back())
+		await screen.findByRole('dialog')
+		expect(
+			rpc.mock.calls.filter(([path]) => path.join('/') === 'project/getBySlug')
+		).toHaveLength(before)
+	})
+	it('opens the dialog from a direct URL and removes its state on close', async () => {
+		const router = await routerAt('/test-zed?dialog=embed', true)
+		await screen.findByRole('dialog', { name: 'Embed the Zed badge' })
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		await waitFor(() =>
+			expect(router.state.location.search.dialog).toBeUndefined()
+		)
+		await waitFor(() =>
+			expect(document.activeElement).toBe(
+				screen.getByRole('button', { name: 'More project actions' })
+			)
+		)
+	})
+	it.each(['unknown', 'verify', 'bookmark', 'report'])(
+		'ignores direct unimplemented dialog=%s without phantom flows',
+		async (dialog) => {
+			await routerAt(`/test-zed?dialog=${dialog}`, true)
+			expect(screen.queryByRole('dialog')).toBeNull()
+		}
+	)
+	it('hands compact Embed to the dialog and returns focus to More', async () => {
+		await routerAt('/test-zed', true)
+		const trigger = screen.getByRole('button', { name: 'More project actions' })
+		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+		fireEvent.click(await screen.findByRole('menuitem', { name: 'Embed' }))
+		await screen.findByRole('dialog')
+		fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 		await waitFor(() => expect(document.activeElement).toBe(trigger))
 	})
 	it.each(['user', 'admin'] as const)(

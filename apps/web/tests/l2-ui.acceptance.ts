@@ -1,4 +1,5 @@
 // Disposable local runtime for collaborative-browser acceptance, never application data.
+import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -80,7 +81,18 @@ const proxy = Bun.serve({
 			return new Response(null, { headers: cors })
 		}
 		if (url.pathname === '/__l2/control') {
-			if (request.method === 'POST') Object.assign(state, await request.json())
+			if (request.method === 'POST') {
+				const control = (await request.json()) as Partial<typeof state> & {
+					badgePublished?: boolean
+				}
+				if (control.badgePublished !== undefined) {
+					await db
+						.update(project)
+						.set({ status: control.badgePublished ? 'published' : 'draft' })
+						.where(eq(project.slug, 'l2-atlas'))
+				}
+				Object.assign(state, control)
+			}
 			return Response.json(state, { headers: cors })
 		}
 		// Mocked sessions exercise role-specific public menus only; the real RPC
@@ -148,11 +160,27 @@ const proxy = Bun.serve({
 		return new Response(response.body, { status: response.status, headers })
 	},
 })
+let embedHtml = ''
 const assets = Bun.serve({
 	hostname: '127.0.0.1',
 	port: 3422,
 	async fetch(request) {
 		const url = new URL(request.url)
+		if (url.pathname === '/embed') {
+			if (request.method === 'POST') embedHtml = await request.text()
+			return new Response(
+				'<!doctype html><html lang="en"><meta charset="utf-8"><title>Separate origin embed fixture</title><body><h1>Copied AltStack badge</h1>' +
+					embedHtml +
+					'</body></html>',
+				{
+					headers: {
+						'Content-Type': 'text/html; charset=utf-8',
+						'Access-Control-Allow-Origin': runtimeEnv.VITE_APP_URL,
+						'Access-Control-Allow-Methods': 'POST, GET',
+					},
+				}
+			)
+		}
 		if (state.imageDelayMs) await Bun.sleep(state.imageDelayMs)
 		if (url.pathname.endsWith('/logo.svg')) {
 			return new Response(
