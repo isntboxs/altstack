@@ -13,6 +13,8 @@ import { unavailableHead } from '#/features/seo/meta'
 export const Route = createFileRoute('/_app/categories/')({
 	loader: ({ context }) => context.queryClient.query(categoryQueries.list()),
 	head: ({ loaderData }) => (loaderData ? categoryHead() : unavailableHead()),
+	pendingMs: 250,
+	pendingMinMs: 200,
 	pendingComponent: CategoriesPending,
 	errorComponent: CategoriesError,
 	component: CategoriesIndex,
@@ -29,7 +31,7 @@ function CategoriesIndex() {
 		<div className="container mx-auto w-full max-w-6xl space-y-10 px-4 pt-28 pb-10 lg:px-16">
 			<div className="space-y-4">
 				<CategoryBreadcrumb />
-				<h1 className="text-3xl font-medium tracking-tight sm:text-4xl">
+				<h1 className="text-3xl font-medium tracking-tight wrap-anywhere sm:text-4xl">
 					Open Source Software Categories
 				</h1>
 				<p className="max-w-3xl text-lg leading-7 text-muted-foreground">
@@ -52,7 +54,11 @@ function CategoriesIndex() {
 			) : (
 				<div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-3">
 					{roots.map((root) => (
-						<section key={root.id} aria-label={root.name} className="space-y-3">
+						<section
+							key={root.id}
+							aria-label={root.name}
+							className="min-w-0 space-y-3 wrap-anywhere"
+						>
 							<h2 className="text-lg font-medium">
 								<Link
 									to="/categories/$"

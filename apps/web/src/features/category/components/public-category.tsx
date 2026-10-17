@@ -1,4 +1,4 @@
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Fragment } from 'react'
 
 import type { CategoryNode } from '@altstack/shared/schemas/category'
@@ -12,7 +12,8 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@altstack/ui/components/breadcrumb'
-import { Button } from '@altstack/ui/components/button'
+
+import { PublicError, PublicPending } from '#/components/public-page-state'
 
 export function CategoryBreadcrumb({
 	ancestors = [],
@@ -24,11 +25,11 @@ export function CategoryBreadcrumb({
 	return (
 		<Breadcrumb>
 			<BreadcrumbList>
-				<BreadcrumbItem>
+				<BreadcrumbItem className="min-w-0 wrap-anywhere">
 					<BreadcrumbLink render={<Link to="/" />}>Home</BreadcrumbLink>
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
-				<BreadcrumbItem>
+				<BreadcrumbItem className="min-w-0 wrap-anywhere">
 					{category ? (
 						<BreadcrumbLink render={<Link to="/categories" />}>
 							Categories
@@ -40,7 +41,7 @@ export function CategoryBreadcrumb({
 				{ancestors.map((ancestor) => (
 					<Fragment key={ancestor.id}>
 						<BreadcrumbSeparator />
-						<BreadcrumbItem>
+						<BreadcrumbItem className="min-w-0 wrap-anywhere">
 							<BreadcrumbLink
 								render={
 									<Link to="/categories/$" params={{ _splat: ancestor.path }} />
@@ -54,7 +55,7 @@ export function CategoryBreadcrumb({
 				{category && (
 					<>
 						<BreadcrumbSeparator />
-						<BreadcrumbItem>
+						<BreadcrumbItem className="min-w-0 wrap-anywhere">
 							<BreadcrumbPage>{category.name}</BreadcrumbPage>
 						</BreadcrumbItem>
 					</>
@@ -73,7 +74,7 @@ export function CategoryLinks({
 		<Badge
 			key={category.id}
 			variant="secondary"
-			className="h-auto min-h-6 max-w-full py-1 whitespace-normal"
+			className="h-auto min-h-9 max-w-full py-1 wrap-anywhere whitespace-normal"
 			render={<Link to="/categories/$" params={{ _splat: category.path }} />}
 		>
 			{category.name}
@@ -101,9 +102,9 @@ export function PublicProjectCategories({
 
 export function CategoriesPending() {
 	return (
-		<output className="container mx-auto block max-w-6xl px-4 pt-28 lg:px-16">
-			Loading categories…
-		</output>
+		<div className="pt-24">
+			<PublicPending label="Loading categories…" />
+		</div>
 	)
 }
 
@@ -122,15 +123,5 @@ export function CategoryNotFound() {
 }
 
 export function CategoriesError() {
-	const router = useRouter()
-	return (
-		<div
-			role="alert"
-			className="container mx-auto max-w-6xl space-y-4 px-4 pt-28 lg:px-16"
-		>
-			<h1 className="text-3xl font-medium">Unable to load categories</h1>
-			<p className="text-muted-foreground">Please try again in a moment.</p>
-			<Button onClick={() => void router.invalidate()}>Try again</Button>
-		</div>
-	)
+	return <PublicError title="Unable to load categories" />
 }

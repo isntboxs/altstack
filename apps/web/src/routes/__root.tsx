@@ -18,6 +18,7 @@ import { Toaster } from '@altstack/ui/components/toast'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
 import { LogProvider } from '#/components/log-provider'
+import { PublicError, PublicNotFound } from '#/components/public-page-state'
 import { indexingMiddleware } from '#/features/seo/indexing'
 import { unavailableHead } from '#/features/seo/meta'
 import { getAuthFn } from '#/functions/get-auth-fn'
@@ -41,19 +42,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		const auth = await getAuthFn()
 		return { auth }
 	},
-	notFoundComponent: () => (
-		<main>
-			<h1>Page not found</h1>
-			<a href="/">Browse projects</a>
-		</main>
-	),
-	errorComponent: () => (
-		<main>
-			<h1>Page unavailable</h1>
-			<p>Please try again later.</p>
-			<a href="/">Browse projects</a>
-		</main>
-	),
+	notFoundComponent: () => <PublicNotFound />,
+	errorComponent: () => <PublicError />,
 	shellComponent: RootDocument,
 	component: RootComponent,
 	head: () => {

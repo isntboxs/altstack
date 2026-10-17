@@ -8,6 +8,8 @@
 R5a implementation updated on **2026-10-14** from baseline `8127d34`.
 R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
+L2 implementation merged into `dev` at **`b83b448`**, reconciled on **2026-10-16**.
+Project Embed merged into `dev` at **`d49273a`**, reconciled on **2026-10-17**.
 Merged-revision and production acceptance remain open.
 
 ## Operating rules
@@ -27,10 +29,12 @@ Merged-revision and production acceptance remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
+- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
+- **Project Embed:** public URL-controlled dialog and SVG badges implemented and merged, including the designer-provided artwork; merged-revision and deployment acceptance remain open.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
-Next: finish public discovery and release acceptance before adding
+Next: complete launch acceptance and operations before adding
 ownership, bookmarks, or editorial sections.
 
 ## Repository conventions and validation
@@ -232,8 +236,8 @@ These implementations do not prove production service/schedule configuration.
 
 ## Next public-release slices
 
-Recommended remaining order: **L2 → launch acceptance**. R5a/R5b and L1 are
-implemented and merged; their open acceptance gates still apply before release.
+R5a/R5b, L1 and L2 are implemented and merged; next is **launch acceptance**.
+Project Embed is also merged. Their open acceptance gates still apply before release.
 
 ### L1 — Catalogue SEO and link previews
 
@@ -256,24 +260,67 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [ ] Remove or clearly disable Verify/Bookmark/Report/Embed and the account menu's Bookmarks action until implemented; remove the unsupported verification/ranking promise.
+- [x] Retain Verify/Bookmark/Report/Embed and account Bookmarks on desktop/compact/mobile, semantically disabled with visible “Coming soon”; remove the unsupported verification/ranking promise.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
-- [ ] Replace generic screenshot placeholders with honest empty states.
-- [ ] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
-- [ ] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
-- [ ] Verify keyboard/mobile navigation, loading/error/not-found states, images, and external links.
+- [x] Replace generic screenshot placeholders with honest empty states.
+- [x] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
+- [x] Handle failed screenshots/logos, accessible menu names/focus, long mobile layouts, and usable loader/error recovery.
+- [x] Verify local keyboard/mobile browser navigation, loading/error/not-found states, images and external destinations; native devices/services remain release gates.
+
+**Implemented and merged at `b83b448` on 2026-10-16.** The implementation thread
+reported passing check/build, **952 root tests**, **950 workspace tests** and
+five desktop/mobile browser scenarios on branch revision `357d536`; both test
+suites skipped the opt-in Upstash integration. These are branch verification
+results; merged-revision checks remain separate.
+No deferred feature workflow was enabled. Historical research and local evidence
+artifacts have been removed from the repository.
 
 **Done when:** every enabled action works and public copy matches the product.
 
-Implementation brief: [L2 UI specification](l2-ui-spec.md), based on live
-OpenAlternative exploration and REA Evidence on 2026-10-15. It maps current
-AltStack gaps to work packages and acceptance criteria. Verify, bookmarks,
-reporting and embedding have separate future contracts; the research does not
-mark those features or L2 as implemented.
+The implementation followed the 2026-10-15 reference research and the user's
+decision to retain disabled controls. Verify, bookmarks and reporting
+remain future workflows and require separate implementation and verification.
+Release/staging acceptance remains a separate gate.
+
+### Public project Embed — 2026-10-17
+
+**Implemented and merged at `d49273a`.** Final artwork comes from
+`apps/web/public/badge.svg`, bundled by the generator with dark/light variants
+and proportional custom sizing.
+
+- [x] Enable only Embed on desktop and More; preserve disabled deferred siblings.
+- [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
+      dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
+- [x] Public SVG generator with approved AltStack signature, live published-only
+      visibility, generic errors and no-store / cross-origin embedding policy.
+- [x] Focused validation, route/history, UI, endpoint and production HTTP tests.
+- [x] Branch verification: `vp install`, `vp check` (zero warnings/errors),
+      disposable-schema root suite **992 passed / 1 skipped** across 61 files,
+      `vp run -r build` **8/8 tasks**, and **14** cold production HTTP acceptance groups.
+- [x] T3 browser QA at 1440 × 900, 320 × 568 and 390 × 844: direct/reload/history,
+      keyboard/focus/Escape/outside, validation/Copy failure, both themes and copied
+      HTML embedded on another origin. Dialog navigation preserved scroll and heading
+      identity with **zero project RPC refetches and zero new skeletons**.
+
+- [ ] Verify the merged release revision and deployment domain/CDN behavior.
+
+Tested on `feat/project-embed` from `46a1e0f` plus the uncommitted source/test tree
+fingerprint `8e29732b01051a149865f3c8515ff611fd0844087d6286c02f888b00be29efb6`.
+The skipped case is opt-in real Upstash integration. Existing dependency directive
+and large-chunk build warnings remain; no new dependency or migration was added.
+See the focused guide for fingerprint definition and evidence locations.
+
+The later designer-artwork update, committed as `eb8df63`, separately passed
+**33 focused tests**, **8/8 build tasks** and **14 HTTP acceptance groups**, with
+dark/light visual checks. The 992-test full-suite result above predates this
+artwork update; it is not verification of the final merged revision.
+
+See [Embed parameters, lifecycle and rollout](project-embed.md). L2's historical
+all-disabled decision above is superseded only for Embed by this slice.
 
 ### Launch acceptance and operations
 
-- [ ] Finish L2, pass L1 release-domain/social-crawler and R5a/R5b staging acceptance, and resolve the intake-account policy.
+- [ ] Pass L1 release-domain/social-crawler and R5a/R5b staging acceptance after merged L2, and resolve the intake-account policy.
 - [ ] Verify at least 20 accurate published listings and real media/links.
 - [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
 - [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.

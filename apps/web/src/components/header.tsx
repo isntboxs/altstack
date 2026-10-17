@@ -8,7 +8,7 @@ import { authClient } from '@altstack/auth/client'
 
 import { env } from '@altstack/env/web'
 
-import { Button } from '@altstack/ui/components/button'
+import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -35,8 +35,9 @@ export const Header = ({
 	auth: typeof authClient.$Infer.Session | null
 }) => {
 	const [openAuthDialog, setOpenAuthDialog] = useState(false)
+	const [openNavigation, setOpenNavigation] = useState(false)
 
-	const pathname = useLocation({ select: (location) => location.pathname })
+	const { pathname, href } = useLocation()
 
 	const handleAuthDialog = () => {
 		setOpenAuthDialog((prev) => !prev)
@@ -47,19 +48,22 @@ export const Header = ({
 			<AuthDialog
 				open={openAuthDialog}
 				onOpenChange={setOpenAuthDialog}
-				returnTo={pathname}
+				returnTo={href}
 			/>
 
 			<header className="fixed top-0 z-50 h-12 w-full bg-background">
-				<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-4 lg:px-16">
-					<div className="flex items-center gap-2 lg:gap-8">
-						<DropdownMenu>
+				<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-1 sm:px-4 lg:px-16">
+					<div className="flex min-w-0 items-center gap-0 sm:gap-2 lg:gap-8">
+						<DropdownMenu
+							open={openNavigation}
+							onOpenChange={setOpenNavigation}
+						>
 							<DropdownMenuTrigger
 								render={
 									<Button
 										size="icon-sm"
 										variant="ghost"
-										className="lg:hidden"
+										className="size-11 lg:hidden"
 										aria-label="Open navigation"
 									>
 										<IconMenu2 />
@@ -68,6 +72,7 @@ export const Header = ({
 							/>
 							<DropdownMenuContent align="start">
 								<DropdownMenuItem
+									onClick={() => setOpenNavigation(false)}
 									render={
 										<Link
 											to="/categories"
@@ -78,13 +83,20 @@ export const Header = ({
 								>
 									Categories
 								</DropdownMenuItem>
-								<DropdownMenuItem render={<Link to="/activity" />}>
+								<DropdownMenuItem
+									onClick={() => setOpenNavigation(false)}
+									render={<Link to="/activity" />}
+								>
 									Activity
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
 
-						<Link to="/" viewTransition className="flex items-center gap-1.5">
+						<Link
+							to="/"
+							viewTransition
+							className="flex items-center gap-1 sm:gap-1.5"
+						>
 							<BrandMark />
 
 							<span className="text-base font-medium lowercase">
@@ -127,15 +139,17 @@ export const Header = ({
 						</NavigationMenu>
 					</div>
 
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							nativeButton={false}
-							render={<Link to="/submit" viewTransition />}
+					<div className="flex shrink-0 items-center gap-0 sm:gap-2">
+						<Link
+							to="/submit"
+							viewTransition
+							className={buttonVariants({
+								variant: 'outline',
+								size: 'sm',
+							})}
 						>
 							Submit
-						</Button>
+						</Link>
 						<ThemeSwitcher />
 
 						{!auth ? (
@@ -178,13 +192,18 @@ const UserButton = ({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button size="icon-sm" variant="ghost">
+					<Button
+						size="icon-sm"
+						variant="ghost"
+						className="size-11"
+						aria-label="Open user menu"
+					>
 						<UserAvatar image={user.image} name={user.name} />
 					</Button>
 				}
 			/>
 
-			<DropdownMenuContent className="w-40" align="end">
+			<DropdownMenuContent className="w-64" align="end">
 				<DropdownMenuItem
 					render={
 						<Link to={user.role === 'admin' ? '/projects' : '/submission'} />
@@ -192,9 +211,9 @@ const UserButton = ({
 				>
 					{user.role === 'admin' ? 'Projects' : 'Submission'}
 				</DropdownMenuItem>
-				<DropdownMenuItem>
-					<Bookmark2 />
-					Bookmarks
+				<DropdownMenuItem disabled>
+					<Bookmark2 aria-hidden="true" />
+					Bookmarks <span className="ml-auto text-xs">Coming soon</span>
 				</DropdownMenuItem>
 
 				<DropdownMenuSeparator />
@@ -216,16 +235,15 @@ const SignInButton = ({
 }) => {
 	if (pathname.startsWith('/auth/')) {
 		return (
-			<Button
-				variant="outline"
-				size="sm"
-				nativeButton={false}
-				render={
-					<Link to="/auth/sign-in">
-						<span className="text-muted-foreground">Sign in</span>
-					</Link>
-				}
-			/>
+			<Link
+				to="/auth/sign-in"
+				className={buttonVariants({
+					variant: 'outline',
+					size: 'sm',
+				})}
+			>
+				Sign in
+			</Link>
 		)
 	}
 

@@ -16,11 +16,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
 
+import type { authClient } from '@altstack/auth/client'
+
 import { getCategoryByPathInputSchema } from '@altstack/shared/schemas/category'
 import { searchProjectsInputSchema } from '@altstack/shared/schemas/project'
 
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
+import { projectQueries } from '#/features/project/queries'
 import { getRouter } from '#/router'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import type { orpc } from '#/utils/orpc'
@@ -28,7 +31,7 @@ import { categoryFixture } from './fixtures/categories'
 
 const { getAuthFn, rpc } = vi.hoisted(() => {
 	return {
-		getAuthFn: vi.fn(),
+		getAuthFn: vi.fn<() => Promise<typeof authClient.$Infer.Session | null>>(),
 		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
 	}
 })
@@ -40,8 +43,8 @@ vi.mock('#/routes/__root', async () => {
 			queryClient: QueryClient
 			orpc: typeof orpc
 		}>()({
-			beforeLoad: () => {
-				return { auth: null }
+			beforeLoad: async () => {
+				return { auth: await getAuthFn() }
 			},
 			component: Outlet,
 		}),
@@ -187,6 +190,15 @@ let total = 1
 const routers: Array<ReturnType<typeof getRouter>> = []
 
 beforeEach(() => {
+	// jsdom has no responsive media API; this fixture uses the compact viewport.
+	vi.stubGlobal('matchMedia', (media: string) => {
+		return {
+			matches: false,
+			media,
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+		}
+	})
 	vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 	getAuthFn.mockReset().mockResolvedValue(null)
 	visibleNodes = nodes
@@ -217,7 +229,7 @@ beforeEach(() => {
 					const count = q === 'absent' ? 0 : total
 					return {
 						projects:
-							count > 0
+							count > 0 && page <= Math.ceil(count / 12)
 								? [{ ...zed, categories: [ai.slug, general.slug] }]
 								: [],
 						pagination: {
@@ -256,6 +268,7 @@ afterEach(() => {
 		router.options.context.queryClient.clear()
 	}
 	vi.useRealTimers()
+	vi.unstubAllGlobals()
 })
 
 async function routerAt(url: string, show = false) {
@@ -705,5 +718,384 @@ describe('public category search, sorting and pagination', () => {
 		expect(
 			rpc.mock.calls.filter(([path]) => path.join('/') === 'project/search')
 		).toHaveLength(1)
+	})
+})
+
+describe('L2 public affordances and recovery', () => {
+	it('distinguishes an empty unfiltered catalogue from transport failures and offers browsing recovery', async () => {
+		total = 0
+		await routerAt('/', true)
+		expect(
+			screen.getByText(
+				'There are no published projects available in the catalogue yet.'
+			)
+		).toBeTruthy()
+		expect(
+			screen
+				.getByRole('link', { name: 'Browse categories' })
+				.getAttribute('href')
+		).toBe('/categories')
+		expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+	})
+	it('uses a real hero anchor and keeps Introducing outside the tab order', async () => {
+		await routerAt('/', true)
+		const anchor = screen.getByRole('link', { name: 'Explore Projects' })
+		expect(anchor.getAttribute('href')).toBe('#catalogue')
+		expect(screen.queryByRole('button', { name: /Introducing/ })).toBeNull()
+		fireEvent.click(anchor)
+		expect(document.activeElement?.id).toBe('catalogue')
+		expect(
+			screen.queryByText(/compare alternatives|trending|Last commit/)
+		).toBeNull()
+	})
+	it('keeps deferred desktop and compact actions disabled while Embed is available', async () => {
+		const router = await routerAt('/test-zed', true)
+		const before = rpc.mock.calls.length
+		for (const name of ['Verify', 'Bookmark', 'Report']) {
+			const action = screen.getByRole('button', { name })
+			expect(action).toHaveProperty('disabled', true)
+			expect(
+				document.getElementById(action.getAttribute('aria-describedby')!)
+					?.textContent
+			).toContain('coming soon')
+			fireEvent.click(action)
+			fireEvent.keyDown(action, { key: 'Enter' })
+			fireEvent.keyDown(action, { key: ' ' })
+		}
+		const trigger = screen.getByRole('button', { name: 'More project actions' })
+		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+		for (const name of ['Verify', 'Bookmark', 'Report']) {
+			const action = await screen.findByRole('menuitem', {
+				name: name + ' — Coming soon',
+			})
+			expect(action.getAttribute('aria-disabled')).toBe('true')
+			fireEvent.click(action)
+			fireEvent.keyDown(action, { key: 'Enter' })
+			fireEvent.keyDown(action, { key: ' ' })
+		}
+		expect(router.state.location.pathname).toBe('/test-zed')
+		expect(screen.queryByRole('dialog')).toBeNull()
+		expect(rpc.mock.calls.length).toBe(before)
+		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+		await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+		await waitFor(() => expect(document.activeElement).toBe(trigger))
+		expect(screen.getByRole('button', { name: 'Embed' })).toHaveProperty(
+			'disabled',
+			false
+		)
+	})
+	it('opens/closes Embed through URL history without reloading stale project data and preserves other search state', async () => {
+		const router = await routerAt('/test-zed?ref=docs&dialog=report', true)
+		expect(screen.queryByRole('dialog')).toBeNull()
+		const before = rpc.mock.calls.filter(
+			([path]) => path.join('/') === 'project/getBySlug'
+		).length
+		// Make the query stale: dialog transitions must not invoke the loader.
+		router.options.context.queryClient.setQueryData(
+			projectQueries.bySlug('test-zed').queryKey,
+			zed,
+			{ updatedAt: 1 }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Embed' }))
+		await screen.findByRole('dialog', { name: 'Embed the Zed badge' })
+		expect(router.state.location.search).toMatchObject({
+			ref: 'docs',
+			dialog: 'embed',
+		})
+		fireEvent.change(screen.getByLabelText('Width'), {
+			target: { value: '320' },
+		})
+		act(() => router.history.back())
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		act(() => router.history.forward())
+		await screen.findByRole('dialog')
+		expect(screen.getByLabelText('Width')).toHaveProperty('value', '320')
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(router.state.location.search).toMatchObject({ ref: 'docs' })
+		expect(router.state.location.search.dialog).toBeUndefined()
+		act(() => router.history.back())
+		await screen.findByRole('dialog')
+		expect(
+			rpc.mock.calls.filter(([path]) => path.join('/') === 'project/getBySlug')
+		).toHaveLength(before)
+	})
+	it('opens the dialog from a direct URL and removes its state on close', async () => {
+		const router = await routerAt('/test-zed?dialog=embed', true)
+		await screen.findByRole('dialog', { name: 'Embed the Zed badge' })
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		await waitFor(() =>
+			expect(router.state.location.search.dialog).toBeUndefined()
+		)
+		await waitFor(() =>
+			expect(document.activeElement).toBe(
+				screen.getByRole('button', { name: 'More project actions' })
+			)
+		)
+	})
+	it.each(['unknown', 'verify', 'bookmark', 'report'])(
+		'ignores direct unimplemented dialog=%s without phantom flows',
+		async (dialog) => {
+			await routerAt(`/test-zed?dialog=${dialog}`, true)
+			expect(screen.queryByRole('dialog')).toBeNull()
+		}
+	)
+	it('hands compact Embed to the dialog and returns focus to More', async () => {
+		await routerAt('/test-zed', true)
+		const trigger = screen.getByRole('button', { name: 'More project actions' })
+		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+		fireEvent.click(await screen.findByRole('menuitem', { name: 'Embed' }))
+		await screen.findByRole('dialog')
+		fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		await waitFor(() => expect(document.activeElement).toBe(trigger))
+	})
+	it.each(['user', 'admin'] as const)(
+		'keeps %s account Bookmarks disabled and preserves its real destination',
+		async (role) => {
+			const now = new Date()
+			getAuthFn.mockResolvedValue({
+				session: {
+					id: 'fixture-session',
+					token: 'local-only',
+					userId: 'fixture-user',
+					expiresAt: new Date(now.getTime() + 60000),
+					createdAt: now,
+					updatedAt: now,
+					ipAddress: null,
+					userAgent: null,
+				},
+				user: {
+					id: 'fixture-user',
+					name: 'Fixture User',
+					email: 'fixture@example.test',
+					emailVerified: true,
+					image: null,
+					role,
+					createdAt: now,
+					updatedAt: now,
+				},
+			})
+			const router = await routerAt('/test-zed', true)
+			fireEvent.keyDown(
+				screen.getByRole('button', { name: 'Open user menu' }),
+				{ key: 'ArrowDown' }
+			)
+			const destination = await screen.findByRole('menuitem', {
+				name: role === 'admin' ? 'Projects' : 'Submission',
+			})
+			expect(destination.getAttribute('href')).toBe(
+				role === 'admin' ? '/projects' : '/submission'
+			)
+			const bookmarks = screen.getByRole('menuitem', {
+				name: 'Bookmarks Coming soon',
+			})
+			expect(bookmarks.getAttribute('aria-disabled')).toBe('true')
+			fireEvent.click(bookmarks)
+			fireEvent.keyDown(bookmarks, { key: 'Enter' })
+			fireEvent.keyDown(bookmarks, { key: ' ' })
+			expect(router.state.location.pathname).toBe('/test-zed')
+			expect(screen.queryByRole('dialog')).toBeNull()
+			fireEvent.keyDown(destination, { key: 'Escape' })
+			await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+		}
+	)
+	it.each([
+		['/', '/categories'],
+		['/', '/test-zed'],
+		['/', '/submit'],
+		['/categories/' + ai.path, '/test-zed'],
+	])(
+		'keeps catalogue results visible when navigating from %s to %s',
+		async (from, destination) => {
+			const router = await routerAt(from, true)
+			let release: () => void = () => undefined
+			const gate = new Promise<null>((resolve) => {
+				release = () => resolve(null)
+			})
+			getAuthFn.mockImplementationOnce(() => gate)
+			let navigation: Promise<void> = Promise.resolve()
+			act(() => {
+				navigation = router.navigate({ href: destination })
+			})
+			await waitFor(() => expect(router.state.isLoading).toBe(true))
+			try {
+				expect(screen.getByRole('heading', { name: 'Zed' })).toBeTruthy()
+				expect(screen.queryByText('Loading projects…')).toBeNull()
+				expect(
+					screen
+						.getByRole('region', { name: 'Project results' })
+						.closest('[aria-busy="true"]')
+				).toBeNull()
+			} finally {
+				await act(async () => {
+					release()
+					await navigation
+				})
+			}
+			expect(router.state.location.pathname).toBe(
+				destination === '/submit' ? '/auth/sign-in' : destination
+			)
+			expect(router.state.location.search.returnTo).toBe(
+				destination === '/submit' ? '/submit' : undefined
+			)
+		}
+	)
+	it('uses cached catalogue results without flashing a loading skeleton', async () => {
+		const router = await routerAt('/', true)
+		await router.preloadRoute({ to: '/', search: { q: 'Zed' } })
+		let showedPending = false
+		const observer = new MutationObserver(() => {
+			showedPending ||= document.body.textContent.includes('Loading projects…')
+		})
+		observer.observe(document.body, { childList: true, subtree: true })
+		try {
+			await act(() => router.navigate({ to: '/', search: { q: 'Zed' } }))
+			expect(screen.getByRole('heading', { name: 'Zed' })).toBeTruthy()
+			expect(screen.getByRole('textbox')).toHaveProperty('value', 'Zed')
+			expect(showedPending).toBe(false)
+		} finally {
+			observer.disconnect()
+		}
+	})
+	it.each(['/', '/categories/' + ai.path])(
+		'preserves focused search while delayed results replace older cards at %s',
+		async (url) => {
+			await routerAt(url, true)
+			const original = rpc.getMockImplementation()!
+			let release: () => void = () => undefined
+			const gate = new Promise<void>((resolve) => {
+				release = resolve
+			})
+			rpc.mockImplementation(async (path, input) => {
+				if (
+					path.join('/') === 'project/search' &&
+					searchProjectsInputSchema.parse(input).query.q === 'absent'
+				) {
+					await gate
+				}
+				return original(path, input)
+			})
+			const input = screen.getByRole('textbox')
+			input.focus()
+			fireEvent.change(input, { target: { value: 'absent' } })
+			expect(screen.getByText('Search update pending…')).toBeTruthy()
+			await screen.findByText(/Loading (projects|categories)…/)
+			await new Promise((resolve) => setTimeout(resolve, 400))
+			expect(document.activeElement).toBe(input)
+			expect(screen.queryByRole('heading', { name: 'Zed' })).toBeNull()
+			fireEvent.change(input, { target: { value: 'absent ' } })
+			act(() => {
+				release()
+			})
+			await screen.findByText(/No projects match your current filters/)
+			expect(document.activeElement).toBe(input)
+			expect(input).toHaveProperty('value', 'absent ')
+		}
+	)
+	it.each(['/', '/test-zed', '/categories/' + ai.path])(
+		'really refetches after an outage and keeps failures separate from empty/404 at %s',
+		async (url) => {
+			rpc.mockRejectedValueOnce(new Error('PRIVATE_transport_detail'))
+			await routerAt(url, true)
+			expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+			expect(
+				screen.queryByText(
+					/No projects found|Project not found|PRIVATE_transport_detail/
+				)
+			).toBeNull()
+			const before = rpc.mock.calls.length
+			fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+			await screen.findByRole('heading', {
+				name: url.includes('categories') ? 'Open Source ' + ai.name : 'Zed',
+			})
+			expect(rpc.mock.calls.length).toBeGreaterThan(before)
+		}
+	)
+	it('distinguishes an out-of-range filtered page and recovers without dropping filters', async () => {
+		total = 36
+		const router = await routerAt(
+			'/?category=backend&q=Zed&sort=name&page=99',
+			true
+		)
+		expect(
+			screen.getByRole('heading', { name: 'No projects on this page' })
+		).toBeTruthy()
+		const first = screen.getByRole('link', { name: 'First page' })
+		expect(first.getAttribute('href')).toContain('category=backend')
+		fireEvent.click(first)
+		await waitFor(() =>
+			expect(router.state.location.search.page).toBeUndefined()
+		)
+		expect(router.state.location.search).toMatchObject({
+			category: 'backend',
+			q: 'Zed',
+			sort: 'name',
+		})
+		const previous = screen.getByRole('button', { name: 'Go to previous page' })
+		expect(previous).toHaveProperty('disabled', true)
+		expect(previous.getAttribute('href')).toBeNull()
+	})
+	it('renders a single card link with visible details and decorative logo semantics', async () => {
+		await routerAt('/', true)
+		const card = screen.getByRole('heading', { name: 'Zed' }).closest('a')!
+		expect(card.getAttribute('href')).toBe('/test-zed')
+		expect(card.querySelector('a, button')).toBeNull()
+		expect(
+			screen.getByRole('link', {
+				name: 'Zed Synthetic code editor. Stars 123 Forks 12 View project details',
+			})
+		).toBe(card)
+		expect(within(card).queryByRole('img')).toBeNull()
+	})
+})
+
+describe('public destinations and cache retry', () => {
+	it.each([null, 'javascript:alert(1)', 'https://project.test/path'])(
+		'only exposes an accepted website destination: %s',
+		async (websiteUrl) => {
+			const original = rpc.getMockImplementation()!
+			rpc.mockImplementation((path, input) =>
+				path.join('/') === 'project/getBySlug'
+					? Promise.resolve({
+							...zed,
+							websiteUrl,
+							screenshot: 'stored/screenshot.png',
+						})
+					: original(path, input)
+			)
+			await routerAt('/test-zed', true)
+			const website = screen.queryByRole('link', {
+				name: 'Visit Website (opens in a new tab)',
+			})
+			expect(website?.getAttribute('href') ?? null).toBe(
+				websiteUrl?.startsWith('https:') ? websiteUrl : null
+			)
+			expect(
+				screen.getByRole('img', { name: 'Screenshot of Zed' })
+			).toBeTruthy()
+			expect(
+				screen
+					.getByRole('link', { name: /^Visit GitHub.*opens in a new tab/ })
+					.getAttribute('rel')
+			).toBe('noopener noreferrer')
+		}
+	)
+	it('invalidates freshly cached external data before retrying the failed route', async () => {
+		rpc.mockRejectedValueOnce(new Error('Outage'))
+		const router = await routerAt('/test-zed', true)
+		// A different observer may have populated a fresh cache while the route
+		// boundary is still showing its earlier failure. Retry must refetch it.
+		router.options.context.queryClient.setQueryData(
+			projectQueries.bySlug('test-zed').queryKey,
+			{ ...zed, name: 'OLD_CACHE_SENTINEL' }
+		)
+		const before = rpc.mock.calls.length
+		fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+		await screen.findByRole('heading', { name: 'Zed' })
+		expect(
+			screen.queryByRole('heading', { name: 'OLD_CACHE_SENTINEL' })
+		).toBeNull()
+		expect(rpc.mock.calls.length).toBeGreaterThan(before)
 	})
 })
