@@ -9,6 +9,7 @@ R5a implementation updated on **2026-10-14** from baseline `8127d34`.
 R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
 L2 implementation merged into `dev` at **`b83b448`**, reconciled on **2026-10-16**.
+Project Embed merged into `dev` at **`d49273a`**, reconciled on **2026-10-17**.
 Merged-revision and production acceptance remain open.
 
 ## Operating rules
@@ -29,7 +30,7 @@ Merged-revision and production acceptance remain open.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
-- **Project Embed:** public URL-controlled dialog and SVG badges implemented and locally verified; deployment acceptance remains open.
+- **Project Embed:** public URL-controlled dialog and SVG badges implemented and merged, including the designer-provided artwork; merged-revision and deployment acceptance remain open.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -236,7 +237,7 @@ These implementations do not prove production service/schedule configuration.
 ## Next public-release slices
 
 R5a/R5b, L1 and L2 are implemented and merged; next is **launch acceptance**.
-Their open acceptance gates still apply before release.
+Project Embed is also merged. Their open acceptance gates still apply before release.
 
 ### L1 — Catalogue SEO and link previews
 
@@ -283,6 +284,10 @@ Release/staging acceptance remains a separate gate.
 
 ### Public project Embed — 2026-10-17
 
+**Implemented and merged at `d49273a`.** Final artwork comes from
+`apps/web/public/badge.svg`, bundled by the generator with dark/light variants
+and proportional custom sizing.
+
 - [x] Enable only Embed on desktop and More; preserve disabled deferred siblings.
 - [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
       dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
@@ -297,13 +302,18 @@ Release/staging acceptance remains a separate gate.
       HTML embedded on another origin. Dialog navigation preserved scroll and heading
       identity with **zero project RPC refetches and zero new skeletons**.
 
-- [ ] Verify the future merged revision and deployment domain/CDN behavior.
+- [ ] Verify the merged release revision and deployment domain/CDN behavior.
 
 Tested on `feat/project-embed` from `46a1e0f` plus the uncommitted source/test tree
 fingerprint `8e29732b01051a149865f3c8515ff611fd0844087d6286c02f888b00be29efb6`.
 The skipped case is opt-in real Upstash integration. Existing dependency directive
 and large-chunk build warnings remain; no new dependency or migration was added.
 See the focused guide for fingerprint definition and evidence locations.
+
+The later designer-artwork update, committed as `eb8df63`, separately passed
+**33 focused tests**, **8/8 build tasks** and **14 HTTP acceptance groups**, with
+dark/light visual checks. The 992-test full-suite result above predates this
+artwork update; it is not verification of the final merged revision.
 
 See [Embed parameters, lifecycle and rollout](project-embed.md). L2's historical
 all-disabled decision above is superseded only for Embed by this slice.

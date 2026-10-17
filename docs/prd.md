@@ -166,6 +166,9 @@ merged-revision checks and release-domain acceptance remain separate gates. See 
 
 ### Public project Embed badges
 
+Implemented and merged into `dev` at `d49273a`, including the designer-provided
+badge artwork. Merged-release and deployment verification remain separate gates.
+
 - Desktop Embed and compact More → Embed open the accessible public dialog at
   `/<slug>?dialog=embed`, synchronized with direct links, reload and browser history.
 - Default customization is dark, 200 × 50 regardless of the app theme. Live SVG
