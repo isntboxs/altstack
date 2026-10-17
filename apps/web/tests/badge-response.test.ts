@@ -2,6 +2,7 @@ import { JSDOM } from 'jsdom'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { badgeResponse } from '#/features/project/embed/response.server'
+import artwork from '../public/badge.svg?raw'
 
 const { lookup } = vi.hoisted(() => {
 	return { lookup: vi.fn() }
@@ -32,7 +33,7 @@ describe('public badge response', () => {
 		expect(doc.querySelector('title')?.textContent).toContain('Atlas�� 工具 🚀')
 	})
 	it.each(['dark', 'light'])(
-		'returns deterministic valid self-contained %s SVG with an intact outlined signature',
+		'returns deterministic valid self-contained %s SVG with the supplied badge artwork',
 		async (theme) => {
 			const first = await request(`?theme=${theme}&width=320&height=80`)
 			const text = await first.text()
@@ -47,7 +48,24 @@ describe('public badge response', () => {
 			expect(doc.querySelector('title')?.textContent).toBe(
 				'Atlas & "Studio" <Kit> badge — Listed on altstack'
 			)
-			expect(doc.querySelectorAll('path').length).toBe(10)
+			const source = new JSDOM(artwork, { contentType: 'image/svg+xml' }).window
+				.document
+			expect(
+				Array.from(doc.querySelectorAll('path'), (path) =>
+					path.getAttribute('d')
+				)
+			).toEqual(
+				Array.from(source.querySelectorAll('path'), (path) =>
+					path.getAttribute('d')
+				)
+			)
+			expect(doc.querySelector('[style]')).toBeNull()
+			expect(doc.querySelector('#badge > path')?.getAttribute('fill')).toBe(
+				theme === 'dark' ? '#101010' : '#ffffff'
+			)
+			expect(
+				doc.querySelector('svg svg')?.getAttribute('preserveAspectRatio')
+			).toBe('xMidYMid meet')
 			expect(
 				doc.querySelector('script, foreignObject, image, style, a')
 			).toBeNull()

@@ -449,7 +449,7 @@ try {
 				String(height)
 			)
 			assert.equal(document.querySelector('script, image, foreignObject'), null)
-			assert.match(svg, /LISTED ON/)
+			assert.match(svg, /Listed on altstack/)
 			assert.doesNotMatch(svg, /PRIVATE_|featured|verified/i)
 			await writeFile(
 				join(evidence, `badge-${theme}-${width}x${height}.png`),

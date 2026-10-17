@@ -38,8 +38,12 @@ listing link carries `utm_source=altstack`, `utm_medium=badge`,
 and `rel="noopener noreferrer"`. The image has matching width/height,
 project-specific escaped `alt="<name> badge"`, and `loading="lazy"`. HTML attributes
 are escaped; preview uses an actual image, never injected project HTML. SVG titles
-are XML-escaped. Only the bundled approved outlined signature is interpolated as
-trusted vector paths. There are no external fonts/images/scripts or foreignObject.
+are XML-escaped. The designer-provided `apps/web/public/badge.svg` is bundled as
+the artwork source, preserving its paths, rounded border and watermark. Dark uses the original
+palette; light remaps its five colors. Exported inline styles become SVG
+presentation attributes to work with the endpoint CSP. The full 200 × 50 design
+scales proportionally, with transparent space for other aspect ratios. There are
+no external fonts/images/scripts or foreignObject.
 
 Copy awaits the Clipboard API. On rejection/unavailability, accessible feedback
 explains manual copying and selects the read-only textarea. Edits clear stale
@@ -146,3 +150,24 @@ Screenshots are retained in T3 browser artifacts. Owned runtime processes ended
 and disposable schemas were cleaned by their wrappers; shared application data
 was not used. No push, PR or deployment was performed. This record does not verify
 any future merge, production domain/CDN, real OAuth or opt-in Upstash service.
+
+## Designer artwork update — 2026-10-17
+
+The generator now bundles `apps/web/public/badge.svg` directly. Tested on HEAD
+`168c97dbff7d2109a16568807e636314a82a4160` plus this local update. The same
+source/test fingerprint algorithm above, over the four changed source/test/SVG
+files, yields `479f7444a13071a342af6b6e946f54e194094abb4e3261a26a9f1809d31c2f80`.
+
+- `vp install` and `vp check`: passed; no dependency changes.
+- Focused badge/Embed UI tests: **33 passed**.
+- Disposable-schema production HTTP acceptance: **14 groups passed**, including
+  the **8/8** workspace build; evidence in
+  `/home/mrboxs/.cache/altstack-l1-http-oMasqX`.
+- Native dark 200 × 50 raster output is pixel-identical to the supplied SVG.
+  Dark/light and custom sizes were visually checked in disposable Chromium,
+  serving captured production SVGs with the endpoint CSP. T3 snapshot timed out
+  twice and its automation client disconnected during reconnect, requiring this
+  browser fallback. Screenshot: `/tmp/altstack-badge-design-qa/browser.png`.
+
+The full root suite and dialog interaction matrix recorded above were not rerun
+for this artwork-only update. No push or deployment was performed.
