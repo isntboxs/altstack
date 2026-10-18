@@ -48,7 +48,12 @@ function LogoImage({
 					alt=""
 					className="size-full object-contain"
 					ref={(element) => {
-						if (element?.complete && element.naturalWidth === 0) setFailed(true)
+						if (element?.complete) {
+							void element.decode().then(
+								() => setFailed(false),
+								() => setFailed(true)
+							)
+						}
 					}}
 					onError={() => setFailed(true)}
 				/>
@@ -110,7 +115,10 @@ function ScreenshotImage({
 				className="relative aspect-video w-full object-cover"
 				ref={(element) => {
 					if (element?.complete) {
-						setState(element.naturalWidth > 0 ? 'loaded' : 'failed')
+						void element.decode().then(
+							() => setState('loaded'),
+							() => setState('failed')
+						)
 					}
 				}}
 				onLoad={() => setState('loaded')}

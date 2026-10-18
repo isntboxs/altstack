@@ -13,7 +13,7 @@ export function publicContentOptions(slug: string, content: string) {
 		queryFn: async () => {
 			if (!content) return emptyPublicContent()
 			try {
-				return await preparePublicContent({ data: { slug, content } })
+				return await preparePublicContent({ data: { slug } })
 			} catch {
 				// Enhancement failure must not hide the documentation. Do not log
 				// source content (or a query key containing the entire document).

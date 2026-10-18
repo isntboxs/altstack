@@ -305,15 +305,13 @@ describe('public category routes and hierarchy UI', () => {
 				? Promise.resolve({ ...zed, content })
 				: originalRpc(path, input)
 		)
-		vi.mocked(preparePublicContent).mockImplementation(({ data }) =>
+		vi.mocked(preparePublicContent).mockImplementation(() =>
 			Promise.resolve({
 				codeBlocks: {},
 				projectsBySlug: {
 					'linked-project': {
 						slug: 'linked-project',
-						name: data.content.includes('Second')
-							? 'Updated name'
-							: 'Original name',
+						name: content.includes('Second') ? 'Updated name' : 'Original name',
 						logo: null,
 					},
 				},
@@ -347,7 +345,7 @@ describe('public category routes and hierarchy UI', () => {
 		)
 		await waitFor(() =>
 			expect(preparePublicContent).toHaveBeenCalledWith(
-				expect.objectContaining({ data: { slug: 'other-project', content } })
+				expect.objectContaining({ data: { slug: 'other-project' } })
 			)
 		)
 	})

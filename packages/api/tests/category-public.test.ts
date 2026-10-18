@@ -16,7 +16,10 @@ import {
 import type { ORPCContext } from '@altstack/api/context'
 import { openApiHandler, rpcHandler } from '@altstack/api/handler'
 import { getDirectProjectCategories } from '@altstack/api/queries/category'
-import { publicProjectMentions } from '@altstack/api/queries/project-mentions'
+import {
+	publicProjectContent,
+	publicProjectMentions,
+} from '@altstack/api/queries/project-mentions'
 import { routers } from '@altstack/api/routers'
 
 import {
@@ -122,6 +125,36 @@ afterAll(async () => {
 }, 60_000)
 
 describe('public category hierarchy', () => {
+	it('loads stored Markdown only for published projects visible through public detail', async () => {
+		const published = await zed()
+		await database.db
+			.update(project)
+			.set({ content: 'Stored public Markdown\n' })
+			.where(eq(project.id, published.projectId))
+		expect(await publicProjectContent(published.slug, database.db)).toEqual({
+			content: 'Stored public Markdown\n',
+		})
+		for (const status of ['draft', 'rejected', 'removed'] as const) {
+			await database.db
+				.update(project)
+				.set({ status })
+				.where(eq(project.id, published.projectId))
+			expect(
+				await publicProjectContent(published.slug, database.db)
+			).toBeUndefined()
+		}
+		await database.db.insert(project).values({
+			name: 'Orphan Markdown',
+			slug: 'test-content-orphan',
+			status: 'published',
+			content: 'Not publicly visible',
+			repositoryUrl: 'https://github.com/altstack-test-fixtures/content-orphan',
+		})
+		for (const slug of ['missing', 'test-content-orphan']) {
+			expect(await publicProjectContent(slug, database.db)).toBeUndefined()
+		}
+	})
+
 	it('looks up public project mentions in a batch without exposing hidden or incomplete projects', async () => {
 		const published = await zed()
 		const hidden = await zed('draft')

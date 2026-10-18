@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { ProjectLogo, ProjectScreenshot } from '#/components/project-media'
@@ -9,9 +15,71 @@ vi.mock('@altstack/env/web', () => {
 		env: { VITE_S3_PUBLIC_URL: 'https://storage.test' },
 	}
 })
-afterEach(cleanup)
+const originalDecode = Object.getOwnPropertyDescriptor(
+	HTMLImageElement.prototype,
+	'decode'
+)
+afterEach(() => {
+	cleanup()
+	vi.restoreAllMocks()
+	if (originalDecode) {
+		Object.defineProperty(HTMLImageElement.prototype, 'decode', originalDecode)
+	} else {
+		Reflect.deleteProperty(HTMLImageElement.prototype, 'decode')
+	}
+})
+
+function completedImage(width: number, decode: () => Promise<void>) {
+	vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true)
+	vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(
+		width
+	)
+	Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+		configurable: true,
+		value: decode,
+	})
+}
 
 describe('public project media', () => {
+	it.each(['logo', 'screenshot'] as const)(
+		'accepts a completed %s that decodes without an intrinsic width',
+		async (kind) => {
+			const decode = vi.fn().mockResolvedValue(undefined)
+			completedImage(0, decode)
+			const view = render(
+				kind === 'logo' ? (
+					<ProjectLogo src="cached.svg" name="Atlas" />
+				) : (
+					<ProjectScreenshot src="cached.svg" name="Atlas" websiteUrl={null} />
+				)
+			)
+			await waitFor(() => {
+				expect(decode).toHaveBeenCalled()
+				expect(screen.queryByText('Loading screenshot…')).toBeNull()
+			})
+			expect(view.container.querySelector('img')).not.toBeNull()
+			expect(screen.queryByText('Screenshot unavailable')).toBeNull()
+		}
+	)
+	it.each(['logo', 'screenshot'] as const)(
+		'replaces a completed %s when decoding fails despite an intrinsic width',
+		async (kind) => {
+			completedImage(120, vi.fn().mockRejectedValue(new Error('Decode failed')))
+			const view = render(
+				kind === 'logo' ? (
+					<ProjectLogo src="corrupt.svg" name="Atlas" />
+				) : (
+					<ProjectScreenshot src="corrupt.svg" name="Atlas" websiteUrl={null} />
+				)
+			)
+			await waitFor(() => {
+				expect(
+					screen.getByText(kind === 'logo' ? 'A' : 'Screenshot unavailable')
+				).toBeTruthy()
+			})
+			expect(view.container.querySelector('img')).toBeNull()
+		}
+	)
 	it.each([null, 'https://project.test/'])(
 		'keeps absent screenshots compact and unlinked with website %s',
 		(websiteUrl) => {

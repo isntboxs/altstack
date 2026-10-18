@@ -32,6 +32,13 @@ beforeEach(() => {
 afterEach(() => clients.splice(0).forEach((queryClient) => queryClient.clear()))
 
 describe('public content cache', () => {
+	it('sends only the slug to prepare stored public documentation', async () => {
+		await client().query(publicContentOptions('source', '# Stored content'))
+		expect(preparePublicContent).toHaveBeenCalledExactlyOnceWith({
+			data: { slug: 'source' },
+		})
+	})
+
 	it('reuses SSR preparation after hydration, then refreshes for content, slug and catalog changes', async () => {
 		const server = client()
 		const options = publicContentOptions('first', 'Original')

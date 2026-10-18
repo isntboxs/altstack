@@ -3,6 +3,19 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '@altstack/db'
 import { githubRepository, project } from '@altstack/db/schemas'
 
+export async function publicProjectContent(
+	slug: string,
+	database: Pick<typeof db, 'select'> = db
+) {
+	const rows = await database
+		.select({ content: project.content })
+		.from(project)
+		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+		.where(and(eq(project.status, 'published'), eq(project.slug, slug)))
+		.limit(1)
+	return rows.at(0)
+}
+
 // Match the public detail endpoint, including its required repository row.
 export async function publicProjectMentions(
 	slugs: Array<string>,
