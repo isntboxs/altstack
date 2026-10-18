@@ -10,6 +10,8 @@ R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
 L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
 L2 implementation merged into `dev` at **`b83b448`**, reconciled on **2026-10-16**.
 Project Embed merged into `dev` at **`d49273a`**, reconciled on **2026-10-17**.
+Public Markdown merged into `dev` at **`8128e0f`**; media/content fixes are present
+at **`840f1fd`**, reconciled on **2026-10-18**.
 Merged-revision and production acceptance remain open.
 
 ## Operating rules
@@ -31,6 +33,7 @@ Merged-revision and production acceptance remain open.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented and merged, including the designer-provided artwork; merged-revision and deployment acceptance remain open.
+- **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, public project mentions, cached-image decoding and stored-public-content preparation implemented in `dev`; release verification remains separate.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
@@ -251,7 +254,7 @@ acceptance remains separate from implementation.
 - [x] Project cards include trusted public logos, stored GitHub stars/forks and snapshot dates, with bounded raster decoding, missing-logo fallbacks and content-sensitive cache revisions.
 - [x] Live sitemap index with bounded published-project shards and current public category paths; exclude private/admin routes and query permutations.
 - [x] Explicit private/auth/admin, filtered/paginated and empty-category indexing policy; configured-origin robots sitemap discovery and crawlable OG endpoints. API authorization remains the access boundary.
-- [x] Safe truthful JSON-LD and readable project Markdown in SSR while preserving the BlockNote viewer.
+- [x] Safe truthful JSON-LD and crawler-readable project Markdown in SSR. The public renderer was subsequently replaced as recorded below; BlockNote remains the admin editor.
 - [x] Verify real SSR HTTP metadata, missing/nonpublic detail, canonical redirects, image updates/unpublish, offline resource packaging and cold Node/Nitro runtime.
 
 Implementation/regeneration, indexing/cache policy, actual verification and
@@ -317,6 +320,20 @@ artwork update; it is not verification of the final merged revision.
 
 See [Embed parameters, lifecycle and rollout](project-embed.md). L2's historical
 all-disabled decision above is superseded only for Embed by this slice.
+
+### Public content and media polish — 2026-10-18
+
+Present in `dev` at `840f1fd`, following the Markdown renderer merge `8128e0f`.
+
+- [x] Render public documentation with `react-markdown`/GFM in SSR and hydration, omitting raw HTML; retain BlockNote for admin editing/import preview.
+- [x] Server-prepared Shiki light/dark code tokens, source-preserving Copy feedback and plain-code fallback; explicit internal project links can show published project mentions.
+- [x] Accept only a validated slug for content preparation. Read stored content and mention metadata using published-only queries with the repository row required by public detail; never accept Markdown from the caller.
+- [x] Use completed images' `decode()` promises for logo/screenshot success and failure states, retaining local fallbacks and source-change resets.
+
+The implementation thread reported `vp check`, **109 regression tests**,
+**16 production HTTP acceptance groups** and **8/8 build tasks** passing for
+the fixes committed as `840f1fd`. These focused results do not replace a full
+release-revision suite or staging/production acceptance.
 
 ### Launch acceptance and operations
 

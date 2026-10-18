@@ -118,11 +118,17 @@ variables → Actions**:
 - Variable `VITE_APP_NAME`
 - Variable `VITE_APP_URL`
 - Variable `VITE_SERVER_URL`
+- Variable `VITE_S3_PUBLIC_URL`: URL publik CDN/storage production, misalnya
+  `https://cdn.example.com`. Wajib diisi untuk build image web.
 
 `VITE_*` adalah nilai publik yang dibake ke bundle Web; gunakan
 URL production, misalnya `https://app.example.com`,
 dan `https://api.example.com`. Jangan simpan secret
 di build argument.
+
+Workflow memvalidasi seluruh variable `VITE_*` di atas tidak kosong sebelum
+build web. Perubahan `VITE_*` membutuhkan rebuild dan deployment image web
+baru; mengganti environment runtime di Dokploy saja tidak memperbarui bundle.
 
 Setiap image memperoleh tag release yang sama (misalnya `:v1.0.0`) dan tag
 `sha-<commit>`. Di Dokploy, gunakan tag release agar deploy dan rollback selalu

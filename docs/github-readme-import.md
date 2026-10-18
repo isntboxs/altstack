@@ -4,7 +4,7 @@ Admins can click **Import README** in Content on both project create and edit fo
 
 Empty content defaults to Replace. Existing content requires an explicit Replace or Append selection. Append reads the latest editor document and adds paragraph separation. If the document changes after preview, Apply refreshes the preview and requires another click. Fetch failures, conversion failures and Cancel keep editor content and uploads. Changing the repository discards pending responses and previews, including when the input changes back.
 
-The dialog shows a source link pinned to the fetched commit, conversion warnings and a read-only BlockNote preview. Preview, Apply and the public reader share the editor schema, including custom code blocks. Imports normalize through BlockNote's Markdown parse/export pipeline before preview. Pending editor exports are flushed before preview, Apply and Save. The editor's value prop still loads once; imports use an explicit operation instead of resetting the form.
+The dialog shows a source link pinned to the fetched commit, conversion warnings and a read-only BlockNote preview. Preview and Apply share the editor schema, including custom code blocks. Imports normalize through BlockNote's Markdown parse/export pipeline before preview. The public reader separately renders stored Markdown with `react-markdown`/GFM and server-prepared Shiki code blocks; it no longer uses the editor schema. Pending editor exports are flushed before preview, Apply and Save. The editor's value prop still loads once; imports use an explicit operation instead of resetting the form.
 
 ## API contract
 
@@ -29,7 +29,7 @@ Official API reference: [Get a repository README](https://docs.github.com/en/res
 
 ## Validation
 
-`packages/api/tests/fixtures/github-readme.json` records the input and six-field wire output. API/wire tests cover admin authorization, repository verification, pinned reads, errors, size/encoding boundaries and static routing. Transform tests cover GFM, basic/unsafe HTML and path rewriting without external fetches. Both-form tests cover local application, explicit modes, Cancel, stale requests, retry, preserving uploads and persistence only through Save. Real BlockNote tests cover same-task flush, one-time value loading, code export and agreement with the public Markdown parser.
+`packages/api/tests/fixtures/github-readme.json` records the input and six-field wire output. API/wire tests cover admin authorization, repository verification, pinned reads, errors, size/encoding boundaries and static routing. Transform tests cover GFM, basic/unsafe HTML and path rewriting without external fetches. Both-form tests cover local application, explicit modes, Cancel, stale requests, retry, preserving uploads and persistence only through Save. Real BlockNote tests cover same-task flush, one-time value loading, code export and editor Markdown round trips. Public rendering has separate coverage in `apps/web/tests/public-content*.test*`.
 
 Run database-dependent workspace verification only with the disposable-schema wrapper:
 
