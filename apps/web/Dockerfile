@@ -9,7 +9,8 @@
 #   Domain:        https://app.domain.com
 #
 # VITE_* below are BUILD ARGS — they are baked into the client bundle at
-# build time, so changing them in Dokploy requires a rebuild.
+# build time. Changes in GitHub Actions or Dokploy require a rebuild;
+# runtime environment overrides do not update the client bundle.
 
 # --- build stage: Vite+ provisions the pinned Bun package manager ---
 FROM ghcr.io/voidzero-dev/vite-plus:latest AS build
@@ -36,9 +37,11 @@ RUN vp install --frozen-lockfile --ignore-scripts
 ARG VITE_APP_NAME
 ARG VITE_APP_URL
 ARG VITE_SERVER_URL
+ARG VITE_S3_PUBLIC_URL
 ENV VITE_APP_NAME=${VITE_APP_NAME} \
 	VITE_APP_URL=${VITE_APP_URL} \
-	VITE_SERVER_URL=${VITE_SERVER_URL}
+	VITE_SERVER_URL=${VITE_SERVER_URL} \
+	VITE_S3_PUBLIC_URL=${VITE_S3_PUBLIC_URL}
 
 # Build web plus its workspace dependencies in topological order.
 # NOTE: the `...` filter suffix (package + its dependencies) is required —

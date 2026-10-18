@@ -31,6 +31,7 @@ jobs:
               VITE_APP_NAME=${{ vars.VITE_APP_NAME }}
               VITE_APP_URL=${{ vars.VITE_APP_URL }}
               VITE_SERVER_URL=${{ vars.VITE_SERVER_URL }}
+              VITE_S3_PUBLIC_URL=${{ vars.VITE_S3_PUBLIC_URL }}
 
     steps:
       - name: Validate publish configuration
@@ -39,12 +40,14 @@ jobs:
           VITE_APP_NAME: ${{ vars.VITE_APP_NAME }}
           VITE_APP_URL: ${{ vars.VITE_APP_URL }}
           VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+          VITE_S3_PUBLIC_URL: ${{ vars.VITE_S3_PUBLIC_URL }}
         run: |
           test -n "$DOCKERHUB_USERNAME"
           if [ "${{ matrix.name }}" != "server" ]; then
             test -n "$VITE_APP_NAME"
             test -n "$VITE_APP_URL"
             test -n "$VITE_SERVER_URL"
+            test -n "$VITE_S3_PUBLIC_URL"
           fi
 
       - name: Check out repository
