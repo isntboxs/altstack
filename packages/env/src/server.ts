@@ -15,6 +15,7 @@ export const env = createEnv({
 		APP_NAME: z.string(),
 		BETTER_AUTH_URL: z.url(),
 		BETTER_AUTH_SECRET: z.string().min(32),
+		BETTER_AUTH_COOKIE_DOMAIN: z.hostname().optional(),
 		CORS_ORIGINS: z
 			.string()
 			.transform((cors) =>

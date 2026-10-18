@@ -26,6 +26,10 @@ export function createAuthConfig() {
 			encryptOAuthTokens: true,
 		},
 		advanced: {
+			crossSubDomainCookies: {
+				enabled: Boolean(env.BETTER_AUTH_COOKIE_DOMAIN),
+				domain: env.BETTER_AUTH_COOKIE_DOMAIN,
+			},
 			database: {
 				generateId: 'uuid',
 			},

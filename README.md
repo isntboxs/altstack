@@ -135,6 +135,77 @@ Setiap image memperoleh tag release yang sama (misalnya `:v1.0.0`) dan tag
 deterministik. Konfigurasi domain tetap menunjuk ke port internal `3009` untuk
 API serta `3000` untuk Web.
 
+### GitHub sign-in dan sesi SSR lintas subdomain
+
+Web membaca sesi dari cookie pada request SSR, lalu meneruskannya ke API.
+Cookie host-only milik API tidak ikut pada request ke Web: callback GitHub bisa
+berhasil tetapi header tetap menampilkan **Sign in** dan `/submit` mengarahkan
+ke login. Sesuai [panduan cookie Better Auth](https://better-auth.com/docs/concepts/cookies#cross-subdomain-cookies),
+`BETTER_AUTH_COOKIE_DOMAIN` mengaktifkan cookie bersama hanya jika diisi.
+Kosongkan/hapus variabel ini untuk localhost; cookie tetap host-only dan dapat
+dipakai antar port localhost. Gunakan hostname yang sama untuk Web dan API
+lokal, bukan campuran `localhost` dan `127.0.0.1`.
+
+Untuk production saat ini, set **Environment runtime aplikasi API di Dokploy**:
+
+```dotenv
+NODE_ENV=production
+BETTER_AUTH_URL=https://altstack-api.marvagency.net
+BETTER_AUTH_COOKIE_DOMAIN=marvagency.net
+CORS_ORIGINS=https://altstack.marvagency.net
+```
+
+`CORS_ORIGINS` juga menjadi daftar trusted origins Better Auth. Pertahankan
+origin lain yang memang diperlukan secara eksplisit, tanpa wildcard. Domain
+cookie berupa hostname tanpa skema, port, path, atau titik awal. Kedua hostname
+saat ini bersaudara sehingga cakupan bersama terkecilnya `marvagency.net`;
+cookie akan dikirim ke parent dan **semua subdomain**. Seluruh subdomain dalam
+cakupan itu harus dipercaya. Jangan aktifkan pada parent yang juga menampung
+layanan pihak lain yang tidak dipercaya; gunakan penataan domain/proxy lain
+jika cakupan kepercayaan berubah.
+
+Urutan rollout (tidak memerlukan migration database):
+
+1. Bangun/publikasikan image server dan web baru dari commit perbaikan melalui
+   proses release yang berlaku. Image `v0.1.0` lama belum memuat perbaikan ini.
+   Web dibangun dengan `VITE_APP_URL=https://altstack.marvagency.net` dan
+   `VITE_SERVER_URL=https://altstack-api.marvagency.net`, beserta variable publik
+   `VITE_*` lain yang sudah diwajibkan workflow.
+2. Simpan env runtime API di atas di Dokploy, pilih tag image baru untuk API dan
+   Web, lalu pull/redeploy keduanya (API dahulu). Pertahankan secret/database/
+   Redis/storage runtime yang sudah ada. `BETTER_AUTH_COOKIE_DOMAIN` dibaca saat
+   proses API mulai; jangan menaruhnya atau secret di `VITE_*` maupun build args.
+   Web juga harus memakai image baru untuk meneruskan pembaruan cookie sesi SSR.
+3. Sebelum retest, hapus cookie auth lama lewat DevTools **Application/Storage →
+   Cookies** pada kedua origin. Hapus seluruh cookie `better-auth.*` dan
+   `__Secure-better-auth.*` (termasuk varian multi-session/chunk) yang host-only
+   pada API/Web, serta sisa cookie parent dari percobaan sebelumnya. Jangan
+   hanya mengandalkan sign-out: cookie host-only dan cookie parent bernama sama
+   dapat hidup bersamaan dan menimbulkan konflik. Ini akan mengeluarkan sesi
+   browser tersebut. Alternatif pengujian awal: profil incognito yang bersih.
+4. Buka Web, **Sign in → Continue with Github**, lalu periksa cookie sesi:
+   domain `.marvagency.net` (browser dapat menampilkan titik awal), path `/`,
+   `HttpOnly`, `Secure`, dan `SameSite=Lax`. Nilai token tidak perlu disalin.
+   Pastikan header berubah menjadi menu pengguna, hard reload tetap login,
+   dan navigasi langsung/reload `/submit` terbuka tanpa redirect login.
+5. Periksa `/api/auth/get-session` dengan `credentials: 'include'` hanya untuk
+   status dan keberadaan session/user. Uji sign-out: header kembali **Sign in**
+   dan request langsung `/submit` kembali ke
+   `/auth/sign-in?returnTo=%2Fsubmit`. Pastikan browser juga menerima cookie
+   sesi yang diperbarui saat sesi memasuki waktu refresh.
+
+Perbaikan ini mempertahankan default `HttpOnly`, `Secure` untuk URL HTTPS,
+`SameSite=Lax`, pemeriksaan origin, dan perlindungan CSRF Better Auth. Jangan
+menonaktifkan pemeriksaan tersebut atau mengganti global ke `SameSite=None`.
+
+Regresi lokal: `vp run --filter web test:auth-http` membangun project, menjalankan
+API Bun dan SSR Node pada URL HTTP localhost dari `.env`, lalu menguji header,
+guard `/submit`, refresh cookie SSR, dan sign-out dengan akun sintetis pada
+schema sementara development. Pastikan port lokal Web/API kosong. Test cookie
+HTTPS dengan parent domain eksplisit menggunakan adapter memori, tanpa GitHub
+atau database production. Callback OAuth GitHub dan pengiriman cookie antar
+hostname production tetap perlu retest setelah image baru di-deploy.
+
 ## GitHub statistics refresh
 
 Metadata aside, refresh manual admin, dan job harian tersedia. Lihat

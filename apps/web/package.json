@@ -11,6 +11,7 @@
 		"generate:og": "bun run scripts/generate-og.ts",
 		"preview": "vp preview",
 		"test": "vp test run",
+		"test:auth-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/auth-http.acceptance.ts",
 		"test:categories-http": "vp run --filter @altstack/db test:isolated -- bun run apps/web/tests/category-http.acceptance.ts",
 		"test:seo-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/seo-http.acceptance.ts"
 	},
