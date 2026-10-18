@@ -1,5 +1,25 @@
 @import '@altstack/ui/globals.css';
+@plugin '@tailwindcss/typography';
 @source "../node_modules/@blocknote/shadcn";
+
+/* Both Shiki palettes arrive with SSR; switching theme needs only CSS. */
+.public-code,
+.public-code-token {
+	color: var(--code-light-color, var(--foreground));
+	background-color: var(--code-light-bg, transparent);
+	font-style: var(--code-light-style, normal);
+	font-weight: var(--code-light-weight, 400);
+	text-decoration: var(--code-light-decoration, none);
+}
+
+.dark .public-code,
+.dark .public-code-token {
+	color: var(--code-dark-color, var(--foreground));
+	background-color: var(--code-dark-bg, transparent);
+	font-style: var(--code-dark-style, normal);
+	font-weight: var(--code-dark-weight, 400);
+	text-decoration: var(--code-dark-decoration, none);
+}
 
 .bn-block-content[data-content-type='codeBlock'] {
 	background: transparent !important;

@@ -24,6 +24,8 @@ import { searchProjectsInputSchema } from '@altstack/shared/schemas/project'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
 import { projectQueries } from '#/features/project/queries'
+import { emptyPublicContent } from '#/features/public-content/model'
+import { preparePublicContent } from '#/features/public-content/server-function'
 import { getRouter } from '#/router'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import type { orpc } from '#/utils/orpc'
@@ -52,6 +54,9 @@ vi.mock('#/routes/__root', async () => {
 })
 vi.mock('#/functions/get-auth-fn', () => {
 	return { getAuthFn }
+})
+vi.mock('#/features/public-content/server-function', () => {
+	return { preparePublicContent: vi.fn() }
 })
 vi.mock('#/hooks/use-auth-identity', () => {
 	return { useAuthIdentity: vi.fn() }
@@ -201,6 +206,9 @@ beforeEach(() => {
 	})
 	vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 	getAuthFn.mockReset().mockResolvedValue(null)
+	vi.mocked(preparePublicContent)
+		.mockReset()
+		.mockResolvedValue(emptyPublicContent())
 	visibleNodes = nodes
 	total = 1
 	rpc.mockReset().mockImplementation((path, input) =>
@@ -288,6 +296,62 @@ async function routerAt(url: string, show = false) {
 }
 
 describe('public category routes and hierarchy UI', () => {
+	it('loads public Markdown before rendering, preserves it through dialogs and refreshes on content changes', async () => {
+		let content = '[First](/linked-project)'
+		const originalRpc = rpc.getMockImplementation()
+		if (!originalRpc) throw new Error('Missing RPC fixture')
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'project/getBySlug'
+				? Promise.resolve({ ...zed, content })
+				: originalRpc(path, input)
+		)
+		vi.mocked(preparePublicContent).mockImplementation(({ data }) =>
+			Promise.resolve({
+				codeBlocks: {},
+				projectsBySlug: {
+					'linked-project': {
+						slug: 'linked-project',
+						name: data.content.includes('Second')
+							? 'Updated name'
+							: 'Original name',
+						logo: null,
+					},
+				},
+			})
+		)
+		const router = await routerAt('/test-zed', true)
+		expect(screen.getByRole('link', { name: 'Original name' })).toBeTruthy()
+		expect(preparePublicContent).toHaveBeenCalledTimes(1)
+		await act(() =>
+			router.navigate({
+				to: '/$slug',
+				params: { slug: 'test-zed' },
+				search: { dialog: 'embed' },
+			})
+		)
+		await screen.findByRole('dialog', { name: 'Embed the Zed badge' })
+		expect(preparePublicContent).toHaveBeenCalledTimes(1)
+		await act(() =>
+			router.navigate({
+				to: '/$slug',
+				params: { slug: 'test-zed' },
+				search: {},
+			})
+		)
+		content = '[Second](/linked-project)'
+		await act(() => invalidateCatalog(router.options.context.queryClient))
+		await screen.findByRole('link', { name: 'Updated name' })
+		expect(screen.queryByRole('link', { name: 'Original name' })).toBeNull()
+		await act(() =>
+			router.navigate({ to: '/$slug', params: { slug: 'other-project' } })
+		)
+		await waitFor(() =>
+			expect(preparePublicContent).toHaveBeenCalledWith(
+				expect.objectContaining({ data: { slug: 'other-project', content } })
+			)
+		)
+	})
+
 	it('reserves /categories, groups sorted roots with immediate children, and keeps legacy root leaves clickable', async () => {
 		const router = await routerAt('/categories', true)
 		expect(router.state.matches.at(-1)?.routeId).toBe('/_app/categories/')

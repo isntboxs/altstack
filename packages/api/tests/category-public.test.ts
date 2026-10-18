@@ -16,6 +16,7 @@ import {
 import type { ORPCContext } from '@altstack/api/context'
 import { openApiHandler, rpcHandler } from '@altstack/api/handler'
 import { getDirectProjectCategories } from '@altstack/api/queries/category'
+import { publicProjectMentions } from '@altstack/api/queries/project-mentions'
 import { routers } from '@altstack/api/routers'
 
 import {
@@ -121,6 +122,37 @@ afterAll(async () => {
 }, 60_000)
 
 describe('public category hierarchy', () => {
+	it('looks up public project mentions in a batch without exposing hidden or incomplete projects', async () => {
+		const published = await zed()
+		const hidden = await zed('draft')
+		await database.db.insert(project).values({
+			name: 'Private orphan',
+			slug: 'test-mention-orphan',
+			status: 'published',
+			repositoryUrl: 'https://github.com/altstack-test-fixtures/mention-orphan',
+		})
+		for (const status of ['draft', 'rejected', 'removed'] as const) {
+			await database.db
+				.update(project)
+				.set({ status })
+				.where(eq(project.id, hidden.projectId))
+			const mentions = await publicProjectMentions(
+				[
+					published.slug,
+					published.slug,
+					hidden.slug,
+					'missing',
+					'test-mention-orphan',
+				],
+				database.db
+			)
+			expect(mentions).toEqual([
+				{ slug: published.slug, name: 'Zed', logo: 'test-fixtures/zed.svg' },
+			])
+		}
+		expect(await publicProjectMentions([], database.db)).toEqual([])
+	})
+
 	it('counts and searches a published project once at both leaves and every ancestor', async () => {
 		const fixture = await zed()
 		const client = clientWith()
