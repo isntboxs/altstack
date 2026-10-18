@@ -1,8 +1,8 @@
 ---
 title: AltStack Product Requirements
-version: 2.2
+version: 2.4
 status: Pre-launch — implementation reconciled
-last_updated: 2026-10-14
+last_updated: 2026-10-17
 ---
 
 # AltStack
@@ -154,14 +154,36 @@ the roadmap. Staging and production acceptance remain separate.
 
 ### L1 / L2 — Public release completion
 
-L1 is implemented and merged into `dev` at `a650dd0`; L2, merged-revision checks
-and release-domain acceptance remain open. See [L1 implementation and verification](seo-og.md).
+L1 and L2 are implemented and merged into `dev` at `a650dd0` and `b83b448`,
+respectively. Remaining release gates are tracked in [the roadmap](roadmap.md#launch-acceptance-and-operations);
+merged-revision checks and release-domain acceptance remain separate gates. See [L1 implementation and verification](seo-og.md).
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- Remove or clearly disable unimplemented Verify/Bookmark/Report/Embed actions and unsupported ranking promises.
+- Retain Verify/Bookmark/Report and account Bookmarks across desktop/compact/mobile as semantically disabled controls with visible, accessible “Coming soon” explanations. Preserve a functional named compact More menu. No login redirect, fake modal/toast, bookmark state or new workflow; remove unsupported trust/ranking promises. This user decision supersedes the research's original remove/hide recommendation.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. See [L2 implementation brief and reference research](l2-ui-spec.md); research completion does not close UI acceptance or expand launch scope.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership, bookmarks and reports remain backlog until separately implemented and verified; disabled controls do not expand launch scope.
+
+### Public project Embed badges
+
+Implemented and merged into `dev` at `d49273a`, including the designer-provided
+badge artwork. Merged-release and deployment verification remain separate gates.
+
+- Desktop Embed and compact More → Embed open the accessible public dialog at
+  `/<slug>?dialog=embed`, synchronized with direct links, reload and browser history.
+- Default customization is dark, 200 × 50 regardless of the app theme. Live SVG
+  preview and escaped, read-only HTML share strict dimension validation. Copy
+  reports actual clipboard success or selects code for manual copying on failure.
+- Public `/<slug>/badge.svg` accepts dark/light, width 160–1200 and height 40–400
+  integer pixels. It uses the approved AltStack signature and truthful “Listed on”.
+- Every request checks current published visibility; hidden/missing/deleted listings
+  return generic 404, service failure 503. No-store responses prevent cached
+  variants or conditional requests from bypassing publication checks.
+- Snippets use the configured `VITE_APP_URL` origin, never request Host, with
+  `altstack / badge / embed / project-<slug>` UTM attribution. Badge endpoints are
+  noindex and excluded from sitemaps; dialog URLs retain clean detail metadata.
+- Implementation/local verification and deployment are separate. See
+  [Embed contract, cache and deployment notes](project-embed.md).
 
 ### R6 / R7 — MVP+
 

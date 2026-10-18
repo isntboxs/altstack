@@ -55,14 +55,13 @@ export const AuthDialog = ({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-sm">
+			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle className="text-lg font-medium">
 						Welcome back!
 					</DialogTitle>
 					<DialogDescription>
-						Sign in to discover curated developer tools and manage your saved
-						open-source projects.
+						Sign in to submit open-source projects and track your submissions.
 					</DialogDescription>
 				</DialogHeader>
 

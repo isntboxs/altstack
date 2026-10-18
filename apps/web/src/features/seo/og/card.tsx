@@ -7,7 +7,7 @@ export const OG_WIDTH = 1200
 export const OG_HEIGHT = 630
 export const homeHeadline = "discover open-source software you'll actually use."
 export const homeSupporting =
-	'find quality projects, compare alternatives, and explore developer tools.'
+	'find quality projects and explore developer tools.'
 
 export interface GithubCardStats {
 	owner: string
@@ -367,10 +367,7 @@ export function cardLayout(card: SocialCard, signature: string) {
 		: fitLines(title, 778, size, 3)
 	const description = home ? homeSupporting : cardText(card.description ?? '')
 	const supportingLines = home
-		? [
-				'find quality projects, compare alternatives,',
-				'and explore developer tools.',
-			]
+		? ['find quality projects and', 'explore developer tools.']
 		: fitLines(description, 770, 25, 2)
 	return (
 		<div

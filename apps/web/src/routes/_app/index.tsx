@@ -1,8 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 
-import { HeroSection } from '#/components/hero-section'
 import { ProjectListSection } from '#/components/project-list-section'
-import { HomeFilterSection } from '#/features/project/components/home-filters'
+import { PublicPending, PublicError } from '#/components/public-page-state'
 import { homeProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
 import { homeProjectSearchSchema } from '#/features/project/search'
@@ -46,6 +45,10 @@ export const Route = createFileRoute('/_app/')({
 			],
 		})
 	},
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: PublicPending,
+	errorComponent: () => <PublicError title="Unable to load projects" />,
 	component: Home,
 })
 
@@ -57,11 +60,26 @@ function Home() {
 
 	return (
 		<>
-			<HeroSection />
-			<HomeFilterSection />
 			<ProjectListSection
 				data={data}
 				pageLinkOptions={homeProjectPageLink}
+				emptyAction={
+					hasFilters ? (
+						<Link
+							to="/"
+							className="inline-flex items-center underline underline-offset-4"
+						>
+							Clear filters
+						</Link>
+					) : (
+						<Link
+							to="/categories"
+							className="inline-flex items-center underline underline-offset-4"
+						>
+							Browse categories
+						</Link>
+					)
+				}
 				emptyMessage={
 					hasFilters
 						? 'No projects match your current filters. Try a different search term or clear filters above.'

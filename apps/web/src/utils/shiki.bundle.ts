@@ -304,8 +304,8 @@ const bundledLanguages = {
 const bundledThemes = {
 	'one-dark-pro': () => import('@shikijs/themes/one-dark-pro'),
 	'one-light': () => import('@shikijs/themes/one-light'),
-	'github-light': () => import('@shikijs/themes/github-light-default'),
-	'github-dark': () => import('@shikijs/themes/github-dark-default'),
+	'github-light': () => import('@shikijs/themes/github-light'),
+	'github-dark': () => import('@shikijs/themes/github-dark'),
 	[CODE_BLOCK_SHIKI_THEME]: () =>
 		Promise.resolve({
 			default: codeBlockShikiTheme,

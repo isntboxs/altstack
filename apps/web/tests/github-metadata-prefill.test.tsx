@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { CreateProjectForm } from '#/features/admin-projects/components/create-project-form'
-import { EditProjectForm } from '#/routes/_main/projects/$id.edit'
+import { EditProjectForm } from '#/features/admin-projects/components/edit-project-form'
 
 type Metadata = ORPCRouterOutputs['admin']['project']['githubMetadata']
 const mocks = vi.hoisted(() => {

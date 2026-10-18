@@ -15,7 +15,7 @@ import type { ORPCRouterInputs, ORPCRouterOutputs } from '@altstack/api/routers'
 
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CreateProjectForm } from '#/features/admin-projects/components/create-project-form'
-import { EditProjectForm } from '#/routes/_main/projects/$id.edit'
+import { EditProjectForm } from '#/features/admin-projects/components/edit-project-form'
 
 type Metadata = ORPCRouterOutputs['admin']['project']['githubReadme']
 const mocks = vi.hoisted(() => {

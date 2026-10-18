@@ -1,15 +1,11 @@
-import {
-	IconArrowRight,
-	IconGitCommit,
-	IconGitFork,
-	IconStar,
-} from '@tabler/icons-react'
+import { IconArrowRight, IconGitFork, IconStar } from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
 import { Link, createLink } from '@tanstack/react-router'
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { Button } from '@altstack/ui/components/button'
 import {
 	Card,
 	CardContent,
@@ -28,8 +24,8 @@ import {
 } from '@altstack/ui/components/pagination'
 import { Separator } from '@altstack/ui/components/separator'
 
+import { ProjectLogo } from '#/components/project-media'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
-import { resolveFileUrl } from '#/utils/storage'
 
 type ProjectCardProps =
 	ORPCRouterOutputs['project']['search']['projects'][number]
@@ -113,11 +109,6 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 				projectData.github.forks
 			),
 		},
-		{
-			icon: IconGitCommit,
-			label: 'Last commit',
-			value: 'Unknown',
-		},
 	]
 
 	return (
@@ -125,69 +116,70 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 			to="/$slug"
 			params={{ slug: projectData.slug }}
 			viewTransition
-			className="group relative rounded-xl p-0.5 ring-1 ring-border transition-all duration-300 ease-in-out hover:ring-primary/50"
+			className="group relative min-w-0 rounded-xl p-0.5 ring-1 ring-border transition-colors hover:ring-primary/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 		>
 			<Card className="relative size-full overflow-hidden ring-0">
-				{/* Watermark Logo di Pojok Kanan Atas */}
-				<div className="pointer-events-none absolute inset-px z-0 overflow-clip rounded-sm opacity-10 blur-[1px] transition-all duration-500 select-none group-hover:scale-110 group-hover:opacity-20 group-hover:blur-none">
-					<img
-						src={resolveFileUrl(projectData.logo)}
-						alt={projectData.name}
-						aria-hidden="true"
-						width={60}
-						height={60}
-						className="absolute -top-20 -right-20 -z-10 size-60 rotate-12 rounded-md mask-b-from-25 mask-l-from-25 p-[0.09375em] mix-blend-multiply dark:mix-blend-normal"
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -top-10 -right-10 rotate-12 opacity-10"
+				>
+					<ProjectLogo
+						src={projectData.logo}
+						name={projectData.name}
+						className="size-40 text-5xl"
 					/>
 				</div>
-
-				<CardHeader className="gap-4">
-					<CardTitle className="flex items-center gap-2">
-						<img
-							src={resolveFileUrl(projectData.logo)}
-							alt={projectData.name}
-							className="size-7 rounded-sm"
+				<CardHeader className="relative gap-4">
+					<CardTitle className="flex min-w-0 items-start gap-2">
+						<ProjectLogo
+							src={projectData.logo}
+							name={projectData.name}
+							className="size-7"
 						/>
-
-						<h2 className="text-xl font-semibold">{projectData.name}</h2>
+						<h2 className="min-w-0 text-xl font-semibold wrap-anywhere">
+							{projectData.name}
+						</h2>
 					</CardTitle>
 				</CardHeader>
 
 				<CardContent className="flex-1">
 					<div className="relative size-full">
-						{/* Default State: Tagline & GitHub Stats */}
-						<div className="flex h-full flex-col justify-between transition-opacity duration-300 group-hover:pointer-events-none group-hover:opacity-0">
-							<CardDescription className="line-clamp-2 min-h-10">
+						<div className="flex flex-col gap-4 transition-all duration-300 group-hover:pointer-events-none group-hover:opacity-0">
+							<CardDescription className="min-h-10 wrap-anywhere">
 								{projectData.tagline}
 							</CardDescription>
-
-							<div className="mt-auto grid grid-cols-1 gap-2 pt-3">
-								{githubStatsItem.map((item, idx) => (
+							<div className="mt-auto grid grid-cols-1 gap-2">
+								{githubStatsItem.map((item) => (
 									<div
-										key={idx}
+										key={item.label}
 										className="flex items-center justify-between gap-2"
 									>
 										<div className="flex shrink-0 items-center gap-1.5">
-											<item.icon className="size-4 shrink-0 text-muted-foreground" />
-											<span className="text-xs whitespace-nowrap text-muted-foreground">
+											<item.icon
+												aria-hidden="true"
+												className="size-4 text-muted-foreground"
+											/>
+											<span className="text-xs text-muted-foreground">
 												{item.label}
 											</span>
 										</div>
-
 										<Separator className="min-w-2 flex-1" />
-
-										<span
-											className="max-w-[50%] min-w-0 truncate text-right text-xs font-medium"
-											title={String(item.value)}
-										>
+										<span className="min-w-0 text-right text-xs font-medium">
 											{item.value}
 										</span>
 									</div>
 								))}
 							</div>
+							<div className="flex items-center justify-between gap-2 text-xs font-medium text-primary">
+								<span>View project details</span>
+								<IconArrowRight aria-hidden="true" className="size-4" />
+							</div>
 						</div>
 
-						{/* Hover State: Full Description & Details Action */}
-						<div className="absolute inset-0 flex flex-col justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+						<div
+							aria-hidden="true"
+							className="absolute inset-0 flex flex-col justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+						>
 							<p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
 								{projectData.description}
 							</p>
@@ -207,90 +199,105 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 export const ProjectListSection = ({
 	data,
 	emptyMessage,
+	emptyAction,
 	pageLinkOptions,
 }: {
 	data: ORPCRouterOutputs['project']['search']
 	emptyMessage: string
+	emptyAction?: ReactNode
 	pageLinkOptions: (page: number) => ProjectPageLinkOptions
 }) => {
 	const { pagination } = data
 	const currentPage = pagination.page || 1
 	const totalPages = pagination.totalPages
-
-	if (data.projects.length === 0) {
-		return (
-			<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
-				<div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
-					<p className="text-lg font-medium">No projects found</p>
-					<p className="mt-1 text-sm text-muted-foreground">{emptyMessage}</p>
+	const outOfRange = currentPage > Math.max(1, totalPages)
+	const paginationItems = getPaginationItems(currentPage, totalPages)
+	return (
+		<section
+			aria-label="Project results"
+			className="container mx-auto mb-10 w-full max-w-6xl space-y-4 px-4 lg:px-16"
+		>
+			{data.projects.length === 0 ? (
+				<div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-4 py-12 text-center">
+					<h2 className="text-lg font-medium">
+						{outOfRange ? 'No projects on this page' : 'No projects found'}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{outOfRange
+							? 'This page is beyond the available results. Return to the first page.'
+							: emptyMessage}
+					</p>
+					{outOfRange ? (
+						<Link
+							{...pageLinkOptions(1)}
+							resetScroll={false}
+							className="inline-flex items-center underline underline-offset-4"
+						>
+							First page
+						</Link>
+					) : (
+						emptyAction
+					)}
 				</div>
-			</section>
-		)
-	}
-
-	if (totalPages <= 1) {
-		return (
-			<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
+			) : (
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 					{data.projects.map((project) => (
 						<ProjectCard key={project.slug} {...project} />
 					))}
 				</div>
-			</section>
-		)
-	}
-
-	const paginationItems = getPaginationItems(currentPage, totalPages)
-
-	return (
-		<section className="container mx-auto mb-10 w-full max-w-6xl px-4 lg:px-16">
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{data.projects.map((project) => (
-					<ProjectCard key={project.slug} {...project} />
-				))}
-			</div>
-
-			<Pagination className="mt-8">
-				<PaginationContent>
-					{/* Previous Button */}
-					<PaginationItem>
-						<CustomPaginationPrevious
-							{...pageLinkOptions(Math.max(1, currentPage - 1))}
-							resetScroll={false}
-							disabled={!pagination.hasPreviousPage}
-							viewTransition
-						/>
-					</PaginationItem>
-
-					{/* Page Numbers & Ellipsis */}
-					{paginationItems.map((item, idx) => (
-						<PaginationItem key={idx}>
-							{item === 'ellipsis' ? (
-								<PaginationEllipsis />
-							) : (
-								<CustomPaginationLink
-									{...pageLinkOptions(item)}
+			)}
+			{totalPages > 1 && !outOfRange && (
+				<Pagination className="mt-8">
+					<PaginationContent className="flex-wrap justify-center">
+						<PaginationItem>
+							{pagination.hasPreviousPage ? (
+								<CustomPaginationPrevious
+									{...pageLinkOptions(currentPage - 1)}
 									resetScroll={false}
-									isActive={item === currentPage}
 									viewTransition
+								/>
+							) : (
+								<Button
+									disabled
+									variant="ghost"
+									aria-label="Go to previous page"
 								>
-									{item}
-								</CustomPaginationLink>
+									Previous
+								</Button>
 							)}
 						</PaginationItem>
-					))}
-
-					{/* Next Button */}
-					<PaginationItem>
-						<CustomPaginationNext
-							disabled={!pagination.hasNextPage}
-							{...pageLinkOptions(currentPage + 1)}
-							resetScroll={false}
-							viewTransition
-						/>
-					</PaginationItem>
-				</PaginationContent>
-			</Pagination>
+						{paginationItems.map((item, idx) => (
+							<PaginationItem key={idx}>
+								{item === 'ellipsis' ? (
+									<PaginationEllipsis />
+								) : (
+									<CustomPaginationLink
+										{...pageLinkOptions(item)}
+										resetScroll={false}
+										isActive={item === currentPage}
+										viewTransition
+									>
+										{item}
+									</CustomPaginationLink>
+								)}
+							</PaginationItem>
+						))}
+						<PaginationItem>
+							{pagination.hasNextPage ? (
+								<CustomPaginationNext
+									{...pageLinkOptions(currentPage + 1)}
+									resetScroll={false}
+									viewTransition
+								/>
+							) : (
+								<Button disabled variant="ghost" aria-label="Go to next page">
+									Next
+								</Button>
+							)}
+						</PaginationItem>
+					</PaginationContent>
+				</Pagination>
+			)}
 		</section>
 	)
 }

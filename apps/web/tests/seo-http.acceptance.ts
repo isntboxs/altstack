@@ -1,5 +1,6 @@
 import { eq, inArray, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import { init, parse } from 'es-module-lexer'
 import { JSDOM } from 'jsdom'
 // oxlint-disable import/no-relative-parent-imports -- Workspace acceptance fixture helpers.
 import assert from 'node:assert/strict'
@@ -198,7 +199,7 @@ try {
 			logo: logoKey,
 			repositoryUrl: 'https://github.com/altstack-test-fixtures/l1-atlas',
 			content:
-				'# Getting started\n\nCrawler-readable documentation.\n\n- Install locally\n- Read the [source](https://github.com/altstack-test-fixtures/l1-atlas)\n\n<script>privateSentinel()</script>\n\n[unsafe](javascript:alert(1))',
+				'# Getting started\n\nCrawler-readable documentation.\n\n- Install locally\n- Read the [source](https://github.com/altstack-test-fixtures/l1-atlas)\n\n<script>privateSentinel()</script>\n\n[unsafe](javascript:alert(1))\n\n```ts\nconst message = "<safe>";\n```\n\nVisit [old title](/test-l1-atlas?ref=docs#setup).\n\n[Draft](/test-l1-draft) [Orphan](/test-l1-no-repository)',
 			rejectionReason: 'PRIVATE_REJECTION_SENTINEL',
 		})
 		.returning()
@@ -261,6 +262,18 @@ try {
 		})
 		hidden.push(row)
 	}
+	const [orphan] = await db
+		.insert(project)
+		.values({
+			name: 'PRIVATE_INCOMPLETE_SENTINEL',
+			slug: 'test-l1-no-repository',
+			status: 'published',
+			repositoryUrl:
+				'https://github.com/altstack-test-fixtures/l1-no-repository',
+		})
+		.returning({ id: project.id, slug: project.slug })
+	assert.ok(orphan)
+	hidden.push(orphan)
 	if (!process.argv.includes('--skip-build')) {
 		await run('vp', ['run', '-r', 'build'], workspace, 'build')
 	}
@@ -387,6 +400,98 @@ try {
 		'Search/category/sort permutations noindex, clean canonical; pure pagination self-canonical; tracking stripped'
 	)
 	const detail = await page('/' + published.slug)
+	const embedDetail = await page(
+		'/' + published.slug + '?dialog=embed&utm_source=fixture'
+	)
+	canonical(embedDetail.document, '/' + published.slug)
+	assert.equal(embedDetail.document.title, detail.document.title)
+	assert.equal(
+		meta(embedDetail.document, 'og:image'),
+		meta(detail.document, 'og:image')
+	)
+	checks.push(
+		'Embed dialog query preserves clean project canonical, title and OG metadata'
+	)
+	const badgePath = '/' + published.slug + '/badge.svg'
+	for (const theme of ['dark', 'light']) {
+		for (const [width, height] of [
+			[200, 50],
+			[320, 80],
+			[160, 400],
+			[1200, 40],
+		]) {
+			const response = await fetch(
+				origin + badgePath + `?theme=${theme}&width=${width}&height=${height}`,
+				{ headers: { Host: 'hostile.invalid', 'If-None-Match': '*' } }
+			)
+			assert.equal(response.status, 200)
+			assert.match(
+				response.headers.get('content-type') ?? '',
+				/^image\/svg\+xml/
+			)
+			assert.equal(response.headers.get('content-disposition'), 'inline')
+			assert.equal(response.headers.get('cache-control'), 'no-store')
+			assert.equal(response.headers.get('etag'), null)
+			assert.equal(
+				response.headers.get('cross-origin-resource-policy'),
+				'cross-origin'
+			)
+			assert.equal(response.headers.get('x-robots-tag'), 'noindex')
+			const svg = await response.text()
+			const document = new JSDOM(svg, { contentType: 'image/svg+xml' }).window
+				.document
+			assert.equal(document.querySelector('parsererror'), null)
+			assert.equal(
+				document.documentElement.getAttribute('width'),
+				String(width)
+			)
+			assert.equal(
+				document.documentElement.getAttribute('height'),
+				String(height)
+			)
+			assert.equal(document.querySelector('script, image, foreignObject'), null)
+			assert.match(svg, /Listed on altstack/)
+			assert.doesNotMatch(svg, /PRIVATE_|featured|verified/i)
+			await writeFile(
+				join(evidence, `badge-${theme}-${width}x${height}.png`),
+				await sharp(Buffer.from(svg)).png().toBuffer()
+			)
+		}
+	}
+	assert.match(
+		await (await fetch(origin + badgePath)).text(),
+		/width="200" height="50"/
+	)
+	const badgeHead = await fetch(origin + badgePath, { method: 'HEAD' })
+	assert.equal(badgeHead.status, 200)
+	assert.match(badgeHead.headers.get('content-type') ?? '', /^image\/svg\+xml/)
+	assert.equal(await badgeHead.text(), '')
+	for (const query of [
+		'theme=auto',
+		'width=',
+		'width=Infinity',
+		'width=NaN',
+		'width=-200',
+		'width=200.5',
+		'width=0',
+		'width=1201',
+		'height=401',
+		'width=200&width=300',
+	]) {
+		const bad = await fetch(origin + badgePath + '?' + query)
+		assert.equal(bad.status, 400, query)
+		assert.equal(bad.headers.get('cache-control'), 'no-store')
+	}
+	for (const slug of ['unknown-project', ...hidden.map((item) => item.slug)]) {
+		const response = await fetch(origin + '/' + slug + '/badge.svg', {
+			headers: { 'If-None-Match': '*' },
+		})
+		assert.equal(response.status, 404)
+		assert.equal(await response.text(), 'Not found')
+	}
+	checks.push(
+		'Production /<slug>/badge.svg routes independently of detail: both themes, default/bounded dimensions, invalid/duplicate params, HEAD, conditional requests, private/unknown 404 and self-contained rasterizable SVG'
+	)
 	await writeFile(join(evidence, 'project.html'), detail.html)
 	canonical(detail.document, '/' + published.slug)
 	assert.match(detail.document.title, /^Synthetic Atlas — A practical/)
@@ -414,6 +519,64 @@ try {
 	assert.equal(content.querySelector('h1'), null)
 	assert.equal(content.querySelector('script'), null)
 	assert.equal(content.querySelector('a[href^="javascript:"]'), null)
+	assert.equal(
+		content.querySelector('pre code')?.textContent,
+		'const message = "<safe>";'
+	)
+	assert.ok(
+		content.querySelector('.public-code-token[style*="--code-dark-color"]')
+	)
+	const mention = content.querySelector(
+		'[data-project-mention="test-l1-atlas"]'
+	)
+	assert.ok(mention)
+	assert.ok(mention.textContent.includes('Synthetic Atlas'))
+	assert.equal(mention.getAttribute('href'), '/test-l1-atlas?ref=docs#setup')
+	assert.equal(
+		mention.querySelector('img')?.getAttribute('src'),
+		env.VITE_S3_PUBLIC_URL + '/' + logoKey
+	)
+	assert.equal(content.querySelectorAll('[data-project-mention]').length, 1)
+	assert.equal(content.querySelector('.bn-editor'), null)
+	// Follow static imports from the scripts/preloads actually sent to visitors.
+	// Admin-only dynamic chunks may still contain the editor and highlighter.
+	const pendingAssets = Array.from(
+		detail.document.querySelectorAll('script[src], link[rel="modulepreload"]'),
+		(node) => node.getAttribute('src') ?? node.getAttribute('href') ?? ''
+	).filter((path) => path.startsWith('/assets/') && path.endsWith('.js'))
+	assert.ok(pendingAssets.length > 0)
+	await init()
+	const visitedAssets = new Set<string>()
+	while (pendingAssets.length > 0) {
+		const asset = pendingAssets.pop()!
+		if (visitedAssets.has(asset)) continue
+		visitedAssets.add(asset)
+		const source = await readFile(
+			join(runtime, '.output/public', asset),
+			'utf8'
+		)
+		assert.ok(
+			!/bn-editor|ShikiError/.test(source),
+			`Editor runtime loaded: ${asset}`
+		)
+		const [imports] = parse(source)
+		for (const dependency of imports) {
+			if (dependency.type !== 'static' && dependency.type !== 'reexport-star') {
+				continue
+			}
+			if (dependency.specifier.startsWith('.')) {
+				pendingAssets.push(
+					new URL(dependency.specifier, canonicalOrigin + asset).pathname
+				)
+			}
+		}
+	}
+	checks.push(
+		'Public page static module graph excludes BlockNote and Shiki runtimes'
+	)
+	checks.push(
+		'Public Markdown SSR includes Shiki tokens, project logo/name and safe fallback links without the editor viewer'
+	)
 	assert.ok(!detail.html.includes('PRIVATE_REJECTION_SENTINEL'))
 	const imageUrl = meta(detail.document, 'og:image')
 	assert.ok(imageUrl.includes(`/og/project/${published.id}?v=`))
@@ -584,6 +747,7 @@ try {
 	assert.match(projects.html, /<lastmod>\d{4}-\d{2}-\d{2}T/)
 	assert.ok(!projects.html.includes('PRIVATE_'))
 	for (const item of hidden) assert.ok(!projects.html.includes(item.slug))
+	assert.doesNotMatch(projects.html, /badge\.svg|dialog=/)
 	const pages = await page('/sitemaps/pages.xml')
 	assert.ok(pages.html.includes('/categories/test-l1-backend'))
 	assert.ok(!pages.html.includes('/categories/test-l1-category<'))
@@ -632,6 +796,7 @@ try {
 	)
 	await ready()
 	await png(imageUrl, 'project-cold.png')
+	assert.equal((await fetch(origin + badgePath)).status, 200)
 	await db
 		.update(project)
 		.set({
@@ -647,6 +812,20 @@ try {
 		.update(project)
 		.set({ status: 'draft' })
 		.where(eq(project.id, published.id))
+	for (const method of ['GET', 'HEAD']) {
+		const unpublished = await fetch(
+			origin + badgePath + '?theme=dark&width=200&height=50',
+			{
+				method,
+				headers: {
+					'If-None-Match': '*',
+					'If-Modified-Since': new Date().toUTCString(),
+				},
+			}
+		)
+		assert.equal(unpublished.status, 404)
+		assert.equal(unpublished.headers.get('cache-control'), 'no-store')
+	}
 	assert.equal(
 		(await fetch(imageUrl.replace(canonicalOrigin, origin))).status,
 		404
@@ -662,6 +841,10 @@ try {
 	assert.match(meta(emptyCategory.document, 'robots'), /^noindex/)
 	await png(meta(emptyCategory.document, 'og:image'), 'category-empty.png')
 	await db.delete(project).where(eq(project.id, published.id))
+	assert.equal((await fetch(origin + badgePath)).status, 404)
+	checks.push(
+		'Previously rendered badges disappear after unpublish/delete, including conditional GET and HEAD after a cold Node restart'
+	)
 	assert.equal(
 		(await fetch(imageUrl.replace(canonicalOrigin, origin))).status,
 		404
@@ -672,6 +855,10 @@ try {
 	// Simulate a data failure only in this disposable schema, then restore it.
 	await db.execute(sql`ALTER TABLE projects RENAME TO projects_l1_unavailable`)
 	try {
+		const badgeFailure = await fetch(origin + badgePath)
+		assert.equal(badgeFailure.status, 503)
+		assert.equal(await badgeFailure.text(), 'Badge temporarily unavailable')
+		assert.equal(badgeFailure.headers.get('cache-control'), 'no-store')
 		const imageFailure = await fetch(imageUrl.replace(canonicalOrigin, origin))
 		assert.equal(imageFailure.status, 503)
 		assert.equal(imageFailure.headers.get('cache-control'), 'no-store')
@@ -735,7 +922,7 @@ try {
 			description: 'Synthetic preview fixture for the L1 acceptance checks.',
 			logo: logoKey,
 			repositoryUrl: published.repositoryUrl,
-			content: '# Getting started\n\nCrawler-readable documentation.',
+			content: published.content,
 		})
 		await db.insert(githubRepository).values({
 			projectId: published.id,

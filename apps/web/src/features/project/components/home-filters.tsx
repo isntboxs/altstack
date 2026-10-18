@@ -38,6 +38,7 @@ function HomeCategorySelector() {
 						return { ...prev, category: value, page: undefined }
 					},
 					replace: true,
+					resetScroll: false,
 					viewTransition: true,
 				})
 			}}
@@ -79,6 +80,7 @@ export function HomeFilterSection() {
 						return { ...prev, q: nextQ, page: undefined }
 					},
 					replace: true,
+					resetScroll: false,
 					viewTransition: true,
 				})
 			}
@@ -88,6 +90,7 @@ export function HomeFilterSection() {
 						return { ...prev, sort: nextSort, page: undefined }
 					},
 					replace: true,
+					resetScroll: false,
 					viewTransition: true,
 				})
 			}
@@ -103,6 +106,7 @@ export function HomeFilterSection() {
 						}
 					},
 					replace: true,
+					resetScroll: false,
 					viewTransition: true,
 				})
 			}
