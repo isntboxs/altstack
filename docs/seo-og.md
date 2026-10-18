@@ -118,9 +118,13 @@ LLM API: the canonical pages already expose the factual catalogue content.
 Public pages emit safely escaped JSON-LD: WebSite/Organization, CollectionPage,
 and SoftwareSourceCode with the real repository source and optional website.
 No submitter, rejection note, fabricated author, review, rating, price or license
-claim is added. The BlockNote viewer retains its client behavior; a safe Markdown
-fallback provides headings, paragraphs, lists and source links in initial SSR
-HTML. Raw HTML and unsafe link schemes are filtered by react-markdown.
+claim is added. Public documentation now uses `react-markdown`/GFM for both SSR
+and hydration, replacing the earlier BlockNote viewer/SSR fallback combination.
+Raw HTML is omitted and unsafe link schemes are filtered. Server-prepared Shiki
+tokens and published project mentions enhance the same readable document;
+preparation failures retain plain Markdown/code. Preparation accepts only a slug
+and reads stored public content. BlockNote remains the admin editor/import preview.
+See [the current content/media implementation status](roadmap.md#public-content-and-media-polish--2026-10-18).
 
 ## Verification and remaining release checks
 

@@ -1,8 +1,8 @@
 ---
 title: AltStack Product Requirements
-version: 2.4
+version: 2.5
 status: Pre-launch — implementation reconciled
-last_updated: 2026-10-17
+last_updated: 2026-10-18
 ---
 
 # AltStack
@@ -96,6 +96,9 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - `project.list` and `project.getBySlug` return published projects only; missing/nonpublic detail returns generic `404`.
 - REST read mappings currently use `QUERY /projects` and `QUERY /projects/{slug}`; the public web detail route is `/$slug`.
 - Detail shows copy, repository/optional website, Markdown content, categories, optional screenshot, and stored GitHub statistics.
+- Public documentation uses SSR `react-markdown`/GFM with raw HTML omitted, server-prepared Shiki light/dark code blocks, Copy feedback and published-project link mentions. Admin editing/import preview retains BlockNote.
+- Content preparation accepts only a validated slug and loads stored published content with the same required repository row as public detail. Enhancement failure retains readable Markdown; missing/nonpublic content supplies no prepared data.
+- Cached logo/screenshot completion uses image decoding results, with honest local missing/failure states and reset on source changes.
 - Private submitter identity/rejection notes are excluded from public responses.
 
 ### R2 — Find and categories
@@ -223,7 +226,7 @@ Publication enriches the existing submitted project.
 
 ## Technology and operations
 
-- React, TanStack Start/Router/Query, Tailwind, shared UI, BlockNote.
+- React, TanStack Start/Router/Query, Tailwind and shared UI; BlockNote for admin editing, react-markdown/GFM and server Shiki preparation for public documentation.
 - oRPC contracts and Drizzle/PostgreSQL full-text search.
 - Better Auth/GitHub OAuth; Upstash for submission quotas.
 - S3-compatible storage for admin media; CSV/JSON import for initial content.
