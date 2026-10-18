@@ -1,0 +1,66 @@
+export type ProjectMention = {
+	slug: string
+	name: string
+	logo: string | null
+}
+
+export type CodeTokenStyle = {
+	color?: string
+	bgColor?: string
+	fontStyle?: number
+}
+
+export type CodeToken = {
+	content: string
+	light: CodeTokenStyle
+	dark: CodeTokenStyle
+}
+
+export type PreparedCodeBlock = {
+	code: string
+	language: string
+	tokens?: Array<Array<CodeToken>>
+	colors?: { light: CodeTokenStyle; dark: CodeTokenStyle }
+}
+
+export type PreparedPublicContent = {
+	codeBlocks: Record<string, PreparedCodeBlock>
+	projectsBySlug: Record<string, ProjectMention>
+}
+
+export const publicContentQueryKey = ['public-content'] as const
+
+export function emptyPublicContent(): PreparedPublicContent {
+	return { codeBlocks: {}, projectsBySlug: {} }
+}
+
+// These paths resolve to static/layout routes rather than /$slug.
+const reservedPaths = new Set([
+	'activity',
+	'submit',
+	'categories',
+	'projects',
+	'submission',
+	'auth',
+	'admin',
+])
+
+export function contentLink(href: string, slug: string, appUrl: string) {
+	if (!href || href.startsWith('#')) return null
+	try {
+		const origin = new URL(appUrl).origin
+		const url = new URL(href, `${origin}/${encodeURIComponent(slug)}`)
+		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+		const internal = url.origin === origin && !url.username && !url.password
+		const match = /^\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(url.pathname)
+		// Only explicit site links are mentions; relative README paths remain links.
+		const explicit = href.startsWith('/') || /^https?:\/\//i.test(href)
+		const projectSlug =
+			internal && explicit && match && !reservedPaths.has(match[1])
+				? match[1]
+				: undefined
+		return { url, internal, projectSlug }
+	} catch {
+		return null
+	}
+}

@@ -1,13 +1,12 @@
 import { IconBrandGithub } from '@tabler/icons-react'
-import { ClientOnly, createFileRoute, notFound } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { SquareBottomUp } from 'reicon-react'
 
 import { buttonVariants } from '@altstack/ui/components/button'
 
-import { PublicContent } from '#/components/block-note/public-content'
-import { BlockNoteViewBlocks } from '#/components/block-note/view.tsx'
 import { ProjectLogo, ProjectScreenshot } from '#/components/project-media'
+import { ProjectContent } from '#/components/public-content'
 import {
 	ProjectPending,
 	PublicError,
@@ -18,6 +17,7 @@ import { GithubStatistics } from '#/features/project/components/github-statistic
 import { ProjectActions } from '#/features/project/components/project-actions'
 import { projectDialogSearch } from '#/features/project/embed/badge'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
+import { publicContentOptions } from '#/features/public-content/queries'
 import { unavailableHead } from '#/features/seo/meta'
 import { projectHead } from '#/features/seo/project-meta'
 
@@ -32,6 +32,11 @@ export const Route = createFileRoute('/_app/$slug')({
 				...projectQueries.bySlug(params.slug),
 				retry: false,
 			})
+			if (project.content) {
+				await context.queryClient.query(
+					publicContentOptions(params.slug, project.content)
+				)
+			}
 			return { project, statisticsNow: Date.now() }
 		} catch (error) {
 			if (
@@ -153,11 +158,7 @@ function RouteComponent() {
 					/>
 
 					{projectData.content && (
-						<ClientOnly
-							fallback={<PublicContent content={projectData.content} />}
-						>
-							<BlockNoteViewBlocks content={projectData.content} />
-						</ClientOnly>
+						<ProjectContent slug={slug} content={projectData.content} />
 					)}
 
 					<PublicProjectCategories categories={projectData.categoryDetails} />

@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterInputs, ORPCRouterOutputs } from '@altstack/api/routers'
 
-import { EditProjectForm } from '#/routes/_main/projects/$id.edit'
+import { EditProjectForm } from '#/features/admin-projects/components/edit-project-form'
 
 const { mutateAsync } = vi.hoisted(() => {
 	return {

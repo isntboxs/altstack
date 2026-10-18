@@ -1,5 +1,6 @@
 import { eq, inArray, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import { init, parse } from 'es-module-lexer'
 import { JSDOM } from 'jsdom'
 // oxlint-disable import/no-relative-parent-imports -- Workspace acceptance fixture helpers.
 import assert from 'node:assert/strict'
@@ -198,7 +199,7 @@ try {
 			logo: logoKey,
 			repositoryUrl: 'https://github.com/altstack-test-fixtures/l1-atlas',
 			content:
-				'# Getting started\n\nCrawler-readable documentation.\n\n- Install locally\n- Read the [source](https://github.com/altstack-test-fixtures/l1-atlas)\n\n<script>privateSentinel()</script>\n\n[unsafe](javascript:alert(1))',
+				'# Getting started\n\nCrawler-readable documentation.\n\n- Install locally\n- Read the [source](https://github.com/altstack-test-fixtures/l1-atlas)\n\n<script>privateSentinel()</script>\n\n[unsafe](javascript:alert(1))\n\n```ts\nconst message = "<safe>";\n```\n\nVisit [old title](/test-l1-atlas?ref=docs#setup).\n\n[Draft](/test-l1-draft) [Orphan](/test-l1-no-repository)',
 			rejectionReason: 'PRIVATE_REJECTION_SENTINEL',
 		})
 		.returning()
@@ -518,6 +519,64 @@ try {
 	assert.equal(content.querySelector('h1'), null)
 	assert.equal(content.querySelector('script'), null)
 	assert.equal(content.querySelector('a[href^="javascript:"]'), null)
+	assert.equal(
+		content.querySelector('pre code')?.textContent,
+		'const message = "<safe>";'
+	)
+	assert.ok(
+		content.querySelector('.public-code-token[style*="--code-dark-color"]')
+	)
+	const mention = content.querySelector(
+		'[data-project-mention="test-l1-atlas"]'
+	)
+	assert.ok(mention)
+	assert.ok(mention.textContent.includes('Synthetic Atlas'))
+	assert.equal(mention.getAttribute('href'), '/test-l1-atlas?ref=docs#setup')
+	assert.equal(
+		mention.querySelector('img')?.getAttribute('src'),
+		env.VITE_S3_PUBLIC_URL + '/' + logoKey
+	)
+	assert.equal(content.querySelectorAll('[data-project-mention]').length, 1)
+	assert.equal(content.querySelector('.bn-editor'), null)
+	// Follow static imports from the scripts/preloads actually sent to visitors.
+	// Admin-only dynamic chunks may still contain the editor and highlighter.
+	const pendingAssets = Array.from(
+		detail.document.querySelectorAll('script[src], link[rel="modulepreload"]'),
+		(node) => node.getAttribute('src') ?? node.getAttribute('href') ?? ''
+	).filter((path) => path.startsWith('/assets/') && path.endsWith('.js'))
+	assert.ok(pendingAssets.length > 0)
+	await init()
+	const visitedAssets = new Set<string>()
+	while (pendingAssets.length > 0) {
+		const asset = pendingAssets.pop()!
+		if (visitedAssets.has(asset)) continue
+		visitedAssets.add(asset)
+		const source = await readFile(
+			join(runtime, '.output/public', asset),
+			'utf8'
+		)
+		assert.ok(
+			!/bn-editor|ShikiError/.test(source),
+			`Editor runtime loaded: ${asset}`
+		)
+		const [imports] = parse(source)
+		for (const dependency of imports) {
+			if (dependency.type !== 'static' && dependency.type !== 'reexport-star') {
+				continue
+			}
+			if (dependency.specifier.startsWith('.')) {
+				pendingAssets.push(
+					new URL(dependency.specifier, canonicalOrigin + asset).pathname
+				)
+			}
+		}
+	}
+	checks.push(
+		'Public page static module graph excludes BlockNote and Shiki runtimes'
+	)
+	checks.push(
+		'Public Markdown SSR includes Shiki tokens, project logo/name and safe fallback links without the editor viewer'
+	)
 	assert.ok(!detail.html.includes('PRIVATE_REJECTION_SENTINEL'))
 	const imageUrl = meta(detail.document, 'og:image')
 	assert.ok(imageUrl.includes(`/og/project/${published.id}?v=`))
@@ -863,7 +922,7 @@ try {
 			description: 'Synthetic preview fixture for the L1 acceptance checks.',
 			logo: logoKey,
 			repositoryUrl: published.repositoryUrl,
-			content: '# Getting started\n\nCrawler-readable documentation.',
+			content: published.content,
 		})
 		await db.insert(githubRepository).values({
 			projectId: published.id,
