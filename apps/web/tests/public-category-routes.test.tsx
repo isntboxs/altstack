@@ -371,6 +371,9 @@ describe('public category routes and hierarchy UI', () => {
 						slug: 'linked-project',
 						name: content.includes('Second') ? 'Updated name' : 'Original name',
 						logo: null,
+						tagline: 'A linked project.',
+						stars: 123,
+						forks: 12,
 					},
 				},
 			})

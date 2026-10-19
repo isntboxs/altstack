@@ -242,7 +242,14 @@ describe('public category hierarchy', () => {
 				database.db
 			)
 			expect(mentions).toEqual([
-				{ slug: published.slug, name: 'Zed', logo: 'test-fixtures/zed.svg' },
+				{
+					slug: published.slug,
+					name: 'Zed',
+					logo: 'test-fixtures/zed.svg',
+					tagline: 'A code editor for people and AI.',
+					stars: 123,
+					forks: 12,
+				},
 			])
 		}
 		expect(await publicProjectMentions([], database.db)).toEqual([])

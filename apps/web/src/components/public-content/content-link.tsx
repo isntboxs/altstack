@@ -7,6 +7,7 @@ import { env } from '@altstack/env/web'
 
 import { Badge } from '@altstack/ui/components/badge'
 
+import { ProjectHoverCard } from '#/components/project-hover-card'
 import { ProjectLogo } from '#/components/project-media'
 import { contentLink } from '#/features/public-content/model'
 import type { ProjectMention } from '#/features/public-content/model'
@@ -84,27 +85,29 @@ function InternalContentLink({
 	const hash = url.hash.slice(1)
 	if (project) {
 		return (
-			<Badge
-				variant="secondary"
-				className="not-prose h-auto max-w-full gap-1.5 px-2 py-1 align-middle"
-				render={
-					<Link
-						to="/$slug"
-						params={{ slug: project.slug }}
-						search={search}
-						hash={hash}
-						title={title}
+			<ProjectHoverCard project={project}>
+				<Badge
+					variant="secondary"
+					className="not-prose h-auto max-w-full gap-1.5 px-2 py-1 align-middle"
+					render={
+						<Link
+							to="/$slug"
+							params={{ slug: project.slug }}
+							search={search}
+							hash={hash}
+							title={title}
+						/>
+					}
+					data-project-mention={project.slug}
+				>
+					<ProjectLogo
+						src={project.logo}
+						name={project.name}
+						className="size-4"
 					/>
-				}
-				data-project-mention={project.slug}
-			>
-				<ProjectLogo
-					src={project.logo}
-					name={project.name}
-					className="size-4"
-				/>
-				<span className="truncate">{project.name}</span>
-			</Badge>
+					<span className="truncate">{project.name}</span>
+				</Badge>
+			</ProjectHoverCard>
 		)
 	}
 	// Markdown targets are runtime paths, so the router resolves their route.

@@ -25,7 +25,14 @@ afterEach(() => vi.restoreAllMocks())
 describe('public Markdown preparation', () => {
 	it('collects explicit and reference links once, skipping images, code, external and reserved routes', async () => {
 		vi.mocked(publicProjectMentions).mockResolvedValue([
-			{ slug: 'supabase', name: 'Supabase', logo: null },
+			{
+				slug: 'supabase',
+				name: 'Supabase',
+				logo: null,
+				tagline: 'An open-source backend.',
+				stars: 83_335,
+				forks: 8_847,
+			},
 		])
 		const result = await prepareContent({
 			slug: 'source',
@@ -42,7 +49,14 @@ describe('public Markdown preparation', () => {
 			'missing',
 		])
 		expect(result.projectsBySlug).toEqual({
-			supabase: { slug: 'supabase', name: 'Supabase', logo: null },
+			supabase: {
+				slug: 'supabase',
+				name: 'Supabase',
+				logo: null,
+				tagline: 'An open-source backend.',
+				stars: 83_335,
+				forks: 8_847,
+			},
 		})
 	})
 

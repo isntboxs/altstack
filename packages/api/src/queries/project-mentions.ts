@@ -23,7 +23,14 @@ export async function publicProjectMentions(
 ) {
 	if (slugs.length === 0) return []
 	return database
-		.select({ slug: project.slug, name: project.name, logo: project.logo })
+		.select({
+			slug: project.slug,
+			name: project.name,
+			logo: project.logo,
+			tagline: project.tagline,
+			stars: githubRepository.stars,
+			forks: githubRepository.forks,
+		})
 		.from(project)
 		.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
 		.where(

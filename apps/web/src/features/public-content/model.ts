@@ -2,6 +2,9 @@ export type ProjectMention = {
 	slug: string
 	name: string
 	logo: string | null
+	tagline: string | null
+	stars: number
+	forks: number
 }
 
 export type CodeTokenStyle = {
