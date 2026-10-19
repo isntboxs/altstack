@@ -435,7 +435,20 @@ export default defineConfig({
 				],
 			},
 			check: {
-				command: ['vp check', 'vp run -r test'],
+				command: ['vp check', 'vp run typecheck', 'vp run -r test'],
+			},
+			typecheck: {
+				command: [
+					'tsrs --noEmit -p apps/server/tsconfig.json',
+					'tsrs --noEmit -p apps/web/tsconfig.json',
+					'tsrs --noEmit -p packages/api/tsconfig.json',
+					'tsrs --noEmit -p packages/auth/tsconfig.json',
+					'tsrs --noEmit -p packages/db/tsconfig.json',
+					'tsrs --noEmit -p packages/env/tsconfig.json',
+					'tsrs --noEmit -p packages/shared/tsconfig.json',
+					'tsrs --noEmit -p packages/ui/tsconfig.json',
+				],
+				cache: false,
 			},
 			dev: {
 				command: 'vp run -r --parallel dev',

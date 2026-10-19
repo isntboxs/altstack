@@ -1,5 +1,8 @@
 {
 	"npm.scriptRunner": "vp",
+	"js/ts.experimental.useTsgo": true,
+	"js/ts.tsdk.path": "./.vscode/tsdk",
+	"js/ts.contentMappers.enabled": false,
 	"editor.defaultFormatter": "oxc.oxc-vscode",
 	"[javascript]": {
 		"editor.defaultFormatter": "oxc.oxc-vscode"
