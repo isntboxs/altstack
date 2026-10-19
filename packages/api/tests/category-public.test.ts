@@ -125,6 +125,68 @@ afterAll(async () => {
 }, 60_000)
 
 describe('public category hierarchy', () => {
+	it('autocompletes mentions by partial name or slug and excludes hidden or incomplete projects', async () => {
+		const published = await zed()
+		const hidden = await zed('draft')
+		await database.db.insert(project).values({
+			name: 'Zed orphan',
+			slug: 'zed-mention-orphan',
+			status: 'published',
+			repositoryUrl:
+				'https://github.com/altstack-test-fixtures/zed-mention-orphan',
+		})
+		const client = clientWith()
+		for (const q of ['zE', published.slug, '']) {
+			const result = await client.project.mentions({ query: { q } })
+			expect(result.projects.map((item) => item.slug)).toEqual([published.slug])
+			expect(Object.keys(result.projects[0] ?? {}).toSorted()).toEqual([
+				'logo',
+				'name',
+				'slug',
+				'tagline',
+			])
+		}
+		for (const status of ['draft', 'rejected', 'removed'] as const) {
+			await database.db
+				.update(project)
+				.set({ status })
+				.where(eq(project.id, hidden.projectId))
+			expect(
+				(await client.project.mentions({ query: { q: hidden.slug } })).projects
+			).toEqual([])
+		}
+		expect(
+			(await client.project.mentions({ query: { q: 'no-such-project' } }))
+				.projects
+		).toEqual([])
+	})
+
+	it('treats SQL wildcard characters literally in mention searches', async () => {
+		const literal = await zed()
+		await zed()
+		await database.db
+			.update(project)
+			.set({ name: 'Zed 100%_done\\final' })
+			.where(eq(project.id, literal.projectId))
+		for (const q of ['%', '_', '\\']) {
+			expect(
+				(await clientWith().project.mentions({ query: { q } })).projects.map(
+					(item) => item.slug
+				)
+			).toEqual([literal.slug])
+		}
+	})
+
+	it('bounds mention results and rejects oversized queries', async () => {
+		for (let i = 0; i < 9; i++) await zed()
+		expect(
+			(await clientWith().project.mentions({ query: {} })).projects
+		).toHaveLength(8)
+		await expect(
+			clientWith().project.mentions({ query: { q: 'a'.repeat(101) } })
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+	}, 30_000)
+
 	it('loads stored Markdown only for published projects visible through public detail', async () => {
 		const published = await zed()
 		await database.db

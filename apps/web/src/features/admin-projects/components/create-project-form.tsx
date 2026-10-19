@@ -570,7 +570,10 @@ export function CreateProjectForm() {
 						</section>
 
 						<section className="space-y-4">
-							<SectionHeading title="Content" />
+							<SectionHeading
+								title="Content"
+								description="Type @ to mention a listed project, or find Project mention in the / menu."
+							/>
 
 							<form.Subscribe
 								selector={(state) =>

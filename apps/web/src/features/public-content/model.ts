@@ -45,6 +45,11 @@ const reservedPaths = new Set([
 	'admin',
 ])
 
+export function projectSlugFromPath(path: string) {
+	const match = /^\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(path)
+	return match && !reservedPaths.has(match[1]) ? match[1] : undefined
+}
+
 export function contentLink(href: string, slug: string, appUrl: string) {
 	if (!href || href.startsWith('#')) return null
 	try {
@@ -52,13 +57,10 @@ export function contentLink(href: string, slug: string, appUrl: string) {
 		const url = new URL(href, `${origin}/${encodeURIComponent(slug)}`)
 		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
 		const internal = url.origin === origin && !url.username && !url.password
-		const match = /^\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(url.pathname)
 		// Only explicit site links are mentions; relative README paths remain links.
 		const explicit = href.startsWith('/') || /^https?:\/\//i.test(href)
 		const projectSlug =
-			internal && explicit && match && !reservedPaths.has(match[1])
-				? match[1]
-				: undefined
+			internal && explicit ? projectSlugFromPath(url.pathname) : undefined
 		return { url, internal, projectSlug }
 	} catch {
 		return null

@@ -12,6 +12,10 @@ import {
 	prepareReadmeImport,
 } from '#/components/block-note/schema'
 
+vi.mock('#/components/block-note/project-mention-menu', () => {
+	return { ProjectMentionMenus: () => null }
+})
+
 vi.mock('@altstack/ui/components/customs/theme-provider', () => {
 	return {
 		useTheme: () => {
@@ -28,15 +32,36 @@ vi.mock('@blocknote/shadcn', () => {
 			editor: ContentEditor
 			onChange?: () => void
 		}) => (
-			<button
-				type="button"
-				onClick={() => {
-					editor.updateBlock(editor.document[0], { content: 'Last keystroke' })
-					onChange?.()
-				}}
-			>
-				Type final edit
-			</button>
+			<>
+				<button
+					type="button"
+					onClick={() => {
+						editor.updateBlock(editor.document[0], {
+							content: [
+								{
+									type: 'projectMention',
+									props: { slug: 'vite', name: 'Vite' },
+								},
+								' works here',
+							],
+						})
+						onChange?.()
+					}}
+				>
+					Mention Vite
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						editor.updateBlock(editor.document[0], {
+							content: 'Last keystroke',
+						})
+						onChange?.()
+					}}
+				>
+					Type final edit
+				</button>
+			</>
 		),
 	}
 })
@@ -46,6 +71,16 @@ afterEach(() => {
 })
 
 describe('real BlockNote import and export', () => {
+	it('includes a just-inserted project mention when Save flushes the same-task edit', () => {
+		vi.useFakeTimers()
+		const ref = createRef<BlockNoteEditorHandle>()
+		const change = vi.fn<(markdown: string) => void>()
+		render(<BlockNoteEditor ref={ref} value="Old content" onChange={change} />)
+		fireEvent.click(screen.getByRole('button', { name: 'Mention Vite' }))
+		expect(change).not.toHaveBeenCalled()
+		act(() => ref.current!.flush())
+		expect(change).toHaveBeenLastCalledWith('[Vite](/vite) works here\n')
+	})
 	it('flushes the last same-task edit before reading/importing, and the value prop never overwrites edits', () => {
 		vi.useFakeTimers()
 		const ref = createRef<BlockNoteEditorHandle>()

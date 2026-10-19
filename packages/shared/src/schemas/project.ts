@@ -154,6 +154,21 @@ export const searchProjectsOutputSchema = z.object({
 	pagination: paginationOutputSchema,
 })
 
+export const projectMentionsInputSchema = z.object({
+	query: z.object({ q: z.string().trim().max(100).default('') }),
+})
+
+export const projectMentionsOutputSchema = z.object({
+	projects: z.array(
+		z.object({
+			slug: z.string(),
+			name: z.string(),
+			logo: z.string().nullable(),
+			tagline: z.string().nullable(),
+		})
+	),
+})
+
 export const categoryItemSchema = z.object({
 	slug: z.string(),
 	name: z.string(),
