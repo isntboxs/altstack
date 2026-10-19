@@ -12,6 +12,7 @@ import {
 	PublicError,
 	PublicNotFound,
 } from '#/components/public-page-state'
+import { ShareButtons } from '#/components/share-buttons'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { ProjectActions } from '#/features/project/components/project-actions'
@@ -162,6 +163,8 @@ function RouteComponent() {
 					)}
 
 					<PublicProjectCategories categories={projectData.categoryDetails} />
+
+					<ShareButtons />
 				</div>
 
 				<GithubStatistics

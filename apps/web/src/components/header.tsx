@@ -63,7 +63,7 @@ export const Header = ({
 									<Button
 										size="icon-sm"
 										variant="ghost"
-										className="size-11 lg:hidden"
+										className="lg:hidden"
 										aria-label="Open navigation"
 									>
 										<IconMenu2 />
@@ -140,6 +140,8 @@ export const Header = ({
 					</div>
 
 					<div className="flex shrink-0 items-center gap-0 sm:gap-2">
+						<ThemeSwitcher />
+
 						<Link
 							to="/submit"
 							viewTransition
@@ -150,7 +152,6 @@ export const Header = ({
 						>
 							Submit
 						</Link>
-						<ThemeSwitcher />
 
 						{!auth ? (
 							<SignInButton
@@ -192,12 +193,7 @@ const UserButton = ({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button
-						size="icon-sm"
-						variant="ghost"
-						className="size-11"
-						aria-label="Open user menu"
-					>
+					<Button size="icon" variant="ghost" aria-label="Open user menu">
 						<UserAvatar image={user.image} name={user.name} />
 					</Button>
 				}
