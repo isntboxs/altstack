@@ -1,6 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
-import { useLocation } from '@tanstack/react-router'
-import { useId, useRef, useState } from 'react'
+import {
+	QueryErrorResetBoundary,
+	useSuspenseQuery,
+} from '@tanstack/react-query'
+import { CatchBoundary, useLocation } from '@tanstack/react-router'
+import { Suspense, useId, useRef, useState } from 'react'
 import { Bookmark, Code, Flag, More, Verified } from 'reicon-react'
 
 import { Button } from '@altstack/ui/components/button'
@@ -31,20 +34,105 @@ const deferredActions = [
 	{ label: 'Report', description: 'Send a report/suggestion', Icon: Flag },
 ]
 
-export function ProjectActions({
-	projectId,
-	userId,
-	slug,
-	name,
-	embedOpen,
-	onEmbedOpenChange,
-}: {
+type ProjectActionsProps = {
 	projectId: string
 	userId: string | undefined
 	slug: string
 	name: string
 	embedOpen: boolean
 	onEmbedOpenChange: (open: boolean) => void
+}
+
+type BookmarkAction = {
+	saved?: boolean
+	pending?: boolean
+	label?: string
+	onClick?: () => void
+	error?: string
+}
+
+export function ProjectActions(props: ProjectActionsProps) {
+	const { projectId, userId } = props
+	if (!userId) return <ProjectActionsView {...props} />
+
+	return (
+		<QueryErrorResetBoundary key={`${projectId}:${userId}`}>
+			{({ reset }) => (
+				<CatchBoundary
+					getResetKey={() => `${projectId}:${userId}`}
+					errorComponent={({ reset: resetErrorBoundary }) => (
+						<ProjectActionsView
+							{...props}
+							bookmark={{
+								label: 'Retry bookmark',
+								error: 'Unable to load bookmark. Retry to refresh.',
+								onClick: () => {
+									reset()
+									resetErrorBoundary()
+								},
+							}}
+						/>
+					)}
+				>
+					<Suspense
+						fallback={
+							<ProjectActionsView {...props} bookmark={{ pending: true }} />
+						}
+					>
+						<ProjectBookmarkActions {...props} userId={userId} />
+					</Suspense>
+				</CatchBoundary>
+			)}
+		</QueryErrorResetBoundary>
+	)
+}
+
+function ProjectBookmarkActions(
+	props: ProjectActionsProps & { userId: string }
+) {
+	const { projectId, userId } = props
+	const state = useSuspenseQuery(bookmarkQueries.state(projectId, userId))
+	const mutation = useBookmarkMutation(projectId, userId)
+	const saved = state.data.bookmarked
+	const label = mutation.isPending
+		? mutation.variables
+			? 'Saving bookmark…'
+			: 'Removing bookmark…'
+		: state.isError
+			? 'Retry bookmark'
+			: saved
+				? 'Remove bookmark'
+				: 'Bookmark'
+
+	return (
+		<ProjectActionsView
+			{...props}
+			bookmark={{
+				saved,
+				pending: mutation.isPending,
+				label,
+				onClick: () => {
+					if (state.isError) void state.refetch()
+					else mutation.mutate(!saved)
+				},
+				error: state.isError
+					? 'Unable to load bookmark. Retry to refresh.'
+					: mutation.isError
+						? 'Unable to update bookmark. Please try again.'
+						: undefined,
+			}}
+		/>
+	)
+}
+
+function ProjectActionsView({
+	slug,
+	name,
+	embedOpen,
+	onEmbedOpenChange,
+	bookmark,
+}: ProjectActionsProps & {
+	bookmark?: BookmarkAction
 }) {
 	const explanationId = useId()
 	const moreRef = useRef<HTMLButtonElement>(null)
@@ -52,23 +140,12 @@ export function ProjectActions({
 	const returnFocus = useRef<HTMLElement | null>(null)
 	const [authOpen, setAuthOpen] = useState(false)
 	const { href } = useLocation()
-	const state = useQuery(bookmarkQueries.state(projectId, userId))
-	const mutation = useBookmarkMutation(projectId, userId)
-	const saved = !!userId && !!state.data?.bookmarked
-	const bookmarkPending = !!userId && (state.isPending || mutation.isPending)
-	const bookmarkLabel = mutation.isPending
-		? mutation.variables
-			? 'Saving bookmark…'
-			: 'Removing bookmark…'
-		: userId && state.isError
-			? 'Retry bookmark'
-			: saved
-				? 'Remove bookmark'
-				: 'Bookmark'
+	const saved = bookmark?.saved ?? false
+	const bookmarkPending = bookmark?.pending ?? false
+	const bookmarkLabel = bookmark?.label ?? 'Bookmark'
 	const changeBookmark = () => {
-		if (!userId) setAuthOpen(true)
-		else if (state.isError) void state.refetch()
-		else mutation.mutate(!saved)
+		if (bookmark?.onClick) bookmark.onClick()
+		else setAuthOpen(true)
 	}
 
 	return (
@@ -103,7 +180,7 @@ export function ProjectActions({
 									<Bookmark aria-hidden="true" />
 								)}
 								{bookmarkLabel}
-								{saved && !mutation.isPending && (
+								{saved && !bookmarkPending && (
 									<span className="ml-auto text-xs">Saved</span>
 								)}
 							</DropdownMenuItem>
@@ -215,11 +292,9 @@ export function ProjectActions({
 			>
 				Verify and Report are coming soon.
 			</p>
-			{userId && (state.isError || mutation.isError) && (
+			{bookmark?.error && (
 				<p role="alert" className="max-w-60 text-xs text-destructive">
-					{state.isError
-						? 'Unable to load bookmark. Retry to refresh.'
-						: 'Unable to update bookmark. Please try again.'}
+					{bookmark.error}
 				</p>
 			)}
 			<ProjectEmbedDialog

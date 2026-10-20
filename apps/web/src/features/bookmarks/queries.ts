@@ -14,11 +14,10 @@ const listKey = (userId: string | undefined) =>
 	[...accountKey(userId), 'list'] as const
 
 export const bookmarkQueries = {
-	state: (id: string, userId: string | undefined) =>
+	state: (id: string, userId: string) =>
 		orpc.bookmark.get.queryOptions({
 			input: { params: { id } },
 			queryKey: stateKey(id, userId),
-			enabled: !!userId,
 			retry: false,
 			staleTime: 0,
 			gcTime: 0,
