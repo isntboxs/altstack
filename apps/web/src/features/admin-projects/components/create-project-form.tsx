@@ -570,7 +570,10 @@ export function CreateProjectForm() {
 						</section>
 
 						<section className="space-y-4">
-							<SectionHeading title="Content" />
+							<SectionHeading
+								title="Content"
+								description="Type @ to mention a listed project, or find Project mention in the / menu."
+							/>
 
 							<form.Subscribe
 								selector={(state) =>
@@ -618,13 +621,13 @@ export function CreateProjectForm() {
 							/>
 						</section>
 
-						<section className="space-y-4">
+						<section className="@container/media space-y-4">
 							<SectionHeading
 								title="Media"
 								description="Logo is required to publish. Screenshots are cropped to 16:9."
 							/>
 
-							<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+							<div className="grid grid-cols-1 items-start gap-4 @lg/media:grid-cols-[14rem_minmax(0,1fr)]">
 								<form.Field
 									name="logo"
 									children={(field) => {

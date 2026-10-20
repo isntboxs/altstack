@@ -8,6 +8,7 @@ import {
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
+import { searchPublicProjectMentions } from '@altstack/api/queries/project-mentions'
 
 import {
 	category,
@@ -259,5 +260,12 @@ export const projectRouter = {
 	getBySlug: getBySlugHandler,
 	list: listHandler,
 	search: searchHandler,
+	mentions: publicProcedure.project.mentions.handler(
+		async ({ context, input }) => {
+			return {
+				projects: await searchPublicProjectMentions(input.query.q, context.db),
+			}
+		}
+	),
 	listCategories: listCategoriesHandler,
 }

@@ -20,6 +20,44 @@ Lihat [format kolom, template, konsistensi transaksi, dan pengujian aman](docs/f
 
 ## Development
 
+### Type checking dan VS Code (tsrs)
+
+Install dependency dari root repository dengan `vp install`. Type checker Rust
+[tsrs](https://github.com/oxc-project/tsrs) dipin sebagai dev dependency; binary
+native diambil dari npm sehingga tidak perlu memasang Rust.
+
+```sh
+# Periksa semua app/package menggunakan tsconfig masing-masing.
+vp run typecheck
+
+# Periksa satu app saja.
+vp exec tsrs --noEmit -p apps/web/tsconfig.json
+```
+
+`vp run check` dan `vp run ready` juga menjalankan tsrs. `vp check` tetap memakai
+type checker bawaan Vite+/Oxlint untuk lint bertipe. Jalankan perintah yang
+menyertakan test lewat wrapper `test:scoped` pada bagian database di bawah.
+
+Buka root repository di VS Code dan install extension rekomendasi
+**TypeScript 7** (`TypeScriptTeam.native-preview`). Workspace sudah mengaktifkan
+client TypeScript 7 dan mengarahkan `js/ts.tsdk.path` ke `.vscode/tsdk`.
+Launcher `tsgo` di direktori itu meneruskan argumen dan stdio ke tsrs lokal,
+sesuai mekanisme [editor setup tsrs](https://github.com/oxc-project/tsrs/blob/main/docs/LSP.md#editor-setup).
+
+Jika diminta, izinkan penggunaan SDK workspace ini, lalu jalankan
+**TypeScript 7: Restart Server** atau **Developer: Reload Window**. Periksa
+channel Output **TypeScript 7** untuk memastikan server memakai path
+`.vscode/tsdk/tsgo`; `vp exec tsrs --version` menampilkan versi tsrs yang dipakai.
+Untuk melihat detail protokol, set `js/ts.trace.server` ke `verbose`.
+
+Formatting dan lint editor tetap lewat Oxc/Vite+. Content mapper LSP dimatikan
+karena belum didukung tsrs. Setup launcher ini mendukung Linux dan macOS ARM64,
+mengikuti platform binary npm tsrs. Untuk kembali ke server TypeScript bawaan,
+hapus override `js/ts.tsdk.path`, set `js/ts.experimental.useTsgo` ke `false`,
+dan reload VS Code.
+
+### Database dan perintah development
+
 Database development menggunakan PostgreSQL cloud. Konfigurasikan `.env` dari
 `.env.example` dengan `DATABASE_URL` untuk `altstack_development`, termasuk
 parameter SSL dari penyedia cloud. Terapkan migration dengan `vp run db:migrate`.

@@ -29,6 +29,9 @@ interface ImageUploaderProps extends Omit<
 	'onChange'
 > {
 	value?: string
+	// Persisted assets stay outside temporary-upload storage operations.
+	existingUrl?: string | null
+	onRemoveExisting?: () => void
 	onChange?: (value: string) => void
 	onDisplayUrlChange?: (url: string | null) => void
 	aspectRatio: number
@@ -45,9 +48,9 @@ const IMAGE_ACCEPT = {
 
 const LOGO_COPY: ImageUploadCopy = {
 	noun: 'Logo',
-	uploadingNoun: 'cover',
+	uploadingNoun: 'logo',
 	sizeHint: 'PNG, JPG, GIF, or WEBP up to 3MB.',
-	dialogTitle: 'Crop cover image',
+	dialogTitle: 'Crop logo image',
 	dialogDescription:
 		'Drag to reposition and use the slider to zoom. The highlighted area is what gets uploaded.',
 }
@@ -66,6 +69,8 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 	onChange,
 	onDisplayUrlChange,
 	value,
+	existingUrl,
+	onRemoveExisting,
 	aspectRatio,
 	accept,
 	maxSize,
@@ -96,31 +101,36 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 		api,
 		copy,
 	})
+	const previewUrl = managedFile?.previewUrl ?? existingUrl
 
 	const renderContent = () => {
 		if (uploading && pendingFile) {
 			return (
 				<ImageDropzoneUploadingState
 					file={pendingFile}
-					isReplacing={Boolean(managedFile?.fileKey)}
-					previewUrl={managedFile?.previewUrl}
+					isReplacing={Boolean(managedFile?.fileKey ?? existingUrl)}
+					previewUrl={previewUrl ?? undefined}
 					progress={progress}
 					itemNoun={copy.uploadingNoun}
 				/>
 			)
 		}
 
-		if (errorMessage && !managedFile?.previewUrl) {
+		if (errorMessage && !previewUrl) {
 			return <ImageDropzoneErrorState message={errorMessage} onRetry={open} />
 		}
 
-		if (managedFile?.previewUrl) {
+		if (previewUrl) {
 			return (
 				<ImageDropzoneUploadedState
 					isDeleting={isDeleting}
 					onChange={open}
-					onDelete={handleRemoveFile}
-					previewUrl={managedFile.previewUrl}
+					onDelete={
+						managedFile?.previewUrl ? handleRemoveFile : onRemoveExisting
+					}
+					previewUrl={previewUrl}
+					itemNoun={copy.noun.toLowerCase()}
+					contain={aspectRatio === 1}
 				/>
 			)
 		}
@@ -139,15 +149,16 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 			<Card
 				{...getRootProps({ ...props })}
 				className={cn(
-					'gap-0 border border-dashed py-0 ring-0 transition-all duration-300 ease-in-out',
+					'relative gap-0 border border-dashed py-0 ring-0 transition-all duration-300 ease-in-out',
 					isDragActive
 						? 'border-solid border-primary bg-primary/10'
 						: 'border-border hover:border-primary',
 					'overflow-hidden',
+					!previewUrl && 'min-h-56',
 					className
 				)}
 			>
-				<CardContent className="flex size-full items-center justify-center p-0">
+				<CardContent className="absolute inset-0 flex items-center justify-center p-0">
 					<input {...getInputProps()} />
 					{renderContent()}
 				</CardContent>
@@ -170,14 +181,15 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 	)
 }
 
-export interface LogoUploaderProps extends Omit<
-	HTMLAttributes<HTMLDivElement>,
-	'onChange'
-> {
-	value?: string
-	onChange?: (value: string) => void
-	onDisplayUrlChange?: (url: string | null) => void
-}
+export type LogoUploaderProps = Pick<
+	ImageUploaderProps,
+	| 'value'
+	| 'existingUrl'
+	| 'onRemoveExisting'
+	| 'onChange'
+	| 'onDisplayUrlChange'
+> &
+	Omit<HTMLAttributes<HTMLDivElement>, 'onChange'>
 
 export const LogoUploader: FC<LogoUploaderProps> = ({
 	className,
@@ -191,18 +203,11 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 		mimeTypes={LOGO_MIME}
 		api={client.admin.upload.logo}
 		copy={LOGO_COPY}
-		className={cn('aspect-square size-56!', className)}
+		className={cn('aspect-square w-full max-w-56', className)}
 	/>
 )
 
-export interface ScreenshotUploaderProps extends Omit<
-	HTMLAttributes<HTMLDivElement>,
-	'onChange'
-> {
-	value?: string
-	onChange?: (value: string) => void
-	onDisplayUrlChange?: (url: string | null) => void
-}
+export type ScreenshotUploaderProps = LogoUploaderProps
 
 export const ScreenshotUploader: FC<ScreenshotUploaderProps> = ({
 	className,

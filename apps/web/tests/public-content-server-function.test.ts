@@ -71,7 +71,14 @@ describe('public content server input', () => {
 		const prepared = {
 			codeBlocks: {},
 			projectsBySlug: {
-				atlas: { slug: 'atlas', name: 'Atlas', logo: null },
+				atlas: {
+					slug: 'atlas',
+					name: 'Atlas',
+					logo: null,
+					tagline: null,
+					stars: 0,
+					forks: 0,
+				},
 			},
 		}
 		vi.mocked(publicProjectContent).mockResolvedValue({ content })

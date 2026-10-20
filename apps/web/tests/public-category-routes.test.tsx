@@ -295,6 +295,64 @@ async function routerAt(url: string, show = false) {
 	return router
 }
 
+describe('public footer', () => {
+	it('credits mrboxs, links canonical categories and opens a fresh Most Starred catalogue', async () => {
+		const router = await routerAt('/?q=absent&page=2', true)
+		const footer = screen.getByRole('contentinfo', { name: 'Site footer' })
+		const credit = within(footer).getByRole('link', { name: /^mrboxs/ })
+		expect(credit.getAttribute('href')).toBe('https://x.com/isntboxs')
+		expect(credit.getAttribute('target')).toBe('_blank')
+		expect(credit.getAttribute('rel')).toBe('noopener noreferrer')
+		const categories = await within(footer).findByRole('navigation', {
+			name: 'Browse by category',
+		})
+		expect(within(categories).getAllByRole('link')).toHaveLength(3)
+		expect(
+			within(categories)
+				.getByRole('link', { name: /^AI-Powered Editors/ })
+				.getAttribute('href')
+		).toBe('/categories/' + ai.path)
+		expect(within(categories).queryByText(root.name)).toBeNull()
+		fireEvent.click(within(footer).getByRole('link', { name: 'Most Starred' }))
+		await waitFor(() =>
+			expect(router.state.location.search.sort).toBe('most-stars')
+		)
+		expect(router.state.location.search.q).toBeUndefined()
+		expect(router.state.location.search.page).toBeUndefined()
+		expect(router.state.location.hash).toBe('catalogue')
+	})
+
+	it('keeps project content and footer navigation usable when optional categories fail', async () => {
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'category/list'
+				? Promise.reject(new Error('Footer categories unavailable'))
+				: original(path, input)
+		)
+		const router = await routerAt('/test-zed', true)
+		await waitFor(() =>
+			expect(
+				router.options.context.queryClient
+					.getQueryCache()
+					.getAll()
+					.some(
+						(query) =>
+							query.state.error?.message === 'Footer categories unavailable'
+					)
+			).toBe(true)
+		)
+		expect(screen.getByRole('heading', { name: 'Zed' })).toBeTruthy()
+		const footer = screen.getByRole('contentinfo', { name: 'Site footer' })
+		expect(within(footer).getByRole('link', { name: /^mrboxs/ })).toBeTruthy()
+		expect(
+			within(footer).getByRole('link', { name: 'All Projects' })
+		).toBeTruthy()
+		expect(
+			within(footer).queryByRole('navigation', { name: 'Browse by category' })
+		).toBeNull()
+	})
+})
+
 describe('public category routes and hierarchy UI', () => {
 	it('loads public Markdown before rendering, preserves it through dialogs and refreshes on content changes', async () => {
 		let content = '[First](/linked-project)'
@@ -313,6 +371,9 @@ describe('public category routes and hierarchy UI', () => {
 						slug: 'linked-project',
 						name: content.includes('Second') ? 'Updated name' : 'Original name',
 						logo: null,
+						tagline: 'A linked project.',
+						stars: 123,
+						forks: 12,
 					},
 				},
 			})
@@ -362,7 +423,9 @@ describe('public category routes and hierarchy UI', () => {
 				name: 'Open Source Software Categories',
 			})
 		).toBeTruthy()
-		const headings = screen.getAllByRole('heading', { level: 2 })
+		const headings = within(screen.getByRole('main')).getAllByRole('heading', {
+			level: 2,
+		})
 		expect(headings.map((heading) => heading.textContent)).toEqual([
 			'Backend',
 			'Developer Tools',

@@ -12,6 +12,7 @@ import {
 	PublicError,
 	PublicNotFound,
 } from '#/components/public-page-state'
+import { ShareButtons } from '#/components/share-buttons'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 import { ProjectActions } from '#/features/project/components/project-actions'
@@ -79,9 +80,12 @@ function RouteComponent() {
 
 	return (
 		<div className="container mx-auto w-full max-w-6xl px-6 pt-22 pb-10 lg:px-16">
-			<div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]">
-				<div className="min-w-0 space-y-8">
-					<div className="sticky top-12 z-50 flex items-center justify-between py-4">
+			<section
+				aria-label="Project details"
+				className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]"
+			>
+				<article className="flex min-w-0 flex-col gap-8 self-start">
+					<header className="sticky top-12 z-40 flex w-full items-center justify-between bg-background/95 py-4 backdrop-blur-sm">
 						<div className="flex min-w-0 items-center gap-3">
 							<ProjectLogo
 								src={projectData.logo}
@@ -91,8 +95,6 @@ function RouteComponent() {
 							<h1 className="min-w-0 text-3xl font-bold wrap-anywhere">
 								{projectData.name}
 							</h1>
-
-							<div className="pointer-events-none absolute inset-0 top-0 -z-10 h-full bg-linear-to-b from-background via-background via-85% to-transparent" />
 						</div>
 
 						<ProjectActions
@@ -113,7 +115,7 @@ function RouteComponent() {
 								})
 							}}
 						/>
-					</div>
+					</header>
 
 					<div className="-mt-8 space-y-4">
 						<p className="text-lg leading-7 text-muted-foreground">
@@ -162,14 +164,16 @@ function RouteComponent() {
 					)}
 
 					<PublicProjectCategories categories={projectData.categoryDetails} />
-				</div>
+
+					<ShareButtons />
+				</article>
 
 				<GithubStatistics
 					github={projectData.github}
 					history={projectData.githubStarsHistory}
 					now={statisticsNow}
 				/>
-			</div>
+			</section>
 		</div>
 	)
 }

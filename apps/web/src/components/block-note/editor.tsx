@@ -57,10 +57,12 @@ import {
 	TooltipTrigger,
 } from '@altstack/ui/components/tooltip'
 
+import { ProjectMentionMenus } from '#/components/block-note/project-mention-menu'
 import {
 	blockNoteSchema,
 	contentExtensions,
 	prepareReadmeImport,
+	parseContentMarkdown,
 } from '#/components/block-note/schema'
 import type {
 	ReadmeImportMode,
@@ -113,7 +115,7 @@ export default function BlockNoteEditor({
 		if (didLoadInitialContent.current) return
 		didLoadInitialContent.current = true
 
-		const blocks = editor.tryParseMarkdownToBlocks(value ?? '')
+		const blocks = parseContentMarkdown(editor, value ?? '')
 		editor.replaceBlocks(editor.document, blocks)
 	}, [editor, value])
 
@@ -197,6 +199,7 @@ export default function BlockNoteEditor({
 			)}
 			editor={editor}
 			sideMenu={false}
+			slashMenu={false}
 			onBlur={onBlur}
 			onChange={handleMarkdownChange}
 			theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
@@ -266,6 +269,8 @@ export default function BlockNoteEditor({
 					TooltipTrigger,
 				},
 			}}
-		/>
+		>
+			<ProjectMentionMenus editor={editor} />
+		</BlockNoteView>
 	)
 }

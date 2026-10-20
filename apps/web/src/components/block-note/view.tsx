@@ -9,6 +9,7 @@ import { useTheme } from '@altstack/ui/components/customs/theme-provider'
 import {
 	blockNoteSchema,
 	contentExtensions,
+	parseContentMarkdown,
 } from '#/components/block-note/schema'
 import type { ReadmeImportPreview } from '#/components/block-note/schema'
 
@@ -28,7 +29,7 @@ export const BlockNoteViewBlocks = ({
 	})
 
 	useEffect(() => {
-		const next = blocks ?? editor.tryParseMarkdownToBlocks(content ?? '')
+		const next = blocks ?? parseContentMarkdown(editor, content ?? '')
 		editor.replaceBlocks(editor.document, structuredClone(next))
 	}, [content, blocks, editor])
 

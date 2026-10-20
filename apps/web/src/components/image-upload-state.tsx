@@ -25,16 +25,7 @@ export const ImageDropzoneEmptyState = ({
 		</div>
 
 		<p className="text-sm font-semibold text-muted-foreground">
-			Drop your image here or{' '}
-			<Button
-				type="button"
-				variant="link"
-				size="xs"
-				className="cursor-pointer px-0 font-bold"
-				onClick={onSelect}
-			>
-				use the picker
-			</Button>
+			Drop your image here
 		</p>
 
 		<p className="mt-1 text-xs text-muted-foreground">{hint}</p>
@@ -84,34 +75,46 @@ export const ImageDropzoneUploadedState = ({
 	previewUrl,
 	isDeleting,
 	onDelete,
+	itemNoun,
+	contain = false,
 }: {
 	onChange: () => void
 	previewUrl: string
 	isDeleting: boolean
-	onDelete: () => void
+	onDelete?: () => void
+	itemNoun: string
+	contain?: boolean
 }) => (
 	<div className="relative h-full w-full">
 		<img
 			src={previewUrl}
-			alt="Preview"
-			className="h-full w-full object-cover"
+			alt={`${itemNoun} preview`}
+			className={cn('size-full', contain ? 'object-contain' : 'object-cover')}
 		/>
 
 		<div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-2 bg-gradient-to-t from-background/90 to-transparent p-2 pt-6">
-			<Button type="button" variant="secondary" size="xs" onClick={onChange}>
+			<Button
+				type="button"
+				variant="secondary"
+				size="xs"
+				aria-label={`Change ${itemNoun}`}
+				onClick={onChange}
+			>
 				Change
 			</Button>
 
-			<Button
-				type="button"
-				variant="destructive"
-				size="icon-xs"
-				aria-label="Remove logo"
-				disabled={isDeleting}
-				onClick={onDelete}
-			>
-				{isDeleting ? <Spinner /> : <Trash />}
-			</Button>
+			{onDelete && (
+				<Button
+					type="button"
+					variant="destructive"
+					size="icon-xs"
+					aria-label={`Remove ${itemNoun}`}
+					disabled={isDeleting}
+					onClick={onDelete}
+				>
+					{isDeleting ? <Spinner /> : <Trash />}
+				</Button>
+			)}
 		</div>
 	</div>
 )

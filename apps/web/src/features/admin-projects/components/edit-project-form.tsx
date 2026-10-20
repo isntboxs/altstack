@@ -614,7 +614,10 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 					</section>
 
 					<section className="space-y-4">
-						<SectionHeading title="Content" />
+						<SectionHeading
+							title="Content"
+							description="Type @ to mention a listed project, or find Project mention in the / menu."
+						/>
 
 						<form.Subscribe
 							selector={(state) =>
@@ -664,13 +667,13 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 						/>
 					</section>
 
-					<section className="space-y-4">
+					<section className="@container/media space-y-4">
 						<SectionHeading
 							title="Media"
 							description="Logo is required to publish. Screenshots are cropped to 16:9."
 						/>
 
-						<div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+						<div className="grid grid-cols-1 items-start gap-4 @lg/media:grid-cols-[14rem_minmax(0,1fr)]">
 							<form.Field
 								name="logo"
 								children={(field) => {
@@ -681,16 +684,17 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 										<Field data-invalid={isInvalid}>
 											<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
 
-											{!field.state.value && logoDisplayUrl ? (
-												<img
-													src={logoDisplayUrl}
-													alt="Current logo"
-													className="aspect-square w-28 rounded-md border object-cover"
-												/>
-											) : null}
-
 											<LogoUploader
 												value={field.state.value ?? ''}
+												existingUrl={
+													field.state.value === undefined
+														? logoDisplayUrl
+														: null
+												}
+												onRemoveExisting={() => {
+													field.handleChange(null)
+													setLogoDisplayUrl(null)
+												}}
 												onChange={(next) => {
 													if (next === '') {
 														// New upload removed — revert to keeping the
@@ -710,7 +714,9 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 											/>
 
 											<FieldDescription>
-												Current logo is kept unless you upload a new one.
+												{field.state.value === null
+													? 'Logo will be removed on save. Add a logo to publish.'
+													: 'Current logo is kept unless you replace or remove it.'}
 											</FieldDescription>
 
 											{isInvalid && (
@@ -731,37 +737,17 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 										<Field data-invalid={isInvalid}>
 											<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
 
-											{field.state.value === undefined &&
-											screenshotDisplayUrl ? (
-												<div className="space-y-2">
-													<img
-														src={screenshotDisplayUrl}
-														alt="Current screenshot"
-														className="aspect-video w-full rounded-md border object-cover"
-													/>
-													<Button
-														type="button"
-														variant="outline"
-														size="sm"
-														onClick={() => {
-															field.handleChange(null)
-															setScreenshotDisplayUrl(null)
-														}}
-													>
-														Remove current screenshot
-													</Button>
-												</div>
-											) : null}
-
-											{field.state.value === null ? (
-												<p className="text-sm text-muted-foreground">
-													Screenshot will be removed on save. Upload a new one
-													below to replace it instead.
-												</p>
-											) : null}
-
 											<ScreenshotUploader
 												value={field.state.value ?? ''}
+												existingUrl={
+													field.state.value === undefined
+														? screenshotDisplayUrl
+														: null
+												}
+												onRemoveExisting={() => {
+													field.handleChange(null)
+													setScreenshotDisplayUrl(null)
+												}}
 												onChange={(next) => {
 													if (next === '') {
 														// New upload removed — revert to keeping the
@@ -784,7 +770,9 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 											/>
 
 											<FieldDescription>
-												Optional landing page capture in 16:9.
+												{field.state.value === null
+													? 'Screenshot will be removed on save. Upload a new one to replace it.'
+													: 'Optional landing page capture in 16:9.'}
 											</FieldDescription>
 
 											{isInvalid && (

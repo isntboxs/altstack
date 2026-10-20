@@ -67,9 +67,23 @@ vi.mock('#/components/project-category-badges', () => {
 })
 vi.mock('#/components/image-uploader', () => {
 	return {
-		LogoUploader: ({ onChange }: { onChange: (key: string) => void }) => (
+		LogoUploader: ({
+			onChange,
+			existingUrl,
+			onRemoveExisting,
+		}: {
+			onChange: (key: string) => void
+			existingUrl?: string | null
+			onRemoveExisting?: () => void
+		}) => (
 			<>
-				<span>No logo uploaded</span>
+				{existingUrl ? (
+					<button type="button" onClick={onRemoveExisting}>
+						Remove saved logo
+					</button>
+				) : (
+					<span>No logo uploaded</span>
+				)}
 				<button
 					type="button"
 					onClick={() => onChange('tmp/logos/review-1.png')}
@@ -78,13 +92,28 @@ vi.mock('#/components/image-uploader', () => {
 				</button>
 			</>
 		),
-		ScreenshotUploader: ({ onChange }: { onChange: (key: string) => void }) => (
-			<button
-				type="button"
-				onClick={() => onChange('tmp/screenshots/review-1.png')}
-			>
-				Upload test screenshot
-			</button>
+		ScreenshotUploader: ({
+			onChange,
+			existingUrl,
+			onRemoveExisting,
+		}: {
+			onChange: (key: string) => void
+			existingUrl?: string | null
+			onRemoveExisting?: () => void
+		}) => (
+			<>
+				{existingUrl && (
+					<button type="button" onClick={onRemoveExisting}>
+						Remove saved screenshot
+					</button>
+				)}
+				<button
+					type="button"
+					onClick={() => onChange('tmp/screenshots/review-1.png')}
+				>
+					Upload test screenshot
+				</button>
+			</>
 		),
 	}
 })
@@ -132,6 +161,32 @@ beforeEach(() => {
 })
 
 describe('admin draft review form', () => {
+	it.each(['logo', 'screenshot'] as const)(
+		'only submits saved %s removal when the form is saved',
+		async (media) => {
+			render(
+				<EditProjectForm
+					project={{
+						...draft,
+						logo: 'projects/review/logo.png',
+						screenshot: 'projects/review/screenshot.png',
+					}}
+				/>
+			)
+			fireEvent.click(
+				screen.getByRole('button', { name: `Remove saved ${media}` })
+			)
+			expect(mutateAsync).not.toHaveBeenCalled()
+			expect(
+				screen.getByText(new RegExp(`${media} will be removed on save`, 'i'))
+			).toBeDefined()
+			fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }))
+			await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce())
+			const body = mutateAsync.mock.calls[0]?.[0].body
+			expect(body?.[media]).toBeNull()
+			expect(body?.[media === 'logo' ? 'screenshot' : 'logo']).toBeUndefined()
+		}
+	)
 	it('syncs pristine repository URLs across refreshes without replacing other edits', async () => {
 		const { rerender } = render(<EditProjectForm project={draft} />)
 		fireEvent.change(screen.getByLabelText('Tagline'), {

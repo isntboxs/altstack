@@ -1,0 +1,3 @@
+#!/bin/sh
+# VS Code's TypeScript 7 client discovers an executable named tsgo.
+exec "$(dirname "$0")/../../node_modules/.bin/tsrs" "$@"

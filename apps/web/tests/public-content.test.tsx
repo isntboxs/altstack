@@ -91,6 +91,9 @@ describe('public Markdown rendering', () => {
 			slug: 'supabase',
 			name: 'Supabase',
 			logo: 'projects/supabase/logo.png',
+			tagline: 'Build applications with an open-source backend.',
+			stars: 83_335,
+			forks: 8_847,
 		}
 		const router = await documentRouter(
 			'[old name](/supabase?ref=docs#setup) [ref][db]\n\n[![badge](https://img.test/badge.svg)](/supabase)\n\n[missing](/missing) [categories](/categories) [section](#section) [website](https://example.com)\n\n[db]: https://altstack.test/supabase',
@@ -99,6 +102,7 @@ describe('public Markdown rendering', () => {
 		render(<RouterProvider router={router} />)
 		const chips = screen.getAllByRole('link', { name: 'Supabase' })
 		expect(chips).toHaveLength(2)
+		expect(document.querySelector('a a')).toBeNull()
 		expect(chips[0].getAttribute('href')).toBe('/supabase?ref=docs#setup')
 		expect(chips[0].querySelector('img')?.getAttribute('src')).toBe(
 			'https://storage.test/projects/supabase/logo.png'
@@ -131,6 +135,59 @@ describe('public Markdown rendering', () => {
 		expect(router.state.location.hash).toBe('setup')
 	})
 
+	it('previews a mentioned project on focus and follows its details link', async () => {
+		const prepared = emptyPublicContent()
+		prepared.projectsBySlug.vite = {
+			slug: 'vite',
+			name: 'Vite',
+			logo: 'projects/vite/logo.svg',
+			tagline: 'Next generation frontend tooling. Fast dev, instant HMR.',
+			stars: 83_335,
+			forks: 8_847,
+		}
+		const router = await documentRouter('Built with [Vite](/vite)', prepared)
+		render(<RouterProvider router={router} />)
+		const trigger = screen.getByRole('link', { name: 'Vite' })
+		expect(screen.queryByText('View project details')).toBeNull()
+		fireEvent.focus(trigger)
+		const details = await screen.findByText('View project details')
+		const preview = details.closest<HTMLElement>(
+			'[data-slot="hover-card-content"]'
+		)!
+		expect(preview.textContent).toContain(prepared.projectsBySlug.vite.tagline)
+		expect(preview.textContent).toContain('83,335')
+		expect(preview.textContent).toContain('8,847')
+		expect(details.getAttribute('href')).toBe('/vite')
+		expect(document.querySelector('a a')).toBeNull()
+		const watermark = preview.querySelector('img[aria-hidden="true"]')!
+		fireEvent.error(watermark)
+		expect(preview.querySelector('img[aria-hidden="true"]')).toBeNull()
+		fireEvent.click(details)
+		await waitFor(() => expect(router.state.location.pathname).toBe('/vite'))
+	})
+
+	it('keeps zero statistics visible when a mentioned project has no logo or tagline', async () => {
+		const prepared = emptyPublicContent()
+		prepared.projectsBySlug.atlas = {
+			slug: 'atlas',
+			name: 'Atlas',
+			logo: null,
+			tagline: null,
+			stars: 0,
+			forks: 0,
+		}
+		const router = await documentRouter('[Atlas](/atlas)', prepared)
+		render(<RouterProvider router={router} />)
+		fireEvent.focus(screen.getByRole('link', { name: 'Atlas' }))
+		const details = await screen.findByText('View project details')
+		const preview = details.closest<HTMLElement>(
+			'[data-slot="hover-card-content"]'
+		)!
+		expect(within(preview).getAllByText('0')).toHaveLength(2)
+		expect(preview.querySelector('img')).toBeNull()
+		expect(preview.textContent).not.toContain('NaN')
+	})
+
 	it('copies source whitespace exactly and announces clipboard failure', async () => {
 		const code = '\tline  \n\n'
 		const writeText = vi.fn().mockResolvedValue(undefined)
@@ -155,7 +212,14 @@ describe('public Markdown rendering', () => {
 	it('includes highlighting and mentions in SSR and hydrates identical markup', async () => {
 		const prepared: PreparedPublicContent = {
 			projectsBySlug: {
-				supabase: { slug: 'supabase', name: 'Supabase', logo: null },
+				supabase: {
+					slug: 'supabase',
+					name: 'Supabase',
+					logo: null,
+					tagline: null,
+					stars: 0,
+					forks: 0,
+				},
 			},
 			codeBlocks: {
 				0: {

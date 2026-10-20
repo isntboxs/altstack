@@ -11,6 +11,8 @@ import {
 	listProjectsOutputSchema,
 	searchProjectsInputSchema,
 	searchProjectsOutputSchema,
+	projectMentionsInputSchema,
+	projectMentionsOutputSchema,
 } from '@altstack/shared/schemas/project'
 
 const getBySlugContract = publicContract
@@ -85,9 +87,14 @@ const listCategoriesContract = publicContract
 	.input(listCategoriesInputSchema)
 	.output(listCategoriesOutputSchema)
 
+const mentionsContract = publicContract
+	.input(projectMentionsInputSchema)
+	.output(projectMentionsOutputSchema)
+
 export const projectContract = {
 	getBySlug: getBySlugContract,
 	list: listProjectsContract,
 	search: searchProjectsContract,
+	mentions: mentionsContract,
 	listCategories: listCategoriesContract,
 }
