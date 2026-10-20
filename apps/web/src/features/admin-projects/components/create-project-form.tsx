@@ -27,7 +27,6 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from '@altstack/ui/components/native-select'
-import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Spinner } from '@altstack/ui/components/spinner'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
@@ -37,6 +36,7 @@ import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { CategoryComboboxSkeleton } from '#/components/workspace-skeletons'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
@@ -698,7 +698,7 @@ export function CreateProjectForm() {
 									return (
 										<Field data-invalid={isInvalid}>
 											<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
-											<Suspense fallback={<Skeleton className="h-10 w-full" />}>
+											<Suspense fallback={<CategoryComboboxSkeleton />}>
 												<CategoryCombobox
 													id={field.name}
 													value={field.state.value ?? []}

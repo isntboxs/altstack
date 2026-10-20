@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { CategoriesTablePending } from '#/components/workspace-skeletons'
 import { CategoryTable } from '#/features/admin-categories/components/category-table'
 import {
 	adminCategoryQueries,
@@ -10,6 +11,9 @@ export const Route = createFileRoute('/_main/admin/categories/')({
 	loader: async ({ context }) => {
 		await context.queryClient.query(adminCategoryQueries.list())
 	},
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: CategoriesTablePending,
 	component: CategoryDashboard,
 })
 

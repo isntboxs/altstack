@@ -27,7 +27,6 @@ import {
 	InputGroupInput,
 	InputGroupText,
 } from '@altstack/ui/components/input-group'
-import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
@@ -36,6 +35,7 @@ import BlockNoteEditor from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { ProjectCategoryBadges } from '#/components/project-category-badges'
+import { CategoryComboboxSkeleton } from '#/components/workspace-skeletons'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
 import { GithubStatisticsRefresh } from '#/features/admin-projects/components/github-statistics-refresh'
@@ -797,7 +797,7 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 								return (
 									<Field data-invalid={isInvalid}>
 										<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
-										<Suspense fallback={<Skeleton className="h-10 w-full" />}>
+										<Suspense fallback={<CategoryComboboxSkeleton />}>
 											<CategoryCombobox
 												id={field.name}
 												value={field.state.value ?? []}

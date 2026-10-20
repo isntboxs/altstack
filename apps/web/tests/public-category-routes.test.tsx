@@ -1247,3 +1247,37 @@ describe('public destinations and cache retry', () => {
 		expect(rpc.mock.calls.length).toBeGreaterThan(before)
 	})
 })
+
+it('keeps a cold category request alive while its pending controls render', async () => {
+	const router = await routerAt('/', true)
+	const original = rpc.getMockImplementation()!
+	let release: () => void = () => undefined
+	const gate = new Promise<void>((resolve) => {
+		release = resolve
+	})
+	rpc.mockImplementation(async (path, input) => {
+		if (path.join('/') === 'category/getByPath') await gate
+		return original(path, input)
+	})
+	let navigation = Promise.resolve()
+	act(() => {
+		navigation = router.navigate({
+			to: '/categories/$',
+			params: { _splat: ai.path },
+		})
+	})
+	try {
+		await screen.findByText('Loading projects…')
+		expect(
+			document.querySelector('[data-skeleton="category-controls"]')
+		).not.toBeNull()
+		expect(screen.queryByText('Unable to load categories')).toBeNull()
+	} finally {
+		await act(async () => {
+			release()
+			await navigation
+		})
+	}
+	await screen.findByRole('heading', { name: `Open Source ${ai.name}` })
+	expect(screen.queryByText('Unable to load categories')).toBeNull()
+})

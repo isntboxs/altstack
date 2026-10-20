@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite-plus'
 import { playwright } from 'vite-plus/test/browser-playwright'
@@ -15,7 +16,7 @@ export default defineConfig({
 		projects: [
 			{ test: { name: 'unit' } },
 			{
-				plugins: [react()],
+				plugins: [tailwindcss(), react()],
 				test: {
 					name: 'browser',
 					// Keep browser-only files outside the default Node test glob.

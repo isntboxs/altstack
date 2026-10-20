@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { SubmissionsPending } from '#/components/workspace-skeletons'
 import { ResubmitSubmissionDialog } from '#/features/submissions/components/resubmit-submission-dialog'
 import { SubmissionDataTable } from '#/features/submissions/components/submission-data-table'
 import { submissionQueries } from '#/features/submissions/queries'
@@ -15,6 +16,9 @@ export const Route = createFileRoute('/_main/submission')({
 		context.queryClient.query(
 			submissionQueries.list(deps, context.auth.user.id)
 		),
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: SubmissionsPending,
 	component: SubmissionPage,
 })
 

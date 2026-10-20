@@ -8,8 +8,11 @@ import {
 	AlertTitle,
 } from '@altstack/ui/components/alert'
 import { Button } from '@altstack/ui/components/button'
-import { Spinner } from '@altstack/ui/components/spinner'
 
+import {
+	BookmarksPending,
+	BookmarksTablePending,
+} from '#/components/workspace-skeletons'
 import { BookmarkDataTable } from '#/features/bookmarks/components/bookmark-data-table'
 import { bookmarkQueries } from '#/features/bookmarks/queries'
 import { bookmarkSearchSchema } from '#/features/bookmarks/search'
@@ -37,15 +40,6 @@ export const Route = createFileRoute('/_main/bookmarks')({
 	errorComponent: BookmarksError,
 	component: BookmarksPage,
 })
-
-function BookmarksPending() {
-	return (
-		<output className="flex items-center gap-2 p-6">
-			<Spinner />
-			Loading bookmarks…
-		</output>
-	)
-}
 
 function BookmarksError() {
 	const router = useRouter()
@@ -103,7 +97,7 @@ function BookmarksPage() {
 					</AlertDescription>
 				</Alert>
 			) : query.isPending ? (
-				<BookmarksPending />
+				<BookmarksTablePending />
 			) : (
 				<BookmarkDataTable
 					data={query.data}

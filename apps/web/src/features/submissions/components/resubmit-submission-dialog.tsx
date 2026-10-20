@@ -10,6 +10,7 @@ import {
 	DialogTitle,
 } from '@altstack/ui/components/dialog'
 
+import { ResubmitPending } from '#/components/workspace-skeletons'
 import { SubmissionForm } from '#/features/submissions/components/submission-form'
 import { submissionQueries } from '#/features/submissions/queries'
 import { orpc } from '#/utils/orpc'
@@ -56,7 +57,7 @@ export function ResubmitSubmissionDialog({
 					</DialogDescription>
 				</DialogHeader>
 				{intake.isPending ? (
-					<output>Loading your submission…</output>
+					<ResubmitPending />
 				) : intake.isError ? (
 					<div className="space-y-3">
 						<p role="alert">{intake.error.message}</p>

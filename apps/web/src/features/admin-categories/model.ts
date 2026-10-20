@@ -8,6 +8,9 @@ import {
 } from '@altstack/shared/schemas/admin-category'
 import { slugSchema } from '@altstack/shared/schemas/common'
 
+export const categoryHelp =
+	'Pick 1–3 categories. Only leaf categories (without children) can be assigned.'
+
 export type AdminCategory =
 	ORPCRouterOutputs['admin']['category']['list']['categories'][number]
 export type CategoryFormValues = z.input<typeof adminCreateCategoryBodySchema>

@@ -3,14 +3,6 @@ import type { ErrorComponentProps } from '@tanstack/react-router'
 
 import { Button } from '@altstack/ui/components/button'
 
-export function CategoryLoading() {
-	return (
-		<output className="block p-6 text-sm text-muted-foreground">
-			Loading categories…
-		</output>
-	)
-}
-
 export function CategoryNotFound() {
 	return (
 		<div className="space-y-3 p-6">

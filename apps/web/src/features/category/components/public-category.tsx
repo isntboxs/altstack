@@ -12,8 +12,11 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@altstack/ui/components/breadcrumb'
+import { Skeleton } from '@altstack/ui/components/skeleton'
 
-import { PublicError, PublicPending } from '#/components/public-page-state'
+import { PublicError } from '#/components/public-page-state'
+import { LoadingStatus } from '#/components/public-skeletons'
+import { categoriesIntro } from '#/features/category/meta'
 
 export function CategoryBreadcrumb({
 	ancestors = [],
@@ -102,8 +105,36 @@ export function PublicProjectCategories({
 
 export function CategoriesPending() {
 	return (
-		<div className="pt-24">
-			<PublicPending label="Loading categories…" />
+		<div
+			data-skeleton="categories-directory"
+			aria-busy="true"
+			className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16"
+		>
+			<LoadingStatus>Loading categories…</LoadingStatus>
+			<div className="flex flex-col gap-4">
+				<CategoryBreadcrumb />
+				<h1 className="text-3xl font-medium tracking-tight wrap-anywhere sm:text-4xl">
+					Open Source Software Categories
+				</h1>
+				<p className="max-w-3xl text-lg leading-7 text-muted-foreground">
+					{categoriesIntro}
+				</p>
+			</div>
+			<div
+				aria-hidden="true"
+				className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-3"
+			>
+				{[0, 1, 2].map((key) => (
+					<div key={key} className="flex min-w-0 flex-col gap-3">
+						<Skeleton className="h-7 w-2/3" />
+						<div className="flex flex-col gap-2">
+							{[0, 1, 2].map((item) => (
+								<Skeleton key={item} className="h-7 w-full" />
+							))}
+						</div>
+					</div>
+				))}
+			</div>
 		</div>
 	)
 }
