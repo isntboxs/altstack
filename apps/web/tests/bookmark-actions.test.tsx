@@ -2,7 +2,9 @@
 import { createORPCClient } from '@orpc/client'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type * as TanStackRouter from '@tanstack/react-router'
 import {
+	act,
 	cleanup,
 	fireEvent,
 	render,
@@ -61,8 +63,10 @@ vi.mock('@altstack/env/web', () => {
 		},
 	}
 })
-vi.mock('@tanstack/react-router', () => {
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+	const { CatchBoundary } = await importOriginal<typeof TanStackRouter>()
 	return {
+		CatchBoundary,
 		useLocation: () => {
 			return { href: '/example?source=test', pathname: '/example' }
 		},
@@ -191,14 +195,20 @@ describe('project bookmark actions', () => {
 		).toEqual({ params: { id: actionProps.projectId } })
 	})
 	it('preserves state after failed writes and supports retry after failed state reads', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => undefined)
 		rpc
 			.mockRejectedValueOnce(new Error('Offline'))
 			.mockResolvedValue({ bookmarked: false })
 		view(<ProjectActions {...actionProps} />)
+		await screen.findByRole('alert')
+		expect(screen.getByRole('button', { name: 'Embed' })).toBeTruthy()
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Retry bookmark' })
 		)
-		const save = await screen.findByRole('button', { name: 'Bookmark' })
+		const save = await screen.findByRole('button', {
+			name: 'Bookmark',
+			busy: false,
+		})
 		rpc.mockImplementation((path) =>
 			path.at(-1) === 'save'
 				? Promise.reject(new Error('Offline'))
@@ -237,6 +247,43 @@ describe('project bookmark actions', () => {
 		expect(bookmarkQueries.list({}, 'user-a').queryKey).not.toEqual(
 			bookmarkQueries.list({}, 'user-b').queryKey
 		)
+	})
+	it('keeps the guest login action available after signing out during a state read', async () => {
+		let finishRead!: (value: unknown) => void
+		rpc.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					finishRead = resolve
+				})
+		)
+		const rendered = view(<ProjectActions {...actionProps} />)
+		expect(screen.getByRole('button', { name: 'Embed' })).toBeTruthy()
+		rendered.rerender(<ProjectActions {...actionProps} userId={undefined} />)
+		fireEvent.click(screen.getByRole('button', { name: 'Bookmark' }))
+		expect(screen.getByRole('dialog', { name: 'Sign in' })).toBeTruthy()
+		await act(() => {
+			finishRead({ bookmarked: true })
+			return Promise.resolve()
+		})
+		expect(screen.getByRole('button', { name: 'Bookmark' })).toBeTruthy()
+		expect(screen.queryByRole('button', { name: 'Remove bookmark' })).toBeNull()
+		expect(rpc).toHaveBeenCalledTimes(1)
+	})
+	it('resets a failed state read when switching accounts', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => undefined)
+		rpc
+			.mockRejectedValueOnce(new Error('Offline'))
+			.mockResolvedValue({ bookmarked: false })
+		const rendered = view(<ProjectActions {...actionProps} />)
+		await screen.findByRole('button', { name: 'Retry bookmark' })
+		rendered.rerender(<ProjectActions {...actionProps} userId="user-b" />)
+		const bookmark = await screen.findByRole('button', {
+			name: 'Bookmark',
+			busy: false,
+		})
+		expect(bookmark.getAttribute('aria-pressed')).toBe('false')
+		expect(screen.queryByRole('alert')).toBeNull()
+		expect(rpc).toHaveBeenCalledTimes(2)
 	})
 })
 
