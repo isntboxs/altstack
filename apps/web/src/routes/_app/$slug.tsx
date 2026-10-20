@@ -62,6 +62,7 @@ export const Route = createFileRoute('/_app/$slug')({
 })
 
 function RouteComponent() {
+	const { auth } = Route.useRouteContext()
 	const { slug } = Route.useParams()
 	const { dialog } = Route.useSearch()
 	const navigate = Route.useNavigate()
@@ -99,6 +100,8 @@ function RouteComponent() {
 
 						<ProjectActions
 							key={slug}
+							projectId={projectData.id}
+							userId={auth?.user.id}
 							slug={slug}
 							name={projectData.name}
 							embedOpen={dialog === 'embed'}

@@ -51,11 +51,13 @@ The first public launch is complete when visitors/users can:
 
 The roadmap also requires staging smoke, production builds, migrations, runtime
 configuration, and deployment acceptance. Claiming ownership, editing published
-listings as a maintainer, featured sections, and bookmarks remain MVP+.
+listings as a maintainer and featured sections remain MVP+.
+Private Bookmarks are implemented after v0.2.0 on the feature branch; see
+[behavior, verification and migration rollout](bookmarks.md).
 
 ## Explicit non-goals for launch
 
-- Collections, bookmarks, comparisons, reviews, ratings, follows, and profiles.
+- Collections, comparisons, reviews, ratings, follows, and profiles.
 - Quality scores, hidden-gem/fast-growing rankings, personalized/trending feeds.
 - Guest intake and anonymous-IP rate limiting.
 - Queues/webhooks/workers beyond the existing daily GitHub statistics CLI.
@@ -163,9 +165,9 @@ merged-revision checks and release-domain acceptance remain separate gates. See 
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- Retain Verify/Bookmark/Report and account Bookmarks across desktop/compact/mobile as semantically disabled controls with visible, accessible “Coming soon” explanations. Preserve a functional named compact More menu. No login redirect, fake modal/toast, bookmark state or new workflow; remove unsupported trust/ranking promises. This user decision supersedes the research's original remove/hide recommendation.
+- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. Verify and Report retain accessible “Coming soon” explanations.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership, bookmarks and reports remain backlog until separately implemented and verified; disabled controls do not expand launch scope.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership and reports remain backlog; bookmarks are tracked separately in the implementation above.
 
 ### Public project Embed badges
 
@@ -238,7 +240,7 @@ Publication enriches the existing submitted project.
 After launch, measure accurate catalogue coverage, successful browse/search/detail
 journeys, submission decisions within one business day, and authorization checks.
 
-Prioritize ownership/editing, curation, bookmarks/collections/compare, corrections,
+Prioritize ownership/editing, curation, collections/compare, corrections,
 notifications, or guest intake from observed usage. Evaluate another search
 service only after measuring PostgreSQL. Webhooks/trending, rich galleries/video,
 scores, analytics, newsletter/RSS, profiles/reviews, SDKs, and extensions remain

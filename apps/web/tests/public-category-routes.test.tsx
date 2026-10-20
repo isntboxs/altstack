@@ -214,6 +214,20 @@ beforeEach(() => {
 	rpc.mockReset().mockImplementation((path, input) =>
 		Promise.resolve().then(() => {
 			switch (path.join('/')) {
+				case 'bookmark/get':
+					return { bookmarked: false }
+				case 'bookmark/list':
+					return {
+						bookmarks: [],
+						pagination: {
+							page: 1,
+							limit: 25,
+							totalItems: 0,
+							totalPages: 0,
+							hasNextPage: false,
+							hasPreviousPage: false,
+						},
+					}
 				case 'category/list':
 					return { categories: visibleNodes }
 				case 'category/getByPath': {
@@ -873,10 +887,10 @@ describe('L2 public affordances and recovery', () => {
 			screen.queryByText(/compare alternatives|trending|Last commit/)
 		).toBeNull()
 	})
-	it('keeps deferred desktop and compact actions disabled while Embed is available', async () => {
+	it('keeps Verify and Report disabled while Bookmark and Embed are available', async () => {
 		const router = await routerAt('/test-zed', true)
 		const before = rpc.mock.calls.length
-		for (const name of ['Verify', 'Bookmark', 'Report']) {
+		for (const name of ['Verify', 'Report']) {
 			const action = screen.getByRole('button', { name })
 			expect(action).toHaveProperty('disabled', true)
 			expect(
@@ -889,7 +903,7 @@ describe('L2 public affordances and recovery', () => {
 		}
 		const trigger = screen.getByRole('button', { name: 'More project actions' })
 		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
-		for (const name of ['Verify', 'Bookmark', 'Report']) {
+		for (const name of ['Verify', 'Report']) {
 			const action = await screen.findByRole('menuitem', {
 				name: name + ' — Coming soon',
 			})
@@ -901,9 +915,18 @@ describe('L2 public affordances and recovery', () => {
 		expect(router.state.location.pathname).toBe('/test-zed')
 		expect(screen.queryByRole('dialog')).toBeNull()
 		expect(rpc.mock.calls.length).toBe(before)
+		expect(
+			screen
+				.getByRole('menuitem', { name: 'Bookmark' })
+				.getAttribute('aria-disabled')
+		).not.toBe('true')
 		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 		await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 		await waitFor(() => expect(document.activeElement).toBe(trigger))
+		expect(screen.getByRole('button', { name: 'Bookmark' })).toHaveProperty(
+			'disabled',
+			false
+		)
 		expect(screen.getByRole('button', { name: 'Embed' })).toHaveProperty(
 			'disabled',
 			false
@@ -976,7 +999,7 @@ describe('L2 public affordances and recovery', () => {
 		await waitFor(() => expect(document.activeElement).toBe(trigger))
 	})
 	it.each(['user', 'admin'] as const)(
-		'keeps %s account Bookmarks disabled and preserves its real destination',
+		'enables %s account Bookmarks and preserves its workspace destination',
 		async (role) => {
 			const now = new Date()
 			getAuthFn.mockResolvedValue({
@@ -1013,16 +1036,16 @@ describe('L2 public affordances and recovery', () => {
 				role === 'admin' ? '/projects' : '/submission'
 			)
 			const bookmarks = screen.getByRole('menuitem', {
-				name: 'Bookmarks Coming soon',
+				name: 'Bookmarks',
 			})
-			expect(bookmarks.getAttribute('aria-disabled')).toBe('true')
+			expect(bookmarks.getAttribute('aria-disabled')).not.toBe('true')
+			expect(bookmarks.getAttribute('href')).toBe('/bookmarks')
 			fireEvent.click(bookmarks)
-			fireEvent.keyDown(bookmarks, { key: 'Enter' })
-			fireEvent.keyDown(bookmarks, { key: ' ' })
-			expect(router.state.location.pathname).toBe('/test-zed')
+			await waitFor(() =>
+				expect(router.state.location.pathname).toBe('/bookmarks')
+			)
+			await screen.findByText('No bookmarks yet')
 			expect(screen.queryByRole('dialog')).toBeNull()
-			fireEvent.keyDown(destination, { key: 'Escape' })
-			await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 		}
 	)
 	it.each([

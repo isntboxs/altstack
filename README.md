@@ -104,6 +104,9 @@ Wrapper `test:scoped` di bawah memakai schema sementara pada
 `altstack_development`, lalu menghapus schema tes setelah selesai. Data aplikasi
 dan riwayat migration di schema `public` tidak diubah.
 
+Private Bookmarks tersedia untuk user dan admin pada branch fitur ini. Lihat
+[perilaku, rollout migrasi additive, dan verifikasi Bookmarks](docs/bookmarks.md).
+
 - Check everything is ready:
 
 ```bash
