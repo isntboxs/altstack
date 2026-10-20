@@ -92,7 +92,7 @@ export const ImageDropzoneUploadedState = ({
 			className={cn('size-full', contain ? 'object-contain' : 'object-cover')}
 		/>
 
-		<div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-2 bg-gradient-to-t from-background/90 to-transparent p-2 pt-6">
+		<div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-2 bg-linear-to-t from-background/90 to-transparent p-2 pt-6">
 			<Button
 				type="button"
 				variant="secondary"
