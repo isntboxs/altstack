@@ -10,7 +10,7 @@
 		"generate-routes": "tsr generate",
 		"generate:og": "bun run scripts/generate-og.ts",
 		"preview": "vp preview",
-		"test": "vp test run",
+		"test": "vp test run --project unit",
 		"test:auth-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/auth-http.acceptance.ts",
 		"test:bookmarks-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/bookmarks-http.acceptance.ts",
 		"test:browser": "vp test run --project browser",
