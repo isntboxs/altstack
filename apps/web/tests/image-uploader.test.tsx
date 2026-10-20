@@ -9,6 +9,8 @@ import {
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import { toast } from '@altstack/ui/components/toast'
+
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 
 const { uploadApi } = vi.hoisted(() => {
@@ -166,7 +168,14 @@ describe.each([
 				files: [new File(['GIF89a'], 'new.gif', { type: 'image/gif' })],
 			},
 		})
-		await waitFor(() => expect(uploadApi.request).toHaveBeenCalledOnce())
+		await waitFor(() =>
+			expect(toast.add).toHaveBeenCalledWith({
+				type: 'error',
+				title: 'Upload failed',
+				description: 'Upload unavailable',
+			})
+		)
+		expect(uploadApi.request).toHaveBeenCalledOnce()
 		await waitFor(() =>
 			expect(
 				screen.getByRole('img', { name: `${noun} preview` })
