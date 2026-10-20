@@ -961,17 +961,17 @@ describe('generated OpenAPI compatibility', () => {
 		const operations = Object.keys(paths)
 			.filter((path): path is `/${string}` => path.startsWith('/'))
 			.flatMap((path) =>
-				(['get', 'query', 'post', 'patch', 'delete'] as const).flatMap(
+				(['get', 'query', 'post', 'put', 'patch', 'delete'] as const).flatMap(
 					(method) => {
 						const operation = paths[path]?.[method]
 						return operation ? [{ path, method, operation }] : []
 					}
 				)
 			)
-		expect(operations).toHaveLength(31)
+		expect(operations).toHaveLength(35)
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			16
+			18
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1049,6 +1049,7 @@ describe('generated OpenAPI compatibility', () => {
 	})
 	it('applies detailed input and compact output only to explicitly mapped procedures with explicit scalar styles', () => {
 		const procedures = [
+			...Object.values(contracts.bookmark),
 			contracts.health,
 			...Object.values(contracts.altstack),
 			...Object.values(contracts.category),
@@ -1064,9 +1065,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(30)
+		expect(mapped).toHaveLength(34)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(16)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(18)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(

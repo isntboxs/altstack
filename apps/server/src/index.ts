@@ -53,6 +53,18 @@ app.use(
 
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
+// Bookmark reads contain account-specific state even on the public project page.
+app.use('/api/*', async (c, next) => {
+	if (
+		/^\/api\/(?:rpc\/bookmark(?:\/|$)|reference\/bookmarks(?:\/|$))/.test(
+			c.req.path
+		)
+	) {
+		c.header('Cache-Control', 'private, no-store')
+	}
+	await next()
+})
+
 app.use('/api/rpc*', async (c, next) => {
 	const context = await createORPCContext({ headers: c.req.raw.headers })
 

@@ -8,6 +8,7 @@ import { o } from '@altstack/api/base'
 import { adminCategoryRouter } from '@altstack/api/routers/admin-category'
 import { adminProjectRouter } from '@altstack/api/routers/admin-project'
 import { altstackRouter } from '@altstack/api/routers/altstack'
+import { bookmarkRouter } from '@altstack/api/routers/bookmark'
 import { categoryRouter } from '@altstack/api/routers/category'
 import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
@@ -15,6 +16,7 @@ import { submissionRouter } from '@altstack/api/routers/submission'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
 export const routers = o.router({
+	bookmark: bookmarkRouter,
 	admin: {
 		category: adminCategoryRouter,
 		project: adminProjectRouter,

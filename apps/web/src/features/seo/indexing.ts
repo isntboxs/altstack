@@ -5,7 +5,9 @@ export const indexingMiddleware = createMiddleware().server(
 		const result = await next()
 		const path = new URL(request.url).pathname
 		if (
-			/^\/(?:auth|submit|submission|projects|admin)(?:\/|$)/.test(path) ||
+			/^\/(?:auth|submit|submission|bookmarks|projects|admin)(?:\/|$)/.test(
+				path
+			) ||
 			result.response.status >= 400
 		) {
 			result.response.headers.set('X-Robots-Tag', 'noindex, follow')

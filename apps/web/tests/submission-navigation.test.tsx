@@ -63,6 +63,9 @@ describe('role-specific navigation', () => {
 			screen.getByText('Submission').closest('a')?.getAttribute('href')
 		).toBe('/submission')
 		expect(screen.queryByText('Projects')).toBeNull()
+		expect(
+			screen.getByRole('link', { name: 'Bookmarks' }).getAttribute('href')
+		).toBe('/bookmarks')
 		auth.role = 'admin'
 		view.rerender(
 			<SidebarProvider>
@@ -74,6 +77,9 @@ describe('role-specific navigation', () => {
 		).toBe('/projects')
 		expect(screen.getByText('Categories')).toBeTruthy()
 		expect(screen.queryByText('Submission')).toBeNull()
+		expect(
+			screen.getByRole('link', { name: 'Bookmarks' }).getAttribute('href')
+		).toBe('/bookmarks')
 	})
 	it('preserves entered search text and normalizes malformed pagination', () => {
 		expect(

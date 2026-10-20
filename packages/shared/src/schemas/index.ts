@@ -1,6 +1,7 @@
 export * from '@altstack/shared/schemas/admin-category'
 export * from '@altstack/shared/schemas/admin-project'
 export * from '@altstack/shared/schemas/audit'
+export * from '@altstack/shared/schemas/bookmark'
 export * from '@altstack/shared/schemas/category'
 export * from '@altstack/shared/schemas/common'
 export * from '@altstack/shared/schemas/project'
