@@ -1,4 +1,9 @@
-import { IconPackage, IconCategory, IconInbox } from '@tabler/icons-react'
+import {
+	IconPackage,
+	IconCategory,
+	IconInbox,
+	IconBookmark,
+} from '@tabler/icons-react'
 import {
 	Link,
 	linkOptions,
@@ -20,6 +25,7 @@ import {
 type MainSidebarContentProps = ComponentProps<typeof SidebarContent>
 
 const navLinks = linkOptions([
+	{ to: '/bookmarks', icon: IconBookmark, label: 'Bookmarks' },
 	{
 		to: '/projects',
 		icon: IconPackage,
@@ -30,6 +36,7 @@ const navLinks = linkOptions([
 
 const userNavLinks = linkOptions([
 	{ to: '/submission', icon: IconInbox, label: 'Submission' },
+	{ to: '/bookmarks', icon: IconBookmark, label: 'Bookmarks' },
 ])
 
 export const MainSidebarContent: FC<MainSidebarContentProps> = ({

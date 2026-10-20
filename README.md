@@ -20,6 +20,44 @@ Lihat [format kolom, template, konsistensi transaksi, dan pengujian aman](docs/f
 
 ## Development
 
+### Browser testing (Playwright)
+
+Browser test memakai Vitest Browser Mode dengan provider Playwright dan Chromium.
+Versi `vitest` dan `@vitest/browser-playwright` mengikuti Vitest bawaan Vite+.
+Import API test dari `vite-plus/test` dan API browser dari `vite-plus/test/browser`.
+Ini menguji kode di browser asli; pengujian alur end-to-end aplikasi memakai
+runner Playwright Test yang terpisah.
+
+Jalankan dari root repository:
+
+```sh
+# Sekali setelah install dependency, dan ulangi setelah upgrade Playwright.
+vp run test:browser:install
+
+# Jalankan browser test saja, tanpa server aplikasi atau database.
+vp run test:browser
+
+# Watch dengan jendela Chromium untuk debugging lokal.
+vp run --filter web test:browser:watch
+
+# Jalankan unit test web saja.
+vp run --filter web test:unit
+```
+
+Simpan browser test di `apps/web/tests/browser/**/*.browser.ts` atau
+`*.browser.tsx`. Nama ini memisahkannya dari glob default unit test (`*.test.*`)
+agar tidak dijalankan dalam Node. Konfigurasi ada di `apps/web/vitest.config.ts`;
+script `test` web dan `vp run -r test` menjalankan project `unit` dan `browser`.
+Tes awal memverifikasi crop gambar dan padding PNG/JPEG memakai Canvas serta
+decoder gambar Chromium asli, tanpa mock DOM.
+
+Di CI Linux yang didukung Playwright, install browser beserta library OS sebelum
+menjalankan suite:
+
+```sh
+vp exec --filter web playwright install --with-deps chromium
+```
+
 ### Type checking dan VS Code (tsrs)
 
 Install dependency dari root repository dengan `vp install`. Type checker Rust
@@ -65,6 +103,9 @@ parameter SSL dari penyedia cloud. Terapkan migration dengan `vp run db:migrate`
 Wrapper `test:scoped` di bawah memakai schema sementara pada
 `altstack_development`, lalu menghapus schema tes setelah selesai. Data aplikasi
 dan riwayat migration di schema `public` tidak diubah.
+
+Private Bookmarks tersedia untuk user dan admin pada branch fitur ini. Lihat
+[perilaku, rollout migrasi additive, dan verifikasi Bookmarks](docs/bookmarks.md).
 
 - Check everything is ready:
 

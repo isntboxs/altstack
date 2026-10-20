@@ -3,36 +3,10 @@ import { useState } from 'react'
 
 import { Button } from '@altstack/ui/components/button'
 
-export function PublicPending({
-	label = 'Loading projects…',
-}: {
-	label?: string
-}) {
-	return (
-		<div className="container mx-auto w-full max-w-6xl space-y-4 px-4 py-8 lg:px-16">
-			<output>{label}</output>
-			<div
-				aria-hidden="true"
-				className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
-			>
-				{[1, 2, 3].map((key) => (
-					<div
-						key={key}
-						className="h-48 rounded-xl border border-border bg-muted/40"
-					/>
-				))}
-			</div>
-		</div>
-	)
-}
-
-export function ProjectPending() {
-	return (
-		<div className="pt-24">
-			<PublicPending label="Loading project…" />
-		</div>
-	)
-}
+export {
+	ProjectResultsSkeleton as PublicPending,
+	ProjectDetailSkeleton as ProjectPending,
+} from '#/components/public-skeletons'
 
 export function PublicError({
 	title = 'Page unavailable',

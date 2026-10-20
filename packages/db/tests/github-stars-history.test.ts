@@ -27,8 +27,13 @@ beforeAll(async () => {
 	postgres = await connectTestPostgres()
 	scope = await postgres.createSchema()
 	baselineFolder = await mkdtemp(join(tmpdir(), 'altstack-stars-migration-'))
-	for (const name of await readdir(migrationsFolder)) {
-		if (!name.endsWith('_github-stars-history')) {
+	const migrations = (await readdir(migrationsFolder)).toSorted()
+	const target = migrations.find((name) =>
+		name.endsWith('_github-stars-history')
+	)
+	if (!target) throw new Error('Missing GitHub star-history migration')
+	for (const name of migrations) {
+		if (name < target) {
 			await cp(join(migrationsFolder, name), join(baselineFolder, name), {
 				recursive: true,
 			})

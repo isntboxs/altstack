@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { adminCategoryParamsSchema } from '@altstack/shared/schemas/admin-category'
 
+import { EditCategoryPending } from '#/components/workspace-skeletons'
 import { CategoryForm } from '#/features/admin-categories/components/category-form'
 import { categoryUpdatePayload } from '#/features/admin-categories/model'
 import {
@@ -34,6 +35,9 @@ export const Route = createFileRoute('/_main/admin/categories/$id/edit')({
 		}
 		await context.queryClient.query(adminCategoryQueries.list())
 	},
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: EditCategoryPending,
 	component: EditCategory,
 })
 

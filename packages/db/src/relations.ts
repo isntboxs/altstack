@@ -5,6 +5,7 @@ import * as schemas from '@altstack/db/schemas'
 export const relations = defineRelations(schemas, (r) => {
 	return {
 		user: {
+			bookmarks: r.many.bookmark({ from: r.user.id, to: r.bookmark.userId }),
 			sessions: r.many.session({
 				from: r.user.id,
 				to: r.session.userId,
@@ -31,6 +32,10 @@ export const relations = defineRelations(schemas, (r) => {
 		},
 
 		project: {
+			bookmarks: r.many.bookmark({
+				from: r.project.id,
+				to: r.bookmark.projectId,
+			}),
 			submitter: r.one.user({ from: r.project.submitterId, to: r.user.id }),
 			githubRepository: r.one.githubRepository({
 				from: r.project.id,
@@ -40,6 +45,19 @@ export const relations = defineRelations(schemas, (r) => {
 			projectCategories: r.many.projectCategory({
 				from: r.project.id,
 				to: r.projectCategory.projectId,
+			}),
+		},
+
+		bookmark: {
+			user: r.one.user({
+				from: r.bookmark.userId,
+				to: r.user.id,
+				optional: false,
+			}),
+			project: r.one.project({
+				from: r.bookmark.projectId,
+				to: r.project.id,
+				optional: false,
 			}),
 		},
 

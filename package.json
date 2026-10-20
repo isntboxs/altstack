@@ -17,7 +17,9 @@
 		"dev:server": "vp run server#dev",
 		"dev:web": "vp run web#dev",
 		"prepare": "vp config",
-		"ready": "vp check && vp run typecheck && vp run -r test && vp run -r build"
+		"ready": "vp check && vp run typecheck && vp run -r test && vp run -r build",
+		"test:browser": "vp run --filter web test:browser",
+		"test:browser:install": "vp exec --filter web playwright install chromium"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
@@ -31,7 +33,8 @@
 		"vite-plus": "catalog:"
 	},
 	"overrides": {
-		"vite": "catalog:"
+		"vite": "catalog:",
+		"vitest": "catalog:"
 	},
 	"devEngines": {
 		"packageManager": {
@@ -77,6 +80,7 @@
 		"@types/react": "^19.3.0",
 		"@types/react-dom": "^19.3.0",
 		"@vitejs/plugin-react": "^6.1.1",
+		"@vitest/browser-playwright": "5.0.5",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"better-auth": "^1.7.6",
 		"bumpp": "^12.3.0",
@@ -93,6 +97,7 @@
 		"nitro": "^3.0.260903-beta",
 		"octokit": "^5.0.5",
 		"pg": "^8.23.0",
+		"playwright": "1.64.1",
 		"react": "^19.3.0",
 		"react-dom": "^19.3.0",
 		"reicon-react": "^1.2.5",
@@ -100,6 +105,7 @@
 		"typescript": "^7.0.2",
 		"vite": "npm:@voidzero-dev/vite-plus-core@1.3.0",
 		"vite-plus": "1.3.0",
+		"vitest": "5.0.5",
 		"zod": "^4.6.5"
 	}
 }

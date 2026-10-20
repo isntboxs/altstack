@@ -12,6 +12,7 @@ import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
@@ -200,23 +201,27 @@ const UserButton = ({
 			/>
 
 			<DropdownMenuContent className="w-64" align="end">
-				<DropdownMenuItem
-					render={
-						<Link to={user.role === 'admin' ? '/projects' : '/submission'} />
-					}
-				>
-					{user.role === 'admin' ? 'Projects' : 'Submission'}
-				</DropdownMenuItem>
-				<DropdownMenuItem disabled>
-					<Bookmark2 aria-hidden="true" />
-					Bookmarks <span className="ml-auto text-xs">Coming soon</span>
-				</DropdownMenuItem>
+				<DropdownMenuGroup>
+					<DropdownMenuItem
+						render={
+							<Link to={user.role === 'admin' ? '/projects' : '/submission'} />
+						}
+					>
+						{user.role === 'admin' ? 'Projects' : 'Submission'}
+					</DropdownMenuItem>
+					<DropdownMenuItem render={<Link to="/bookmarks" />}>
+						<Bookmark2 aria-hidden="true" />
+						Bookmarks
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
 
 				<DropdownMenuSeparator />
-				<DropdownMenuItem variant="destructive" onClick={handleSignOut}>
-					<Logout4 />
-					Sign out
-				</DropdownMenuItem>
+				<DropdownMenuGroup>
+					<DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+						<Logout4 />
+						Sign out
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	)

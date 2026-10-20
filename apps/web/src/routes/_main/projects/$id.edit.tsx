@@ -1,6 +1,7 @@
 import { IconArrowLeft } from '@tabler/icons-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
+import { ProjectFormPending } from '#/components/workspace-skeletons'
 import { EditProjectForm } from '#/features/admin-projects/components/edit-project-form'
 import { ProjectReviewHistory } from '#/features/admin-projects/components/project-review-history'
 import {
@@ -12,6 +13,9 @@ export const Route = createFileRoute('/_main/projects/$id/edit')({
 	loader: async ({ context, params }) => {
 		await context.queryClient.query(adminProjectQueries.get({ id: params.id }))
 	},
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: ProjectFormPending,
 	component: RouteComponent,
 })
 

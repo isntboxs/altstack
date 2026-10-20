@@ -1,4 +1,9 @@
-import { useId, useRef } from 'react'
+import {
+	QueryErrorResetBoundary,
+	useSuspenseQuery,
+} from '@tanstack/react-query'
+import { CatchBoundary, useLocation } from '@tanstack/react-router'
+import { Suspense, useId, useRef, useState } from 'react'
 import { Bookmark, Code, Flag, More, Verified } from 'reicon-react'
 
 import { Button } from '@altstack/ui/components/button'
@@ -11,37 +16,141 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
+import { Spinner } from '@altstack/ui/components/spinner'
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from '@altstack/ui/components/tooltip'
 
+import { AuthDialog } from '#/components/auth-dialog'
+import {
+	bookmarkQueries,
+	useBookmarkMutation,
+} from '#/features/bookmarks/queries'
 import { ProjectEmbedDialog } from './project-embed-dialog'
 
 const deferredActions = [
-	{ label: 'Bookmark', description: 'Bookmark this project', Icon: Bookmark },
 	{ label: 'Report', description: 'Send a report/suggestion', Icon: Flag },
 ]
 
-export function ProjectActions({
-	slug,
-	name,
-	embedOpen,
-	onEmbedOpenChange,
-}: {
+type ProjectActionsProps = {
+	projectId: string
+	userId: string | undefined
 	slug: string
 	name: string
 	embedOpen: boolean
 	onEmbedOpenChange: (open: boolean) => void
+}
+
+type BookmarkAction = {
+	saved?: boolean
+	pending?: boolean
+	label?: string
+	onClick?: () => void
+	error?: string
+}
+
+export function ProjectActions(props: ProjectActionsProps) {
+	const { projectId, userId } = props
+	if (!userId) return <ProjectActionsView {...props} />
+
+	return (
+		<QueryErrorResetBoundary key={`${projectId}:${userId}`}>
+			{({ reset }) => (
+				<CatchBoundary
+					getResetKey={() => `${projectId}:${userId}`}
+					errorComponent={({ reset: resetErrorBoundary }) => (
+						<ProjectActionsView
+							{...props}
+							bookmark={{
+								label: 'Retry bookmark',
+								error: 'Unable to load bookmark. Retry to refresh.',
+								onClick: () => {
+									reset()
+									resetErrorBoundary()
+								},
+							}}
+						/>
+					)}
+				>
+					<Suspense
+						fallback={
+							<ProjectActionsView {...props} bookmark={{ pending: true }} />
+						}
+					>
+						<ProjectBookmarkActions {...props} userId={userId} />
+					</Suspense>
+				</CatchBoundary>
+			)}
+		</QueryErrorResetBoundary>
+	)
+}
+
+function ProjectBookmarkActions(
+	props: ProjectActionsProps & { userId: string }
+) {
+	const { projectId, userId } = props
+	const state = useSuspenseQuery(bookmarkQueries.state(projectId, userId))
+	const mutation = useBookmarkMutation(projectId, userId)
+	const saved = state.data.bookmarked
+	const label = mutation.isPending
+		? mutation.variables
+			? 'Saving bookmark…'
+			: 'Removing bookmark…'
+		: state.isError
+			? 'Retry bookmark'
+			: saved
+				? 'Remove bookmark'
+				: 'Bookmark'
+
+	return (
+		<ProjectActionsView
+			{...props}
+			bookmark={{
+				saved,
+				pending: mutation.isPending,
+				label,
+				onClick: () => {
+					if (state.isError) void state.refetch()
+					else mutation.mutate(!saved)
+				},
+				error: state.isError
+					? 'Unable to load bookmark. Retry to refresh.'
+					: mutation.isError
+						? 'Unable to update bookmark. Please try again.'
+						: undefined,
+			}}
+		/>
+	)
+}
+
+function ProjectActionsView({
+	slug,
+	name,
+	embedOpen,
+	onEmbedOpenChange,
+	bookmark,
+}: ProjectActionsProps & {
+	bookmark?: BookmarkAction
 }) {
 	const explanationId = useId()
 	const moreRef = useRef<HTMLButtonElement>(null)
 	const embedRef = useRef<HTMLButtonElement>(null)
 	const returnFocus = useRef<HTMLElement | null>(null)
+	const [authOpen, setAuthOpen] = useState(false)
+	const { href } = useLocation()
+	const saved = bookmark?.saved ?? false
+	const bookmarkPending = bookmark?.pending ?? false
+	const bookmarkLabel = bookmark?.label ?? 'Bookmark'
+	const changeBookmark = () => {
+		if (bookmark?.onClick) bookmark.onClick()
+		else setAuthOpen(true)
+	}
 
 	return (
-		<div className="ml-auto space-y-2">
+		<div className="ml-auto flex flex-col gap-2">
+			<AuthDialog open={authOpen} onOpenChange={setAuthOpen} returnTo={href} />
 			<div className="xl:hidden">
 				<DropdownMenu>
 					<DropdownMenuTrigger
@@ -61,6 +170,20 @@ export function ProjectActions({
 							</DropdownMenuItem>
 
 							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								disabled={bookmarkPending}
+								onClick={changeBookmark}
+							>
+								{bookmarkPending ? (
+									<Spinner />
+								) : (
+									<Bookmark aria-hidden="true" />
+								)}
+								{bookmarkLabel}
+								{saved && !bookmarkPending && (
+									<span className="ml-auto text-xs">Saved</span>
+								)}
+							</DropdownMenuItem>
 
 							{deferredActions.map(({ label, Icon }) => (
 								<DropdownMenuItem
@@ -106,6 +229,29 @@ export function ProjectActions({
 				</Tooltip>
 
 				<ButtonGroup>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									variant={saved ? 'secondary' : 'outline'}
+									aria-label={bookmarkLabel}
+									aria-pressed={saved}
+									aria-busy={bookmarkPending}
+									disabled={bookmarkPending}
+									onClick={changeBookmark}
+								>
+									{bookmarkPending ? (
+										<Spinner />
+									) : (
+										<Bookmark aria-hidden="true" />
+									)}
+								</Button>
+							}
+						/>
+						<TooltipContent>
+							{saved ? 'Remove from your bookmarks' : 'Bookmark this project'}
+						</TooltipContent>
+					</Tooltip>
 					{deferredActions.map(({ label, description, Icon }) => (
 						<Tooltip key={label}>
 							<TooltipTrigger
@@ -144,8 +290,13 @@ export function ProjectActions({
 				id={explanationId}
 				className="hidden text-xs text-muted-foreground xl:block"
 			>
-				Verify, Bookmark and Report are coming soon.
+				Verify and Report are coming soon.
 			</p>
+			{bookmark?.error && (
+				<p role="alert" className="max-w-60 text-xs text-destructive">
+					{bookmark.error}
+				</p>
+			)}
 			<ProjectEmbedDialog
 				slug={slug}
 				name={name}

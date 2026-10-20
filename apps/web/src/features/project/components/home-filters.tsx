@@ -11,6 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@altstack/ui/components/select'
+import { Skeleton } from '@altstack/ui/components/skeleton'
 
 import { FilterSection } from '#/components/filter-section'
 import { projectQueries } from '#/features/project/queries'
@@ -70,7 +71,14 @@ export function HomeFilterSection() {
 			page={page}
 			category={category}
 			categorySelector={
-				<Suspense fallback={<output>Loading categories…</output>}>
+				<Suspense
+					fallback={
+						<div aria-busy="true">
+							<output className="sr-only">Loading categories…</output>
+							<Skeleton aria-hidden="true" className="h-8 w-full" />
+						</div>
+					}
+				>
 					<HomeCategorySelector />
 				</Suspense>
 			}

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { adminCreateCategoryBodySchema } from '@altstack/shared/schemas/admin-category'
 
+import { CategoryFormPending } from '#/components/workspace-skeletons'
 import { CategoryForm } from '#/features/admin-categories/components/category-form'
 import {
 	adminCategoryQueries,
@@ -13,6 +14,9 @@ export const Route = createFileRoute('/_main/admin/categories/create')({
 	loader: async ({ context }) => {
 		await context.queryClient.query(adminCategoryQueries.list())
 	},
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: CategoryFormPending,
 	component: CreateCategory,
 })
 

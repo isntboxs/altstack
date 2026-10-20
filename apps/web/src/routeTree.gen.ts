@@ -19,6 +19,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
 import { Route as AppSubmitRouteImport } from './routes/_app/submit'
+import { Route as MainBookmarksRouteImport } from './routes/_main/bookmarks'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
@@ -83,6 +84,11 @@ const AppSubmitRoute = AppSubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const MainBookmarksRoute = MainBookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
+  getParentRoute: () => MainRouteRoute,
 } as any)
 const MainProjectsRoute = MainProjectsRouteImport.update({
   id: '/projects',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
+  '/bookmarks': typeof MainBookmarksRoute
   '/projects': typeof MainProjectsRouteWithChildren
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
+  '/bookmarks': typeof MainBookmarksRoute
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
   '/_app/submit': typeof AppSubmitRoute
+  '/_main/bookmarks': typeof MainBookmarksRoute
   '/_main/projects': typeof MainProjectsRouteWithChildren
   '/_main/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/activity'
     | '/submit'
+    | '/bookmarks'
     | '/projects'
     | '/submission'
     | '/auth/sign-in'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/activity'
     | '/submit'
+    | '/bookmarks'
     | '/submission'
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
@@ -309,6 +320,7 @@ export interface FileRouteTypes {
     | '/_app/$slug'
     | '/_app/activity'
     | '/_app/submit'
+    | '/_main/bookmarks'
     | '/_main/projects'
     | '/_main/submission'
     | '/auth/sign-in'
@@ -412,6 +424,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/submit'
       preLoaderRoute: typeof AppSubmitRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_main/bookmarks': {
+      id: '/_main/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof MainBookmarksRouteImport
+      parentRoute: typeof MainRouteRoute
     }
     '/_main/projects': {
       id: '/_main/projects'
@@ -582,12 +601,14 @@ const MainAdminCategoriesRouteWithChildren =
   MainAdminCategoriesRoute._addFileChildren(MainAdminCategoriesRouteChildren)
 
 interface MainRouteRouteChildren {
+  MainBookmarksRoute: typeof MainBookmarksRoute
   MainProjectsRoute: typeof MainProjectsRouteWithChildren
   MainSubmissionRoute: typeof MainSubmissionRoute
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
+  MainBookmarksRoute: MainBookmarksRoute,
   MainProjectsRoute: MainProjectsRouteWithChildren,
   MainSubmissionRoute: MainSubmissionRoute,
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,

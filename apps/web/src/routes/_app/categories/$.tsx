@@ -6,9 +6,9 @@ import {
 } from '@tanstack/react-router'
 
 import { ProjectListSection } from '#/components/project-list-section'
+import { PublicPending } from '#/components/public-page-state'
 import {
 	CategoriesError,
-	CategoriesPending,
 	CategoryNotFound,
 } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
@@ -78,7 +78,7 @@ export const Route = createFileRoute('/_app/categories/$')({
 			: unavailableHead(),
 	pendingMs: 250,
 	pendingMinMs: 200,
-	pendingComponent: CategoriesPending,
+	pendingComponent: PublicPending,
 	notFoundComponent: CategoryNotFound,
 	errorComponent: CategoriesError,
 	component: CategoryDetail,

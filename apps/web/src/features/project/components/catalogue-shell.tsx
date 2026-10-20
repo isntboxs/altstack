@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Outlet, useRouterState } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { FilterSection } from '#/components/filter-section'
 import { HeroSection } from '#/components/hero-section'
+import { CategoryControlsSkeleton } from '#/components/public-skeletons'
 import {
 	CategoryBreadcrumb,
 	CategoryLinks,
 } from '#/features/category/components/public-category'
-import { categoryQueries } from '#/features/category/queries'
 import { HomeFilterSection } from '#/features/project/components/home-filters'
 
 const categoryRoute = getRouteApi('/_app/categories/$')
@@ -50,15 +50,21 @@ export function CatalogueShell() {
 
 function CategoryControls() {
 	const { _splat } = categoryRoute.useParams()
-	// Observe the same loader cache without initiating a second request. Category
-	// identity remains available while only the project's search deps change.
-	const { data } = useQuery({
-		...categoryQueries.getByPath({ path: _splat ?? '' }),
-		enabled: false,
+	const routeData = useRouterState({
+		select: (state) =>
+			state.matches.find((match) => match.routeId === '/_app/categories/$')
+				?.loaderData,
 	})
+	// Keep committed category identity while the next result page loads. Reading
+	// route data avoids an observer cancelling the loader when Suspense unmounts.
+	const [data, setData] = useState(routeData)
+	if (routeData && routeData !== data) setData(routeData)
+
 	const { q, sort, page } = categoryRoute.useSearch()
 	const navigate = categoryRoute.useNavigate()
-	if (!data) return null
+	if (!data || data.category.path !== _splat) {
+		return <CategoryControlsSkeleton />
+	}
 	const { category, ancestors, children } = data
 	return (
 		<>

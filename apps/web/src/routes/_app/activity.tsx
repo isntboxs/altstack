@@ -43,6 +43,7 @@ import {
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
 
+import { ActivityPending } from '#/components/public-skeletons'
 import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
 import { orpc } from '#/utils/orpc'
 
@@ -54,6 +55,9 @@ export const Route = createFileRoute('/_app/activity')({
 		context.queryClient
 			.query(context.orpc.altstack.listCommits.queryOptions())
 			.catch(noop),
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: ActivityPending,
 	component: RouteComponent,
 	head: ({ loaderData }) =>
 		loaderData

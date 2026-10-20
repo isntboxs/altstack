@@ -8,11 +8,15 @@ import { useState } from 'react'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 
+import { ProjectsPending } from '#/components/workspace-skeletons'
 import { adminProjectColumns } from '#/features/admin-projects/components/admin-project-columns'
 import { AdminProjectDataTable } from '#/features/admin-projects/components/admin-project-data-table'
 import { useAdminProjectList } from '#/features/admin-projects/queries'
 
 export const Route = createFileRoute('/_main/projects/')({
+	pendingMs: 250,
+	pendingMinMs: 200,
+	pendingComponent: ProjectsPending,
 	component: RouteComponent,
 })
 

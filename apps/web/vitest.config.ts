@@ -1,4 +1,7 @@
-import { defineConfig } from 'vite-plus/test/config'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite-plus'
+import { playwright } from 'vite-plus/test/browser-playwright'
 
 export default defineConfig({
 	resolve: { tsconfigPaths: true },
@@ -10,5 +13,22 @@ export default defineConfig({
 		clearMocks: false,
 		environment: 'node',
 		passWithNoTests: true,
+		projects: [
+			{ test: { name: 'unit' } },
+			{
+				plugins: [tailwindcss(), react()],
+				test: {
+					name: 'browser',
+					// Keep browser-only files outside the default Node test glob.
+					include: ['tests/browser/**/*.browser.{ts,tsx}'],
+					browser: {
+						enabled: true,
+						headless: true,
+						provider: playwright(),
+						instances: [{ browser: 'chromium' }],
+					},
+				},
+			},
+		],
 	},
 })

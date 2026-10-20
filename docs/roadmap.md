@@ -34,11 +34,13 @@ Merged-revision and production acceptance remain open.
 - **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented and merged, including the designer-provided artwork; merged-revision and deployment acceptance remain open.
 - **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, public project mentions, cached-image decoding and stored-public-content preparation implemented in `dev`; release verification remains separate.
+- **Private Bookmarks:** implemented after v0.2.0 on the feature branch for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
 
 Next: complete launch acceptance and operations before adding
-ownership, bookmarks, or editorial sections.
+ownership or editorial sections. Bookmarks are the separately authorized slice
+tracked below.
 
 ## Repository conventions and validation
 
@@ -281,8 +283,8 @@ artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify, bookmarks and reporting
-remain future workflows and require separate implementation and verification.
+decision to retain disabled controls. Verify and reporting remain future
+workflows. Bookmarks are separately implemented below after v0.2.0.
 Release/staging acceptance remains a separate gate.
 
 ### Public project Embed — 2026-10-17
@@ -369,10 +371,21 @@ Start after launch when catalogue size/feedback justifies editorial sections.
 
 Existing most-stars/newest sorting is not implemented homepage sections.
 
+## Private Bookmarks — 2026-10-21
+
+Implemented on the feature branch after v0.2.0; merge/deployment remain separate.
+All authenticated users/admins can save/remove published projects, with private
+persistent bookmarks, desktop/compact/mobile actions, account/sidebar navigation,
+and protected `/bookmarks` containing only Name, Description (tagline), and one
+Remove action. Published-only ownership checks, pagination, pending/error/empty
+states, additive migration, and DB/API/UI/HTTP coverage are included.
+See [Bookmarks behavior, rollout and validation](bookmarks.md). Collections and
+comparisons remain out of scope.
+
 ## Later, only when justified
 
 - Guest submission/abuse review when OAuth blocks legitimate submissions.
-- Bookmarks/collections/compare when users return to save/evaluate tools.
+- Collections/compare when users return to evaluate saved tools.
 - Report/correction workflow when catalogue errors create recurring support work.
 - Notifications when review turnaround/status checking becomes a problem.
 - Webhooks/trending when observed refresh/history data supports them.
