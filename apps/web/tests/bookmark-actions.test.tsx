@@ -112,6 +112,8 @@ const actionProps = {
 	userId: 'user-a',
 	slug: 'example',
 	name: 'Example',
+	reportOpen: false,
+	onReportOpenChange: vi.fn(),
 	embedOpen: false,
 	onEmbedOpenChange: vi.fn(),
 }

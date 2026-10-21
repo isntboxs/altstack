@@ -63,13 +63,13 @@ export function badgeSnippet(
 	return `<a href="${escapeAttribute(link.href)}" target="_blank" rel="noopener noreferrer">\n  <img src="${escapeAttribute(badgeUrl(slug, options))}" width="${options.width}" height="${options.height}" alt="${escapeAttribute(name)} badge" loading="lazy" />\n</a>`
 }
 
-// Only Embed is implemented. Preserve unrelated search state for future flows.
+// One discriminator keeps project dialogs mutually exclusive.
 export function projectDialogSearch(
 	search: Record<string, unknown>
-): Record<string, unknown> & { dialog?: 'embed' } {
+): Record<string, unknown> & { dialog?: 'embed' | 'report' } {
 	const { dialog, ...rest } = search
 	return {
 		...rest,
-		dialog: dialog === 'embed' ? ('embed' as const) : undefined,
+		dialog: dialog === 'embed' || dialog === 'report' ? dialog : undefined,
 	}
 }
