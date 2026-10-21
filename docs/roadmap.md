@@ -283,8 +283,8 @@ artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify and report management remain future
-workflows. Bookmarks are separately implemented below after v0.2.0.
+decision to retain disabled controls. Verify remains a future workflow.
+Bookmarks and the report inbox are separately implemented below after v0.2.0.
 Release/staging acceptance remains a separate gate.
 
 ### Public project Embed — 2026-10-17
@@ -382,11 +382,25 @@ states, additive migration, and DB/API/UI/HTTP coverage are included.
 See [Bookmarks behavior, rollout and validation](bookmarks.md). Collections and
 comparisons remain out of scope.
 
+## Admin report inbox — 2026-10-21
+
+Implemented on `feat/admin-reports` from merged intake #108 (`9d404c2`).
+Merge/deployment and shared DB migration remain separate.
+
+- [x] Admin sidebar and guarded `/admin/reports`, reusing the admin table components; email/type/message/date/status and existing project editor navigation.
+- [x] Admin-only RPC/REST list and moderation, 401/403 before data access, Open → Resolved/Dismissed with atomic concurrent-decision protection.
+- [x] Default Open/newest-first, bounded cursor pagination, status filters, pending/error/empty states and invalidation after decisions.
+- [x] Additive status/default/index migration preserves old intake; nullable project FK retains future deleted-project reports without broken editor links. Unpublished targets remain editable.
+- [x] Shared/API/DB/UI/HTTP coverage for privacy, defaults, migration preservation, concurrent/invalid decisions, pagination, plain text and editor targets.
+
+See [behavior, rollout and verification](project-reports.md). Automatic changes,
+assignment/comments/email and reopen workflows remain outside this slice.
+
 ## Later, only when justified
 
 - Guest submission/abuse review when OAuth blocks legitimate submissions.
 - Collections/compare when users return to evaluate saved tools.
-- [x] [Report / suggest correction intake](project-reports.md): guest/session-aware form via `?dialog=report`, private durable storage, shared validation and Redis quotas. Report management and automatic corrections remain deferred.
+- [x] [Report / suggest correction](project-reports.md): guest/session-aware intake via `?dialog=report`, private durable storage, shared validation, Redis quotas and admin inbox. Automatic corrections remain deferred.
 - Notifications when review turnaround/status checking becomes a problem.
 - Webhooks/trending when observed refresh/history data supports them.
 - Meilisearch when measured PostgreSQL search quality/latency is insufficient.

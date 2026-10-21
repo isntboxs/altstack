@@ -27,6 +27,7 @@ import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
+import { Route as MainAdminReportsRouteImport } from './routes/_main/admin.reports'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
 import { Route as OgCategoryIdRouteImport } from './routes/og.category.$id'
@@ -125,6 +126,11 @@ const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
   path: '/admin/categories',
   getParentRoute: () => MainRouteRoute,
 } as any)
+const MainAdminReportsRoute = MainAdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainProjectsIndexRoute = MainProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
+  '/admin/reports': typeof MainAdminReportsRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/admin/reports': typeof MainAdminReportsRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
+  '/_main/admin/reports': typeof MainAdminReportsRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/sitemaps/pages.xml'
     | '/categories/$'
     | '/admin/categories'
+    | '/admin/reports'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/admin/reports'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/categories/$'
     | '/_main/admin/categories'
+    | '/_main/admin/reports'
     | '/_main/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -481,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminCategoriesRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/admin/reports': {
+      id: '/_main/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof MainAdminReportsRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/projects/': {
       id: '/_main/projects/'
       path: '/'
@@ -605,6 +624,7 @@ interface MainRouteRouteChildren {
   MainProjectsRoute: typeof MainProjectsRouteWithChildren
   MainSubmissionRoute: typeof MainSubmissionRoute
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
+  MainAdminReportsRoute: typeof MainAdminReportsRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -612,6 +632,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainProjectsRoute: MainProjectsRouteWithChildren,
   MainSubmissionRoute: MainSubmissionRoute,
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
+  MainAdminReportsRoute: MainAdminReportsRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

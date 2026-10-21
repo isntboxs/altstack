@@ -32,6 +32,7 @@ const navLinks = linkOptions([
 		label: 'Projects',
 	},
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
+	{ to: '/admin/reports', icon: IconInbox, label: 'Reports' },
 ])
 
 const userNavLinks = linkOptions([

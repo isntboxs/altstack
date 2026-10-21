@@ -968,14 +968,33 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(36)
+		expect(operations).toHaveLength(38)
+		const reportList = paths['/admin/reports']?.query
+		expect(reportList).toMatchObject({ operationId: 'listAdminReports' })
+		expect(reportList?.security ?? spec.security).toEqual(baseline.security)
+		expect(reportList?.parameters).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: 'status', in: 'query' }),
+				expect.objectContaining({ name: 'limit', in: 'query' }),
+				expect.objectContaining({ name: 'cursor', in: 'query' }),
+			])
+		)
+		const reportDecision = paths['/admin/reports/{id}']?.patch
+		expect(reportDecision).toMatchObject({
+			operationId: 'moderateAdminReport',
+			requestBody: { required: true },
+		})
+		for (const status of ['401', '403', '409'] as const) {
+			expect(reportDecision?.responses?.[status]).toBeDefined()
+		}
+		expect(reportDecision?.security ?? spec.security).toEqual(baseline.security)
 		expect(paths['/projects/{id}/reports']?.post).toMatchObject({
 			operationId: 'createProjectReport',
 			security: [],
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			18
+			19
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1063,15 +1082,16 @@ describe('generated OpenAPI compatibility', () => {
 			contracts.submission.resubmit,
 			...Object.values(contracts.admin.category),
 			...Object.values(contracts.admin.project),
+			...Object.values(contracts.admin.report),
 			...Object.values(contracts.admin.upload.logo),
 			...Object.values(contracts.admin.upload.screenshot),
 		]
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(34)
+		expect(mapped).toHaveLength(36)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(18)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(19)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(

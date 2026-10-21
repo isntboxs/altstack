@@ -15,6 +15,12 @@ export const reportTypeSchema = z.enum([
 	'other',
 ])
 export const reportMessageMaxLength = 2000
+export const reportStatuses = [
+	{ value: 'open', label: 'Open' },
+	{ value: 'resolved', label: 'Resolved' },
+	{ value: 'dismissed', label: 'Dismissed' },
+] as const
+export const reportStatusSchema = z.enum(['open', 'resolved', 'dismissed'])
 
 export const reportBodySchema = z
 	.object({
