@@ -107,7 +107,8 @@ dan riwayat migration di schema `public` tidak diubah.
 Private Bookmarks tersedia untuk user dan admin pada branch fitur ini. Lihat
 [perilaku, rollout migrasi additive, dan verifikasi Bookmarks](docs/bookmarks.md).
 Report / suggest correction untuk guest, user, dan admin tersedia melalui
-`?dialog=report`; lihat [intake privat, batas abuse, dan rollout](docs/project-reports.md).
+`?dialog=report`; admin membaca dan memoderasi lewat `/admin/reports`.
+Lihat [intake privat, inbox admin, batas abuse, dan rollout](docs/project-reports.md).
 
 - Check everything is ready:
 

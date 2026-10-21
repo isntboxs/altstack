@@ -96,6 +96,7 @@ beforeEach(async () => {
 	vi.mocked(guestReportRateLimiter.limit)
 		.mockReset()
 		.mockResolvedValue({ ...limit, limit: 50 })
+	await scope.db.delete(projectReport)
 	await scope.db.delete(project)
 	projectSlug = `report-${randomUUID()}`
 	const [row] = await scope.db
@@ -290,7 +291,11 @@ describe('durable private report intake', () => {
 			email: baseline.email,
 		})
 		await scope.db.delete(project).where(eq(project.id, projectId))
-		expect(await scope.db.select().from(projectReport)).toEqual([])
+		expect((await scope.db.select().from(projectReport))[0]).toMatchObject({
+			projectId: null,
+			email: baseline.email,
+			status: 'open',
+		})
 	})
 	it('supports public REST/RPC writes, rate headers, and has no report read route', async () => {
 		const rest = new OpenAPIHandler(

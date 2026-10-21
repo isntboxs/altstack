@@ -167,7 +167,21 @@ merged-revision checks and release-domain acceptance remain separate gates. See 
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
 - L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; Verify retains its accessible “Coming soon” explanation.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership and report management remain backlog; private report intake and bookmarks are tracked separately above.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership remains backlog; private report intake, its admin inbox and bookmarks are tracked separately.
+
+### Admin report inbox
+
+Implemented on the feature branch; deployment remains separate. Admins use
+`/admin/reports` to read private project reports (project/logo, contact email,
+type, plain text message, date and status), defaulting to Open/newest first with
+bounded cursor pages and status filters. Open reports may become Resolved or
+Dismissed; concurrent decisions cannot overwrite each other. The existing
+project editor performs corrections separately. Unpublished targets remain
+editable, while deleted-project reports are retained without edit links.
+Route and API guards require admin role, private responses use no-store, and
+public data excludes all report details. Additive migration backfills Open and
+retains report history through future project deletions. See
+[report behavior, verification and rollout](project-reports.md).
 
 ### Public project Embed badges
 

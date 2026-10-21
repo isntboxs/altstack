@@ -11,6 +11,7 @@
 		"generate:og": "bun run scripts/generate-og.ts",
 		"preview": "vp preview",
 		"test": "vp test run --project unit",
+		"test:admin-reports-http": "vp run --filter @altstack/db test:scoped -- vp exec node apps/web/tests/admin-reports-http.acceptance.ts",
 		"test:auth-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/auth-http.acceptance.ts",
 		"test:bookmarks-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/bookmarks-http.acceptance.ts",
 		"test:browser": "vp test run --project browser",
