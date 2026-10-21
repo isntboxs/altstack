@@ -887,10 +887,10 @@ describe('L2 public affordances and recovery', () => {
 			screen.queryByText(/compare alternatives|trending|Last commit/)
 		).toBeNull()
 	})
-	it('keeps Verify and Report disabled while Bookmark and Embed are available', async () => {
+	it('keeps Verify disabled while Bookmark, Report and Embed are available', async () => {
 		const router = await routerAt('/test-zed', true)
 		const before = rpc.mock.calls.length
-		for (const name of ['Verify', 'Report']) {
+		for (const name of ['Verify']) {
 			const action = screen.getByRole('button', { name })
 			expect(action).toHaveProperty('disabled', true)
 			expect(
@@ -903,7 +903,7 @@ describe('L2 public affordances and recovery', () => {
 		}
 		const trigger = screen.getByRole('button', { name: 'More project actions' })
 		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
-		for (const name of ['Verify', 'Report']) {
+		for (const name of ['Verify']) {
 			const action = await screen.findByRole('menuitem', {
 				name: name + ' — Coming soon',
 			})
@@ -920,10 +920,19 @@ describe('L2 public affordances and recovery', () => {
 				.getByRole('menuitem', { name: 'Bookmark' })
 				.getAttribute('aria-disabled')
 		).not.toBe('true')
+		expect(
+			screen
+				.getByRole('menuitem', { name: 'Report' })
+				.getAttribute('aria-disabled')
+		).not.toBe('true')
 		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 		await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 		await waitFor(() => expect(document.activeElement).toBe(trigger))
 		expect(screen.getByRole('button', { name: 'Bookmark' })).toHaveProperty(
+			'disabled',
+			false
+		)
+		expect(screen.getByRole('button', { name: 'Report' })).toHaveProperty(
 			'disabled',
 			false
 		)
@@ -933,7 +942,7 @@ describe('L2 public affordances and recovery', () => {
 		)
 	})
 	it('opens/closes Embed through URL history without reloading stale project data and preserves other search state', async () => {
-		const router = await routerAt('/test-zed?ref=docs&dialog=report', true)
+		const router = await routerAt('/test-zed?ref=docs&dialog=unknown', true)
 		expect(screen.queryByRole('dialog')).toBeNull()
 		const before = rpc.mock.calls.filter(
 			([path]) => path.join('/') === 'project/getBySlug'
@@ -981,7 +990,7 @@ describe('L2 public affordances and recovery', () => {
 			)
 		)
 	})
-	it.each(['unknown', 'verify', 'bookmark', 'report'])(
+	it.each(['unknown', 'verify', 'bookmark'])(
 		'ignores direct unimplemented dialog=%s without phantom flows',
 		async (dialog) => {
 			await routerAt(`/test-zed?dialog=${dialog}`, true)

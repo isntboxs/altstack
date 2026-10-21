@@ -5,6 +5,7 @@ import { bookmarkContract } from '@altstack/api/contracts/bookmark'
 import { categoryContract } from '@altstack/api/contracts/category'
 import { healthContract } from '@altstack/api/contracts/health'
 import { projectContract } from '@altstack/api/contracts/project'
+import { reportContract } from '@altstack/api/contracts/report'
 import { submissionContract } from '@altstack/api/contracts/submission'
 import { uploadContract } from '@altstack/api/contracts/upload'
 
@@ -20,4 +21,5 @@ export const contracts = {
 	category: categoryContract,
 	health: healthContract,
 	project: projectContract,
+	report: reportContract,
 } as const

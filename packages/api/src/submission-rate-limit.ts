@@ -16,11 +16,15 @@ export const submissionRedis = new Redis({
 	signal: () => AbortSignal.timeout(5_000),
 })
 
-export function createSubmissionRateLimiter(redis: Redis, prefix: string) {
+export function createSubmissionRateLimiter(
+	redis: Redis,
+	prefix: string,
+	maxRequests = 5
+) {
 	return new UpstashRateLimiter(
 		new Ratelimit({
 			redis,
-			limiter: Ratelimit.slidingWindow(5, '10 m'),
+			limiter: Ratelimit.slidingWindow(maxRequests, '10 m'),
 			prefix,
 			ephemeralCache: false,
 			// Upstash's default timeout returns success without a Redis decision.

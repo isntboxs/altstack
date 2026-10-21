@@ -104,6 +104,23 @@ function RouteComponent() {
 							userId={auth?.user.id}
 							slug={slug}
 							name={projectData.name}
+							reportOpen={dialog === 'report'}
+							onReportOpenChange={(open) => {
+								void navigate({
+									search: (previous) => {
+										return {
+											...previous,
+											dialog: open
+												? 'report'
+												: previous.dialog === 'report'
+													? undefined
+													: previous.dialog,
+										}
+									},
+									resetScroll: false,
+									hash: true,
+								})
+							}}
 							embedOpen={dialog === 'embed'}
 							onEmbedOpenChange={(open) => {
 								void navigate({

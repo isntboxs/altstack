@@ -29,16 +29,15 @@ import {
 	useBookmarkMutation,
 } from '#/features/bookmarks/queries'
 import { ProjectEmbedDialog } from './project-embed-dialog'
-
-const deferredActions = [
-	{ label: 'Report', description: 'Send a report/suggestion', Icon: Flag },
-]
+import { ProjectReportDialog } from './project-report-dialog'
 
 type ProjectActionsProps = {
 	projectId: string
 	userId: string | undefined
 	slug: string
 	name: string
+	reportOpen: boolean
+	onReportOpenChange: (open: boolean) => void
 	embedOpen: boolean
 	onEmbedOpenChange: (open: boolean) => void
 }
@@ -52,6 +51,32 @@ type BookmarkAction = {
 }
 
 export function ProjectActions(props: ProjectActionsProps) {
+	return (
+		<>
+			<ProjectBookmarkBoundary {...props} />
+			<ProjectReportDialog
+				key={props.userId ?? 'guest'}
+				projectId={props.projectId}
+				name={props.name}
+				userId={props.userId}
+				open={props.reportOpen}
+				onOpenChange={props.onReportOpenChange}
+				finalFocus={() => {
+					const desktop = document.querySelector<HTMLButtonElement>(
+						'[data-project-report]'
+					)
+					return desktop?.getClientRects().length
+						? desktop
+						: document.querySelector<HTMLButtonElement>(
+								'[aria-label="More project actions"]'
+							)
+				}}
+			/>
+		</>
+	)
+}
+
+function ProjectBookmarkBoundary(props: ProjectActionsProps) {
 	const { projectId, userId } = props
 	if (!userId) return <ProjectActionsView {...props} />
 
@@ -130,6 +155,8 @@ function ProjectActionsView({
 	name,
 	embedOpen,
 	onEmbedOpenChange,
+	reportOpen,
+	onReportOpenChange,
 	bookmark,
 }: ProjectActionsProps & {
 	bookmark?: BookmarkAction
@@ -185,17 +212,9 @@ function ProjectActionsView({
 								)}
 							</DropdownMenuItem>
 
-							{deferredActions.map(({ label, Icon }) => (
-								<DropdownMenuItem
-									key={label}
-									disabled
-									aria-label={`${label} — Coming soon`}
-								>
-									<Icon aria-hidden="true" />
-									{label}
-									<span className="ml-auto text-xs">Coming soon</span>
-								</DropdownMenuItem>
-							))}
+							<DropdownMenuItem onClick={() => onReportOpenChange(true)}>
+								<Flag aria-hidden="true" /> Report
+							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => {
 									returnFocus.current = moreRef.current
@@ -252,25 +271,23 @@ function ProjectActionsView({
 							{saved ? 'Remove from your bookmarks' : 'Bookmark this project'}
 						</TooltipContent>
 					</Tooltip>
-					{deferredActions.map(({ label, description, Icon }) => (
-						<Tooltip key={label}>
-							<TooltipTrigger
-								disabled
-								render={
-									<Button
-										disabled
-										variant="outline"
-										aria-label={label}
-										aria-describedby={explanationId}
-									>
-										<Icon aria-hidden="true" />
-									</Button>
-								}
-							/>
-
-							<TooltipContent>{description}</TooltipContent>
-						</Tooltip>
-					))}
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									data-project-report
+									variant="outline"
+									aria-label="Report"
+									aria-haspopup="dialog"
+									aria-expanded={reportOpen}
+									onClick={() => onReportOpenChange(true)}
+								>
+									<Flag aria-hidden="true" />
+								</Button>
+							}
+						/>
+						<TooltipContent>Send a report/suggestion</TooltipContent>
+					</Tooltip>
 					<Button
 						ref={embedRef}
 						variant="outline"
@@ -290,7 +307,7 @@ function ProjectActionsView({
 				id={explanationId}
 				className="hidden text-xs text-muted-foreground xl:block"
 			>
-				Verify and Report are coming soon.
+				Verify is coming soon.
 			</p>
 			{bookmark?.error && (
 				<p role="alert" className="max-w-60 text-xs text-destructive">

@@ -968,7 +968,11 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(35)
+		expect(operations).toHaveLength(36)
+		expect(paths['/projects/{id}/reports']?.post).toMatchObject({
+			operationId: 'createProjectReport',
+			security: [],
+		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
 			18

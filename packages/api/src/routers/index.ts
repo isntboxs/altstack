@@ -12,6 +12,7 @@ import { bookmarkRouter } from '@altstack/api/routers/bookmark'
 import { categoryRouter } from '@altstack/api/routers/category'
 import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
+import { reportRouter } from '@altstack/api/routers/report'
 import { submissionRouter } from '@altstack/api/routers/submission'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
@@ -27,6 +28,7 @@ export const routers = o.router({
 	category: categoryRouter,
 	health: healthRouter,
 	project: projectRouter,
+	report: reportRouter,
 })
 
 export type ORPCRouterClient = RouterClient<typeof routers>

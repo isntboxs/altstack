@@ -165,9 +165,9 @@ merged-revision checks and release-domain acceptance remain separate gates. See 
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. Verify and Report retain accessible “Coming soon” explanations.
+- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; Verify retains its accessible “Coming soon” explanation.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership and reports remain backlog; bookmarks are tracked separately in the implementation above.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership and report management remain backlog; private report intake and bookmarks are tracked separately above.
 
 ### Public project Embed badges
 

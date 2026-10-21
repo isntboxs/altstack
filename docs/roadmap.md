@@ -283,7 +283,7 @@ artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify and reporting remain future
+decision to retain disabled controls. Verify and report management remain future
 workflows. Bookmarks are separately implemented below after v0.2.0.
 Release/staging acceptance remains a separate gate.
 
@@ -386,7 +386,7 @@ comparisons remain out of scope.
 
 - Guest submission/abuse review when OAuth blocks legitimate submissions.
 - Collections/compare when users return to evaluate saved tools.
-- Report/correction workflow when catalogue errors create recurring support work.
+- [x] [Report / suggest correction intake](project-reports.md): guest/session-aware form via `?dialog=report`, private durable storage, shared validation and Redis quotas. Report management and automatic corrections remain deferred.
 - Notifications when review turnaround/status checking becomes a problem.
 - Webhooks/trending when observed refresh/history data supports them.
 - Meilisearch when measured PostgreSQL search quality/latency is insufficient.
