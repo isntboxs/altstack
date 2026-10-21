@@ -341,6 +341,58 @@ describe('admin report inbox route', () => {
 		)
 		await screen.findByText(item.email)
 	})
+	it.each([1, 2, 3])(
+		'refetches cached report pages when refreshing from page %i',
+		async (currentPage) => {
+			// Keep every cache entry within the shared 30-second freshness window.
+			vi.spyOn(Date, 'now').mockReturnValue(Date.now())
+			const pageIds = [id, projectId, deletedId]
+			let refreshed = false
+			rpc.mockImplementation(async (path, input) => {
+				if (path.join('/') !== 'admin/report/list') {
+					throw new Error('Unexpected RPC')
+				}
+				const { adminListReportsInputSchema } =
+					await import('@altstack/shared/schemas/admin-report')
+				const { query } = adminListReportsInputSchema.parse(input)
+				const pageIndex = query.cursor ? pageIds.indexOf(query.cursor) + 1 : 0
+				return {
+					reports: [
+						{
+							...item,
+							id: pageIds[pageIndex],
+							message: `${refreshed ? 'Fresh' : 'Cached'} page ${pageIndex + 1}`,
+						},
+					],
+					nextCursor:
+						pageIndex < pageIds.length - 1 ? pageIds[pageIndex] : null,
+				}
+			})
+			await routerAt()
+			await screen.findByText('Cached page 1')
+			for (let page = 2; page <= currentPage; page++) {
+				fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+				await screen.findByText(`Cached page ${page}`)
+			}
+			refreshed = true
+			fireEvent.click(screen.getByRole('button', { name: 'Refresh inbox' }))
+			await screen.findByText('Fresh page 1')
+			expect(screen.getByText('Newest first · Page 1')).toBeTruthy()
+			for (let page = 2; page <= currentPage; page++) {
+				fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+				await screen.findByText(`Fresh page ${page}`)
+			}
+			for (let page = currentPage - 1; page >= 1; page--) {
+				fireEvent.click(screen.getByRole('button', { name: 'Previous' }))
+				await screen.findByText(`Fresh page ${page}`)
+			}
+			expect(
+				rpc.mock.calls.filter(
+					([path]) => path.join('/') === 'admin/report/list'
+				)
+			).toHaveLength(currentPage * 2)
+		}
+	)
 	it('pages with cursors and resets to the first page when the status changes', async () => {
 		rpc.mockResolvedValueOnce({ reports: [item], nextCursor: id })
 		await routerAt()

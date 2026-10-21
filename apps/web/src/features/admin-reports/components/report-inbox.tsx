@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { adminListReportsQuerySchema } from '@altstack/shared/schemas/admin-report'
@@ -21,10 +22,12 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 
 import { ReportDataTable } from '#/features/admin-reports/components/report-data-table'
 import { useAdminReportList } from '#/features/admin-reports/queries'
+import { adminORPC } from '#/utils/orpc'
 
 const statusItems = [...reportStatuses, { value: 'all', label: 'All statuses' }]
 
 export function ReportInbox() {
+	const queryClient = useQueryClient()
 	const [status, setStatus] = useState('open')
 	const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
 	const query = useAdminReportList(
@@ -67,6 +70,11 @@ export function ReportInbox() {
 					size="sm"
 					disabled={query.isFetching}
 					onClick={() => {
+						// Invalidate cached pages before switching back to page one.
+						void queryClient.invalidateQueries({
+							queryKey: adminORPC.report.list.key(),
+							refetchType: 'none',
+						})
 						setCursors([undefined])
 						if (cursors.length === 1) void query.refetch()
 					}}
