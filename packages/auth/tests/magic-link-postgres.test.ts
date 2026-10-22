@@ -1,18 +1,18 @@
-import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import { betterAuth } from 'better-auth'
+import { eq, like } from 'drizzle-orm'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { createAuthConfig } from '@altstack/auth/server/config'
 
-import * as schemas from '@altstack/db/schemas'
+import type { db } from '@altstack/db'
+import { rateLimit } from '@altstack/db/schemas'
 
 import { connectTestPostgres } from '../../db/tests/helpers/postgres'
 import { withWorkspaceDatabase } from '../../db/tests/helpers/workspace'
+import { createMagicLinkRecipientLimiter } from '../src/server/magic-link-rate-limit'
 
 const { sent } = vi.hoisted(() => {
-	return {
-		sent: [] as Array<{ email: string; url: string }>,
-	}
+	return { sent: [] as Array<{ email: string; url: string }> }
 })
 vi.mock('@altstack/db', () => {
 	return { db: {} }
@@ -39,11 +39,18 @@ vi.mock('@altstack/env/server', () => {
 })
 afterEach(() => {
 	sent.length = 0
+	vi.restoreAllMocks()
 })
+
+type TestAuth = ReturnType<
+	typeof betterAuth<ReturnType<typeof createAuthConfig>>
+>
 
 async function withAuth(
 	run: (
-		auth: ReturnType<typeof betterAuth<ReturnType<typeof createAuthConfig>>>
+		auth: TestAuth,
+		create: () => TestAuth,
+		database: typeof db
 	) => Promise<void>
 ) {
 	const database = await connectTestPostgres()
@@ -51,15 +58,8 @@ async function withAuth(
 		const scope = await database.createSchema()
 		try {
 			await withWorkspaceDatabase(scope, async () => {
-				const config = createAuthConfig()
-				const auth = betterAuth({
-					...config,
-					database: drizzleAdapter(scope.db, {
-						provider: 'pg',
-						schema: { ...schemas },
-					}),
-				})
-				await run(auth)
+				const create = () => betterAuth(createAuthConfig(scope.db))
+				await run(create(), create, scope.db)
 			})
 		} finally {
 			await scope.close()
@@ -70,8 +70,9 @@ async function withAuth(
 }
 
 function requestLink(
-	auth: Parameters<Parameters<typeof withAuth>[0]>[0],
-	email = 'synthetic@example.test'
+	auth: TestAuth,
+	email = 'synthetic@example.test',
+	ip = '127.0.0.1'
 ) {
 	return auth.handler(
 		new Request('http://localhost:3009/api/auth/sign-in/magic-link', {
@@ -79,6 +80,7 @@ function requestLink(
 			headers: {
 				origin: 'http://localhost:3010',
 				'content-type': 'application/json',
+				'x-forwarded-for': ip,
 			},
 			body: JSON.stringify({
 				email,
@@ -88,24 +90,142 @@ function requestLink(
 	)
 }
 
+function recipientBuckets(database: typeof db) {
+	return database
+		.select()
+		.from(rateLimit)
+		.where(like(rateLimit.key, 'magic-link-recipient:%'))
+}
+
+const limitedBody = { message: 'Too many requests. Please try again later.' }
+
 describe('PostgreSQL Magic Link guarantees', () => {
-	it('enforces the persistent mail quota under concurrent first requests across instances', async () => {
-		await withAuth(async (auth) => {
-			const second = betterAuth(auth.options)
+	it('enforces the persistent IP quota under concurrent first requests across instances', async () => {
+		await withAuth(async (auth, create) => {
+			const second = create()
 			const results = await Promise.all(
 				Array.from({ length: 7 }, (_, index) =>
 					requestLink(index % 2 ? auth : second, `person-${index}@example.test`)
 				)
 			)
 			expect(results.filter((result) => result.status === 200)).toHaveLength(5)
-			expect(results.filter((result) => result.status === 429)).toHaveLength(2)
+			const denied = results.filter((result) => result.status === 429)
+			expect(denied).toHaveLength(2)
+			expect(await denied[0]!.json()).toEqual(limitedBody)
 			expect(sent).toHaveLength(5)
 		})
 	})
+	it('limits one normalized recipient across IPs and independent auth instances atomically', async () => {
+		await withAuth(async (auth, create, database) => {
+			const second = create()
+			const results = await Promise.all(
+				Array.from({ length: 12 }, (_, index) =>
+					requestLink(
+						index % 2 ? auth : second,
+						index % 2 ? 'SYNTHETIC@EXAMPLE.TEST' : 'synthetic@example.test',
+						`192.0.2.${index + 1}`
+					)
+				)
+			)
+			expect(results.filter((result) => result.status === 200)).toHaveLength(5)
+			const denied = results.filter((result) => result.status === 429)
+			expect(denied).toHaveLength(7)
+			for (const result of denied) {
+				expect(await result.json()).toEqual(limitedBody)
+				expect(Number(result.headers.get('X-Retry-After'))).toBeGreaterThan(0)
+				expect(Number(result.headers.get('X-Retry-After'))).toBeLessThanOrEqual(
+					600
+				)
+				expect(result.headers.getSetCookie()).toHaveLength(0)
+			}
+			expect(sent).toHaveLength(5)
+			const buckets = await recipientBuckets(database)
+			expect(buckets).toHaveLength(1)
+			expect(buckets[0]!.key).toMatch(/^magic-link-recipient:[a-f0-9]{64}$/)
+			expect(buckets[0]!.key.includes('synthetic')).toBe(false)
+			expect(
+				(await requestLink(create(), 'synthetic@example.test', '198.51.100.1'))
+					.status
+			).toBe(429)
+			expect(
+				(await requestLink(create(), 'different@example.test', '198.51.100.2'))
+					.status
+			).toBe(200)
+			expect(sent).toHaveLength(6)
+		})
+	})
+	it('resets an expired recipient window atomically without extending it on denied attempts', async () => {
+		await withAuth(async (auth, create, database) => {
+			for (let index = 1; index <= 5; index++) {
+				expect(
+					(
+						await requestLink(
+							auth,
+							'synthetic@example.test',
+							`192.0.2.${index}`
+						)
+					).status
+				).toBe(200)
+			}
+			const [bucket] = await recipientBuckets(database)
+			expect(bucket).toBeDefined()
+			const lastAllowed = Date.now() - 1000
+			await database
+				.update(rateLimit)
+				.set({ lastRequest: lastAllowed })
+				.where(eq(rateLimit.key, bucket!.key))
+			expect(
+				(await requestLink(create(), 'synthetic@example.test', '198.51.100.1'))
+					.status
+			).toBe(429)
+			const [denied] = await recipientBuckets(database)
+			expect(denied!.lastRequest).toBe(lastAllowed)
+			expect(denied!.count).toBeLessThanOrEqual(6)
+			await database
+				.update(rateLimit)
+				.set({ lastRequest: Date.now() - 600_001 })
+				.where(eq(rateLimit.key, bucket!.key))
+			const second = create()
+			const results = await Promise.all(
+				Array.from({ length: 7 }, (_, index) =>
+					requestLink(
+						index % 2 ? auth : second,
+						'synthetic@example.test',
+						`203.0.113.${index + 1}`
+					)
+				)
+			)
+			expect(results.filter((result) => result.status === 200)).toHaveLength(5)
+			expect(results.filter((result) => result.status === 429)).toHaveLength(2)
+			expect(sent).toHaveLength(10)
+		})
+	})
+	it('fails closed with a generic error when recipient quota storage is unavailable', async () => {
+		await withAuth(async (_auth, _create, database) => {
+			const enforce = createMagicLinkRecipientLimiter(
+				database,
+				'synthetic-test-secret'
+			)
+			const failedQuery = vi
+				.spyOn(database, 'insert')
+				.mockImplementation(() => {
+					throw new Error('private storage failure')
+				})
+			await expect(enforce('synthetic@example.test')).rejects.toMatchObject({
+				status: 'SERVICE_UNAVAILABLE',
+				body: {
+					message:
+						'Email sign-in is temporarily unavailable. Please try again later.',
+				},
+			})
+			expect(sent).toHaveLength(0)
+			failedQuery.mockRestore()
+		})
+	})
 	it('allows exactly one concurrent verification across auth instances', async () => {
-		await withAuth(async (auth) => {
+		await withAuth(async (auth, create) => {
 			expect((await requestLink(auth)).status).toBe(200)
-			const second = betterAuth(auth.options)
+			const second = create()
 			const url = sent[0]!.url
 			const results = await Promise.all([
 				auth.handler(new Request(url)),

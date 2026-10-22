@@ -307,6 +307,43 @@ try {
 	)
 	assert.equal(limited.filter((response) => response.status === 200).length, 5)
 	assert.equal(limited.filter((response) => response.status === 429).length, 2)
+	// Different client IPs must still share one normalized recipient quota.
+	const recipientEmail = `recipient-${crypto.randomUUID()}@example.test`
+	const deliveredBefore = mailbox.messages.length
+	const recipientLimited = await Promise.all(
+		Array.from({ length: 7 }, (_, index) =>
+			fetch(new URL('/api/auth/sign-in/magic-link', api), {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					origin: web.origin,
+					'x-forwarded-for': `198.51.100.${index + 1}`,
+				},
+				body: JSON.stringify({
+					email: index % 2 ? recipientEmail.toUpperCase() : recipientEmail,
+					callbackURL: web.href,
+				}),
+			})
+		)
+	)
+	assert.equal(
+		recipientLimited.filter((response) => response.status === 200).length,
+		5
+	)
+	assert.equal(
+		recipientLimited.filter((response) => response.status === 429).length,
+		2
+	)
+	assert.equal(mailbox.messages.length - deliveredBefore, 5)
+	const recipientDenied = recipientLimited.find(
+		(response) => response.status === 429
+	)!
+	assert.deepEqual(
+		await recipientDenied.json(),
+		await limited.find((response) => response.status === 429)!.json()
+	)
+	assert.ok(Number(recipientDenied.headers.get('X-Retry-After')) > 0)
+	assert.equal(recipientDenied.headers.getSetCookie().length, 0)
 	const unauthorized = await page(
 		'/auth/sign-in?error=INVALID_TOKEN&returnTo=%2Fsubmit'
 	)
@@ -337,7 +374,7 @@ try {
 	assert.equal(signOut.status, 200)
 	redirectedToSignIn(await page('/submit', cookie))
 	console.debug(
-		'PASS: password rejection, mocked Resend delivery, Magic Link sessions/replay/expiry, existing accounts, concurrent rate limits, local callbacks, SSR header/private routes/refresh/sign-out; disposable schema only.'
+		'PASS: password rejection, mocked Resend delivery, Magic Link sessions/replay/expiry, existing accounts, concurrent IP/recipient rate limits, local callbacks, SSR header/private routes/refresh/sign-out; disposable schema only.'
 	)
 } finally {
 	for (const child of children) {

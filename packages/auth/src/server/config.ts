@@ -20,8 +20,16 @@ import { env } from '@altstack/env/server'
 import { DEFAULT_ROLE, ROLES } from '@altstack/shared'
 
 import { sendMagicLinkEmail } from './magic-link-email'
+import {
+	createMagicLinkRecipientLimiter,
+	MAGIC_LINK_RATE_LIMIT,
+} from './magic-link-rate-limit'
 
-export function createAuthConfig() {
+export function createAuthConfig(database = db) {
+	const enforceRecipientLimit = createMagicLinkRecipientLimiter(
+		database,
+		env.BETTER_AUTH_SECRET
+	)
 	return {
 		account: {
 			accountLinking: {
@@ -43,7 +51,7 @@ export function createAuthConfig() {
 		},
 		appName: env.APP_NAME,
 		baseURL: env.BETTER_AUTH_URL,
-		database: drizzleAdapter(db, {
+		database: drizzleAdapter(database, {
 			provider: 'pg',
 			schema: {
 				user: schemas.user,
@@ -81,8 +89,11 @@ export function createAuthConfig() {
 			magicLink({
 				expiresIn: 60 * 10,
 				storeToken: 'hashed',
-				rateLimit: { window: 60 * 10, max: 5 },
-				sendMagicLink: sendMagicLinkEmail,
+				rateLimit: MAGIC_LINK_RATE_LIMIT,
+				sendMagicLink: async (data) => {
+					await enforceRecipientLimit(data.email)
+					await sendMagicLinkEmail(data)
+				},
 			}),
 			adminPlugin({
 				adminRoles: ['admin'],

@@ -68,9 +68,20 @@ Existing verified GitHub associations are unaffected.
 
 Better Auth's database limiter allows five Magic Link requests per client IP per
 ten minutes, including failures, and twenty verification requests per minute.
-Unique database keys and conditional atomic increments enforce concurrent limits
-and survive API restarts. Other auth endpoints keep Better Auth's established
-limits. The UI disables requests while pending, offers a sixty-second resend
+An additional send limit allows five attempts per normalized recipient email per
+ten minutes across client IPs. It runs after request validation and before Resend
+delivery, including when delivery fails. Its key is an HMAC-SHA256 of the
+trimmed, lowercase address using the auth secret; raw recipient addresses are
+never stored in rate-limit keys. The existing `rate_limit` table stores both
+limits, so no additional migration or service is needed.
+
+The recipient limit uses one PostgreSQL `INSERT ... ON CONFLICT DO UPDATE` with
+`RETURNING`: the unique key serializes concurrent requests across instances,
+the bounded counter resets when its window expires, and denied requests do not
+extend the window. There is no separate read/increment write. Both limits return
+the same generic 429 body and `X-Retry-After` header. Quota storage failure stops
+email delivery with a generic 503. Counters survive API restarts. Other auth
+endpoints keep Better Auth's established limits. The UI disables requests while pending, offers a sixty-second resend
 cooldown, and honors the server's `X-Retry-After` on 429. Delivery errors leave the
 form editable and GitHub available. Quota is not reset by opening another dialog.
 

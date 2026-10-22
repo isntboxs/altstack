@@ -29,6 +29,14 @@ vi.mock('../src/server/magic-link-email', () => {
 		sendMagicLinkEmail: sendEmail,
 	}
 })
+// Recipient quota uses PostgreSQL; the real storage/concurrency behavior is
+// covered in magic-link-postgres.test.ts. This suite isolates the memory adapter.
+vi.mock('../src/server/magic-link-rate-limit', () => {
+	return {
+		MAGIC_LINK_RATE_LIMIT: { window: 600, max: 5 },
+		createMagicLinkRecipientLimiter: () => () => Promise.resolve(),
+	}
+})
 
 beforeEach(() => {
 	env.BETTER_AUTH_URL = 'https://api.example.test'
