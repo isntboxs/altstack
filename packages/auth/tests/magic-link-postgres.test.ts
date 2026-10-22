@@ -100,6 +100,76 @@ function recipientBuckets(database: typeof db) {
 const limitedBody = { message: 'Too many requests. Please try again later.' }
 
 describe('PostgreSQL Magic Link guarantees', () => {
+	it('rechecks the IP quota after concurrent updates wait on the same row lock', async () => {
+		await withAuth(async (auth, create, database) => {
+			for (let index = 0; index < 4; index++) {
+				expect(
+					(await requestLink(auth, `person-${index}@example.test`)).status
+				).toBe(200)
+			}
+			const [bucket] = await database
+				.select()
+				.from(rateLimit)
+				.where(eq(rateLimit.count, 4))
+			expect(bucket).toBeDefined()
+			const locker = await database.$client.connect()
+			const pending: Array<Promise<Response>> = []
+			try {
+				await locker.query('BEGIN')
+				const { rows } = await locker.query<{ pid: number }>(
+					'SELECT pg_backend_pid() AS pid'
+				)
+				await locker.query(
+					'SELECT id FROM rate_limit WHERE key = $1 FOR UPDATE',
+					[bucket!.key]
+				)
+				pending.push(
+					requestLink(auth, 'boundary-one@example.test'),
+					requestLink(create(), 'boundary-two@example.test')
+				)
+				// Both UPDATE statements must see count=4 before either can commit.
+				// Follow the lock chain because one waiter may queue behind the other.
+				await vi.waitFor(
+					async () => {
+						const waiting = await database.$client.query<{ count: number }>(
+							`WITH RECURSIVE blocked(pid) AS (
+								SELECT $1::int
+								UNION
+								SELECT activity.pid FROM pg_stat_activity activity
+								JOIN blocked ON blocked.pid = ANY(pg_blocking_pids(activity.pid))
+							)
+							SELECT count(*)::int AS count FROM blocked WHERE pid <> $1`,
+							[rows[0]!.pid]
+						)
+						expect(waiting.rows[0]!.count).toBe(2)
+					},
+					{ timeout: 5000, interval: 20 }
+				)
+			} finally {
+				await locker.query('ROLLBACK')
+				locker.release()
+				await Promise.allSettled(pending)
+			}
+			const results = await Promise.all(pending)
+			expect(
+				results.map((result) => result.status).toSorted((a, b) => a - b)
+			).toEqual([200, 429])
+			const denied = results.find((result) => result.status === 429)!
+			expect(await denied.json()).toEqual(limitedBody)
+			expect(Number(denied.headers.get('X-Retry-After'))).toBeGreaterThan(0)
+			expect(denied.headers.getSetCookie()).toHaveLength(0)
+			expect(sent.length).toBe(5)
+			const [updated] = await database
+				.select()
+				.from(rateLimit)
+				.where(eq(rateLimit.key, bucket!.key))
+			expect(updated!.count).toBe(5)
+			expect(
+				(await requestLink(create(), 'after-boundary@example.test')).status
+			).toBe(429)
+			expect(sent.length).toBe(5)
+		})
+	})
 	it('enforces the persistent IP quota under concurrent first requests across instances', async () => {
 		await withAuth(async (auth, create) => {
 			const second = create()

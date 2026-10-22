@@ -38,7 +38,7 @@
 		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
 		"@altstack/shared": "workspace:*",
-		"@better-auth/drizzle-adapter": "^1.7.6",
+		"@better-auth/drizzle-adapter": "^1.7.12",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",
 		"drizzle-orm": "catalog:",

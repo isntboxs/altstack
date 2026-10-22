@@ -44,7 +44,7 @@ unprotected origin and spoof that header. Multiple proxies require a deliberate
 
 ## Link lifecycle and account semantics
 
-Better Auth 1.7.6's supported `magicLink`/`magicLinkClient` plugins generate,
+Better Auth 1.7.12's supported `magicLink`/`magicLinkClient` plugins generate,
 store, verify and atomically consume links. Tokens are hashed in database
 verification storage, expire after ten minutes, and cannot be replayed. No custom
 authentication token or session signing is implemented. Resend receives a rendered
@@ -68,6 +68,13 @@ Existing verified GitHub associations are unaffected.
 
 Better Auth's database limiter allows five Magic Link requests per client IP per
 ten minutes, including failures, and twenty verification requests per minute.
+Keep Better Auth and `@better-auth/drizzle-adapter` at 1.7.12 or newer. The adapter
+must retain the key, window and count predicates in the outer PostgreSQL `UPDATE`,
+so a request waiting on a row lock rechecks the quota against the committed row.
+An ID-only outer predicate can allow concurrent requests to exceed the IP limit.
+The PostgreSQL regression test holds that row lock at four requests, queues two
+independent auth instances, then proves only one more request can send email.
+
 An additional send limit allows five attempts per normalized recipient email per
 ten minutes across client IPs. It runs after request validation and before Resend
 delivery, including when delivery fails. Its key is an HMAC-SHA256 of the
@@ -170,3 +177,22 @@ and no deployment or production migration was performed. The local Resend key
 was present; a verified `RESEND_FROM_EMAIL` still needs operator configuration.
 Real mailbox delivery and cross-subdomain production browser cookies remain
 staging rollout checks.
+
+## Review verification — 2026-10-23
+
+The forced PostgreSQL row-lock regression failed on Better Auth/Drizzle adapter
+1.7.6: both competing requests returned 200 when only one slot remained. After
+upgrading the aligned packages to 1.7.12, the same test returns one 200 and one
+429, keeps the stored IP counter at five, and rejects a subsequent request from
+a fresh auth instance. All seven PostgreSQL auth cases and all forty auth tests
+passed with mocked email delivery and disposable schemas.
+
+`vp check`, all eight typecheck targets, the production monorepo build, and all
+fifteen Chromium browser tests passed. Auth, Bookmarks, admin Reports and Featured
+Projects HTTP acceptance also passed against the rebuilt production artifacts.
+The full workspace run passed 1,247 tests with one existing skip using
+`vp test --maxWorkers=2`. The initial run alongside builds hit a UI wait timeout
+in the public category recovery test; the rerun passed without changing that
+test or page.
+This follow-up needs no additional database migration or service configuration.
+Live integration limitations remain as described above.
