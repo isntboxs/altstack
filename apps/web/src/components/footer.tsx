@@ -37,6 +37,7 @@ const communityLinks = linkOptions([
 	{ label: 'Project Activity', to: '/activity', search: {} },
 ])
 
+/** Renders public catalogue destinations, including tag discovery, and site credits. */
 export function Footer() {
 	return (
 		<footer className="mt-16" aria-label="Site footer">

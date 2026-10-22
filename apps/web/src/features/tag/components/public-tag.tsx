@@ -57,6 +57,7 @@ const sortItems = [
 	{ value: 'name-desc', label: 'Name (Z to A)' },
 ]
 
+/** Renders the directory trail and, when provided, the current tag's display name. */
 export function TagBreadcrumb({ name }: { name?: string }) {
 	return (
 		<Breadcrumb>
@@ -85,6 +86,7 @@ export function TagBreadcrumb({ name }: { name?: string }) {
 	)
 }
 
+/** Keeps debounced search, sorting, and letter filters synchronized with URL history. */
 export function TagDirectoryControls() {
 	const search = directoryRoute.useSearch()
 	const navigate = directoryRoute.useNavigate()
@@ -230,6 +232,7 @@ export function TagDirectoryControls() {
 	)
 }
 
+/** Displays tag counts and pagination links that retain the current directory filters. */
 export function TagDirectoryResults({
 	data,
 }: {
@@ -372,6 +375,7 @@ export function TagDirectoryResults({
 	)
 }
 
+/** Shows tag metadata and project filters while retaining loaded metadata during refetches. */
 export function TagProjectControls() {
 	const { slug } = detailRoute.useParams()
 	const routeData = useRouterState({
@@ -424,6 +428,7 @@ export function TagProjectControls() {
 	)
 }
 
+/** Links a project's visible tags to their catalogues, omitting empty tag sections. */
 export function PublicProjectTags({
 	tags,
 }: {
@@ -454,10 +459,12 @@ export function PublicProjectTags({
 		</section>
 	)
 }
+/** Offers the shared retry UI when a tag request fails. */
 export function TagsError() {
 	return <PublicError title="Unable to load tags" />
 }
 
+/** Reserves the directory grid's layout and announces loading to assistive technology. */
 export function TagResultsPending() {
 	return (
 		<section
@@ -477,6 +484,7 @@ export function TagResultsPending() {
 		</section>
 	)
 }
+/** Provides directory navigation for missing, hidden, or unassigned public tags. */
 export function TagNotFound() {
 	return (
 		<div className="container mx-auto flex max-w-6xl flex-col gap-4 px-4 pt-28 lg:px-16">

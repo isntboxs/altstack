@@ -1348,6 +1348,35 @@ it('keeps a cold category request alive while its pending controls render', asyn
 })
 
 describe('public tags', () => {
+	it.each([
+		[
+			'/tags/typescript',
+			'Open Source Projects tagged "TypeScript" | AltStack',
+			'/tags/typescript',
+		],
+		[
+			'/tags/typescript?page=2',
+			'Open Source Projects tagged "TypeScript" — Page 2 | AltStack',
+			'/tags/typescript?page=2',
+		],
+	])(
+		'uses distinct SEO titles and canonical URLs for %s',
+		async (url, title, canonical) => {
+			total = 25
+			const router = await routerAt(url)
+			const match = router.state.matches.at(-1)
+			expect(match?.meta).toContainEqual({ title })
+			expect(match?.meta).toContainEqual({
+				property: 'og:title',
+				content: title,
+			})
+			expect(match?.links).toContainEqual({
+				rel: 'canonical',
+				href: `https://altstack.test${canonical}`,
+			})
+		}
+	)
+
 	it('canonicalizes topic identity and returns not found for invalid slugs', async () => {
 		const canonical = await routerAt(
 			'/tags/TypeScript?q=zed&sort=most-stars&page=2'

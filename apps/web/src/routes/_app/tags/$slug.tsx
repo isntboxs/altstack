@@ -51,20 +51,21 @@ export const Route = createFileRoute('/_app/tags/$slug')({
 		)
 		return { ...detail, projects }
 	},
-	head: ({ loaderData, match }) =>
-		loaderData
-			? seoHead({
-					title: `Open Source Projects tagged "${loaderData.tag.name}" | AltStack`,
-					description:
-						loaderData.tag.description ??
-						`Explore open source projects tagged "${loaderData.tag.name}".`,
-					...cataloguePolicy(
-						`/tags/${loaderData.tag.slug}`,
-						match.search,
-						loaderData.projects.pagination.totalPages
-					),
-				})
-			: unavailableHead(),
+	head: ({ loaderData, match }) => {
+		if (!loaderData) return unavailableHead()
+		const policy = cataloguePolicy(
+			`/tags/${loaderData.tag.slug}`,
+			match.search,
+			loaderData.projects.pagination.totalPages
+		)
+		return seoHead({
+			title: `Open Source Projects tagged "${loaderData.tag.name}"${policy.pageSuffix} | AltStack`,
+			description:
+				loaderData.tag.description ??
+				`Explore open source projects tagged "${loaderData.tag.name}".`,
+			...policy,
+		})
+	},
 	pendingMs: 250,
 	pendingMinMs: 200,
 	pendingComponent: PublicPending,
@@ -73,6 +74,7 @@ export const Route = createFileRoute('/_app/tags/$slug')({
 	component: TagProjects,
 })
 
+/** Renders the loaded tag's project catalogue with scoped pagination and filter recovery. */
 function TagProjects() {
 	const { tag, projects } = Route.useLoaderData()
 	return (

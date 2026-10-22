@@ -34,6 +34,7 @@ const publicTagWhere = and(
 	sql`${publicTagProjectCount} > 0`
 )
 
+/** Lists filtered tags with published-project counts; admins also see hidden and unused tags. */
 export async function listTags(
 	database: TagDatabase,
 	query: z.infer<typeof tagListQuerySchema>,
@@ -92,6 +93,7 @@ export async function listTags(
 	}
 }
 
+/** Resolves a visible topic only when it has a published project with GitHub metadata. */
 export async function getPublicTag(database: TagDatabase, slug: string) {
 	const [row] = await database
 		.select({ ...publicTagFields, projectCount: publicTagProjectCount })
@@ -101,11 +103,13 @@ export async function getPublicTag(database: TagDatabase, slug: string) {
 	return row
 }
 
+/** Builds a project-search predicate that excludes hidden tag assignments. */
 export function projectHasPublicTag(slug: string) {
 	return sql`EXISTS (SELECT 1 FROM ${projectTag} INNER JOIN ${tag} ON ${tag.id} = ${projectTag.tagId}
  WHERE ${projectTag.projectId} = ${project.id} AND ${tag.slug} = ${slug} AND ${tag.hidden} = false)`
 }
 
+/** Returns the visible tags displayed beneath a project's categories. */
 export function getProjectTags(database: TagDatabase, projectId: string) {
 	return database
 		.select(publicTagFields)

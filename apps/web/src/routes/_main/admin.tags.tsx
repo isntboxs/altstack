@@ -54,6 +54,7 @@ import { tagSearchSchema } from '#/features/tag/search'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import { orpc } from '#/utils/orpc'
 
+/** Uses a fixed admin page size and name ordering for searchable tag management. */
 const listOptions = (query: { q?: string; page?: number }) =>
 	orpc.admin.tag.list.queryOptions({
 		input: { query: { ...query, sort: 'name-asc', limit: 50 } },
@@ -76,6 +77,7 @@ export const Route = createFileRoute('/_main/admin/tags')({
 	component: AdminTags,
 })
 
+/** Manages tag curation and guarded deletion, refreshing public and admin caches on success. */
 function AdminTags() {
 	const search = Route.useSearch()
 	const navigate = Route.useNavigate()
@@ -84,16 +86,17 @@ function AdminTags() {
 	const [deleting, setDeleting] = useState<AdminTag | null>(null)
 	const queryClient = useQueryClient()
 	const router = useRouter()
-	const saved = async () => {
+	/** Refreshes catalogue data before confirming the completed tag operation. */
+	const saved = async (title = 'Tag saved') => {
 		await invalidateCatalog(queryClient)
 		await router.invalidate()
-		toast.add({ type: 'success', title: 'Tag saved' })
+		toast.add({ type: 'success', title })
 	}
 	const remove = useMutation({
 		...orpc.admin.tag.remove.mutationOptions(),
 		onSuccess: async () => {
 			setDeleting(null)
-			await saved()
+			await saved('Tag deleted')
 		},
 	})
 	return (
@@ -298,6 +301,7 @@ function AdminTags() {
 	)
 }
 
+/** Creates topics or edits their display metadata while keeping existing topic slugs stable. */
 function TagEditor({
 	tag,
 	onClose,
@@ -435,11 +439,13 @@ function TagEditor({
 	)
 }
 
+/** Reads a form string, treating absent or non-text values as empty. */
 function formText(form: FormData, name: string) {
 	const value = form.get(name)
 	return typeof value === 'string' ? value : ''
 }
 
+/** Reserves the admin heading and table layout while tag data loads. */
 function AdminTagsPending() {
 	return (
 		<div

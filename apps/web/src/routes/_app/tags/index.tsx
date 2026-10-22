@@ -43,6 +43,7 @@ export const Route = createFileRoute('/_app/tags/')({
 	component: TagsDirectory,
 })
 
+/** Passes the route's validated, loaded directory page to the shared tag results UI. */
 function TagsDirectory() {
 	return <TagDirectoryResults data={Route.useLoaderData()} />
 }

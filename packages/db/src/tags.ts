@@ -10,14 +10,18 @@ type TagTransaction = Pick<
 	'select' | 'insert' | 'delete' | 'execute'
 >
 
+/** Serializes tag assignment and deletion within the current schema's transaction. */
 export async function lockTagIntegrity(tx: Pick<typeof db, 'execute'>) {
 	await tx.execute(
 		sql`SELECT pg_advisory_xact_lock(hashtext('altstack.tags'), hashtext(current_schema()))`
 	)
 }
 
-// Call inside the transaction that stores the verified GitHub repository.
-// Unknown/failed metadata must not be passed as an empty successful snapshot.
+/**
+ * Replaces a project's topics while preserving shared tags and admin curation.
+ * Call in the repository transaction only after a successful metadata fetch;
+ * an empty snapshot removes assignments, so failed fetches must skip this call.
+ */
 export async function syncProjectTags(
 	tx: TagTransaction,
 	projectId: string,

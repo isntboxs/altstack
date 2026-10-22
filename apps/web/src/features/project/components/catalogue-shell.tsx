@@ -16,8 +16,10 @@ import {
 
 const categoryRoute = getRouteApi('/_app/categories/$')
 
-// Keep editable controls outside the leaf pending boundary. Results can suspend
-// for a new URL without replacing the search input or its keyboard focus.
+/**
+ * Selects catalogue controls for home, category, and tag routes outside the leaf
+ * pending boundary, so new results preserve the search input and keyboard focus.
+ */
 export function CatalogueShell() {
 	const routeId = useRouterState({
 		select: (state) =>

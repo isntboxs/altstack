@@ -60,8 +60,15 @@ export const adminCreateTagInputSchema = z.object({
 export const tagIdParamsSchema = z.object({
 	params: z.object({ id: z.uuid() }),
 })
+const adminUpdateTagBodySchema = z
+	.object({
+		name: z.string().trim().min(1).max(100),
+		description: z.string().trim().max(1000).nullable(),
+		hidden: z.boolean(),
+	})
+	.partial()
 export const adminUpdateTagInputSchema = tagIdParamsSchema.extend({
-	body: adminTagBodySchema,
+	body: adminUpdateTagBodySchema,
 })
 export const adminListTagsOutputSchema = z.object({
 	tags: z.array(adminTagSchema),

@@ -50,6 +50,18 @@ export const adminTagRouter = {
 	),
 	update: adminProcedure.admin.tag.update.handler(
 		async ({ context, input, errors }) => {
+			if (
+				input.body.name === undefined &&
+				input.body.description === undefined &&
+				input.body.hidden === undefined
+			) {
+				const [current] = await context.db
+					.select()
+					.from(tag)
+					.where(eq(tag.id, input.params.id))
+				if (!current) throw errors.NOT_FOUND()
+				return current
+			}
 			const [updated] = await context.db
 				.update(tag)
 				.set(input.body)

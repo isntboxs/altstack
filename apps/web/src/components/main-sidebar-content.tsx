@@ -31,7 +31,6 @@ const navLinks = linkOptions([
 	{
 		to: '/projects',
 		icon: IconPackage,
-		IconTags,
 		label: 'Projects',
 	},
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },

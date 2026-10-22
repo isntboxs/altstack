@@ -1192,6 +1192,15 @@ describe('generated OpenAPI compatibility', () => {
 			page: 'primitive',
 			limit: 'primitive',
 		})
+		for (const procedure of [contracts.tag.list, contracts.admin.tag.list]) {
+			expect(getOpenAPIMeta(procedure)?.queryStyles).toEqual({
+				q: 'primitive',
+				letter: 'primitive',
+				sort: 'primitive',
+				page: 'primitive',
+				limit: 'primitive',
+			})
+		}
 		expect(
 			getOpenAPIMeta(contracts.project.listCategories)?.path
 		).toBeUndefined()

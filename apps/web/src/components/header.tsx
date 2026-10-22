@@ -30,6 +30,7 @@ import { BrandMark } from '#/components/brand-mark'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
 
+/** Provides responsive public navigation and the current session's account actions. */
 export const Header = ({
 	auth,
 }: {

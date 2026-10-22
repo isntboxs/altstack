@@ -276,6 +276,44 @@ describe('GitHub topic tags', () => {
 		})
 	})
 
+	it('preserves omitted fields during partial updates and returns unchanged tags for empty patches', async () => {
+		const admin = client('admin').admin.tag
+		const created = await admin.create({
+			body: {
+				slug: 'curated',
+				name: 'Curated',
+				description: 'Keep this description',
+				hidden: true,
+			},
+		})
+		const params = { id: created.id }
+		const renamed = await admin.update({ params, body: { name: 'Renamed' } })
+		expect(renamed).toMatchObject({
+			name: 'Renamed',
+			description: 'Keep this description',
+			hidden: true,
+		})
+		const visible = await admin.update({ params, body: { hidden: false } })
+		expect(visible).toMatchObject({
+			name: 'Renamed',
+			description: 'Keep this description',
+			hidden: false,
+		})
+		const cleared = await admin.update({ params, body: { description: null } })
+		expect(cleared).toMatchObject({
+			name: 'Renamed',
+			description: null,
+			hidden: false,
+		})
+		expect(await admin.update({ params, body: {} })).toEqual(cleared)
+		expect(await admin.update({ params, body: { name: undefined } })).toEqual(
+			cleared
+		)
+		await expect(
+			admin.update({ params: { id: crypto.randomUUID() }, body: {} })
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+	})
+
 	it('keeps hidden tags out of the directory, detail, and project search after resync', async () => {
 		const row = await fixture(['typescript'])
 		const { tag: ts } = await client().tag.getBySlug({
