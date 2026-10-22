@@ -36,7 +36,7 @@ Merged-revision and production acceptance remain open.
 - **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, public project mentions, cached-image decoding and stored-public-content preparation implemented in `dev`; release verification remains separate.
 - **Private Bookmarks:** implemented after v0.2.0 on the feature branch for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
-- **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
+- **R6:** ownership/maintainer editing remains MVP+ work. **R7** is revised to admin-curated Featured Projects on detail pages; implementation and rollout are tracked below.
 
 Next: complete launch acceptance and operations before adding
 ownership or editorial sections. Bookmarks are the separately authorized slice
@@ -361,15 +361,20 @@ Start after launch when maintainers request control.
 
 **Done when:** verified owners maintain listings; direct unauthorized mutations fail.
 
-## R7 — Curate (MVP+)
+## R7 — Featured Projects on detail pages
 
-Start after launch when catalogue size/feedback justifies editorial sections.
+User-revised scope on **2026-10-22**: keep the homepage unchanged and curate a
+global Featured Projects icon panel on public project detail pages.
 
-- [ ] `featured` plus admin-only feature/unfeature.
-- [ ] Most Starred, Recently Added, Editor's Picks with published-only data and matching search links.
-- [ ] Empty-state/visibility coverage; trending and score/personalized feeds stay separate.
+- [x] Admin-only `/admin/featured`, search/add/remove/order and explicit save, bounded to 21 projects with concurrent-save protection.
+- [x] Additive selection table; public reads require published status, repository data and a valid website, exclude the current project, and expose only preview fields.
+- [x] Sidebar panel below stats on two-column layouts; stats scroll away and Featured sticks below the header until the sidebar ends.
+- [x] Mobile panel after Copy link/Share buttons without sticky positioning; direct external website links and existing Markdown mention hover previews.
+- [x] Empty selections omit the panel and preserve the existing stats sticky behavior. Homepage sorting and content are unchanged.
+- [ ] Apply the additive migration and verify the deployed revision/domain.
 
-Existing most-stars/newest sorting is not implemented homepage sections.
+See [behavior, concurrency, migration and verification](featured-projects.md).
+Homepage editorial sections, trending, scores and personalized feeds remain deferred.
 
 ## Private Bookmarks — 2026-10-21
 

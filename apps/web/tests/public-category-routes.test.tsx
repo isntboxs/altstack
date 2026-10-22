@@ -157,6 +157,7 @@ const flat = categoryFixture(105, {
 })
 const nodes = [general, root, ai, flat, editors]
 const zed: ORPCRouterOutputs['project']['getBySlug'] = {
+	featuredProjects: [],
 	id: '10000000-0000-4000-8000-000000000001',
 	name: 'Zed',
 	slug: 'test-zed',

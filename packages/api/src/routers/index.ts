@@ -6,6 +6,7 @@ import type {
 
 import { o } from '@altstack/api/base'
 import { adminCategoryRouter } from '@altstack/api/routers/admin-category'
+import { adminFeaturedRouter } from '@altstack/api/routers/admin-featured'
 import { adminProjectRouter } from '@altstack/api/routers/admin-project'
 import { adminReportRouter } from '@altstack/api/routers/admin-report'
 import { altstackRouter } from '@altstack/api/routers/altstack'
@@ -20,6 +21,7 @@ import { uploadRouter } from '@altstack/api/routers/upload'
 export const routers = o.router({
 	bookmark: bookmarkRouter,
 	admin: {
+		featured: adminFeaturedRouter,
 		report: adminReportRouter,
 		category: adminCategoryRouter,
 		project: adminProjectRouter,

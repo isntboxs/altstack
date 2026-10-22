@@ -14,7 +14,7 @@ import {
 } from '#/components/public-page-state'
 import { ShareButtons } from '#/components/share-buttons'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
-import { GithubStatistics } from '#/features/project/components/github-statistics'
+import { ProjectSidebar } from '#/features/project/components/featured-projects'
 import { ProjectActions } from '#/features/project/components/project-actions'
 import { projectDialogSearch } from '#/features/project/embed/badge'
 import { projectQueries, useProjectBySlug } from '#/features/project/queries'
@@ -188,7 +188,8 @@ function RouteComponent() {
 					<ShareButtons />
 				</article>
 
-				<GithubStatistics
+				<ProjectSidebar
+					projects={projectData.featuredProjects}
 					github={projectData.github}
 					history={projectData.githubStarsHistory}
 					now={statisticsNow}

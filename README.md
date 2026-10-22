@@ -2,6 +2,9 @@
 
 A starter for creating a Vite+ monorepo.
 
+Featured Projects is curated by admins at `/admin/featured` and appears on public
+project detail pages. See [behavior, migration and verification](docs/featured-projects.md).
+
 ## Seeding CSV dan JSON
 
 Impor kategori, project, dan relasinya tanpa reset database atau migration baru:

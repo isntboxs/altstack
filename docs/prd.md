@@ -51,7 +51,8 @@ The first public launch is complete when visitors/users can:
 
 The roadmap also requires staging smoke, production builds, migrations, runtime
 configuration, and deployment acceptance. Claiming ownership, editing published
-listings as a maintainer and featured sections remain MVP+.
+listings as a maintainer remain MVP+. Featured Projects is a later implemented
+detail-page curation slice and does not alter the launch definition.
 Private Bookmarks are implemented after v0.2.0 on the feature branch; see
 [behavior, verification and migration rollout](bookmarks.md).
 
@@ -79,7 +80,7 @@ capabilities/dependencies, not deferred proposals.
 - **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback and original-submitter rejected-intake resubmission.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
 - **R6 — Own & edit:** verified ownership and maintainer editing after launch.
-- **R7 — Curate:** featured flags and editorial homepage sections after launch.
+- **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
 
 See the roadmap for checked implementation items versus unverified acceptance.
 
@@ -209,7 +210,7 @@ badge artwork. Merged-release and deployment verification remain separate gates.
 - Claim requires a documented policy verified through user-specific GitHub credentials.
 - Keep `ownerId` / `claimedAt` separate from `submitterId`; neither is implemented yet.
 - Verified owners can edit published copy/links/media/content/categories with server authorization.
-- Featured flags/editorial sections remain future work; existing sort options do not count as shipped homepage sections.
+- Featured Projects uses a global admin-ordered selection on detail pages, with published-only website links and existing mention previews. Desktop/tablet places it beneath GitHub statistics with sticky scrolling; mobile places it beneath Share buttons. Homepage editorial sections remain deferred. See [Featured Projects](featured-projects.md).
 
 ## Project lifecycle
 
