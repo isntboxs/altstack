@@ -35,6 +35,19 @@ describe('Docker test database target validation', () => {
 		'postgresql://test:secret@localhost:5433/postgres',
 		'postgresql://test:secret@cloud.test/altstack_test',
 		'postgresql://test:secret@localhost:5433/altstack_test?database=altstack',
+		'postgresql://test:secret@localhost/altstack_test',
+		'postgresql://test:secret@localhost:5432/altstack_test',
+		'postgresql://test:secret@localhost:5434/altstack_test',
+		'postgresql://test:secret@postgres-test/altstack_test',
+		'postgresql://test:secret@postgres-test:5433/altstack_test',
+		'postgresql://test:secret@localhost:5433/altstack_test?host=cloud.test',
+		'postgresql://test:secret@localhost:5433/altstack_test?host=localhost',
+		'postgresql://test:secret@localhost:5433/altstack_test?host=',
+		'postgresql://test:secret@localhost:5433/altstack_test?%68ost=cloud.test',
+		'postgresql://test:secret@localhost:5433/altstack_test?port=5432',
+		'postgresql://test:secret@localhost:5433/altstack_test?port=5433',
+		'postgresql://test:secret@localhost:5433/altstack_test?port=',
+		'postgresql://test:secret@localhost:5433/altstack_test?%70ort=5432',
 		'https://localhost/altstack_test',
 		'not-a-url',
 	])(
@@ -44,16 +57,18 @@ describe('Docker test database target validation', () => {
 		}
 	)
 
-	it.each(['localhost', '127.0.0.1', '[::1]', 'postgres-test'])(
-		'accepts the local Docker test target at %s',
-		(host) => {
-			expect(
-				validateTestUrl(
-					`postgresql://postgres:password@${host}:5433/altstack_test`
-				).pathname
-			).toBe('/altstack_test')
-		}
-	)
+	it.each([
+		['localhost', '5433'],
+		['127.0.0.1', '5433'],
+		['[::1]', '5433'],
+		['postgres-test', '5432'],
+	])('accepts the local Docker test target at %s:%s', (host, port) => {
+		expect(
+			validateTestUrl(
+				`postgresql://postgres:password@${host}:${port}/altstack_test`
+			).pathname
+		).toBe('/altstack_test')
+	})
 
 	it('requires a dedicated test URL without falling back to the application database', () => {
 		vi.stubEnv(

@@ -20,6 +20,9 @@ export function validateTestUrl(value: string) {
 		!['localhost', '127.0.0.1', '[::1]', 'postgres-test'].includes(
 			url.hostname
 		) ||
+		url.port !== (url.hostname === 'postgres-test' ? '5432' : '5433') ||
+		url.searchParams.has('host') ||
+		url.searchParams.has('port') ||
 		url.pathname !== `/${TEST_DATABASE}` ||
 		(url.searchParams.has('database') &&
 			url.searchParams.get('database') !== TEST_DATABASE)
