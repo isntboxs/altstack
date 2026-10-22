@@ -1,3 +1,4 @@
+import { readdir } from 'node:fs/promises'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vite-plus/test'
 
 import {
@@ -208,7 +209,12 @@ describe('cloud test schema lifecycle', () => {
 			const ledger = await scope.pool.query<{ name: string }>(
 				'SELECT name FROM __drizzle_migrations ORDER BY id'
 			)
-			expect(ledger.rows.at(-1)?.name).toMatch(/_bookmarks$/)
+			const migrations = (
+				await readdir(new URL('../src/migrations', import.meta.url))
+			)
+				.filter((name) => /^\d{14}_/.test(name))
+				.toSorted()
+			expect(ledger.rows.map(({ name }) => name)).toEqual(migrations)
 		} finally {
 			await scope.close()
 		}

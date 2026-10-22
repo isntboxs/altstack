@@ -106,13 +106,17 @@ describe('shared badge contract', () => {
 		expect(new URL(image.src).search).toBe('?theme=light&width=320&height=80')
 		expect(doc.querySelector('script')).toBeNull()
 	})
-	it('owns only the implemented dialog value and preserves unrelated search state', () => {
-		for (const dialog of ['report', 'unknown', 1, ['embed'], null]) {
+	it('owns only the implemented dialog values and preserves unrelated search state', () => {
+		for (const dialog of ['unknown', 1, ['embed'], null]) {
 			expect(projectDialogSearch({ dialog, ref: 'docs' })).toEqual({
 				dialog: undefined,
 				ref: 'docs',
 			})
 		}
+		expect(projectDialogSearch({ dialog: 'report', ref: 'docs' })).toEqual({
+			dialog: 'report',
+			ref: 'docs',
+		})
 		expect(
 			projectDialogSearch({ dialog: 'embed', utm_source: 'badge' })
 		).toEqual({ dialog: 'embed', utm_source: 'badge' })

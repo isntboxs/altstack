@@ -53,10 +53,10 @@ app.use(
 
 app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
 
-// Bookmark reads contain account-specific state even on the public project page.
+// Private bookmark state and report contacts must never enter shared caches.
 app.use('/api/*', async (c, next) => {
 	if (
-		/^\/api\/(?:rpc\/bookmark(?:\/|$)|reference\/bookmarks(?:\/|$))/.test(
+		/^\/api\/(?:rpc\/(?:bookmark|admin\/report)(?:\/|$)|reference\/(?:bookmarks|admin\/reports)(?:\/|$))/.test(
 			c.req.path
 		)
 	) {

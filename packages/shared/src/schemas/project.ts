@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
+import { featuredProjectPreviewSchema } from '@altstack/shared/schemas/featured'
 
 const slugSchema = z
 	.string()
@@ -84,6 +85,7 @@ export const getProjectBySlugInputSchema = z.object({
 
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
+	featuredProjects: z.array(featuredProjectPreviewSchema).max(21).default([]),
 	github: githubDetailSchema,
 	githubStarsHistory: githubStarsHistorySchema,
 	categoryDetails: z.array(categoryNodeSchema),

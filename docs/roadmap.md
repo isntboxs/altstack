@@ -36,7 +36,7 @@ Merged-revision and production acceptance remain open.
 - **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, public project mentions, cached-image decoding and stored-public-content preparation implemented in `dev`; release verification remains separate.
 - **Private Bookmarks:** implemented after v0.2.0 on the feature branch for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
-- **R6 / R7:** ownership/maintainer editing and featured homepage sections remain unimplemented MVP+ work.
+- **R6:** ownership/maintainer editing remains MVP+ work. **R7** is revised to admin-curated Featured Projects on detail pages; implementation and rollout are tracked below.
 
 Next: complete launch acceptance and operations before adding
 ownership or editorial sections. Bookmarks are the separately authorized slice
@@ -283,8 +283,8 @@ artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify and reporting remain future
-workflows. Bookmarks are separately implemented below after v0.2.0.
+decision to retain disabled controls. Verify remains a future workflow.
+Bookmarks and the report inbox are separately implemented below after v0.2.0.
 Release/staging acceptance remains a separate gate.
 
 ### Public project Embed — 2026-10-17
@@ -361,15 +361,20 @@ Start after launch when maintainers request control.
 
 **Done when:** verified owners maintain listings; direct unauthorized mutations fail.
 
-## R7 — Curate (MVP+)
+## R7 — Featured Projects on detail pages
 
-Start after launch when catalogue size/feedback justifies editorial sections.
+User-revised scope on **2026-10-22**: keep the homepage unchanged and curate a
+global Featured Projects icon panel on public project detail pages.
 
-- [ ] `featured` plus admin-only feature/unfeature.
-- [ ] Most Starred, Recently Added, Editor's Picks with published-only data and matching search links.
-- [ ] Empty-state/visibility coverage; trending and score/personalized feeds stay separate.
+- [x] Admin-only `/admin/featured`, search/add/remove/order and explicit save, bounded to 21 projects with concurrent-save protection.
+- [x] Additive selection table; public reads require published status, repository data and a valid website, exclude the current project, and expose only preview fields.
+- [x] Sidebar panel below stats on two-column layouts; stats scroll away and Featured sticks below the header until the sidebar ends.
+- [x] Mobile panel after Copy link/Share buttons without sticky positioning; direct external website links and existing Markdown mention hover previews.
+- [x] Empty selections omit the panel and preserve the existing stats sticky behavior. Homepage sorting and content are unchanged.
+- [ ] Apply the additive migration and verify the deployed revision/domain.
 
-Existing most-stars/newest sorting is not implemented homepage sections.
+See [behavior, concurrency, migration and verification](featured-projects.md).
+Homepage editorial sections, trending, scores and personalized feeds remain deferred.
 
 ## Private Bookmarks — 2026-10-21
 
@@ -382,11 +387,25 @@ states, additive migration, and DB/API/UI/HTTP coverage are included.
 See [Bookmarks behavior, rollout and validation](bookmarks.md). Collections and
 comparisons remain out of scope.
 
+## Admin report inbox — 2026-10-21
+
+Implemented on `feat/admin-reports` from merged intake #108 (`9d404c2`).
+Merge/deployment and shared DB migration remain separate.
+
+- [x] Admin sidebar and guarded `/admin/reports`, reusing the admin table components; email/type/message/date/status and existing project editor navigation.
+- [x] Admin-only RPC/REST list and moderation, 401/403 before data access, Open → Resolved/Dismissed with atomic concurrent-decision protection.
+- [x] Default Open/newest-first, bounded cursor pagination, status filters, pending/error/empty states and invalidation after decisions.
+- [x] Additive status/default/index migration preserves old intake; nullable project FK retains future deleted-project reports without broken editor links. Unpublished targets remain editable.
+- [x] Shared/API/DB/UI/HTTP coverage for privacy, defaults, migration preservation, concurrent/invalid decisions, pagination, plain text and editor targets.
+
+See [behavior, rollout and verification](project-reports.md). Automatic changes,
+assignment/comments/email and reopen workflows remain outside this slice.
+
 ## Later, only when justified
 
 - Guest submission/abuse review when OAuth blocks legitimate submissions.
 - Collections/compare when users return to evaluate saved tools.
-- Report/correction workflow when catalogue errors create recurring support work.
+- [x] [Report / suggest correction](project-reports.md): guest/session-aware intake via `?dialog=report`, private durable storage, shared validation, Redis quotas and admin inbox. Automatic corrections remain deferred.
 - Notifications when review turnaround/status checking becomes a problem.
 - Webhooks/trending when observed refresh/history data supports them.
 - Meilisearch when measured PostgreSQL search quality/latency is insufficient.

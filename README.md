@@ -2,6 +2,9 @@
 
 A starter for creating a Vite+ monorepo.
 
+Featured Projects is curated by admins at `/admin/featured` and appears on public
+project detail pages. See [behavior, migration and verification](docs/featured-projects.md).
+
 ## Seeding CSV dan JSON
 
 Impor kategori, project, dan relasinya tanpa reset database atau migration baru:
@@ -106,6 +109,9 @@ dan riwayat migration di schema `public` tidak diubah.
 
 Private Bookmarks tersedia untuk user dan admin pada branch fitur ini. Lihat
 [perilaku, rollout migrasi additive, dan verifikasi Bookmarks](docs/bookmarks.md).
+Report / suggest correction untuk guest, user, dan admin tersedia melalui
+`?dialog=report`; admin membaca dan memoderasi lewat `/admin/reports`.
+Lihat [intake privat, inbox admin, batas abuse, dan rollout](docs/project-reports.md).
 
 - Check everything is ready:
 

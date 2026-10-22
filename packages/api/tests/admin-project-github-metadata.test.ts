@@ -16,14 +16,17 @@ import {
 } from '@altstack/api/github'
 import { openApiHandler, rpcHandler } from '@altstack/api/handler'
 import { routers } from '@altstack/api/routers'
+import type * as SubmissionRateLimitModule from '@altstack/api/submission-rate-limit'
 
 import fixture from './fixtures/github-metadata.json'
 
 const { limit } = vi.hoisted(() => {
 	return { limit: vi.fn() }
 })
-vi.mock('@altstack/api/submission-rate-limit', () => {
+vi.mock('@altstack/api/submission-rate-limit', async (importOriginal) => {
+	const actual = await importOriginal<typeof SubmissionRateLimitModule>()
 	return {
+		...actual,
 		submissionRateLimiter: { limit },
 	}
 })

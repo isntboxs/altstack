@@ -1,4 +1,15 @@
-import { and, asc, count, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	inArray,
+	lte,
+	ne,
+	sql,
+} from 'drizzle-orm'
 
 import { githubDetail } from '@altstack/api/github-refresh'
 import { publicProcedure } from '@altstack/api/procedures'
@@ -12,6 +23,7 @@ import { searchPublicProjectMentions } from '@altstack/api/queries/project-menti
 
 import {
 	category,
+	featuredProject,
 	githubRepository,
 	githubStarHistory,
 	project,
@@ -20,6 +32,7 @@ import {
 
 import { githubStarsWindow } from '@altstack/shared/lib/github-stars'
 import { projectSchema } from '@altstack/shared/schemas/common'
+import { featuredWebsiteUrl } from '@altstack/shared/schemas/featured'
 
 const publicFields = projectSchema.omit({ categories: true })
 
@@ -47,6 +60,35 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 				if (!row) {
 					throw errors.NOT_FOUND()
 				}
+				const featuredRows = await tx
+					.select({
+						id: project.id,
+						slug: project.slug,
+						name: project.name,
+						logo: project.logo,
+						tagline: project.tagline,
+						websiteUrl: project.websiteUrl,
+						stars: githubRepository.stars,
+						forks: githubRepository.forks,
+					})
+					.from(featuredProject)
+					.innerJoin(project, eq(project.id, featuredProject.projectId))
+					.innerJoin(
+						githubRepository,
+						eq(githubRepository.projectId, project.id)
+					)
+					.where(
+						and(
+							eq(project.status, 'published'),
+							ne(project.id, row.projects.id)
+						)
+					)
+					.orderBy(asc(featuredProject.position))
+					.limit(21)
+				const featuredProjects = featuredRows.flatMap((item) => {
+					const websiteUrl = featuredWebsiteUrl(item.websiteUrl)
+					return websiteUrl ? [{ ...item, websiteUrl }] : []
+				})
 				const points = await tx
 					.select({
 						date: githubStarHistory.snapshotDate,
@@ -65,6 +107,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 
 				return {
 					...publicFields.parse(row.projects),
+					featuredProjects,
 					categoryDetails: await getDirectProjectCategories(
 						tx,
 						row.projects.id

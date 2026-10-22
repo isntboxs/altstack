@@ -51,7 +51,8 @@ The first public launch is complete when visitors/users can:
 
 The roadmap also requires staging smoke, production builds, migrations, runtime
 configuration, and deployment acceptance. Claiming ownership, editing published
-listings as a maintainer and featured sections remain MVP+.
+listings as a maintainer remain MVP+. Featured Projects is a later implemented
+detail-page curation slice and does not alter the launch definition.
 Private Bookmarks are implemented after v0.2.0 on the feature branch; see
 [behavior, verification and migration rollout](bookmarks.md).
 
@@ -79,7 +80,7 @@ capabilities/dependencies, not deferred proposals.
 - **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback and original-submitter rejected-intake resubmission.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
 - **R6 — Own & edit:** verified ownership and maintainer editing after launch.
-- **R7 — Curate:** featured flags and editorial homepage sections after launch.
+- **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
 
 See the roadmap for checked implementation items versus unverified acceptance.
 
@@ -165,9 +166,23 @@ merged-revision checks and release-domain acceptance remain separate gates. See 
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. Verify and Report retain accessible “Coming soon” explanations.
+- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; Verify retains its accessible “Coming soon” explanation.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership and reports remain backlog; bookmarks are tracked separately in the implementation above.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership remains backlog; private report intake, its admin inbox and bookmarks are tracked separately.
+
+### Admin report inbox
+
+Implemented on the feature branch; deployment remains separate. Admins use
+`/admin/reports` to read private project reports (project/logo, contact email,
+type, plain text message, date and status), defaulting to Open/newest first with
+bounded cursor pages and status filters. Open reports may become Resolved or
+Dismissed; concurrent decisions cannot overwrite each other. The existing
+project editor performs corrections separately. Unpublished targets remain
+editable, while deleted-project reports are retained without edit links.
+Route and API guards require admin role, private responses use no-store, and
+public data excludes all report details. Additive migration backfills Open and
+retains report history through future project deletions. See
+[report behavior, verification and rollout](project-reports.md).
 
 ### Public project Embed badges
 
@@ -195,7 +210,7 @@ badge artwork. Merged-release and deployment verification remain separate gates.
 - Claim requires a documented policy verified through user-specific GitHub credentials.
 - Keep `ownerId` / `claimedAt` separate from `submitterId`; neither is implemented yet.
 - Verified owners can edit published copy/links/media/content/categories with server authorization.
-- Featured flags/editorial sections remain future work; existing sort options do not count as shipped homepage sections.
+- Featured Projects uses a global admin-ordered selection on detail pages, with published-only website links and existing mention previews. Desktop/tablet places it beneath GitHub statistics with sticky scrolling; mobile places it beneath Share buttons. Homepage editorial sections remain deferred. See [Featured Projects](featured-projects.md).
 
 ## Project lifecycle
 
