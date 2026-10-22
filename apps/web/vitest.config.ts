@@ -4,7 +4,7 @@ import { defineConfig } from 'vite-plus'
 import { playwright } from 'vite-plus/test/browser-playwright'
 
 export default defineConfig({
-	resolve: { tsconfigPaths: true },
+	resolve: { tsconfigPaths: true, dedupe: ['react', 'react-dom'] },
 	test: {
 		// Vitest v4 compatibility: preserve mock call history.
 		// Remove after tests no longer rely on calls from setup or earlier tests.
@@ -17,6 +17,7 @@ export default defineConfig({
 			{ test: { name: 'unit' } },
 			{
 				plugins: [tailwindcss(), react()],
+				optimizeDeps: { include: ['reicon-react'] },
 				test: {
 					name: 'browser',
 					// Keep browser-only files outside the default Node test glob.

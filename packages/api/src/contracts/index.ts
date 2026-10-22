@@ -1,4 +1,5 @@
 import { adminCategoryContract } from '@altstack/api/contracts/admin-category'
+import { adminFeaturedContract } from '@altstack/api/contracts/admin-featured'
 import { adminProjectContract } from '@altstack/api/contracts/admin-project'
 import { adminReportContract } from '@altstack/api/contracts/admin-report'
 import { altstackContract } from '@altstack/api/contracts/altstack'
@@ -13,6 +14,7 @@ import { uploadContract } from '@altstack/api/contracts/upload'
 export const contracts = {
 	bookmark: bookmarkContract,
 	admin: {
+		featured: adminFeaturedContract,
 		report: adminReportContract,
 		category: adminCategoryContract,
 		project: adminProjectContract,

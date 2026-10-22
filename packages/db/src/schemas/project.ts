@@ -4,6 +4,7 @@ import {
 	check,
 	customType,
 	index,
+	integer,
 	pgTable,
 	text,
 	timestamp,
@@ -68,6 +69,23 @@ export const project = pgTable(
 				),
 				sql.raw(', ')
 			)})`
+		),
+	]
+)
+
+// A bounded, globally ordered selection. It does not affect catalogue sorting.
+export const featuredProject = pgTable(
+	'featured_projects',
+	{
+		projectId: uuid('project_id')
+			.primaryKey()
+			.references(() => project.id, { onDelete: 'cascade' }),
+		position: integer('position').notNull().unique(),
+	},
+	(table) => [
+		check(
+			'featured_projects_position_check',
+			sql`${table.position} >= 0 AND ${table.position} < 21`
 		),
 	]
 )

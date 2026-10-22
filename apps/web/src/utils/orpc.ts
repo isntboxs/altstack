@@ -59,6 +59,9 @@ export const categoryORPC = createTanstackQueryUtils(client.category, {
 })
 
 export const adminORPC = {
+	featured: createTanstackQueryUtils(client.admin.featured, {
+		prefix: 'admin/featured',
+	}),
 	report: createTanstackQueryUtils(client.admin.report, {
 		prefix: 'admin/report',
 	}),

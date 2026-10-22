@@ -137,6 +137,7 @@ const project = {
 		fetchedAt: new Date(),
 	},
 	githubStarsHistory: { points: [], comparison: null },
+	featuredProjects: [],
 }
 const routers: Array<ReturnType<typeof getRouter>> = []
 beforeEach(() => {

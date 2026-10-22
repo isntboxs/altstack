@@ -3,6 +3,7 @@ import {
 	IconCategory,
 	IconInbox,
 	IconBookmark,
+	IconStar,
 } from '@tabler/icons-react'
 import {
 	Link,
@@ -33,6 +34,7 @@ const navLinks = linkOptions([
 	},
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
 	{ to: '/admin/reports', icon: IconInbox, label: 'Reports' },
+	{ to: '/admin/featured', icon: IconStar, label: 'Featured Projects' },
 ])
 
 const userNavLinks = linkOptions([

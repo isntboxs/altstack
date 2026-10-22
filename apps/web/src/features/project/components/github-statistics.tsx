@@ -5,6 +5,7 @@ import {
 	IconGitFork,
 	IconTag,
 } from '@tabler/icons-react'
+import { cn } from 'cn'
 import { Star } from 'reicon-react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -24,10 +25,14 @@ export const GithubStatistics = ({
 	github,
 	history,
 	now,
+	sticky = true,
+	className,
 }: {
 	github: ORPCRouterOutputs['project']['getBySlug']['github']
 	history: ORPCRouterOutputs['project']['getBySlug']['githubStarsHistory']
 	now: number
+	sticky?: boolean
+	className?: string
 }) => {
 	const known = github.metadataFetchedAt !== null
 	const githubStatsItem = [
@@ -70,8 +75,8 @@ export const GithubStatistics = ({
 	const repoFullName = `${github.owner}/${github.repo}`
 
 	return (
-		<div className="space-y-8 pt-5">
-			<Card className="sticky top-17 z-20">
+		<div className={cn('flex flex-col gap-8 pt-5', className)}>
+			<Card className={cn(sticky && 'sticky top-17 z-20')}>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-1.5 font-normal">
 						<Star className="size-4 shrink-0 fill-amber-500/20 text-amber-500" />
