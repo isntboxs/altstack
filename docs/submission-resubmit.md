@@ -79,7 +79,7 @@ cover authorization, allowed fields, provenance, old audit feedback, aliases and
 identity/history, failed services, rollback, stale/concurrent reviews, shared
 capacity and identity races, input correction, cooldown and navigation.
 Database verification must run through `test:scoped`; each fixture owns and
-cleans a disposable schema in `altstack_development`. GitHub/Redis/storage calls
+cleans a disposable schema in `altstack_test`. GitHub/Redis/storage calls
 are mocked; the existing real Upstash integration remains opt-in.
 
 Record the final command totals in [R5b](roadmap.md#r5b--correct-and-resubmit).

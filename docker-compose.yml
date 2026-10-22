@@ -1,0 +1,40 @@
+name: altstack
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: altstack-postgres
+    environment:
+      POSTGRES_DB: altstack
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - altstack_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d altstack']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-test:
+    image: postgres:18
+    profiles: ['test']
+    environment:
+      POSTGRES_DB: altstack_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - '127.0.0.1:5433:5432'
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d altstack_test']
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  altstack_postgres_data:

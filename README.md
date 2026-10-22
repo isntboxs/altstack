@@ -99,13 +99,39 @@ dan reload VS Code.
 
 ### Database dan perintah development
 
-Database development menggunakan PostgreSQL cloud. Konfigurasikan `.env` dari
-`.env.example` dengan `DATABASE_URL` untuk `altstack_development`, termasuk
-parameter SSL dari penyedia cloud. Terapkan migration dengan `vp run db:migrate`.
+Database development dan test menggunakan PostgreSQL 18 di Docker Compose.
+Salin `.env.example` ke `.env` saat setup pertama, lalu sesuaikan konfigurasi
+aplikasi lainnya. `DATABASE_URL` menunjuk ke database `altstack` di port `5432`;
+`TEST_DATABASE_URL` menunjuk ke `altstack_test` di port `5433`. Keduanya hanya
+membuka port pada loopback lokal.
 
-Wrapper `test:scoped` di bawah memakai schema sementara pada
-`altstack_development`, lalu menghapus schema tes setelah selesai. Data aplikasi
-dan riwayat migration di schema `public` tidak diubah.
+```sh
+vp run db:start
+vp run db:migrate
+```
+
+Data development tersimpan di named volume `altstack_postgres_data`.
+`vp run db:stop` menghentikan container; `vp run db:down` menghapus container
+tanpa menghapus volume. `vp run db:watch` menampilkan log PostgreSQL di terminal.
+Jika mengganti `POSTGRES_PASSWORD`, sesuaikan password pada kedua URL; perubahan
+variabel tersebut tidak mengganti password database pada volume yang sudah ada.
+
+Database test menggunakan service `postgres-test` dengan profile `test` dan
+penyimpanan sementara (tmpfs). `vp run test:docker` menyalakan service, menunggu database
+siap, lalu menjalankan seluruh suite melalui wrapper `test:scoped`. Wrapper
+menerapkan migration dan fixture ke schema sementara, kemudian menghapusnya
+setelah selesai. Helper test hanya menerima database lokal `altstack_test` dan
+tidak memakai `DATABASE_URL` sebagai fallback. Data development tetap terpisah.
+
+```sh
+vp run test:docker
+vp run db:test:stop
+vp run db:test:down
+```
+
+Untuk perintah verifikasi khusus, nyalakan database test terlebih dahulu dengan
+`vp run db:test:start`, lalu gunakan wrapper di bawah. `test:isolated` untuk
+acceptance lama hanya boleh mereset schema pada database `altstack_test`.
 
 Private Bookmarks tersedia untuk user dan admin pada branch fitur ini. Lihat
 [perilaku, rollout migrasi additive, dan verifikasi Bookmarks](docs/bookmarks.md).
@@ -116,13 +142,14 @@ Lihat [intake privat, inbox admin, batas abuse, dan rollout](docs/project-report
 - Check everything is ready:
 
 ```bash
+vp run db:test:start
 vp run --filter @altstack/db test:scoped -- vp run ready
 ```
 
 - Run the tests:
 
 ```bash
-vp run --filter @altstack/db test:scoped -- vp run -r test
+vp run test:docker
 ```
 
 - Build the monorepo:

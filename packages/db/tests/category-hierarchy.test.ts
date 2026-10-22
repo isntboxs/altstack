@@ -60,7 +60,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
 	currentScope = undefined
-	if (!postgres) throw new Error('Cloud development connection is missing')
+	if (!postgres) throw new Error('Docker test connection is missing')
 	database = await postgres.createSchema()
 	currentScope = database
 }, 60_000)

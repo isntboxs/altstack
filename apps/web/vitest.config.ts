@@ -13,6 +13,7 @@ export default defineConfig({
 		clearMocks: false,
 		environment: 'node',
 		passWithNoTests: true,
+		testTimeout: 30_000,
 		projects: [
 			{ test: { name: 'unit' } },
 			{

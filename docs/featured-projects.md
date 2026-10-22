@@ -65,7 +65,7 @@ database or production, deploy images, or verify production rollout.
 
 ## Verification
 
-Database checks use only disposable schemas in `altstack_development`:
+Database checks use only disposable schemas in `altstack_test`:
 
 ```sh
 vp install

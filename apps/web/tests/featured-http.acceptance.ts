@@ -16,15 +16,12 @@ assert.equal(
 	'Run HTTP acceptance with vp exec node'
 )
 assert.equal(process.env.NODE_ENV, 'test')
-assert.equal(
-	new URL(process.env.DATABASE_URL!).pathname,
-	'/altstack_development'
-)
+assert.equal(new URL(process.env.DATABASE_URL!).pathname, '/altstack_test')
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const schema = await pool.query<{ name: string; schema: string }>(
 	'SELECT current_database() AS name, current_schema() AS schema'
 )
-assert.equal(schema.rows[0].name, 'altstack_development')
+assert.equal(schema.rows[0].name, 'altstack_test')
 assert.match(schema.rows[0].schema, /^altstack_test_[a-f0-9]{32}$/)
 
 const workspace = fileURLToPath(new URL('../../../', import.meta.url))

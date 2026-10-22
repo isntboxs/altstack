@@ -47,7 +47,7 @@ tracked below.
 - Use one branch and one checklist per vertical slice, such as `feat/r5-resubmit`.
 - Define oRPC contracts before handlers. API authorization is independent from route guards.
 - Public list/detail/search/category counts and future sitemap queries select `published` on the server.
-- Follow the root README's disposable-schema wrapper for database-dependent checks. It migrates a temporary schema in `altstack_development` without resetting application data in `public`.
+- Follow the root README's disposable-schema wrapper for database-dependent checks. It migrates a temporary schema in `altstack_test` without resetting application data in `public`.
 
 ```sh
 vp install
@@ -59,7 +59,7 @@ vp run -r build
 
 The root `ready` script combines check, recursive tests, and builds; run it through
 `test:scoped` for acceptance. The existing `test:categories-http` script uses
-`test:isolated`, which resets development application data; provide a safe scoped
+`test:isolated`, which resets only the Docker test database; provide a scoped
 replacement before routine release use.
 
 ### Reconciliation evidence — 2026-10-13

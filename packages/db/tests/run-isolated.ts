@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { connectTestPostgres } from './helpers/postgres'
 import { withWorkspaceDatabase } from './helpers/workspace'
 
-// This command resets altstack_development before and after verification.
+// This command resets only the Docker altstack_test DB before and after verification.
 // Only the migration chain and taxonomy seed remain after fixture cleanup.
 const database = await connectTestPostgres()
 try {

@@ -9,17 +9,25 @@
 	],
 	"type": "module",
 	"scripts": {
+		"db:down": "docker compose down postgres",
 		"db:generate": "vp run --filter @altstack/db db:generate",
 		"db:migrate": "vp run --filter @altstack/db db:migrate",
 		"db:push": "vp run --filter @altstack/db db:push",
 		"db:seed": "bun run ./packages/db/src/seed-file-cli.ts",
+		"db:start": "docker compose up -d --wait postgres",
+		"db:stop": "docker compose stop postgres",
 		"db:studio": "vp run --filter @altstack/db db:studio",
+		"db:test:down": "docker compose down postgres-test",
+		"db:test:start": "docker compose up -d --wait postgres-test",
+		"db:test:stop": "docker compose stop postgres-test",
+		"db:watch": "docker compose up postgres",
 		"dev:server": "vp run server#dev",
 		"dev:web": "vp run web#dev",
 		"prepare": "vp config",
 		"ready": "vp check && vp run typecheck && vp run -r test && vp run -r build",
 		"test:browser": "vp run --filter web test:browser",
-		"test:browser:install": "vp exec --filter web playwright install chromium"
+		"test:browser:install": "vp exec --filter web playwright install chromium",
+		"test:docker": "vp run db:test:start && vp run --filter @altstack/db test:scoped"
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
