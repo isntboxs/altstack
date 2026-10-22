@@ -37,9 +37,14 @@ validation and advisory locking belong to PR3.
 ## Disposable-schema verification
 
 Root [README](../../README.md#development) is the verification source of truth.
-The test helper connects using `DATABASE_URL` from the root `.env`, preserving
-SSL and connection parameters. URL validation and a server identity query require
-`altstack_development`. Each direct DB case creates an `altstack_test_<uuid>`
+Development uses the Docker Compose `postgres` service (`altstack`, port 5432)
+with a persistent volume. Tests use the separate `postgres-test` service
+(`altstack_test`, port 5433) with temporary storage.
+The test helper connects using `TEST_DATABASE_URL` from the root `.env`, preserving
+connection parameters, and never falls back to the application's `DATABASE_URL`.
+URL validation requires a local host (`localhost`, `127.0.0.1`, `::1`, or the
+Compose service `postgres-test`); a server identity query also requires
+`altstack_test`. Each direct DB case creates an `altstack_test_<uuid>`
 schema with its own search path and Drizzle migration ledger. The search path
 excludes `public`; teardown closes the pool and drops only its test schema.
 
@@ -51,6 +56,7 @@ synthetic backend project:
 ```sh
 vp install
 vp check
+vp run db:test:start
 vp run --filter @altstack/db test:scoped -- vp run -r test
 vp run --filter @altstack/db test:scoped -- vp run ready
 ```
@@ -59,8 +65,11 @@ The wrapper defaults to the recursive test suite when no command is supplied.
 It cleans its temporary schema after success or failure. It never resets
 application `public`/`drizzle` and does not rewrite the root `.env`. DB cases remain
 in their own temporary schemas.
-Cleanup failure is reported as failure. Do not use the historical `test:isolated`
-wrapper: it resets application schemas and deletes development data.
+Cleanup failure is reported as failure. The root `vp run test:docker` command starts
+the test database and runs the recursive suite through this wrapper.
+The legacy `test:isolated` wrapper resets `public`/`drizzle` only in `altstack_test`;
+use it only for acceptance scripts that require those schemas. Neither wrapper
+can connect to the development database `altstack`.
 
 CSV/JSON importer tests also create disposable schemas and use mock GitHub
 clients. Coverage includes parser errors, hierarchy planning, historical path
@@ -77,7 +86,7 @@ is never included in the production seed.
 Tests cover empty and existing migration chains, migration reruns, preservation of
 legacy assignments and taxonomy, constraints/indexes, historical path ownership,
 twice-run taxonomy idempotency, actual existing ancestry, rollback on conflicts,
-relations, and fixture teardown. Cloud harness tests also cover schema isolation,
+relations, and fixture teardown. Docker harness tests also cover schema isolation,
 connection parameter preservation, unauthorized targets, and cleanup after
 successful and failed verification.
 

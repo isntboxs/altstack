@@ -164,7 +164,7 @@ vp run --filter 'server...' build
 vp run web#build
 ```
 
-`test:scoped` membuat schema sementara di `altstack_development`, menerapkan
+`test:scoped` membuat schema sementara di `altstack_test`, menerapkan
 migration dan taxonomy, lalu menghapus schema tersebut. Data `public` dan DB
 produksi tidak diubah. Fetch GitHub dalam tes dimock; token produksi tidak
 diperlukan untuk tes. Job deployment nyata membutuhkan `GITHUB_TOKEN` runtime.

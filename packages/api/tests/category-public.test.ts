@@ -104,7 +104,7 @@ beforeAll(async () => {
 }, 60_000)
 beforeEach(async () => {
 	scope = undefined
-	if (!postgres) throw new Error('Missing cloud development connection')
+	if (!postgres) throw new Error('Missing Docker test connection')
 	database = await postgres.createSchema()
 	scope = database
 	await migrate(database.db, {

@@ -1,5 +1,13 @@
 import { readdir } from 'node:fs/promises'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vite-plus/test'
+import {
+	afterAll,
+	afterEach,
+	beforeAll,
+	describe,
+	expect,
+	it,
+	vi,
+} from 'vite-plus/test'
 
 import {
 	category,
@@ -12,51 +20,78 @@ import {
 import {
 	connectTestPostgres,
 	schemaConnectionUrl,
-	validateDevelopmentUrl,
+	testDatabaseUrl,
+	validateTestUrl,
 } from './helpers/postgres'
 import { withWorkspaceDatabase } from './helpers/workspace'
 
-describe('cloud database target validation', () => {
+describe('Docker test database target validation', () => {
+	afterEach(() => vi.unstubAllEnvs())
+
 	it.each([
-		'postgresql://test:secret@cloud.test/altstack_production',
-		'postgresql://test:secret@cloud.test/postgres',
-		'postgresql://test:secret@cloud.test/altstack_development?database=altstack_production',
-		'https://cloud.test/altstack_development',
+		'postgresql://test:secret@localhost:5432/altstack',
+		'postgresql://test:secret@localhost:5432/altstack_development',
+		'postgresql://test:secret@localhost:5433/altstack_production',
+		'postgresql://test:secret@localhost:5433/postgres',
+		'postgresql://test:secret@cloud.test/altstack_test',
+		'postgresql://test:secret@localhost:5433/altstack_test?database=altstack',
+		'https://localhost/altstack_test',
 		'not-a-url',
 	])(
 		'rejects unauthorized database targets before connecting: %s',
 		async (url) => {
-			await expect(connectTestPostgres(url)).rejects.toThrow(
-				/altstack_development/
-			)
+			await expect(connectTestPostgres(url)).rejects.toThrow(/altstack_test/)
 		}
 	)
 
-	it('accepts the development target and preserves TLS settings and existing connection options', () => {
+	it.each(['localhost', '127.0.0.1', '[::1]', 'postgres-test'])(
+		'accepts the local Docker test target at %s',
+		(host) => {
+			expect(
+				validateTestUrl(
+					`postgresql://postgres:password@${host}:5433/altstack_test`
+				).pathname
+			).toBe('/altstack_test')
+		}
+	)
+
+	it('requires a dedicated test URL without falling back to the application database', () => {
+		vi.stubEnv(
+			'DATABASE_URL',
+			'postgresql://postgres:password@localhost:5432/altstack'
+		)
+		vi.stubEnv('TEST_DATABASE_URL', '')
+		expect(() => testDatabaseUrl()).toThrow('TEST_DATABASE_URL is not defined')
+		vi.stubEnv(
+			'TEST_DATABASE_URL',
+			'postgresql://postgres:password@localhost:5433/altstack_test'
+		)
+		expect(testDatabaseUrl()).toBe(process.env.TEST_DATABASE_URL)
+	})
+
+	it('preserves connection parameters and existing connection options', () => {
 		const original =
-			'postgresql://test:secret@cloud.test:5432/altstack_development?sslmode=require&application_name=fixture&options=-c%20statement_timeout%3D10000'
+			'postgresql://test:secret@localhost:5433/altstack_test?sslmode=require&application_name=fixture&options=-c%20statement_timeout%3D10000'
 		const schema = `altstack_test_${'a'.repeat(32)}`
 		const scoped = new URL(schemaConnectionUrl(original, schema))
-		expect(validateDevelopmentUrl(original).pathname).toBe(
-			'/altstack_development'
-		)
+		expect(validateTestUrl(original).pathname).toBe('/altstack_test')
 		expect(scoped.searchParams.get('sslmode')).toBe('require')
 		expect(scoped.searchParams.get('application_name')).toBe('fixture')
 		expect(scoped.searchParams.get('options')).toBe(
 			`-c statement_timeout=10000 -c search_path=${schema},pg_catalog`
 		)
-		expect(scoped.hostname).toBe('cloud.test')
-		expect(scoped.port).toBe('5432')
+		expect(scoped.hostname).toBe('localhost')
+		expect(scoped.port).toBe('5433')
 		expect(scoped.username).toBe('test')
 		expect(scoped.password).toBe('secret')
-		expect(scoped.pathname).toBe('/altstack_development')
+		expect(scoped.pathname).toBe('/altstack_test')
 		expect(() =>
 			schemaConnectionUrl(original, 'public; DROP DATABASE other')
 		).toThrow('Invalid test schema name')
 	})
 })
 
-describe('cloud test schema lifecycle', () => {
+describe('Docker test schema lifecycle', () => {
 	let postgres: Awaited<ReturnType<typeof connectTestPostgres>> | undefined
 	beforeAll(async () => {
 		postgres = await connectTestPostgres()
@@ -66,7 +101,7 @@ describe('cloud test schema lifecycle', () => {
 	}, 60_000)
 
 	it('rejects concurrent verification before reset while allowing independent schemas', async () => {
-		if (!postgres) throw new Error('Missing cloud connection')
+		if (!postgres) throw new Error('Missing Docker test connection')
 		const first = await postgres.createSchema()
 		const second = await postgres.createSchema()
 		const contenderReset = vi.fn(async () => first.reset())
@@ -98,7 +133,7 @@ describe('cloud test schema lifecycle', () => {
 	it.each(['initial restoration', 'work', 'final restoration'])(
 		'holds the lock through both resets and releases the client after %s fails',
 		async (failure) => {
-			if (!postgres) throw new Error('Missing cloud connection')
+			if (!postgres) throw new Error('Missing Docker test connection')
 			const scope = await postgres.createSchema()
 			let resets = 0
 			const work = vi.fn(async () => {
@@ -150,7 +185,7 @@ describe('cloud test schema lifecycle', () => {
 	)
 
 	it('isolates tables and ledger between schemas and removes scopes after a thrown failure', async () => {
-		if (!postgres) throw new Error('Missing cloud connection')
+		if (!postgres) throw new Error('Missing Docker test connection')
 		const first = await postgres.createSchema()
 		const second = await postgres.createSchema()
 		try {
@@ -188,7 +223,7 @@ describe('cloud test schema lifecycle', () => {
 	})
 
 	it('restores a migrated taxonomy and clears project fixtures after successful verification', async () => {
-		if (!postgres) throw new Error('Missing cloud connection')
+		if (!postgres) throw new Error('Missing Docker test connection')
 		const scope = await postgres.createSchema()
 		try {
 			const result = await withWorkspaceDatabase(scope, async () => {

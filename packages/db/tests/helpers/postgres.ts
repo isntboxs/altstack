@@ -6,22 +6,27 @@ import { Pool } from 'pg'
 
 import { relations } from '@altstack/db/relations'
 
-const DEVELOPMENT_DATABASE = 'altstack_development'
+const TEST_DATABASE = 'altstack_test'
 
-export function validateDevelopmentUrl(value: string) {
+export function validateTestUrl(value: string) {
 	let url: URL
 	try {
 		url = new URL(value)
 	} catch {
-		throw new Error('Expected a PostgreSQL URL for altstack_development')
+		throw new Error('Expected a local PostgreSQL URL for altstack_test')
 	}
 	if (
 		!['postgres:', 'postgresql:'].includes(url.protocol) ||
-		url.pathname !== `/${DEVELOPMENT_DATABASE}` ||
+		!['localhost', '127.0.0.1', '[::1]', 'postgres-test'].includes(
+			url.hostname
+		) ||
+		url.pathname !== `/${TEST_DATABASE}` ||
 		(url.searchParams.has('database') &&
-			url.searchParams.get('database') !== DEVELOPMENT_DATABASE)
+			url.searchParams.get('database') !== TEST_DATABASE)
 	) {
-		throw new Error('Database tests require altstack_development')
+		throw new Error(
+			'Database tests require local Docker database altstack_test'
+		)
 	}
 	return url
 }
@@ -30,7 +35,7 @@ export function schemaConnectionUrl(value: string, schema: string) {
 	if (schema !== 'public' && !/^altstack_test_[a-f0-9]{32}$/.test(schema)) {
 		throw new Error('Invalid test schema name')
 	}
-	const url = validateDevelopmentUrl(value)
+	const url = validateTestUrl(value)
 	const options = url.searchParams.get('options')
 	url.searchParams.set(
 		'options',
@@ -39,26 +44,28 @@ export function schemaConnectionUrl(value: string, schema: string) {
 	return url.toString()
 }
 
-function developmentUrl() {
+export function testDatabaseUrl() {
 	dotenv.config({
 		path: fileURLToPath(new URL('../../../../.env', import.meta.url)),
 		quiet: true,
 	})
-	const value = process.env.DATABASE_URL
-	if (!value) throw new Error('DATABASE_URL is not defined')
+	const value = process.env.TEST_DATABASE_URL
+	if (!value) {
+		throw new Error('TEST_DATABASE_URL is not defined; see .env.example')
+	}
 	return value
 }
 
-// Use the authorized cloud DB. Each DB case owns a separate schema, never a
-// different database or server. The workspace wrapper explicitly resets public.
-export async function connectTestPostgres(value = developmentUrl()) {
+// Docker tests use their own database. Each DB case also owns a separate schema.
+// The isolated workspace wrapper may reset public only in this test database.
+export async function connectTestPostgres(value = testDatabaseUrl()) {
 	const url = schemaConnectionUrl(value, 'public')
 	const pool = new Pool({
 		connectionString: url,
 		max: 5,
 		connectionTimeoutMillis: 10_000,
 		// The workspace lock uses an otherwise idle session during long builds.
-		// Keep its cloud TCP connection reachable until restoration and unlock.
+		// Keep its connection reachable until restoration and unlock.
 		keepAlive: true,
 		keepAliveInitialDelayMillis: 10_000,
 	})
@@ -68,8 +75,8 @@ export async function connectTestPostgres(value = developmentUrl()) {
 			const result = await client.query<{ name: string }>(
 				'SELECT current_database() AS name'
 			)
-			if (result.rows[0]?.name !== DEVELOPMENT_DATABASE) {
-				throw new Error('Connected database must be altstack_development')
+			if (result.rows[0]?.name !== TEST_DATABASE) {
+				throw new Error('Connected database must be altstack_test')
 			}
 			await client.query('BEGIN')
 			for (const name of names) {
@@ -95,8 +102,8 @@ export async function connectTestPostgres(value = developmentUrl()) {
 		const result = await pool.query<{ name: string }>(
 			'SELECT current_database() AS name'
 		)
-		if (result.rows[0]?.name !== DEVELOPMENT_DATABASE) {
-			throw new Error('Connected database must be altstack_development')
+		if (result.rows[0]?.name !== TEST_DATABASE) {
+			throw new Error('Connected database must be altstack_test')
 		}
 	} catch (error) {
 		await pool.end()
