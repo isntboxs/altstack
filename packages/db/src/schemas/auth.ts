@@ -1,12 +1,24 @@
 import { sql } from 'drizzle-orm'
 import {
 	boolean,
+	bigint,
 	index,
+	integer,
 	pgTable,
 	text,
 	timestamp,
 	uuid,
 } from 'drizzle-orm/pg-core'
+
+// Better Auth's persistent, atomic request limiter. Isolated with the app DB.
+export const rateLimit = pgTable('rate_limit', {
+	id: uuid('id')
+		.default(sql`pg_catalog.gen_random_uuid()`)
+		.primaryKey(),
+	key: text('key').notNull().unique(),
+	count: integer('count').notNull(),
+	lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+})
 
 export const user = pgTable('user', {
 	id: uuid('id')

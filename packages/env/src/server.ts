@@ -53,6 +53,10 @@ export const env = createEnv({
 		GITHUB_CLIENT_ID: z.string(),
 		GITHUB_CLIENT_SECRET: z.string().min(32),
 		GITHUB_TOKEN: z.string().min(32).optional(),
+		// Optional during build/local GitHub-only setup; email requests fail closed
+		// until both server-only settings are configured.
+		RESEND_API_KEY: z.string().min(1).optional(),
+		RESEND_FROM_EMAIL: z.email().optional(),
 		UPSTASH_REDIS_REST_URL: z
 			.url()
 			.refine((url) => url.startsWith('https://'), {

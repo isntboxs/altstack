@@ -1,6 +1,8 @@
 {
 	"$schema": "https://json.schemastore.org/tsconfig",
 	"compilerOptions": {
+		// Shared server packages also render transactional React Email templates.
+		"jsx": "react-jsx",
 		// Environment setup & latest features
 		"lib": ["ESNext"],
 		"target": "esnext",

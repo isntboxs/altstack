@@ -15,7 +15,7 @@ export default defineConfig({
 		format: 'esm',
 		outDir: 'dist',
 		clean: true,
-		entry: ['src/**/*.ts'],
+		entry: ['src/**/*.ts', 'src/**/*.tsx'],
 	},
 	test: {
 		// Vitest v4 compatibility: preserve mock call history.
