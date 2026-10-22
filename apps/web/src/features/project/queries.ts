@@ -8,6 +8,7 @@ export interface SearchProjectsParams {
 	page?: number
 	sort?: SearchSortType
 	category?: string
+	tag?: string
 	q?: string
 }
 

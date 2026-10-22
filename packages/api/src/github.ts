@@ -11,6 +11,7 @@ import { env } from '@altstack/env/server'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
 import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
+import { githubTopicsSchema } from '@altstack/shared/schemas/tag'
 
 export const octokit: Octokit = new Octokit({
 	auth: env.GITHUB_TOKEN,
@@ -60,6 +61,7 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 	return {
 		...identity,
 		githubRepositoryId: data.id,
+		topics: githubTopicsSchema.parse(data.topics ?? []),
 		stars: data.stargazers_count,
 		forks: data.forks_count,
 	}
@@ -131,6 +133,7 @@ export async function fetchPublicGithubStatistics(owner: string, repo: string) {
 		return {
 			...identity,
 			githubRepositoryId: repository.id,
+			topics: githubTopicsSchema.parse(repository.topics ?? []),
 			stars: repository.stargazers_count,
 			forks: repository.forks_count,
 			repositoryCreatedAt,

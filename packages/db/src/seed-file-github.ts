@@ -3,9 +3,11 @@ import { z } from 'zod'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
 import { repositoryUrlSchema } from '@altstack/shared/schemas/common'
+import { githubTopicsSchema } from '@altstack/shared/schemas/tag'
 
 export const seedGithubStatisticsSchema = z.object({
 	repositoryUrl: repositoryUrlSchema,
+	topics: githubTopicsSchema.optional(),
 	githubRepositoryId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
 	stars: z.number().int().nonnegative().max(2_147_483_647),
 	forks: z.number().int().nonnegative().max(2_147_483_647),
@@ -87,6 +89,7 @@ export function createSeedGithubClient(token?: string): SeedGithubClient {
 			return seedGithubStatisticsSchema.parse({
 				repositoryUrl: identity.canonicalUrl,
 				githubRepositoryId: data.id,
+				topics: data.topics ?? [],
 				stars: data.stargazers_count,
 				forks: data.forks_count,
 				repositoryCreatedAt: new Date(data.created_at),

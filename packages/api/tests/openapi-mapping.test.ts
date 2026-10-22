@@ -130,6 +130,7 @@ const responses = {
 	getProjectBySlug: {
 		...project,
 		featuredProjects: [],
+		tags: [],
 		categoryDetails: [node],
 		githubStarsHistory: {
 			timezone: 'Asia/Jakarta' as const,
@@ -969,7 +970,18 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(40)
+		expect(operations).toHaveLength(46)
+		expect(paths['/tags']?.query).toMatchObject({
+			operationId: 'listTags',
+			security: [],
+		})
+		expect(paths['/tags/{slug}']?.query).toMatchObject({
+			operationId: 'getTag',
+			security: [],
+		})
+		expect(paths['/admin/tags']?.post?.security ?? spec.security).toEqual(
+			baseline.security
+		)
 		expect(paths['/projects/{slug}']?.query?.responses?.['200']).toMatchObject({
 			content: {
 				'application/json': {
@@ -1026,7 +1038,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			20
+			23
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1037,7 +1049,16 @@ describe('generated OpenAPI compatibility', () => {
 			expect(actual?.method).toBe(
 				expected.method === 'get' ? 'query' : expected.method
 			)
-			expect(actual?.operation.parameters ?? []).toEqual(expected.parameters)
+			expect(
+				(actual?.operation.parameters ?? []).filter(
+					(parameter) =>
+						!(
+							'name' in parameter &&
+							operationId === 'searchProjects' &&
+							parameter.name === 'tag'
+						)
+				)
+			).toEqual(expected.parameters)
 			expect(actual?.operation.requestBody ?? null).toEqual(
 				expected.requestBody
 			)
@@ -1080,8 +1101,9 @@ describe('generated OpenAPI compatibility', () => {
 				// Assert the intentional addition above, then retain the old wire-contract
 				// comparison for every pre-existing field without rewriting the baseline.
 				delete schema.properties.featuredProjects
+				delete schema.properties.tags
 				schema.required = schema.required?.filter(
-					(field) => field !== 'featuredProjects'
+					(field) => field !== 'featuredProjects' && field !== 'tags'
 				)
 			}
 			expect(comparableResponses).toEqual({
@@ -1170,6 +1192,15 @@ describe('generated OpenAPI compatibility', () => {
 			page: 'primitive',
 			limit: 'primitive',
 		})
+		for (const procedure of [contracts.tag.list, contracts.admin.tag.list]) {
+			expect(getOpenAPIMeta(procedure)?.queryStyles).toEqual({
+				q: 'primitive',
+				letter: 'primitive',
+				sort: 'primitive',
+				page: 'primitive',
+				limit: 'primitive',
+			})
+		}
 		expect(
 			getOpenAPIMeta(contracts.project.listCategories)?.path
 		).toBeUndefined()

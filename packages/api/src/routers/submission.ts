@@ -20,6 +20,7 @@ import {
 	project,
 } from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
+import { syncProjectTags } from '@altstack/db/tags'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
 import { slugify } from '@altstack/shared/lib/slug'
@@ -178,6 +179,7 @@ export const submissionRouter = {
 								.delete(githubStarHistory)
 								.where(eq(githubStarHistory.projectId, existing.id))
 						}
+						await syncProjectTags(tx, existing.id, fetched.topics)
 						const basic = {
 							githubRepositoryId: fetched.githubRepositoryId,
 							owner: fetched.owner,
@@ -328,8 +330,15 @@ export const submissionRouter = {
 			await requireSubmissionCapacity(db, auth.user.id)
 
 			// Quality guidelines are reviewed by an admin; stars are never a gate.
-			const { canonicalUrl, owner, repo, stars, forks, githubRepositoryId } =
-				await fetchPublicGithubRepository(submitted.owner, submitted.repo)
+			const {
+				canonicalUrl,
+				owner,
+				repo,
+				stars,
+				forks,
+				githubRepositoryId,
+				topics,
+			} = await fetchPublicGithubRepository(submitted.owner, submitted.repo)
 			const [resolvedExisting] = await db
 				.select({ id: project.id })
 				.from(project)
@@ -399,6 +408,7 @@ export const submissionRouter = {
 						forks,
 						fetchedAt: new Date(),
 					})
+					await syncProjectTags(tx, inserted.id, topics)
 					await tx.insert(auditLog).values({
 						actorId: auth.user.id,
 						projectId: inserted.id,

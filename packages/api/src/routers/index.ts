@@ -16,11 +16,14 @@ import { healthRouter } from '@altstack/api/routers/health'
 import { projectRouter } from '@altstack/api/routers/project'
 import { reportRouter } from '@altstack/api/routers/report'
 import { submissionRouter } from '@altstack/api/routers/submission'
+import { tagRouter, adminTagRouter } from '@altstack/api/routers/tag'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
 export const routers = o.router({
+	tag: tagRouter,
 	bookmark: bookmarkRouter,
 	admin: {
+		tag: adminTagRouter,
 		featured: adminFeaturedRouter,
 		report: adminReportRouter,
 		category: adminCategoryRouter,

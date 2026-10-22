@@ -20,6 +20,7 @@ import {
 } from '@altstack/api/queries/category'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 import { searchPublicProjectMentions } from '@altstack/api/queries/project-mentions'
+import { getProjectTags, projectHasPublicTag } from '@altstack/api/queries/tag'
 
 import {
 	category,
@@ -108,6 +109,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 				return {
 					...publicFields.parse(row.projects),
 					featuredProjects,
+					tags: await getProjectTags(tx, row.projects.id),
 					categoryDetails: await getDirectProjectCategories(
 						tx,
 						row.projects.id
@@ -202,6 +204,8 @@ const searchHandler = publicProcedure.project.search.handler(
 		// Visibility is decided here, never in the UI: every branch stays
 		// limited to published projects.
 		const conditions = [eq(project.status, 'published')]
+
+		if (input.query.tag) conditions.push(projectHasPublicTag(input.query.tag))
 
 		if (input.query.category) {
 			// An unknown slug naturally yields zero matches through EXISTS.

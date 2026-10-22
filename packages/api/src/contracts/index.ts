@@ -9,11 +9,14 @@ import { healthContract } from '@altstack/api/contracts/health'
 import { projectContract } from '@altstack/api/contracts/project'
 import { reportContract } from '@altstack/api/contracts/report'
 import { submissionContract } from '@altstack/api/contracts/submission'
+import { tagContract, adminTagContract } from '@altstack/api/contracts/tag'
 import { uploadContract } from '@altstack/api/contracts/upload'
 
 export const contracts = {
+	tag: tagContract,
 	bookmark: bookmarkContract,
 	admin: {
+		tag: adminTagContract,
 		featured: adminFeaturedContract,
 		report: adminReportContract,
 		category: adminCategoryContract,
