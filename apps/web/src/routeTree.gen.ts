@@ -26,9 +26,12 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
+import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
+import { Route as AppTagsSlugRouteImport } from './routes/_app/tags/$slug'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainAdminFeaturedRouteImport } from './routes/_main/admin.featured'
 import { Route as MainAdminReportsRouteImport } from './routes/_main/admin.reports'
+import { Route as MainAdminTagsRouteImport } from './routes/_main/admin.tags'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
 import { Route as OgCategoryIdRouteImport } from './routes/og.category.$id'
@@ -122,6 +125,16 @@ const AppCategoriesSplatRoute = AppCategoriesSplatRouteImport.update({
   path: '/categories/$',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppTagsIndexRoute = AppTagsIndexRouteImport.update({
+  id: '/tags/',
+  path: '/tags/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTagsSlugRoute = AppTagsSlugRouteImport.update({
+  id: '/tags/$slug',
+  path: '/tags/$slug',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
   id: '/admin/categories',
   path: '/admin/categories',
@@ -135,6 +148,11 @@ const MainAdminFeaturedRoute = MainAdminFeaturedRouteImport.update({
 const MainAdminReportsRoute = MainAdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainAdminTagsRoute = MainAdminTagsRouteImport.update({
+  id: '/admin/tags',
+  path: '/admin/tags',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const MainProjectsIndexRoute = MainProjectsIndexRouteImport.update({
@@ -201,14 +219,17 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/reports': typeof MainAdminReportsRoute
+  '/admin/tags': typeof MainAdminTagsRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories/': typeof AppCategoriesIndexRoute
+  '/tags/': typeof AppTagsIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -229,13 +250,16 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/reports': typeof MainAdminReportsRoute
+  '/admin/tags': typeof MainAdminTagsRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories': typeof AppCategoriesIndexRoute
+  '/tags': typeof AppTagsIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -260,14 +284,17 @@ export interface FileRoutesById {
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
+  '/_app/tags/$slug': typeof AppTagsSlugRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
   '/_main/admin/reports': typeof MainAdminReportsRoute
+  '/_main/admin/tags': typeof MainAdminTagsRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/_app/categories/': typeof AppCategoriesIndexRoute
+  '/_app/tags/': typeof AppTagsIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -291,14 +318,17 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/tags/$slug'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/reports'
+    | '/admin/tags'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories/'
+    | '/tags/'
     | '/projects/'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -319,13 +349,16 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/tags/$slug'
     | '/admin/featured'
     | '/admin/reports'
+    | '/admin/tags'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories'
+    | '/tags'
     | '/projects'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -349,14 +382,17 @@ export interface FileRouteTypes {
     | '/sitemaps/pages.xml'
     | '/_app/'
     | '/_app/categories/$'
+    | '/_app/tags/$slug'
     | '/_main/admin/categories'
     | '/_main/admin/featured'
     | '/_main/admin/reports'
+    | '/_main/admin/tags'
     | '/_main/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/_app/categories/'
+    | '/_app/tags/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
     | '/_main/projects/$id/edit'
@@ -498,6 +534,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesSplatRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/tags/': {
+      id: '/_app/tags/'
+      path: '/tags'
+      fullPath: '/tags/'
+      preLoaderRoute: typeof AppTagsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/tags/$slug': {
+      id: '/_app/tags/$slug'
+      path: '/tags/$slug'
+      fullPath: '/tags/$slug'
+      preLoaderRoute: typeof AppTagsSlugRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_main/admin/categories': {
       id: '/_main/admin/categories'
       path: '/admin/categories'
@@ -517,6 +567,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof MainAdminReportsRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/admin/tags': {
+      id: '/_main/admin/tags'
+      path: '/admin/tags'
+      fullPath: '/admin/tags'
+      preLoaderRoute: typeof MainAdminTagsRouteImport
       parentRoute: typeof MainRouteRoute
     }
     '/_main/projects/': {
@@ -591,7 +648,9 @@ interface AppRouteRouteChildren {
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
+  AppTagsSlugRoute: typeof AppTagsSlugRoute
   AppCategoriesIndexRoute: typeof AppCategoriesIndexRoute
+  AppTagsIndexRoute: typeof AppTagsIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
@@ -600,7 +659,9 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
+  AppTagsSlugRoute: AppTagsSlugRoute,
   AppCategoriesIndexRoute: AppCategoriesIndexRoute,
+  AppTagsIndexRoute: AppTagsIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
@@ -645,6 +706,7 @@ interface MainRouteRouteChildren {
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
   MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
   MainAdminReportsRoute: typeof MainAdminReportsRoute
+  MainAdminTagsRoute: typeof MainAdminTagsRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -654,6 +716,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
   MainAdminFeaturedRoute: MainAdminFeaturedRoute,
   MainAdminReportsRoute: MainAdminReportsRoute,
+  MainAdminTagsRoute: MainAdminTagsRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

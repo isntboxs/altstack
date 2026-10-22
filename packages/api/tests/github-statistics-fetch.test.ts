@@ -67,6 +67,7 @@ describe('GitHub statistics fetch', () => {
 		expect(await fetchPublicGithubStatistics('old', 'repo')).toEqual({
 			canonicalUrl: 'https://github.com/canonicalowner/canonicalrepo',
 			githubRepositoryId: 123,
+			topics: [],
 			owner: 'canonicalowner',
 			repo: 'canonicalrepo',
 			stars: 123,

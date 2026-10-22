@@ -30,6 +30,7 @@ import { BrandMark } from '#/components/brand-mark'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
 
+/** Provides responsive public navigation and the current session's account actions. */
 export const Header = ({
 	auth,
 }: {
@@ -86,6 +87,12 @@ export const Header = ({
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => setOpenNavigation(false)}
+									render={<Link to="/tags" />}
+								>
+									Tags
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => setOpenNavigation(false)}
 									render={<Link to="/activity" />}
 								>
 									Activity
@@ -124,6 +131,16 @@ export const Header = ({
 										})}
 									>
 										Categories
+									</NavigationMenuLink>
+								</NavigationMenuItem>
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={<Link to="/tags" viewTransition />}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit p-1',
+										})}
+									>
+										Tags
 									</NavigationMenuLink>
 								</NavigationMenuItem>
 								<NavigationMenuItem>

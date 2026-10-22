@@ -1,10 +1,11 @@
-import 'zod/compile'
 import limax from 'limax'
+import 'zod/compile'
 import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
 import { featuredProjectPreviewSchema } from '@altstack/shared/schemas/featured'
+import { tagSchema, tagSlugSchema } from '@altstack/shared/schemas/tag'
 
 const slugSchema = z
 	.string()
@@ -89,6 +90,7 @@ export const getProjectBySlugOutputSchema = z.object({
 	github: githubDetailSchema,
 	githubStarsHistory: githubStarsHistorySchema,
 	categoryDetails: z.array(categoryNodeSchema),
+	tags: z.array(tagSchema).default([]),
 })
 
 export const listProjectsQuerySchema = z.object({
@@ -140,6 +142,7 @@ export const searchProjectsQuerySchema = z.object({
 			value === undefined || value === '' ? undefined : value
 		),
 	category: z.string().trim().min(1).max(100).optional(),
+	tag: tagSlugSchema.optional(),
 	sort: searchSortSchema.optional().default('newest'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),

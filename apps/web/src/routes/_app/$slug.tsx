@@ -21,6 +21,7 @@ import { projectQueries, useProjectBySlug } from '#/features/project/queries'
 import { publicContentOptions } from '#/features/public-content/queries'
 import { unavailableHead } from '#/features/seo/meta'
 import { projectHead } from '#/features/seo/project-meta'
+import { PublicProjectTags } from '#/features/tag/components/public-tag'
 
 export const Route = createFileRoute('/_app/$slug')({
 	validateSearch: projectDialogSearch,
@@ -184,6 +185,7 @@ function RouteComponent() {
 					)}
 
 					<PublicProjectCategories categories={projectData.categoryDetails} />
+					<PublicProjectTags tags={projectData.tags} />
 
 					<ShareButtons />
 				</article>

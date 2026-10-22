@@ -68,6 +68,7 @@ describe('mocked file seed GitHub adapter', () => {
 		expect(result).toEqual({
 			repositoryUrl: 'https://github.com/renamed/tool',
 			githubRepositoryId: 123,
+			topics: [],
 			stars: 321,
 			forks: 12,
 			repositoryCreatedAt: new Date('2020-01-01'),

@@ -9,11 +9,17 @@ import {
 	CategoryLinks,
 } from '#/features/category/components/public-category'
 import { HomeFilterSection } from '#/features/project/components/home-filters'
+import {
+	TagDirectoryControls,
+	TagProjectControls,
+} from '#/features/tag/components/public-tag'
 
 const categoryRoute = getRouteApi('/_app/categories/$')
 
-// Keep editable controls outside the leaf pending boundary. Results can suspend
-// for a new URL without replacing the search input or its keyboard focus.
+/**
+ * Selects catalogue controls for home, category, and tag routes outside the leaf
+ * pending boundary, so new results preserve the search input and keyboard focus.
+ */
 export function CatalogueShell() {
 	const routeId = useRouterState({
 		select: (state) =>
@@ -34,6 +40,22 @@ export function CatalogueShell() {
 					<HomeFilterSection />
 					<Outlet />
 				</section>
+			</>
+		)
+	}
+	if (routeId === '/_app/tags/') {
+		return (
+			<>
+				<TagDirectoryControls />
+				<Outlet />
+			</>
+		)
+	}
+	if (routeId === '/_app/tags/$slug') {
+		return (
+			<>
+				<TagProjectControls />
+				<Outlet />
 			</>
 		)
 	}

@@ -51,6 +51,7 @@ import {
 	user,
 } from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
+import { syncProjectTags } from '@altstack/db/tags'
 
 import { canonicalizeGithubUrl } from '@altstack/shared'
 import { PROJECT_STATUS } from '@altstack/shared/constants'
@@ -269,6 +270,8 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					forks,
 					fetchedAt,
 				})
+
+				await syncProjectTags(tx, inserted.id, resolved.topics)
 
 				if (categoryIds.length > 0) {
 					await tx.insert(projectCategory).values(
@@ -607,6 +610,7 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					}
 				}
 				if (refreshedGithub) {
+					await syncProjectTags(tx, existing.id, refreshedGithub.topics)
 					const [currentGithub] = await tx
 						.select()
 						.from(githubRepository)

@@ -21,6 +21,19 @@ export function categoryProjectPageLink(path: string, page: number) {
 	} satisfies LinkOptions<RegisteredRouter, '/categories/$', '/categories/$'>
 }
 
+/** Builds tag-scoped pagination links while retaining project search and sort filters. */
+export function tagProjectPageLink(slug: string, page: number) {
+	return {
+		from: '/tags/$slug' as const,
+		to: '/tags/$slug' as const,
+		params: { slug },
+		search: (prev) => {
+			return { ...prev, page: page === 1 ? undefined : page }
+		},
+	} satisfies LinkOptions<RegisteredRouter, '/tags/$slug', '/tags/$slug'>
+}
+
 export type ProjectPageLinkOptions =
+	| ReturnType<typeof tagProjectPageLink>
 	| ReturnType<typeof homeProjectPageLink>
 	| ReturnType<typeof categoryProjectPageLink>
