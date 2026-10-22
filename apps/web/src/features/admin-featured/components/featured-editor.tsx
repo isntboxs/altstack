@@ -57,7 +57,10 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	const queryClient = useQueryClient()
 	const [projects, setProjects] = useState(initial)
 	const [baseline, setBaseline] = useState(initial.map(({ id }) => id))
-	const [error, setError] = useState<string | null>(null)
+	const [error, setError] = useState<{
+		operation: 'save' | 'reload'
+		message: string
+	} | null>(null)
 	const [reloading, setReloading] = useState(false)
 	const [search, setSearch] = useState('')
 	const [text, setText] = useState('')
@@ -73,7 +76,8 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 			await invalidateCatalog(queryClient)
 			toast.add({ type: 'success', title: 'Featured projects saved' })
 		},
-		onError: (saveError) => setError(saveError.message),
+		onError: (saveError) =>
+			setError({ operation: 'save', message: saveError.message }),
 	})
 	const busy = save.isPending || reloading
 	const dirty =
@@ -90,9 +94,11 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 			setBaseline(data.projects.map(({ id }) => id))
 			setError(null)
 		} catch {
-			setError(
-				'Unable to reload the selection. Your unsaved changes have been kept.'
-			)
+			setError({
+				operation: 'reload',
+				message:
+					'Unable to reload the selection. Your unsaved changes have been kept.',
+			})
 		} finally {
 			setReloading(false)
 		}
@@ -118,8 +124,12 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 			</div>
 			{error && (
 				<Alert variant="destructive">
-					<AlertTitle>Unable to save changes</AlertTitle>
-					<AlertDescription>{error}</AlertDescription>
+					<AlertTitle>
+						{error.operation === 'save'
+							? 'Unable to save changes'
+							: 'Unable to reload selection'}
+					</AlertTitle>
+					<AlertDescription>{error.message}</AlertDescription>
 				</Alert>
 			)}
 			<section

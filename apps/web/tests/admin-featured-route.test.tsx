@@ -264,7 +264,11 @@ describe('admin featured selection route', () => {
 	})
 	it('preserves unsaved choices after a concurrent-update error and reloads explicitly', async () => {
 		const normal = rpc.getMockImplementation()!
+		let failReload = false
 		rpc.mockImplementation(async (path, input) => {
+			if (path.join('/') === 'admin/featured/list' && failReload) {
+				throw new Error('Synthetic selection reload failure')
+			}
 			if (path.join('/') === 'admin/featured/update') {
 				throw new Error(
 					'Featured projects changed. Reload the selection before saving.'
@@ -280,9 +284,29 @@ describe('admin featured selection route', () => {
 		await screen.findByText(
 			'Featured projects changed. Reload the selection before saving.'
 		)
+		expect(screen.getByText('Unable to save changes')).toBeTruthy()
 		expect(
 			screen.getByRole('button', { name: 'Remove Second Tool from featured' })
 		).toBeTruthy()
+		failReload = true
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Discard changes and reload' })
+		)
+		await screen.findByText(
+			'Unable to reload selection',
+			{},
+			{ timeout: 10_000 }
+		)
+		expect(screen.queryByText('Unable to save changes')).toBeNull()
+		expect(
+			screen.getByText(
+				'Unable to reload the selection. Your unsaved changes have been kept.'
+			)
+		).toBeTruthy()
+		expect(
+			screen.getByRole('button', { name: 'Remove Second Tool from featured' })
+		).toBeTruthy()
+		failReload = false
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Discard changes and reload' })
 		)
@@ -293,6 +317,7 @@ describe('admin featured selection route', () => {
 				})
 			).toBeNull()
 		)
+		expect(screen.queryByRole('alert')).toBeNull()
 	})
 	it.each([null, { user: { id: 'user', role: 'user' as const }, session: {} }])(
 		'redirects non-admin sessions without reading selections',
