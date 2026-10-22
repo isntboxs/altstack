@@ -107,10 +107,11 @@ describe('admin GitHub metadata', () => {
 			repo: 'oldrepo',
 		})
 	})
-	it('returns stable repository identity and stats without exposing metadata', async () => {
+	it('returns stable repository identity, topics, and stats', async () => {
 		expect(await fetchPublicGithubRepository('oldowner', 'oldrepo')).toEqual({
 			canonicalUrl: fixture.output.repositoryUrl,
 			githubRepositoryId: 123,
+			topics: [],
 			owner: 'newowner',
 			repo: 'newrepo',
 			stars: 123,

@@ -27,6 +27,7 @@
 		"./schemas/report": "./src/schemas/report.ts",
 		"./schemas/role": "./src/schemas/role.ts",
 		"./schemas/submission": "./src/schemas/submission.ts",
+		"./schemas/tag": "./src/schemas/tag.ts",
 		"./schemas/upload": "./src/schemas/upload.ts",
 		"./package.json": "./package.json"
 	},
@@ -52,6 +53,7 @@
 			"./schemas/report": "./dist/schemas/report.mjs",
 			"./schemas/role": "./dist/schemas/role.mjs",
 			"./schemas/submission": "./dist/schemas/submission.mjs",
+			"./schemas/tag": "./dist/schemas/tag.mjs",
 			"./schemas/upload": "./dist/schemas/upload.mjs",
 			"./package.json": "./package.json"
 		}

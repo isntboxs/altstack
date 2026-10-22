@@ -9,6 +9,10 @@ import {
 	CategoryLinks,
 } from '#/features/category/components/public-category'
 import { HomeFilterSection } from '#/features/project/components/home-filters'
+import {
+	TagDirectoryControls,
+	TagProjectControls,
+} from '#/features/tag/components/public-tag'
 
 const categoryRoute = getRouteApi('/_app/categories/$')
 
@@ -34,6 +38,22 @@ export function CatalogueShell() {
 					<HomeFilterSection />
 					<Outlet />
 				</section>
+			</>
+		)
+	}
+	if (routeId === '/_app/tags/') {
+		return (
+			<>
+				<TagDirectoryControls />
+				<Outlet />
+			</>
+		)
+	}
+	if (routeId === '/_app/tags/$slug') {
+		return (
+			<>
+				<TagProjectControls />
+				<Outlet />
 			</>
 		)
 	}

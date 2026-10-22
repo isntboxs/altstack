@@ -17,6 +17,7 @@ import {
 	project,
 	projectCategory,
 } from '@altstack/db/schemas'
+import { syncProjectTags } from '@altstack/db/tags'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
 
@@ -396,6 +397,7 @@ export async function importSeedFiles(
 						latestReleaseTag: stats?.latestReleaseTag ?? null,
 						metadataFetchedAt: enrichment?.fetchedAt ?? null,
 					})
+					if (stats?.topics) await syncProjectTags(tx, id, stats.topics)
 					if (categoryIds.length > 0) {
 						await tx.insert(projectCategory).values(
 							categoryIds.map((categoryId) => {

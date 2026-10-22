@@ -20,6 +20,10 @@ import type { authClient } from '@altstack/auth/client'
 
 import { getCategoryByPathInputSchema } from '@altstack/shared/schemas/category'
 import { searchProjectsInputSchema } from '@altstack/shared/schemas/project'
+import {
+	getTagInputSchema,
+	listTagsInputSchema,
+} from '@altstack/shared/schemas/tag'
 
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
@@ -158,6 +162,14 @@ const flat = categoryFixture(105, {
 const nodes = [general, root, ai, flat, editors]
 const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 	featuredProjects: [],
+	tags: [
+		{
+			id: '10000000-0000-4000-8000-000000000099',
+			slug: 'typescript',
+			name: 'TypeScript',
+			description: null,
+		},
+	],
 	id: '10000000-0000-4000-8000-000000000001',
 	name: 'Zed',
 	slug: 'test-zed',
@@ -191,6 +203,23 @@ const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 		comparison: null,
 	},
 }
+const testTags = Array.from({ length: 63 }, (_, index) => {
+	return {
+		id: `tag-${index}`,
+		slug: `backend-${index}`,
+		name: `backend-${index}`,
+		description: null,
+		projectCount: 1,
+	}
+}).concat([
+	{
+		id: 'typescript',
+		slug: 'typescript',
+		name: 'TypeScript',
+		description: null,
+		projectCount: 1,
+	},
+])
 let visibleNodes = nodes
 let total = 1
 const routers: Array<ReturnType<typeof getRouter>> = []
@@ -229,6 +258,32 @@ beforeEach(() => {
 							hasPreviousPage: false,
 						},
 					}
+				case 'tag/list': {
+					const { q, letter, page, limit } =
+						listTagsInputSchema.parse(input).query
+					const items = testTags.filter(
+						(tag) =>
+							(!q || tag.name.toLowerCase().includes(q.toLowerCase())) &&
+							(!letter || tag.name.toUpperCase().startsWith(letter))
+					)
+					return {
+						tags: items.slice((page - 1) * limit, page * limit),
+						pagination: {
+							page,
+							limit,
+							totalItems: items.length,
+							totalPages: Math.ceil(items.length / limit),
+							hasNextPage: page * limit < items.length,
+							hasPreviousPage: page > 1,
+						},
+					}
+				}
+				case 'tag/getBySlug': {
+					const { slug } = getTagInputSchema.parse(input).params
+					const tag = testTags.find((item) => item.slug === slug)
+					if (!tag) throw new ORPCError('NOT_FOUND')
+					return { tag }
+				}
 				case 'category/list':
 					return { categories: visibleNodes }
 				case 'category/getByPath': {
@@ -1290,4 +1345,107 @@ it('keeps a cold category request alive while its pending controls render', asyn
 	}
 	await screen.findByRole('heading', { name: `Open Source ${ai.name}` })
 	expect(screen.queryByText('Unable to load categories')).toBeNull()
+})
+
+describe('public tags', () => {
+	it('canonicalizes topic identity and returns not found for invalid slugs', async () => {
+		const canonical = await routerAt(
+			'/tags/TypeScript?q=zed&sort=most-stars&page=2'
+		)
+		expect(canonical.state.location.pathname).toBe('/tags/typescript')
+		expect(canonical.state.location.search).toMatchObject({
+			q: 'zed',
+			sort: 'most-stars',
+			page: 2,
+		})
+		await routerAt('/tags/not_a_topic', true)
+		await screen.findByRole('heading', { name: 'Tag not found' })
+	})
+
+	it('links project tags below categories to a scoped project catalogue', async () => {
+		const router = await routerAt('/test-zed', true)
+		const section = screen.getByRole('region', { name: 'Tags' })
+		const tagLink = within(section).getByRole('link', { name: /TypeScript/ })
+		expect(tagLink.getAttribute('href')).toBe('/tags/typescript')
+		fireEvent.click(tagLink)
+		await screen.findByRole('heading', {
+			name: 'Open Source Projects tagged "TypeScript"',
+		})
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe('/tags/typescript')
+		)
+		expect(rpc).toHaveBeenCalledWith(
+			['project', 'search'],
+			{
+				query: {
+					tag: 'typescript',
+					q: undefined,
+					sort: undefined,
+					page: undefined,
+				},
+			},
+			expect.anything()
+		)
+	})
+
+	it('keeps letter, search, and sort in pagination URLs and resets page when the letter changes', async () => {
+		const router = await routerAt('/tags?letter=B&sort=name-desc&page=2', true)
+		await screen.findByRole('heading', { name: 'Browse Open Source Tags' })
+		const letter = screen.getByRole('link', { name: 'Tags starting with B' })
+		expect(letter.getAttribute('aria-current')).toBe('page')
+		const pagination = screen.getByRole('navigation', {
+			name: 'Tags pagination',
+		})
+		expect(
+			within(pagination).getAllByRole('link', { current: 'page' })
+		).toHaveLength(1)
+		expect(
+			within(pagination).getByRole('link', { current: 'page' }).textContent
+		).toBe('2')
+		expect(
+			within(pagination)
+				.getByRole('link', { name: 'Prev' })
+				.getAttribute('href')
+		).toContain('letter=B')
+		expect(
+			within(pagination)
+				.getByRole('link', { name: 'Prev' })
+				.getAttribute('href')
+		).toContain('sort=name-desc')
+		fireEvent.click(screen.getByRole('link', { name: 'Tags starting with T' }))
+		await waitFor(() => expect(router.state.location.search.letter).toBe('T'))
+		expect(router.state.location.search.page).toBeUndefined()
+		expect(router.state.location.search.sort).toBe('name-desc')
+		fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+		await waitFor(() => expect(router.state.location.search).toEqual({}))
+	})
+
+	it('debounces tag search and restores the input from browser history', async () => {
+		const router = await routerAt('/tags?letter=B&page=2', true)
+		const input = await screen.findByRole('textbox', { name: 'Search tags' })
+		input.focus()
+		fireEvent.change(input, { target: { value: 'backend' } })
+		await waitFor(() => expect(router.state.location.search.q).toBe('backend'))
+		expect(router.state.location.search.page).toBeUndefined()
+		expect(router.state.location.search.letter).toBe('B')
+		expect(document.activeElement).toBe(input)
+		await act(() => router.navigate({ to: '/tags', search: { q: 'type' } }))
+		await waitFor(() => expect((input as HTMLInputElement).value).toBe('type'))
+		act(() => router.history.back())
+		await waitFor(() =>
+			expect((input as HTMLInputElement).value).toBe('backend')
+		)
+	})
+
+	it('renders missing tags as not found and validates malformed directory filters', async () => {
+		await routerAt('/tags/missing', true)
+		await screen.findByRole('heading', { name: 'Tag not found' })
+		cleanup()
+		const router = await routerAt('/tags?letter=invalid&sort=invalid&page=-2')
+		expect(router.state.matches.at(-1)?.search).toMatchObject({
+			letter: undefined,
+			sort: undefined,
+			page: undefined,
+		})
+	})
 })

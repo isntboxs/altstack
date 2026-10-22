@@ -1,5 +1,6 @@
 import {
 	IconPackage,
+	IconTags,
 	IconCategory,
 	IconInbox,
 	IconBookmark,
@@ -30,9 +31,11 @@ const navLinks = linkOptions([
 	{
 		to: '/projects',
 		icon: IconPackage,
+		IconTags,
 		label: 'Projects',
 	},
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
+	{ to: '/admin/tags', icon: IconTags, label: 'Tags' },
 	{ to: '/admin/reports', icon: IconInbox, label: 'Reports' },
 	{ to: '/admin/featured', icon: IconStar, label: 'Featured Projects' },
 ])

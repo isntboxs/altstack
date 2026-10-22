@@ -69,6 +69,9 @@ const select = vi.fn(() => {
 const transaction = vi.fn(async (work: (tx: unknown) => Promise<unknown>) =>
 	work({
 		select,
+		delete: () => {
+			return { where: () => Promise.resolve() }
+		},
 		execute: vi.fn().mockResolvedValue(undefined),
 		insert: () => {
 			return {
@@ -139,6 +142,7 @@ beforeEach(() => {
 	transaction.mockClear()
 	vi.mocked(fetchPublicGithubRepository).mockReset().mockResolvedValue({
 		githubRepositoryId: 123,
+		topics: [],
 		canonicalUrl: 'https://github.com/example/tool',
 		owner: 'example',
 		repo: 'tool',

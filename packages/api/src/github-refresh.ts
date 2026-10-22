@@ -11,6 +11,7 @@ import {
 	project,
 } from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
+import { syncProjectTags } from '@altstack/db/tags'
 
 import { githubSnapshotDate } from '@altstack/shared/lib/github-stars'
 
@@ -136,6 +137,7 @@ export async function refreshProjectGithub(
 				.where(eq(githubRepository.projectId, id))
 				.returning()
 			if (!stored) throw new ORPCError('NOT_FOUND')
+			await syncProjectTags(tx, id, fetched.topics)
 			await tx
 				.insert(githubStarHistory)
 				.values({

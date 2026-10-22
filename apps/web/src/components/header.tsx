@@ -86,6 +86,12 @@ export const Header = ({
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => setOpenNavigation(false)}
+									render={<Link to="/tags" />}
+								>
+									Tags
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => setOpenNavigation(false)}
 									render={<Link to="/activity" />}
 								>
 									Activity
@@ -124,6 +130,16 @@ export const Header = ({
 										})}
 									>
 										Categories
+									</NavigationMenuLink>
+								</NavigationMenuItem>
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={<Link to="/tags" viewTransition />}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit p-1',
+										})}
+									>
+										Tags
 									</NavigationMenuLink>
 								</NavigationMenuItem>
 								<NavigationMenuItem>

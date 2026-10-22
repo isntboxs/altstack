@@ -17,6 +17,7 @@ const linkClassName =
 const exploreLinks = linkOptions([
 	{ label: 'All Projects', to: '/', search: {}, hash: 'catalogue' },
 	{ label: 'Categories', to: '/categories', search: {} },
+	{ label: 'Tags', to: '/tags', search: {} },
 	{
 		label: 'Latest Projects',
 		to: '/',
