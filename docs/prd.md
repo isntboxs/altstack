@@ -1,7 +1,7 @@
 ---
 title: AltStack Product Requirements
-version: 2.6
-status: v0.3.0 rolled out — post-release implementation reconciled
+version: 2.7
+status: v0.3.0 rolled out — review-email implementation pending rollout
 last_updated: 2026-10-23
 ---
 
@@ -15,6 +15,8 @@ answer: **“What open-source tool should I try for this job?”**
 The product is a small, trustworthy catalogue. [The roadmap](roadmap.md) records
 implementation status, remaining slices and operational evidence. This PRD is
 reconciled against `dev` commit **`4ce2d9c`** on **2026-10-23**.
+Review-email updates describe this feature worktree on **`c3e0980`**, including
+the latest auth fixes and Vite+ 1.4.0. They do not establish a new deployment.
 
 The operator confirmed **v0.3.0** (`bb30efe`) rollout on 2026-10-22. It includes
 Bookmarks, Report intake/admin inbox and the revised R7 Featured Projects scope.
@@ -68,14 +70,15 @@ feature-branch proposals.
 - Collections, comparisons, reviews, ratings, follows, and profiles.
 - Quality scores, hidden-gem/fast-growing rankings, personalized/trending feeds.
 - Guest project submission. Anonymous reports already work; Magic Link auth already uses persistent IP and recipient limits.
-- Queues/webhooks/workers beyond the existing daily GitHub statistics CLI.
+- Queues/webhooks/workers beyond the daily GitHub CLI and focused review-email outbox CLI.
 - Rich media galleries/video, analytics dashboards, newsletters, extensions, SDKs.
 - A separate moderator/curator role or multi-role moderation product.
 
 Current capabilities also include category/tag management, S3-compatible media,
 README import, Upstash submission/report limits, GitHub refresh, observed star
-history and transactional Magic Link email. These supersede initial lean-scope
-exclusions; review-status notifications remain deferred.
+history, transactional Magic Link email and review-decision email. These
+supersede initial lean-scope exclusions. Review email migration/configuration,
+scheduler activation and live inbox acceptance remain rollout work.
 
 ## Release scope
 
@@ -166,6 +169,10 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
 - Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
 - Resubmission confers no ownership or permission to edit published content. Live OAuth/Redis, reject → correct → re-review and target keyboard/mobile acceptance still need recorded evidence; the overall v0.3.0 rollout has been operator-confirmed.
+- Actual Published/Rejected transitions enqueue email for the stored original submitter in the review transaction, keyed by the audit UUID. Repeated saves/content/feedback edits and records without a recipient generate no mail; later resubmission/review can notify again.
+- Published mail includes project name and public/private links. Rejected mail includes escaped actionable feedback and the existing private `/submission` → safe sign-in returnTo → Edit & Resubmit journey. It grants no ownership or public access to feedback.
+- All React Email templates/layout/primitives live under `packages/ui/src/emails`, isolated from interactive UI exports; rendering/delivery/configuration stay server-side. Magic Link retains HTML/text and its original expiry/one-use lifecycle.
+- A scheduled private CLI sends only committed outbox rows, freezes payloads, fences concurrent workers and retries with the same Resend key up to eight attempts within 23 hours. This is bounded provider deduplication, not exactly-once/inbox delivery. Missing configuration retains pending work; terminal/uncertain failures require operator reconciliation. See [rollout, scheduling, limits and fresh targeted verification](review-notifications.md).
 
 Feature documents preserve historical verification. Record checks scoped to the
 affected behavior and release revision under current AGENTS.md policy; do not
@@ -303,6 +310,7 @@ for admin updates.
 - `featured_projects`: global project/unique-position selection (0–20); no per-project featured boolean.
 - Auth `user`, `session`, `account`, `verification` plus `rate_limit`: existing identities/roles, OAuth/session state, hashed Magic Link verification and persistent request/send quotas.
 - `audit_log`: create/update/remove/submit/status events, actor, nullable project FK, reason/metadata/time.
+- `submission_review_notifications`: private decision snapshot keyed by audit UUID; original recipient FK, frozen payload, attempt/lease/deadline/delivery state. Additive with no historical backfill; never exposed in public projections.
 
 There is no active separate submission table. Canonical repository URL is unique
 on projects; repository metadata also has unique project and owner/repo identity.
@@ -324,8 +332,9 @@ Publication enriches the existing submitted project.
 After rollout, measure accurate catalogue coverage, successful browse/search/detail
 journeys, submission decisions within one business day, and authorization checks.
 
-Remaining primary product candidates are R6 ownership/maintainer editing and
-submission-review notifications. Collections/compare, homepage editorial
+The remaining primary product candidate is R6 ownership/maintainer editing.
+Submission-review notifications are implemented here with rollout tracked
+separately. Collections/compare, homepage editorial
 sections, guest project submission and expanded report workflows depend on
 observed demand. Existing Featured curation, report intake/admin decisions and
 Magic Link email are implemented; they do not imply these deferred workflows.

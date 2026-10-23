@@ -4,10 +4,12 @@ export default defineConfig({
 	resolve: { tsconfigPaths: true },
 	pack: {
 		deps: { resolveDepSubpath: true },
-		dts: {
-			generator: 'tsgo',
-		},
-		exports: true,
+		// Email entrypoints are isolated from interactive UI/client barrels.
+		entry: ['src/emails/*.tsx'],
+		dts: false,
+		exports: false,
+		format: 'esm',
+		clean: true,
 	},
 	test: {
 		// Vitest v4 compatibility: preserve mock call history.

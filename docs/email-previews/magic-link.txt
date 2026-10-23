@@ -1,0 +1,20 @@
+altstack
+
+----------------------------------------
+
+YOUR ACCOUNT
+
+
+SIGN IN TO ALTSTACK
+
+Join the open source community. Use this link to securely sign in to your account.
+
+Sign in to AltStack https://api.altstack.example/sign-in-preview
+
+This link expires in 10 minutes and can only be used once. Do not forward or share it.
+
+If the button does not work, open your sign-in link https://api.altstack.example/sign-in-preview.
+
+If you did not request this email, you can safely ignore it.
+
+altstack · Discover open source alternatives.

@@ -1,0 +1,18 @@
+altstack
+
+----------------------------------------
+
+SUBMISSION · PUBLISHED
+
+
+YOUR PROJECT IS LIVE.
+
+Good news — Open Canvas has been reviewed and published on AltStack. Thank you for helping others discover open source alternatives.
+
+View published project http://localhost:4174/open-canvas
+
+You can now explore and share your public project page http://localhost:4174/open-canvas.
+
+Keep track of this decision in your private submissions http://localhost:4174/submission. Sign in with the account you used to submit the project.
+
+altstack · Discover open source alternatives.

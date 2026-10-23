@@ -7,7 +7,10 @@ const { env, send } = vi.hoisted(() => {
 		RESEND_API_KEY: 're_synthetic',
 		RESEND_FROM_EMAIL: 'sign-in@example.test',
 	}
-	return { env: config, send: vi.fn() }
+	return {
+		env: { ...config, CORS_ORIGINS: ['https://app.example.test'] },
+		send: vi.fn(),
+	}
 })
 vi.mock('@altstack/env/server', () => {
 	return { env }

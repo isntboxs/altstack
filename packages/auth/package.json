@@ -12,7 +12,6 @@
 		"./server/config": "./src/server/config.ts",
 		"./server/magic-link-email": "./src/server/magic-link-email.ts",
 		"./server/magic-link-rate-limit": "./src/server/magic-link-rate-limit.ts",
-		"./server/magic-link-template": "./src/server/magic-link-template.tsx",
 		"./server/permissions": "./src/server/permissions.ts",
 		"./package.json": "./package.json"
 	},
@@ -23,7 +22,6 @@
 			"./server/config": "./dist/server/config.mjs",
 			"./server/magic-link-email": "./dist/server/magic-link-email.mjs",
 			"./server/magic-link-rate-limit": "./dist/server/magic-link-rate-limit.mjs",
-			"./server/magic-link-template": "./dist/server/magic-link-template.mjs",
 			"./server/permissions": "./dist/server/permissions.mjs",
 			"./package.json": "./package.json"
 		}
@@ -38,12 +36,13 @@
 		"@altstack/db": "workspace:*",
 		"@altstack/env": "workspace:*",
 		"@altstack/shared": "workspace:*",
+		"@altstack/ui": "workspace:*",
 		"@better-auth/drizzle-adapter": "^1.7.12",
+		"@react-email/render": "^2.1.1",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",
 		"drizzle-orm": "catalog:",
 		"react": "catalog:",
-		"react-email": "^6.11.3",
 		"resend": "^6.34.1",
 		"zod": "catalog:"
 	},

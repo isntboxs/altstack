@@ -32,6 +32,7 @@ import {
 	validateLeafCategoryAssignments,
 } from '@altstack/api/queries/category-integrity'
 import { isUniqueViolation } from '@altstack/api/queries/pg-error'
+import { enqueueReviewNotification } from '@altstack/api/review-notification-outbox'
 import {
 	copyS3Object,
 	deleteFinalKeysBestEffort,
@@ -652,12 +653,21 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 					status !== existing.status ||
 					updated.rejectionReason !== existing.rejectionReason
 				) {
-					await tx.insert(auditLog).values({
-						actorId: auth.user.id,
-						action: 'project_status_changed',
-						projectId: existing.id,
-						reason: updated.rejectionReason,
-						metadata: { fromStatus: existing.status, toStatus: status },
+					const [decision] = await tx
+						.insert(auditLog)
+						.values({
+							actorId: auth.user.id,
+							action: 'project_status_changed',
+							projectId: existing.id,
+							reason: updated.rejectionReason,
+							metadata: { fromStatus: existing.status, toStatus: status },
+						})
+						.returning({ id: auditLog.id })
+					if (!decision) throw errors.INTERNAL_SERVER_ERROR()
+					await enqueueReviewNotification(tx, {
+						eventId: decision.id,
+						fromStatus: existing.status,
+						project: updated,
 					})
 				}
 				const [githubRow] = await tx
