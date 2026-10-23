@@ -71,8 +71,17 @@ release. Add a tool name to select part of the graph. For example, run
 ## Review Checklist
 
 - [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
+- [ ] Run formatting, lint, type checks, and tests scoped to the changed files/packages and affected features, following the Testing Scope rules below.
 - [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## Testing Scope
+
+- Default to targeted tests for the current task/feature and related behavior affected by the change. Identify affected callers, dependencies, and integrations when selecting tests.
+- Use the smallest relevant test scope: specific test files or cases first, then affected package or integration tests when needed. Expand only when failures or concrete impact justify it.
+- Do not run the full test suite as a routine completion step. Avoid unfiltered `vp test`, `vp run -r test`, `vp run check`, or `vp run ready` unless full-suite validation is justified; these commands can run tests across the repository.
+- Run the full suite only when explicitly requested, when changes have repository-wide impact that targeted tests cannot adequately cover, or when a full-suite baseline/measurement is necessary. State the concrete reason before running it.
+- For documentation-only changes with no runtime impact, review the diff and run relevant formatting checks as needed; application tests are unnecessary.
+- Report which checks/tests ran and their results. If broader validation remains necessary, explain the gap without claiming unrun tests passed.
