@@ -1,10 +1,16 @@
-import { IconArrowRight, IconGitFork, IconStar } from '@tabler/icons-react'
+import {
+	IconArrowRight,
+	IconGitCommit,
+	IconLicense,
+	IconStar,
+} from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
 import { Link, createLink } from '@tanstack/react-router'
 import type { FC, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import {
 	Card,
@@ -25,10 +31,12 @@ import {
 import { Separator } from '@altstack/ui/components/separator'
 
 import { ProjectLogo } from '#/components/project-media'
+import { LicenseLabel } from '#/features/project/components/license-label'
+import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
 
 type ProjectCardProps =
-	ORPCRouterOutputs['project']['search']['projects'][number]
+	ORPCRouterOutputs['project']['search']['projects'][number] & { now?: number }
 
 const CreatedPaginationPrevious = createLink(PaginationPrevious)
 
@@ -93,7 +101,7 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 	]
 }
 
-const ProjectCard: FC<ProjectCardProps> = (projectData) => {
+export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	const githubStatsItem = [
 		{
 			icon: IconStar,
@@ -103,19 +111,35 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 			),
 		},
 		{
-			icon: IconGitFork,
-			label: 'Forks',
-			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-				projectData.github.forks
+			icon: IconGitCommit,
+			label: 'Last commit',
+			value: projectData.github.lastCommitAt ? (
+				<time
+					dateTime={projectData.github.lastCommitAt.toISOString()}
+					title={githubFullDate(projectData.github.lastCommitAt)}
+				>
+					{githubElapsed(
+						projectData.github.lastCommitAt,
+						projectData.now ?? projectData.github.fetchedAt.getTime(),
+						true
+					)}
+				</time>
+			) : projectData.github.metadataFetchedAt ? (
+				'No commits'
+			) : (
+				'Unknown'
 			),
+		},
+		{
+			icon: IconLicense,
+			label: 'License',
+			value: <LicenseLabel github={projectData.github} />,
 		},
 	]
 
 	return (
-		<Link
-			to="/$slug"
-			params={{ slug: projectData.slug }}
-			viewTransition
+		<article
+			data-slot="project-card"
 			className="group relative min-w-0 rounded-xl p-0.5 ring-1 ring-border transition-colors hover:ring-primary/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 		>
 			<Card className="relative size-full overflow-hidden ring-0">
@@ -129,7 +153,7 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 						className="size-40 text-5xl"
 					/>
 				</div>
-				<CardHeader className="relative gap-4">
+				<CardHeader className="gap-4">
 					<CardTitle className="flex min-w-0 items-start gap-2">
 						<ProjectLogo
 							src={projectData.logo}
@@ -137,17 +161,37 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							className="size-7"
 						/>
 						<h2 className="min-w-0 text-xl font-semibold wrap-anywhere">
-							{projectData.name}
+							<Link
+								to="/$slug"
+								params={{ slug: projectData.slug }}
+								viewTransition
+								className="after:absolute after:inset-0 after:z-10 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-ring"
+							>
+								{projectData.name}
+							</Link>
 						</h2>
+						{projectData.github.archived === true && (
+							<Badge variant="secondary" className="shrink-0">
+								Archived
+							</Badge>
+						)}
 					</CardTitle>
 				</CardHeader>
 
 				<CardContent className="flex-1">
-					<div className="relative size-full">
-						<div className="flex flex-col gap-4 transition-all duration-300 group-hover:pointer-events-none group-hover:opacity-0">
-							<CardDescription className="min-h-10 wrap-anywhere">
-								{projectData.tagline}
-							</CardDescription>
+					<div className="size-full">
+						<div className="flex flex-col gap-4 transition-all duration-300">
+							<div className="relative min-h-10">
+								<CardDescription className="wrap-anywhere transition-opacity group-hover:opacity-0">
+									{projectData.tagline}
+								</CardDescription>
+								<p
+									aria-hidden="true"
+									className="pointer-events-none absolute inset-0 line-clamp-2 text-sm text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+								>
+									{projectData.description}
+								</p>
+							</div>
 							<div className="mt-auto grid grid-cols-1 gap-2">
 								{githubStatsItem.map((item) => (
 									<div
@@ -175,24 +219,10 @@ const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 								<IconArrowRight aria-hidden="true" className="size-4" />
 							</div>
 						</div>
-
-						<div
-							aria-hidden="true"
-							className="absolute inset-0 flex flex-col justify-between opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-						>
-							<p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
-								{projectData.description}
-							</p>
-
-							<div className="mt-auto flex items-center justify-between pt-3 text-xs font-medium text-primary">
-								<span>View project details</span>
-								<IconArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-							</div>
-						</div>
 					</div>
 				</CardContent>
 			</Card>
-		</Link>
+		</article>
 	)
 }
 
@@ -242,7 +272,11 @@ export const ProjectListSection = ({
 			) : (
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 					{data.projects.map((project) => (
-						<ProjectCard key={project.slug} {...project} />
+						<ProjectCard
+							key={project.slug}
+							{...project}
+							now={data.asOf?.getTime()}
+						/>
 					))}
 				</div>
 			)}

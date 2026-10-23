@@ -316,7 +316,7 @@ describe('searchProjects', () => {
 		{ timeout: TEST_TIMEOUT },
 		async () => {
 			await expect(
-				client.project.search({ query: { sort: 'trending' as never } })
+				client.project.search({ query: { sort: 'unsupported-sort' as never } })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
 
 			await expect(

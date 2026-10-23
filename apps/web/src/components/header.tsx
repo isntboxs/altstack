@@ -90,6 +90,12 @@ export const Header = ({
 									render={<Link to="/tags" />}
 								>
 									Tags
+								</DropdownMenuItem>{' '}
+								<DropdownMenuItem
+									onClick={() => setOpenNavigation(false)}
+									render={<Link to="/licenses" />}
+								>
+									Licenses
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => setOpenNavigation(false)}
@@ -141,6 +147,16 @@ export const Header = ({
 										})}
 									>
 										Tags
+									</NavigationMenuLink>
+								</NavigationMenuItem>{' '}
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={<Link to="/licenses" viewTransition />}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit p-1',
+										})}
+									>
+										Licenses
 									</NavigationMenuLink>
 								</NavigationMenuItem>
 								<NavigationMenuItem>

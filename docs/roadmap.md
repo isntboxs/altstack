@@ -32,7 +32,7 @@ implementation are recorded under R5c; production acceptance remains separate.
 
 - **R0 — Catalogue data:** schema and CSV/JSON importer implemented; real launch content needs verification.
 - **R1 — Browse:** public list/detail implemented.
-- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages/admin taxonomy, and GitHub Topics tags with public/admin pages implemented. Tags are merged after v0.3.0.
+- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages/admin taxonomy, and GitHub Topics tags implemented. This worktree additionally implements license browsing, archived metadata, and ten catalogue sorts; rollout remains pending. See [licenses](licenses.md).
 - **R3 — Sign in:** GitHub OAuth + Resend Magic Link, server-disabled password auth, shared dialog/route, session-aware navigation, route guards and API authorization implemented. Magic Link is merged after v0.3.0; live delivery and production cookie checks remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
@@ -112,7 +112,7 @@ development data and prefer disposable-schema acceptance runners for new work.
 - Search uses PostgreSQL generated `tsvector` + GIN. Category filtering includes descendants; direct assignments use leaves in a maximum three-level hierarchy.
 - Tags use GitHub Topics with immutable topic slugs and admin-curated labels/visibility. Project search supports a visible tag filter; `/tags/$slug` scopes the catalogue to that tag. Homepage URL state remains `q`, `category`, `sort`, `page`.
 - Canonical URLs and GitHub-resolved identity constraints protect duplicates. A service token validates public data, not maintainer ownership.
-- Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations, not reconstructed data or a trending score.
+- Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations. License browsing adds the user-approved seven-day observed star-delta Trending sort; it does not reconstruct history.
 
 ---
 
@@ -479,3 +479,17 @@ Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 - Migration and rollback/forward-fix notes.
 - Test commands/results and manual smoke evidence.
 - Operator status, limitations, observed need for the next slice.
+
+## License browsing and archived metadata — implemented, rollout pending
+
+Feature worktree based on `04d19eb` (merged #117); this is not a deployment claim.
+
+- [x] Additive nullable license identity/name/slug/document URL and archived metadata; shared normalization against the vendored full SPDX identifier list.
+- [x] Initial intake/resubmit/admin/import and existing manual/daily GitHub refresh paths; failed fetch preservation and repository-ID continuity.
+- [x] `/licenses` published-only directory/counts and `/licenses/$slug` scoped search/sort/pagination; unknown/filter/not-found/error states, canonical/noindex and sitemap policy.
+- [x] Internal discovery links, public navigation/footer, card Stars → Last commit → License and Archived badge; detail License immediately above Repository with a separate human document link.
+- [x] Ten requested sorts, preserving legacy query values. User selected Most popular = total stars; Trending = observed seven-day star delta, insufficient observations last. No ranking decision remains open.
+- [ ] Apply `20261023175513_github-license-archived` on target, deploy matching API/web revisions, backfill with the existing refresh job, and verify daily synchronization/live GitHub metadata.
+
+Focused checks, reproducible commands, browser evidence and rollout limits:
+[license feature notes](licenses.md). No R6, collections or compare work is included.

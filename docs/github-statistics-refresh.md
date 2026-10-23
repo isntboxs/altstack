@@ -176,3 +176,13 @@ vp run web#build
 migration dan taxonomy, lalu menghapus schema tersebut. Data `public` dan DB
 produksi tidak diubah. Fetch GitHub dalam tes dimock; token produksi tidak
 diperlukan untuk tes. Job deployment nyata membutuhkan `GITHUB_TOKEN` runtime.
+
+## License dan archived metadata
+
+Snapshot kini juga membawa license identity/name/slug/document URL dan factual
+archived state. [Feature notes](licenses.md) menjelaskan migration additive baru,
+unknown handling, directory/filter/SEO, sort dan backfill. Kartu public search
+sekarang memuat `lastCommitAt`/`metadataFetchedAt`, license dan archived; riwayat
+31 titik tetap hanya di detail. Verifikasi dasar sukses memperbarui license dan
+archived meskipun enrichment commit/release berikutnya gagal. Refresh lengkap
+mempertahankan snapshot lama jika fetch gagal. Tidak ada jadwal baru.

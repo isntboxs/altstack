@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
 	bigint,
+	boolean,
 	check,
 	date,
 	index,
@@ -31,6 +32,12 @@ export const githubRepository = pgTable(
 		repositoryCreatedAt: timestamp('repository_created_at', {
 			withTimezone: true,
 		}),
+		licenseKey: text('license_key'),
+		licenseName: text('license_name'),
+		licenseSpdxId: text('license_spdx_id'),
+		licenseSlug: text('license_slug'),
+		licenseUrl: text('license_url'),
+		archived: boolean('archived'),
 		latestReleaseTag: text('latest_release_tag'),
 		metadataFetchedAt: timestamp('metadata_fetched_at', { withTimezone: true }),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -42,6 +49,7 @@ export const githubRepository = pgTable(
 	(table) => [
 		uniqueIndex('github_repo_owner_repo_idx').on(table.owner, table.repo),
 		index('github_repo_project_idx').on(table.projectId),
+		index('github_repo_license_slug_idx').on(table.licenseSlug),
 		check(
 			'github_repository_id_positive',
 			sql`${table.githubRepositoryId} > 0`

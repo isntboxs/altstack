@@ -66,13 +66,15 @@ const searchProjectsContract = publicContract
 			queryStyles: {
 				q: 'primitive',
 				category: 'primitive',
+				tag: 'primitive',
+				license: 'primitive',
 				sort: 'primitive',
 				page: 'primitive',
 				limit: 'primitive',
 			},
 			summary: 'Search projects',
 			description:
-				'Search published projects by text query, category, sort, and pagination.',
+				'Search published projects by text, category, tag, license, sort, and pagination.',
 			tags: ['Projects'],
 			operationId: 'searchProjects',
 			successStatus: 200,

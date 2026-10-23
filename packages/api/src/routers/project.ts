@@ -19,6 +19,7 @@ import {
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
+import { projectHasLicense } from '@altstack/api/queries/license'
 import { searchPublicProjectMentions } from '@altstack/api/queries/project-mentions'
 import { getProjectTags, projectHasPublicTag } from '@altstack/api/queries/tag'
 
@@ -31,7 +32,10 @@ import {
 	projectCategory,
 } from '@altstack/db/schemas'
 
-import { githubStarsWindow } from '@altstack/shared/lib/github-stars'
+import {
+	githubSnapshotDate,
+	githubStarsWindow,
+} from '@altstack/shared/lib/github-stars'
 import { projectSchema } from '@altstack/shared/schemas/common'
 import { featuredWebsiteUrl } from '@altstack/shared/schemas/featured'
 
@@ -162,13 +166,7 @@ const listHandler = publicProcedure.project.list.handler(
 				return {
 					...publicFields.parse(row.projects),
 					screenshot: row.projects.screenshot,
-					github: {
-						owner: row.github_repositories.owner,
-						repo: row.github_repositories.repo,
-						stars: row.github_repositories.stars,
-						forks: row.github_repositories.forks,
-						fetchedAt: row.github_repositories.fetchedAt,
-					},
+					github: githubDetail(row.github_repositories),
 				}
 			}),
 			pagination: {
@@ -185,13 +183,38 @@ const listHandler = publicProcedure.project.list.handler(
 // Sort whitelist: client enum values map to fixed server-side orderings.
 // Never accept a column name from the client. Each ordering ends with the
 // primary key so OFFSET pagination is stable across pages.
-const searchSortOrder = {
-	newest: [desc(project.createdAt), desc(project.id)],
-	oldest: [asc(project.createdAt), asc(project.id)],
-	name: [asc(project.name), asc(project.id)],
-	'most-stars': [desc(githubRepository.stars), desc(project.id)],
-	'most-forks': [desc(githubRepository.forks), desc(project.id)],
-} as const
+function searchSortOrder(now: Date) {
+	const end = githubSnapshotDate(now)
+	const start = githubSnapshotDate(new Date(now.getTime() - 7 * 86400000))
+	// Compare actual first/last daily observations in the trailing seven-day
+	// window. No extrapolation, stars fallback, or inference from one point.
+	const trending = sql<number | null>`(
+		select (array_agg(h.stars order by h.snapshot_date desc))[1]
+			- (array_agg(h.stars order by h.snapshot_date asc))[1]
+		from ${githubStarHistory} h
+		where h.project_id = ${project.id}
+			and h.snapshot_date >= ${start}::date and h.snapshot_date <= ${end}::date
+		having count(*) >= 2
+	)`
+	return {
+		newest: [desc(project.createdAt), desc(project.id)],
+		oldest: [asc(project.createdAt), asc(project.id)],
+		name: [asc(project.name), asc(project.id)],
+		'most-stars': [desc(githubRepository.stars), desc(project.id)],
+		'most-forks': [desc(githubRepository.forks), desc(project.id)],
+		'most-popular': [desc(githubRepository.stars), desc(project.id)],
+		'name-desc': [desc(project.name), desc(project.id)],
+		'last-commit': [
+			sql`${githubRepository.lastCommitAt} desc nulls last`,
+			desc(project.id),
+		],
+		'repository-age': [
+			sql`${githubRepository.repositoryCreatedAt} asc nulls last`,
+			asc(project.id),
+		],
+		trending: [sql`${trending} desc nulls last`, desc(project.id)],
+	} as const
+}
 
 const searchHandler = publicProcedure.project.search.handler(
 	async ({ context, input }) => {
@@ -204,6 +227,10 @@ const searchHandler = publicProcedure.project.search.handler(
 		// Visibility is decided here, never in the UI: every branch stays
 		// limited to published projects.
 		const conditions = [eq(project.status, 'published')]
+
+		if (input.query.license) {
+			conditions.push(projectHasLicense(input.query.license))
+		}
 
 		if (input.query.tag) conditions.push(projectHasPublicTag(input.query.tag))
 
@@ -226,7 +253,7 @@ const searchHandler = publicProcedure.project.search.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-				.orderBy(...searchSortOrder[input.query.sort])
+				.orderBy(...searchSortOrder(new Date())[input.query.sort])
 				.limit(limit)
 				.offset(offset),
 
@@ -266,16 +293,11 @@ const searchHandler = publicProcedure.project.search.handler(
 		const hasPreviousPage = page > 1
 
 		return {
+			asOf: new Date(),
 			projects: rows.map((row) => {
 				return {
 					...publicFields.parse(row.projects),
-					github: {
-						owner: row.github_repositories.owner,
-						repo: row.github_repositories.repo,
-						stars: row.github_repositories.stars,
-						forks: row.github_repositories.forks,
-						fetchedAt: row.github_repositories.fetchedAt,
-					},
+					github: githubDetail(row.github_repositories),
 					categories: slugsByProject.get(row.projects.id) ?? [],
 				}
 			}),

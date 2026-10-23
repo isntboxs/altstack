@@ -10,6 +10,7 @@ import {
 import { env } from '@altstack/env/server'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
+import { githubLicenseMetadata } from '@altstack/shared/lib/github-license'
 import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 import { githubTopicsSchema } from '@altstack/shared/schemas/tag'
 
@@ -61,6 +62,7 @@ export async function fetchPublicGithubRepository(owner: string, repo: string) {
 	return {
 		...identity,
 		githubRepositoryId: data.id,
+		...githubLicenseMetadata(data),
 		topics: githubTopicsSchema.parse(data.topics ?? []),
 		stars: data.stargazers_count,
 		forks: data.forks_count,
@@ -133,6 +135,7 @@ export async function fetchPublicGithubStatistics(owner: string, repo: string) {
 		return {
 			...identity,
 			githubRepositoryId: repository.id,
+			...githubLicenseMetadata(repository),
 			topics: githubTopicsSchema.parse(repository.topics ?? []),
 			stars: repository.stargazers_count,
 			forks: repository.forks_count,

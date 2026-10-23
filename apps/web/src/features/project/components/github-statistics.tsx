@@ -1,6 +1,8 @@
 import {
 	IconCalendar,
 	IconGitBranch,
+	IconLicense,
+	IconExternalLink,
 	IconGitCommit,
 	IconGitFork,
 	IconTag,
@@ -10,6 +12,7 @@ import { Star } from 'reicon-react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { Badge } from '@altstack/ui/components/badge'
 import {
 	Card,
 	CardContent,
@@ -19,6 +22,7 @@ import {
 import { Separator } from '@altstack/ui/components/separator'
 
 import { GithubStarsHistory } from '#/features/project/components/github-stars-history'
+import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 
 export const GithubStatistics = ({
@@ -87,6 +91,9 @@ export const GithubStatistics = ({
 						</span>
 						<span className="text-sm">Stars</span>
 					</CardTitle>
+					{github.archived === true && (
+						<Badge variant="secondary">Archived</Badge>
+					)}
 				</CardHeader>
 
 				<CardContent className="grid grid-cols-1 gap-2.5">
@@ -111,6 +118,30 @@ export const GithubStatistics = ({
 						</div>
 					))}
 
+					<div className="flex items-center justify-between gap-2">
+						<div className="flex shrink-0 items-center gap-1.5">
+							<IconLicense
+								aria-hidden="true"
+								className="size-4 text-muted-foreground"
+							/>
+							<span className="text-sm text-muted-foreground">License</span>
+						</div>
+						<Separator className="min-w-2 flex-1" />
+						<div className="flex min-w-0 items-center gap-2 text-right text-sm font-medium">
+							<LicenseLabel github={github} />
+							{github.licenseSlug && github.licenseUrl && (
+								<a
+									href={github.licenseUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label={`Read ${github.licenseSpdxId} license document`}
+									title="Read license document"
+								>
+									<IconExternalLink aria-hidden="true" className="size-4" />
+								</a>
+							)}
+						</div>
+					</div>
 					<div className="flex items-center justify-between gap-2">
 						<div className="flex shrink-0 items-center gap-1.5">
 							<IconGitBranch className="size-4 shrink-0 text-muted-foreground" />

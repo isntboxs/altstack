@@ -10,7 +10,7 @@ export function LoadingStatus({ children }: { children: React.ReactNode }) {
 	return <output className="sr-only">{children}</output>
 }
 
-// Playwright: the standard card is 204px inside its 2px link padding.
+// The standard card has three metadata rows inside its 2px outer padding.
 // Use the same Card parts, 28px title, 40px tagline and 16px stat rows.
 export function ProjectCardSkeleton() {
 	return (
@@ -28,7 +28,7 @@ export function ProjectCardSkeleton() {
 						<Skeleton className="h-3 w-4/5" />
 					</div>
 					<div className="grid gap-2">
-						{[0, 1].map((key) => (
+						{[0, 1, 2].map((key) => (
 							<Skeleton key={key} className="h-4 w-full" />
 						))}
 					</div>
@@ -106,7 +106,7 @@ export function ProjectDetailSkeleton() {
 						</CardHeader>
 						<CardContent className="flex flex-col gap-2.5">
 							<Skeleton className="h-21.25 w-full" />
-							{Array.from({ length: 5 }, (_, key) => (
+							{Array.from({ length: 6 }, (_, key) => (
 								<Skeleton key={key} className="h-5 w-full" />
 							))}
 							<Skeleton className="mt-1 h-4 w-3/4" />

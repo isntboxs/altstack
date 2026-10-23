@@ -142,6 +142,12 @@ const draft: ORPCRouterOutputs['admin']['project']['getById'] = {
 	submitter: null,
 	rejectionReason: null,
 	github: {
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		owner: 'review',
 		repo: 'example',
 		stars: 0,

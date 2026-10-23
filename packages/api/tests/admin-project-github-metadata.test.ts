@@ -111,6 +111,12 @@ describe('admin GitHub metadata', () => {
 		expect(await fetchPublicGithubRepository('oldowner', 'oldrepo')).toEqual({
 			canonicalUrl: fixture.output.repositoryUrl,
 			githubRepositoryId: 123,
+			licenseKey: null,
+			licenseName: null,
+			licenseSpdxId: null,
+			licenseSlug: null,
+			licenseUrl: null,
+			archived: null,
 			topics: [],
 			owner: 'newowner',
 			repo: 'newrepo',

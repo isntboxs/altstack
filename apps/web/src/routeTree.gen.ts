@@ -26,6 +26,8 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
+import { Route as AppLicensesIndexRouteImport } from './routes/_app/licenses/index'
+import { Route as AppLicensesSlugRouteImport } from './routes/_app/licenses/$slug'
 import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
 import { Route as AppTagsSlugRouteImport } from './routes/_app/tags/$slug'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
@@ -125,6 +127,16 @@ const AppCategoriesSplatRoute = AppCategoriesSplatRouteImport.update({
   path: '/categories/$',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppLicensesIndexRoute = AppLicensesIndexRouteImport.update({
+  id: '/licenses/',
+  path: '/licenses/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppLicensesSlugRoute = AppLicensesSlugRouteImport.update({
+  id: '/licenses/$slug',
+  path: '/licenses/$slug',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppTagsIndexRoute = AppTagsIndexRouteImport.update({
   id: '/tags/',
   path: '/tags/',
@@ -219,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/admin/featured': typeof MainAdminFeaturedRoute
@@ -229,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories/': typeof AppCategoriesIndexRoute
+  '/licenses/': typeof AppLicensesIndexRoute
   '/tags/': typeof AppTagsIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -250,6 +264,7 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/reports': typeof MainAdminReportsRoute
@@ -259,6 +274,7 @@ export interface FileRoutesByTo {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories': typeof AppCategoriesIndexRoute
+  '/licenses': typeof AppLicensesIndexRoute
   '/tags': typeof AppTagsIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -284,6 +300,7 @@ export interface FileRoutesById {
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
+  '/_app/licenses/$slug': typeof AppLicensesSlugRoute
   '/_app/tags/$slug': typeof AppTagsSlugRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
@@ -294,6 +311,7 @@ export interface FileRoutesById {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/_app/categories/': typeof AppCategoriesIndexRoute
+  '/_app/licenses/': typeof AppLicensesIndexRoute
   '/_app/tags/': typeof AppTagsIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
@@ -318,6 +336,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/categories'
     | '/admin/featured'
@@ -328,6 +347,7 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories/'
+    | '/licenses/'
     | '/tags/'
     | '/projects/'
     | '/admin/categories/create'
@@ -349,6 +369,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/featured'
     | '/admin/reports'
@@ -358,6 +379,7 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories'
+    | '/licenses'
     | '/tags'
     | '/projects'
     | '/admin/categories/create'
@@ -382,6 +404,7 @@ export interface FileRouteTypes {
     | '/sitemaps/pages.xml'
     | '/_app/'
     | '/_app/categories/$'
+    | '/_app/licenses/$slug'
     | '/_app/tags/$slug'
     | '/_main/admin/categories'
     | '/_main/admin/featured'
@@ -392,6 +415,7 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/_app/categories/'
+    | '/_app/licenses/'
     | '/_app/tags/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
@@ -534,6 +558,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCategoriesSplatRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/licenses/': {
+      id: '/_app/licenses/'
+      path: '/licenses'
+      fullPath: '/licenses/'
+      preLoaderRoute: typeof AppLicensesIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/licenses/$slug': {
+      id: '/_app/licenses/$slug'
+      path: '/licenses/$slug'
+      fullPath: '/licenses/$slug'
+      preLoaderRoute: typeof AppLicensesSlugRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/tags/': {
       id: '/_app/tags/'
       path: '/tags'
@@ -648,8 +686,10 @@ interface AppRouteRouteChildren {
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
+  AppLicensesSlugRoute: typeof AppLicensesSlugRoute
   AppTagsSlugRoute: typeof AppTagsSlugRoute
   AppCategoriesIndexRoute: typeof AppCategoriesIndexRoute
+  AppLicensesIndexRoute: typeof AppLicensesIndexRoute
   AppTagsIndexRoute: typeof AppTagsIndexRoute
 }
 
@@ -659,8 +699,10 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
+  AppLicensesSlugRoute: AppLicensesSlugRoute,
   AppTagsSlugRoute: AppTagsSlugRoute,
   AppCategoriesIndexRoute: AppCategoriesIndexRoute,
+  AppLicensesIndexRoute: AppLicensesIndexRoute,
   AppTagsIndexRoute: AppTagsIndexRoute,
 }
 

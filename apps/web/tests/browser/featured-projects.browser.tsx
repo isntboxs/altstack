@@ -39,6 +39,12 @@ const projects: FeaturedProjectsData = Array.from(
 )
 const statistics = {
 	github: {
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		owner: 'test',
 		repo: 'source',
 		stars: 321,
