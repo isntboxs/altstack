@@ -83,7 +83,7 @@ replacement before routine release use.
 - `removed` is a supported hidden status. `admin.project.remove` physically deletes the project and cascades repository/category/history rows; its audit remains with the project FK set to null. Deletion is not a retained terminal submission record.
 - Original submitters can correct only their rejected intake through `submission.getById` / `submission.resubmit` and a private Edit & Resubmit modal. Name/repository/website changes retain ID, slug, provenance, enrichment and media; state returns to draft and current feedback clears transactionally. Repeating create still returns `409` for existing repositories, including rejected ones.
 - Private procedures require a session; admin project/category/upload procedures also require role `admin`.
-- Intake accepts any authenticated session. GitHub OAuth is the primary sign-in UI, but enabled email/password accounts are not checked for a linked GitHub account. Resolve the launch policy explicitly.
+- Intake accepts GitHub and verified email Magic Link sessions. Password authentication is disabled on the server. Neither method grants repository ownership; see [auth](auth.md).
 
 ### Publish, audit, search, and GitHub
 
@@ -143,10 +143,11 @@ and [admin category API notes](category-admin-api.md).
 
 **Outcome:** developers establish sessions for private submission workflows.
 
-- [x] Better Auth GitHub OAuth configuration, sign-in/out, session-aware navigation.
+- [x] Better Auth GitHub OAuth + Resend Magic Link, server password rejection, shared auth dialog/route, sign-in/out and session-aware navigation.
 - [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
 - [ ] Verify real GitHub login, refresh, logout, expired session, and return URL in staging.
-- [ ] Enforce GitHub-linked-only intake, or explicitly approve intake from any authenticated account; current API implements the latter behavior.
+- [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; ownership/claims remain deferred.
+- [ ] Verify live Resend delivery with a verified sender and production cookie flow in staging; see [auth rollout](auth.md).
 - [ ] Document/verify OAuth callback and initial admin provisioning.
 
 Evidence: `packages/auth/src/server/config.ts`, API procedures, auth/main routes,

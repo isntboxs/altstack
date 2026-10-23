@@ -45,7 +45,7 @@ The first public launch is complete when visitors/users can:
 1. Browse at least 20 accurate published projects and open working repository/website links.
 2. Search, filter by category, sort, paginate, and share the result URL.
 3. Open canonical public pages with correct titles and link-preview metadata.
-4. Sign in with GitHub, suggest a repository, and privately track review status.
+4. Sign in with GitHub or a verified email Magic Link, suggest a repository, and privately track review status.
 5. Have an admin enrich/publish or reject with actionable feedback.
 6. Correct a rejected submission and return it to review without creating another listing.
 
@@ -75,7 +75,7 @@ capabilities/dependencies, not deferred proposals.
 - **R0 — Catalogue data:** migrations and repeatable CSV/JSON import; verify real launch content.
 - **R1 — Browse:** published-only list/detail and public links.
 - **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, and taxonomy management.
-- **R3 — Sign in:** GitHub OAuth, private routes, session-aware navigation, API checks.
+- **R3 — Sign in:** GitHub OAuth + email Magic Link through Resend, private routes, session-aware navigation, API checks.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
 - **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback and original-submitter rejected-intake resubmission.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
@@ -116,10 +116,10 @@ See the roadmap for checked implementation items versus unverified acceptance.
 
 ### R3 — Sign in
 
-- GitHub OAuth is the required product sign-in path.
+- GitHub OAuth and email Magic Link through Resend are the two supported sign-in paths. Password authentication is disabled on the server. See [auth behavior and rollout](auth.md).
 - Private pages use UX guards; private/admin API procedures enforce session/role independently.
 - Return URLs must be sanitized local paths.
-- **Open launch decision:** current intake accepts any authenticated session, including enabled email/password accounts. Enforce a linked GitHub account if retaining GitHub-only intake, or explicitly approve the broader policy.
+- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 remains deferred.
 - Real OAuth login/logout/expiry and admin provisioning require staging verification.
 
 ### R4 — Submit intake
@@ -245,7 +245,7 @@ Publication enriches the existing submitted project.
 
 - React, TanStack Start/Router/Query, Tailwind and shared UI; BlockNote for admin editing, react-markdown/GFM and server Shiki preparation for public documentation.
 - oRPC contracts and Drizzle/PostgreSQL full-text search.
-- Better Auth/GitHub OAuth; Upstash for submission quotas.
+- Better Auth/GitHub OAuth + Resend Magic Link; persistent auth rate limits; Upstash for submission quotas.
 - S3-compatible storage for admin media; CSV/JSON import for initial content.
 - Docker server/web images and operator-managed daily GitHub CLI schedule.
 - Use disposable schemas for DB test runs; production rollout requires migration and runtime configuration evidence.

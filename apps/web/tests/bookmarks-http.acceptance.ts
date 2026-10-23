@@ -8,6 +8,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Pool } from 'pg'
 
+import { createMagicLinkMailbox } from './helpers/magic-link-mailbox.ts'
+
 // Only test:scoped may supply this process's database and own its cleanup.
 assert.equal(process.env.NODE_ENV, 'test')
 assert.equal(new URL(process.env.DATABASE_URL!).pathname, '/altstack_test')
@@ -29,9 +31,12 @@ for (const url of [web, api]) {
 assert.notEqual(web.port, api.port)
 const evidence = await mkdtemp(join(tmpdir(), 'altstack-bookmarks-http-'))
 const children: Array<ReturnType<typeof spawn>> = []
-const password = 'synthetic-local-test-password'
+const mailbox = await createMagicLinkMailbox({
+	preview: process.argv.includes('--preview'),
+})
 const env = {
 	...process.env,
+	...mailbox.env,
 	NODE_ENV: 'production',
 	BETTER_AUTH_URL: api.origin,
 	BETTER_AUTH_COOKIE_DOMAIN: '',
@@ -85,21 +90,7 @@ async function apiRequest(path: string, method = 'QUERY', cookie?: string) {
 }
 async function signup(name: string) {
 	const accountEmail = `bookmark-${crypto.randomUUID()}@example.test`
-	const response = await fetch(new URL('/api/auth/sign-up/email', api), {
-		method: 'POST',
-		headers: { 'content-type': 'application/json', origin: web.origin },
-		body: JSON.stringify({ email: accountEmail, password, name }),
-	})
-	assert.equal(response.status, 200)
-	const identity = (await response.json()) as { user: { id: string } }
-	return {
-		id: identity.user.id,
-		email: accountEmail,
-		cookie: response.headers
-			.getSetCookie()
-			.map((value) => value.split(';')[0])
-			.join('; '),
-	}
+	return mailbox.signIn(api, web, accountEmail, name)
 }
 try {
 	if (!process.argv.includes('--skip-build')) {
@@ -109,7 +100,12 @@ try {
 	}
 	const server = start(
 		'bun',
-		['run', 'apps/server/dist/index.mjs'],
+		[
+			'run',
+			'--preload',
+			'./apps/web/tests/helpers/mock-resend-preload.ts',
+			'apps/server/dist/index.mjs',
+		],
 		'api',
 		api.port
 	)
@@ -202,9 +198,9 @@ try {
 		await writeFile(
 			join(evidence, 'preview.json'),
 			JSON.stringify({
+				mailboxURL: mailbox.previewURL,
 				email: visitor.email,
 				adminEmail: reviewer.email,
-				password,
 				slug: project.slug,
 				projectId: project.id,
 			}),
@@ -238,5 +234,6 @@ try {
 			await exited
 		}
 	}
+	await mailbox.close()
 	await pool.end()
 }

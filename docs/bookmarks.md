@@ -78,7 +78,9 @@ vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/bookmarks-htt
 ```
 
 The command prints a temporary evidence directory. `preview.json` there contains
-only synthetic test credentials and fixture identifiers. Create `stop-preview`
+only synthetic fixture emails, identifiers, and a local mock mailbox URL.
+Request a Magic Link from the UI and redeem it through the test mailbox; see
+[auth QA](auth.md#safe-validation). Create `stop-preview`
 in that directory after QA; the command closes both servers and the wrapper
 drops its disposable schema. Preview mode also stops after 20 minutes. Do not
 use real account credentials or the historical `test:isolated` wrapper.

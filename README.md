@@ -295,7 +295,7 @@ Urutan rollout (tidak memerlukan migration database):
    hanya mengandalkan sign-out: cookie host-only dan cookie parent bernama sama
    dapat hidup bersamaan dan menimbulkan konflik. Ini akan mengeluarkan sesi
    browser tersebut. Alternatif pengujian awal: profil incognito yang bersih.
-4. Buka Web, **Sign in → Continue with Github**, lalu periksa cookie sesi:
+4. Buka Web, **Sign in → Continue with GitHub**, lalu periksa cookie sesi:
    domain `.marvagency.net` (browser dapat menampilkan titik awal), path `/`,
    `HttpOnly`, `Secure`, dan `SameSite=Lax`. Nilai token tidak perlu disalin.
    Pastikan header berubah menjadi menu pengguna, hard reload tetap login,
@@ -313,10 +313,20 @@ menonaktifkan pemeriksaan tersebut atau mengganti global ke `SameSite=None`.
 Regresi lokal: `vp run --filter web test:auth-http` membangun project, menjalankan
 API Bun dan SSR Node pada URL HTTP localhost dari `.env`, lalu menguji header,
 guard `/submit`, refresh cookie SSR, dan sign-out dengan akun sintetis pada
-schema sementara development. Pastikan port lokal Web/API kosong. Test cookie
+schema sementara pada database lokal `altstack_test`. Pastikan port lokal Web/API kosong. Test cookie
 HTTPS dengan parent domain eksplisit menggunakan adapter memori, tanpa GitHub
 atau database production. Callback OAuth GitHub dan pengiriman cookie antar
 hostname production tetap perlu retest setelah image baru di-deploy.
+
+## GitHub + Magic Link authentication
+
+Password signin/signup dinonaktifkan di server. Dialog dan `/auth/sign-in`
+menyediakan GitHub dan Magic Link melalui Better Auth + Resend. Atur
+`RESEND_API_KEY` dan `RESEND_FROM_EMAIL` hanya pada runtime server; sender harus
+memakai domain yang sudah diverifikasi Resend. Terapkan migration auth sebelum
+API baru untuk rate limit persisten. Lihat [alur akun, env, rollout, dan
+verifikasi auth](docs/auth.md). Tes HTTP memakai email tiruan dan schema disposable;
+pengiriman live serta callback OAuth sungguhan tetap perlu verifikasi staging.
 
 ## GitHub statistics refresh
 

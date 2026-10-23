@@ -73,6 +73,7 @@ describe('submission rate-limit CORS headers', () => {
 				'ratelimit-remaining',
 				'ratelimit-reset',
 				'retry-after',
+				'x-retry-after',
 			])
 			expect(response.headers.get('retry-after')).toBe('60')
 		}

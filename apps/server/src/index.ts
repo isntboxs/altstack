@@ -46,12 +46,18 @@ app.use(
 			'RateLimit-Remaining',
 			'RateLimit-Reset',
 			'Retry-After',
+			'X-Retry-After',
 		],
 		credentials: true,
 	})
 )
 
-app.all('/api/auth/*', (c) => auth.handler(c.req.raw))
+app.all('/api/auth/*', async (c) => {
+	const response = await auth.handler(c.req.raw)
+	response.headers.set('Cache-Control', 'private, no-store')
+	response.headers.set('Referrer-Policy', 'no-referrer')
+	return response
+})
 
 // Private bookmark state and report contacts must never enter shared caches.
 app.use('/api/*', async (c, next) => {
