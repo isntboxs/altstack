@@ -9,7 +9,11 @@ import { rateLimit } from '@altstack/db/schemas'
 
 import { connectTestPostgres } from '../../db/tests/helpers/postgres'
 import { withWorkspaceDatabase } from '../../db/tests/helpers/workspace'
-import { createMagicLinkRecipientLimiter } from '../src/server/magic-link-rate-limit'
+import {
+	AUTH_RATE_LIMIT_RETENTION_MS,
+	createMagicLinkRecipientLimiter,
+	pruneExpiredAuthRateLimits,
+} from '../src/server/magic-link-rate-limit'
 
 const { sent } = vi.hoisted(() => {
 	return { sent: [] as Array<{ email: string; url: string }> }
@@ -100,6 +104,92 @@ function recipientBuckets(database: typeof db) {
 const limitedBody = { message: 'Too many requests. Please try again later.' }
 
 describe('PostgreSQL Magic Link guarantees', () => {
+	it('prunes old IP/recipient buckets while retaining boundary rows and active quotas', async () => {
+		await withAuth(async (auth, create, database) => {
+			for (let index = 0; index < 5; index++) {
+				expect((await requestLink(auth)).status).toBe(200)
+			}
+			const now = Date.now()
+			const cutoff = now - AUTH_RATE_LIMIT_RETENTION_MS
+			await database.insert(rateLimit).values([
+				{ key: 'expired-ip', count: 5, lastRequest: cutoff - 1 },
+				{
+					key: 'magic-link-recipient:expired',
+					count: 5,
+					lastRequest: cutoff - 1,
+				},
+				{ key: 'retention-boundary', count: 5, lastRequest: cutoff },
+				{ key: 'recently-inactive-ip', count: 5, lastRequest: now - 600_001 },
+			])
+			expect(await pruneExpiredAuthRateLimits(database, now)).toEqual({
+				cutoff,
+				deleted: 2,
+			})
+			const rows = await database.select().from(rateLimit)
+			expect(rows.map((row) => row.key)).not.toContain('expired-ip')
+			expect(rows.map((row) => row.key)).not.toContain(
+				'magic-link-recipient:expired'
+			)
+			expect(rows.map((row) => row.key)).toEqual(
+				expect.arrayContaining(['retention-boundary', 'recently-inactive-ip'])
+			)
+			expect(
+				(await requestLink(create(), 'synthetic@example.test', '192.0.2.1'))
+					.status
+			).toBe(429)
+			expect(sent).toHaveLength(5)
+			expect(await pruneExpiredAuthRateLimits(database, now)).toEqual({
+				cutoff,
+				deleted: 0,
+			})
+		})
+	})
+	it('rechecks the cleanup predicate after waiting for a refreshed bucket row', async () => {
+		await withAuth(async (_auth, _create, database) => {
+			const now = Date.now()
+			const key = 'concurrently-refreshed-ip'
+			await database.insert(rateLimit).values({
+				key,
+				count: 5,
+				lastRequest: now - AUTH_RATE_LIMIT_RETENTION_MS - 1,
+			})
+			const locker = await database.$client.connect()
+			let cleanup: ReturnType<typeof pruneExpiredAuthRateLimits> | undefined
+			try {
+				await locker.query('BEGIN')
+				const { rows } = await locker.query<{ pid: number }>(
+					'SELECT pg_backend_pid() AS pid'
+				)
+				await locker.query(
+					'UPDATE rate_limit SET last_request = $1 WHERE key = $2',
+					[now, key]
+				)
+				cleanup = pruneExpiredAuthRateLimits(database, now)
+				await vi.waitFor(
+					async () => {
+						const waiting = await database.$client.query<{ count: number }>(
+							'SELECT count(*)::int AS count FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
+							[rows[0]!.pid]
+						)
+						expect(waiting.rows[0]!.count).toBe(1)
+					},
+					{ timeout: 5000, interval: 20 }
+				)
+				await locker.query('COMMIT')
+			} finally {
+				await locker.query('ROLLBACK')
+				locker.release()
+				await cleanup
+			}
+			expect(await cleanup).toEqual({
+				cutoff: now - AUTH_RATE_LIMIT_RETENTION_MS,
+				deleted: 0,
+			})
+			expect(
+				await database.select().from(rateLimit).where(eq(rateLimit.key, key))
+			).toEqual([expect.objectContaining({ key, count: 5, lastRequest: now })])
+		})
+	})
 	it('rechecks the IP quota after concurrent updates wait on the same row lock', async () => {
 		await withAuth(async (auth, create, database) => {
 			for (let index = 0; index < 4; index++) {

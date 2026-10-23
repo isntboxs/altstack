@@ -185,6 +185,43 @@ describe('auth cookie scope', () => {
 })
 
 describe('supported authentication methods', () => {
+	it.each(['/sign-in/email', '/sign-in/username'])(
+		'rejects a valid legacy credential at %s without creating a session',
+		async (path) => {
+			const test = createTestAuth()
+			const context = await test.auth.$context
+			const password = 'synthetic-legacy-password'
+			const user = await context.internalAdapter.createUser(
+				{
+					email: 'synthetic@example.test',
+					name: 'Legacy user',
+					emailVerified: true,
+				},
+				{ method: 'email' }
+			)
+			// Preserve the real legacy username column even after its plugin is removed.
+			test.store.user[0]!.username = 'synthetic'
+			const hash = await context.password.hash(password)
+			await context.internalAdapter.createAccount({
+				userId: user.id,
+				providerId: 'credential',
+				accountId: user.id,
+				password: hash,
+			})
+			expect(await context.password.verify({ hash, password })).toBe(true)
+			const response = await test.post(path, {
+				email: user.email,
+				username: 'synthetic',
+				password,
+			})
+			expect(response.ok).toBe(false)
+			expect(response.status).toBe(path === '/sign-in/username' ? 404 : 400)
+			expect(response.headers.getSetCookie()).toHaveLength(0)
+			expect(test.store.session).toHaveLength(0)
+			expect(test.store.account).toHaveLength(1)
+			expect(sendEmail).not.toHaveBeenCalled()
+		}
+	)
 	it.each(['/sign-in/email', '/sign-up/email', '/sign-in/username'])(
 		'rejects password authentication at %s on the server',
 		async (path) => {

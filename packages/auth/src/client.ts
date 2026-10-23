@@ -1,7 +1,6 @@
 import {
 	inferAdditionalFields,
 	multiSessionClient,
-	usernameClient,
 	customSessionClient,
 	magicLinkClient,
 } from 'better-auth/client/plugins'
@@ -18,6 +17,5 @@ export const authClient = createAuthClient({
 		inferAdditionalFields<typeof auth>(),
 		customSessionClient<typeof auth>(),
 		multiSessionClient(),
-		usernameClient(),
 	],
 })

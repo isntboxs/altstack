@@ -7,6 +7,26 @@ import { rateLimit } from '@altstack/db/schemas'
 
 export const MAGIC_LINK_RATE_LIMIT = { window: 60 * 10, max: 5 }
 
+// Keep a day of inactive buckets, beyond every currently configured auth window.
+export const AUTH_RATE_LIMIT_RETENTION_MS = 24 * 60 * 60 * 1000
+
+export async function pruneExpiredAuthRateLimits(
+	database: typeof db,
+	now = Date.now()
+) {
+	const cutoff = now - AUTH_RATE_LIMIT_RETENTION_MS
+	// Recheck last_request under the DELETE row lock so refreshed quotas survive.
+	// Return a count rather than transferring recipient/IP keys to the job logger.
+	const result = await database.execute<{ deleted: number }>(sql`
+		WITH deleted AS (
+			DELETE FROM ${rateLimit} WHERE ${rateLimit.lastRequest} < ${cutoff}
+			RETURNING 1
+		)
+		SELECT count(*)::int AS deleted FROM deleted
+	`)
+	return { cutoff, deleted: result.rows[0]!.deleted }
+}
+
 export function createMagicLinkRecipientLimiter(
 	database: typeof db,
 	secret: string

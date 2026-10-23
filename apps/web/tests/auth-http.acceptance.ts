@@ -117,7 +117,11 @@ try {
 	redirectedToSignIn(await page('/submit'))
 	assert.match(await (await page('/')).text(), /Sign in/)
 
-	for (const path of ['/sign-up/email', '/sign-in/email']) {
+	for (const path of [
+		'/sign-up/email',
+		'/sign-in/email',
+		'/sign-in/username',
+	]) {
 		const rejected = await fetch(new URL(`/api/auth${path}`, api), {
 			method: 'POST',
 			headers: { 'content-type': 'application/json', origin: web.origin },
@@ -125,9 +129,11 @@ try {
 				email,
 				password: 'synthetic-local-test-password',
 				name: 'Synthetic user',
+				username: 'synthetic',
 			}),
 		})
 		assert.equal(rejected.ok, false)
+		if (path === '/sign-in/username') assert.equal(rejected.status, 404)
 		assert.equal(rejected.headers.getSetCookie().length, 0)
 	}
 	const requested = await fetch(new URL('/api/auth/sign-in/magic-link', api), {

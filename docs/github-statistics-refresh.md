@@ -128,6 +128,14 @@ repo gagal, rate limit, atau kegagalan fatal; skipped karena overlap keluar `0`.
 Jumlah belum diproses adalah selected dikurangi succeeded dan failed. Semua
 koneksi DB ditutup ketika CLI selesai.
 
+Command harian yang sama juga membersihkan bucket auth `rate_limit` yang tidak
+aktif lebih dari 24 jam, sebelum validasi token dan refresh GitHub. Terapkan
+migration index `20261023062257_auth-rate-limit-retention` sebelum rollout.
+Pantau `auth-rate-limit-pruned` (cutoff/jumlah saja) dan
+`auth-rate-limit-prune-failed`; kegagalan cleanup membuat exit code 1 tetapi tidak
+membatalkan refresh GitHub. Tidak ada scheduler tambahan. Lihat
+[retensi kuota auth](auth.md#rate-limit-retention).
+
 PostgreSQL advisory lock memakai koneksi khusus selama seluruh batch, berlaku
 lintas container/replica pada database yang sama. Lock dilepas dari sesi yang
 memperolehnya. Manual refresh tetap tersedia saat batch berjalan; pemeriksaan

@@ -2,7 +2,10 @@
 
 AltStack supports exactly two public sign-in methods: GitHub OAuth and email
 Magic Link. Email/password signin, signup and username/password signin are
-disabled on the server. The dialog and `/auth/sign-in` reuse `SignInForm`.
+disabled on the server. The username server/client plugins are not registered,
+so legacy credential accounts cannot use `/sign-in/username`. Existing username
+database columns and credential rows are retained; no destructive migration is
+needed to disable that path. The dialog and `/auth/sign-in` reuse `SignInForm`.
 Authenticated users can submit and bookmark; neither method proves repository
 ownership. R6 ownership/claims and notifications remain outside this change.
 
@@ -29,8 +32,9 @@ recording request/response bodies, cookies, or redirect Location headers.
 Disable click tracking for authentication emails on the sending domain in Resend
 so authentication links are not rewritten through tracking infrastructure.
 
-Apply the included database migration before starting the new API. It adds the
-persistent `rate_limit` table used by Better Auth. Use the normal migration
+Apply the included database migrations before starting the new API. They add the
+persistent `rate_limit` table used by Better Auth and the cleanup index
+(`20261023062257_auth-rate-limit-retention`). Use the normal migration
 workflow (`vp run db:migrate`) on the intended deployment database, then deploy
 API and Web together. This implementation does not deploy or migrate production.
 Existing users, roles, sessions, GitHub accounts, projects and bookmarks remain.
@@ -91,6 +95,24 @@ email delivery with a generic 503. Counters survive API restarts. Other auth
 endpoints keep Better Auth's established limits. The UI disables requests while pending, offers a sixty-second resend
 cooldown, and honors the server's `X-Retry-After` on 429. Delivery errors leave the
 form editable and GitHub available. Quota is not reset by opening another dialog.
+
+### Rate-limit retention
+
+The existing daily `github-refresh.mjs` job also deletes auth rate-limit buckets
+that have been inactive for more than 24 hours, including IP and recipient
+buckets. This retention exceeds every currently configured auth quota window;
+the cleanup predicate retains active and exact-boundary rows. The new
+`rate_limit_last_request_idx` supports the timestamp filter. Better Auth also
+opportunistically prunes expired buckets when reusing an expired database bucket;
+the daily cleanup handles inactive rows without depending on later auth traffic.
+
+No new scheduler is required: keep the documented 02:00 Asia/Jakarta job enabled.
+Cleanup runs before GitHub token validation/refresh. A cleanup failure logs only
+`auth-rate-limit-prune-failed`, sets a failed exit code, and still lets GitHub
+refresh run; success logs `auth-rate-limit-pruned` with cutoff and deleted count,
+never keys, IPs or emails. The timestamp predicate is rechecked under row locks
+so a concurrent bucket refresh is not removed. If the schedule stops, inactive
+rows remain until a later cleanup; monitor its logs and job exit status.
 
 Success callbacks are absolute URLs under the configured frontend origin,
 constructed from sanitized local `returnTo`. Invalid, expired or consumed links
@@ -196,3 +218,22 @@ in the public category recovery test; the rerun passed without changing that
 test or page.
 This follow-up needs no additional database migration or service configuration.
 Live integration limitations remain as described above.
+
+## Password boundary and retention verification — 2026-10-23
+
+The legacy-credential regression reproduced successful username/password sign-in
+before removing the username server/client plugins. It now verifies that a real
+stored password cannot create a session through either password sign-in route;
+the username endpoint returns 404. Username/profile columns are preserved.
+
+Targeted verification from `89924c5` plus this follow-up working tree:
+
+- Auth cookie/email/PostgreSQL tests: **44 passed** in disposable schemas. This includes retained active/boundary buckets, idempotent pruning and an UPDATE/DELETE row-lock race that retains the refreshed quota.
+- Shared sign-in form and SSR auth middleware tests: **23 passed**.
+- Daily maintenance runner and server CORS tests: **5 passed**, covering cleanup without a GitHub token, failure isolation, safe logs and pool shutdown.
+- Scoped formatting/lint and typechecks for auth, DB, server and web passed; production auth/server/web builds passed with existing dependency/chunk warnings.
+- Auth HTTP acceptance passed against the rebuilt artifacts, including absent username sign-in, password rejection, mocked email sessions, replay/expiry, quota concurrency, callbacks, SSR refresh and sign-out. No real email, GitHub OAuth exchange or application/production data was used.
+- The generated retention migration/snapshot adds only `rate_limit_last_request_idx`; test scopes migrated it successfully. Apply that migration through the normal rollout workflow before enabling the updated daily job.
+
+No full-suite rerun was needed for these focused review changes. Live delivery
+and production acceptance remain separate from the above checks.

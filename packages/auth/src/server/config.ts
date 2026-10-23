@@ -5,7 +5,6 @@ import {
 	admin as adminPlugin,
 	multiSession as multiSessionPlugin,
 	openAPI as openAPIPlugin,
-	username as usernamePlugin,
 } from 'better-auth/plugins'
 import { magicLink } from 'better-auth/plugins/magic-link'
 import { z } from 'zod'
@@ -103,7 +102,6 @@ export function createAuthConfig(database = db) {
 			}),
 			multiSessionPlugin(),
 			openAPIPlugin(),
-			usernamePlugin(),
 		],
 		secret: env.BETTER_AUTH_SECRET,
 		rateLimit: {
