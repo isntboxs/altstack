@@ -328,6 +328,15 @@ API baru untuk rate limit persisten. Lihat [alur akun, env, rollout, dan
 verifikasi auth](docs/auth.md). Tes HTTP memakai email tiruan dan schema disposable;
 pengiriman live serta callback OAuth sungguhan tetap perlu verifikasi staging.
 
+## Submission review email notifications
+
+Keputusan Published/Rejected untuk pengirim asli masuk ke outbox privat dalam
+transaksi moderasi. Resend mengirim melalui job terpisah dengan retry dan
+idempotency per keputusan. Seluruh template React Email berada di
+`packages/ui/src/emails`; sender dan secret tetap di server.
+Lihat [konfigurasi, migration, schedule dan batas retry](docs/review-notifications.md)
+serta [preview HTML/teks sintetis](docs/email-previews/README.md).
+
 ## GitHub statistics refresh
 
 Metadata aside, refresh manual admin, dan job harian tersedia. Lihat

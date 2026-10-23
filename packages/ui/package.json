@@ -11,10 +11,17 @@
 		"./lib/*": "./src/lib/*.ts",
 		"./components/*": "./src/components/*.tsx",
 		"./hooks/*": "./src/hooks/*.ts",
-		"./package.json": "./package.json"
+		"./package.json": "./package.json",
+		"./emails/layout": "./src/emails/layout.tsx",
+		"./emails/primitives": "./src/emails/primitives.tsx",
+		"./emails/magic-link": "./src/emails/magic-link.tsx",
+		"./emails/submission-published": "./src/emails/submission-published.tsx",
+		"./emails/submission-rejected": "./src/emails/submission-rejected.tsx"
 	},
 	"scripts": {
+		"build": "vp pack",
 		"check": "vp check",
+		"email:preview": "vpx ./scripts/render-email-previews.ts",
 		"test": "vp test"
 	},
 	"dependencies": {
@@ -32,6 +39,7 @@
 		"react": "catalog:",
 		"react-day-picker": "^10.0.1",
 		"react-dom": "catalog:",
+		"react-email": "^6.11.3",
 		"react-resizable-panels": "^4.13.3",
 		"shadcn": "^4.21.0",
 		"tw-animate-css": "^1.4.0",
@@ -39,6 +47,7 @@
 	},
 	"devDependencies": {
 		"@altstack/config": "workspace:*",
+		"@react-email/render": "^2.1.1",
 		"@tailwindcss/vite": "catalog:",
 		"@types/bun": "catalog:",
 		"@types/react": "catalog:",

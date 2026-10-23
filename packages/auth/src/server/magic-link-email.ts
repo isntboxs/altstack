@@ -1,11 +1,11 @@
+import { render } from '@react-email/render'
 import { APIError } from 'better-auth/api'
 import { createElement } from 'react'
-import { render } from 'react-email'
 import { Resend } from 'resend'
 
 import { env } from '@altstack/env/server'
 
-import { MagicLinkEmail } from './magic-link-template'
+import { MagicLinkEmail } from '@altstack/ui/emails/magic-link'
 
 export async function sendMagicLinkEmail({
 	email,
@@ -21,7 +21,10 @@ export async function sendMagicLinkEmail({
 		})
 	}
 	try {
-		const template = createElement(MagicLinkEmail, { url })
+		const template = createElement(MagicLinkEmail, {
+			url,
+			appUrl: env.EMAIL_APP_URL ?? env.CORS_ORIGINS[0]!,
+		})
 		const html = await render(template)
 		const text = await render(template, { plainText: true })
 		const { error } = await new Resend(env.RESEND_API_KEY).emails.send({
