@@ -4,6 +4,7 @@ import { db } from '@altstack/db'
 import { githubRepository, project } from '@altstack/db/schemas'
 
 import { getPublicCategoryById, listPublicCategories } from './category'
+import { listPublicLicenses } from './license'
 
 // Match public detail/list visibility, including its required repository row.
 // Select public fields explicitly; never serialize the underlying project row.
@@ -74,4 +75,8 @@ export async function sitemapProjects(page: number) {
 
 export async function sitemapCategories() {
 	return listPublicCategories(db)
+}
+
+export async function sitemapLicenses() {
+	return listPublicLicenses(db)
 }

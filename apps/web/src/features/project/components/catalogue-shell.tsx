@@ -8,6 +8,7 @@ import {
 	CategoryBreadcrumb,
 	CategoryLinks,
 } from '#/features/category/components/public-category'
+import { LicenseProjectControls } from '#/features/license/components/public-license'
 import { HomeFilterSection } from '#/features/project/components/home-filters'
 import {
 	TagDirectoryControls,
@@ -40,6 +41,14 @@ export function CatalogueShell() {
 					<HomeFilterSection />
 					<Outlet />
 				</section>
+			</>
+		)
+	}
+	if (routeId === '/_app/licenses/$slug') {
+		return (
+			<>
+				<LicenseProjectControls />
+				<Outlet />
 			</>
 		)
 	}

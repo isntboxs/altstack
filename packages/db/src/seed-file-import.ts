@@ -395,6 +395,13 @@ export async function importSeedFiles(
 						repositoryCreatedAt: stats?.repositoryCreatedAt ?? null,
 						lastCommitAt: stats?.lastCommitAt ?? null,
 						latestReleaseTag: stats?.latestReleaseTag ?? null,
+						licenseKey: stats?.licenseKey ?? null,
+						licenseName: stats?.licenseName ?? null,
+						licenseSpdxId: stats?.licenseSpdxId ?? null,
+						licenseSlug: stats?.licenseSlug ?? null,
+						licenseUrl: stats?.licenseUrl ?? null,
+						archived: stats?.archived ?? null,
+
 						metadataFetchedAt: enrichment?.fetchedAt ?? null,
 					})
 					if (stats?.topics) await syncProjectTags(tx, id, stats.topics)

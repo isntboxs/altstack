@@ -55,6 +55,12 @@ describe('OG rendering boundaries', () => {
 			fallback: 'public-project',
 			description: null,
 			github: {
+				licenseKey: null,
+				licenseName: null,
+				licenseSpdxId: null,
+				licenseSlug: null,
+				licenseUrl: null,
+				archived: null,
 				owner: 'fixture',
 				repo: 'public',
 				stars: 91699,

@@ -32,13 +32,19 @@ import {
 	SelectValue,
 } from '@altstack/ui/components/select'
 
-const selectSortItems: Array<{ label: string; value: SearchSortType }> = [
-	{ label: 'Latest', value: 'newest' },
-	{ label: 'Oldest', value: 'oldest' },
-	{ label: 'Name', value: 'name' },
-	{ label: 'Most Stars', value: 'most-stars' },
-	{ label: 'Most Forks', value: 'most-forks' },
-]
+export const selectSortItems: Array<{ label: string; value: SearchSortType }> =
+	[
+		{ label: 'Oldest', value: 'oldest' },
+		{ label: 'Latest', value: 'newest' },
+		{ label: 'Most popular', value: 'most-popular' },
+		{ label: 'Name (A to Z)', value: 'name' },
+		{ label: 'Name (Z to A)', value: 'name-desc' },
+		{ label: 'Most stars', value: 'most-stars' },
+		{ label: 'Trending', value: 'trending' },
+		{ label: 'Most forks', value: 'most-forks' },
+		{ label: 'Last commit', value: 'last-commit' },
+		{ label: 'Repository age', value: 'repository-age' },
+	]
 
 const SelectSortBar = ({
 	sort,

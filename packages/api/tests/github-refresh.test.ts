@@ -449,6 +449,46 @@ describe('daily total-star snapshots', () => {
 })
 
 describe('admin refresh endpoint and atomic storage', () => {
+	it('refreshes license/archival atomically; failures preserve and successful absence removes', async () => {
+		const item = await fixture()
+		const known = repository('old', `repo-${item.id}`)
+		known.data.archived = true
+		known.data.license = {
+			key: 'mit',
+			name: 'MIT License',
+			spdx_id: 'MIT',
+			node_id: 'test',
+			url: 'https://api.github.com/licenses/mit',
+		}
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(known)
+		await client().admin.project.githubRefresh({ params: { id: item.id } })
+		expect(await stored(item.id)).toMatchObject({
+			licenseSlug: 'mit',
+			licenseName: 'MIT License',
+			licenseUrl: 'https://spdx.org/licenses/MIT.html',
+			archived: true,
+		})
+		known.data.license = null
+		known.data.archived = false
+		vi.mocked(octokit.rest.repos.getCommit).mockRejectedValueOnce(
+			new Error('timeout')
+		)
+		await expect(refreshProjectGithub(scope.db, item.id)).rejects.toBeDefined()
+		expect(await stored(item.id)).toMatchObject({
+			licenseSlug: 'mit',
+			archived: true,
+		})
+		await runGithubRefreshBatch(scope.db)
+		expect(await stored(item.id)).toMatchObject({
+			licenseSlug: null,
+			licenseUrl: null,
+			archived: false,
+		})
+		expect(
+			(await client(null).project.search({ query: {} })).projects[0]?.github
+		).toMatchObject({ licenseSlug: null, archived: false })
+	})
+
 	it.each([
 		[null, 'UNAUTHORIZED'],
 		['user', 'FORBIDDEN'],
@@ -502,7 +542,7 @@ describe('admin refresh endpoint and atomic storage', () => {
 		})
 		expect(
 			(await client(null).project.search({ query: {} })).projects[0]?.github
-		).not.toHaveProperty('lastCommitAt')
+		).toHaveProperty('lastCommitAt', row?.lastCommitAt)
 		expect(
 			(await client().admin.project.list({ query: {} })).projects[0]?.github
 		).not.toHaveProperty('metadataFetchedAt')
@@ -589,6 +629,59 @@ describe('admin refresh endpoint and atomic storage', () => {
 			})
 		}
 	)
+	it('stores basic license/archival on create despite enrichment failure and clears unrelated identity on replacement', async () => {
+		vi.mocked(octokit.rest.repos.get).mockImplementation((parameters) => {
+			const snapshot = repository(parameters?.owner, parameters?.repo, 123)
+			snapshot.data.archived = true
+			snapshot.data.license = {
+				key: 'bsd-3-clause',
+				name: 'BSD 3-Clause License',
+				spdx_id: 'BSD-3-Clause',
+				node_id: 'test',
+				url: 'https://api.github.com/licenses/bsd-3-clause',
+			}
+			return Promise.resolve(snapshot)
+		})
+		vi.mocked(octokit.rest.repos.getCommit).mockRejectedValue(
+			new Error('Optional commit enrichment failed')
+		)
+		const created = await client().admin.project.create({
+			body: {
+				name: 'Initial license',
+				slug: 'initial-license',
+				repositoryUrl: 'old/initial-license',
+				status: 'draft',
+				categorySlugs: [],
+			},
+		})
+		expect(created.github).toMatchObject({
+			licenseSlug: 'bsd-3-clause',
+			licenseName: 'BSD 3-Clause License',
+			licenseUrl: 'https://spdx.org/licenses/BSD-3-Clause.html',
+			archived: true,
+			metadataFetchedAt: null,
+		})
+		await scope.db
+			.update(githubRepository)
+			.set({ lastCommitAt: oldTime, metadataFetchedAt: oldTime })
+			.where(eq(githubRepository.projectId, created.id))
+		const replacement = repository('other', 'new-license', 456)
+		replacement.data.archived = false
+		replacement.data.license = null
+		vi.mocked(octokit.rest.repos.get).mockResolvedValue(replacement)
+		const changed = await client().admin.project.update({
+			params: { id: created.id },
+			body: { repositoryUrl: 'other/new-license' },
+		})
+		expect(changed.github).toMatchObject({
+			licenseSlug: null,
+			licenseName: null,
+			licenseUrl: null,
+			archived: false,
+			metadataFetchedAt: null,
+			lastCommitAt: null,
+		})
+	})
 	it('enriches admin create, approval, and repo change, but metadata failure never fails the primary write', async () => {
 		const created = await client().admin.project.create({
 			body: {

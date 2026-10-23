@@ -130,6 +130,12 @@ const project = {
 	updatedAt: new Date(),
 	categoryDetails: [],
 	github: {
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		owner: 'test',
 		repo: 'example',
 		stars: 5,

@@ -2,10 +2,13 @@ import { Octokit } from 'octokit'
 import { z } from 'zod'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
+import { githubLicenseMetadata } from '@altstack/shared/lib/github-license'
 import { repositoryUrlSchema } from '@altstack/shared/schemas/common'
+import { githubLicenseFields } from '@altstack/shared/schemas/license'
 import { githubTopicsSchema } from '@altstack/shared/schemas/tag'
 
 export const seedGithubStatisticsSchema = z.object({
+	...githubLicenseFields,
 	repositoryUrl: repositoryUrlSchema,
 	topics: githubTopicsSchema.optional(),
 	githubRepositoryId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
@@ -89,6 +92,7 @@ export function createSeedGithubClient(token?: string): SeedGithubClient {
 			return seedGithubStatisticsSchema.parse({
 				repositoryUrl: identity.canonicalUrl,
 				githubRepositoryId: data.id,
+				...githubLicenseMetadata(data),
 				topics: data.topics ?? [],
 				stars: data.stargazers_count,
 				forks: data.forks_count,

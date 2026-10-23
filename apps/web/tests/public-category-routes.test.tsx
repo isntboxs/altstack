@@ -19,6 +19,7 @@ import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
 import type { authClient } from '@altstack/auth/client'
 
 import { getCategoryByPathInputSchema } from '@altstack/shared/schemas/category'
+import { getLicenseInputSchema } from '@altstack/shared/schemas/license'
 import { searchProjectsInputSchema } from '@altstack/shared/schemas/project'
 import {
 	getTagInputSchema,
@@ -184,6 +185,12 @@ const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	github: {
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		owner: 'test',
 		repo: 'zed',
 		stars: 123,
@@ -258,6 +265,37 @@ beforeEach(() => {
 							hasPreviousPage: false,
 						},
 					}
+				case 'license/list':
+					return {
+						licenses: [
+							{
+								slug: 'mit',
+								name: 'MIT License',
+								identifier: 'MIT',
+								projectCount: total,
+							},
+							{
+								slug: 'unknown',
+								name: 'unknown',
+								identifier: 'unknown',
+								projectCount: 1,
+							},
+						],
+					}
+				case 'license/getBySlug': {
+					const { slug } = getLicenseInputSchema.parse(input).params
+					if (!['mit', 'unknown'].includes(slug)) {
+						throw new ORPCError('NOT_FOUND')
+					}
+					return {
+						license: {
+							slug,
+							name: slug === 'mit' ? 'MIT License' : 'unknown',
+							identifier: slug === 'mit' ? 'MIT' : 'unknown',
+							projectCount: total,
+						},
+					}
+				}
 				case 'tag/list': {
 					const { q, letter, page, limit } =
 						listTagsInputSchema.parse(input).query
@@ -742,7 +780,7 @@ describe('public category search, sorting and pagination', () => {
 		})
 		expect(
 			screen.getByRole('combobox', { name: 'Order by' }).textContent
-		).toContain('Most Forks')
+		).toContain('Most forks')
 	})
 	it('debounces search, resets page, keeps category and reconciles back/forward input state', async () => {
 		const router = await routerAt(
@@ -800,7 +838,7 @@ describe('public category search, sorting and pagination', () => {
 		expect(router.state.location.pathname).toBe('/categories/' + ai.path)
 		fireEvent.click(screen.getByRole('combobox', { name: 'Order by' }))
 		fireEvent.keyDown(
-			await screen.findByRole('option', { name: 'Most Stars' }),
+			await screen.findByRole('option', { name: 'Most stars' }),
 			{ key: 'Enter' }
 		)
 		await waitFor(() =>
@@ -939,9 +977,7 @@ describe('L2 public affordances and recovery', () => {
 		expect(screen.queryByRole('button', { name: /Introducing/ })).toBeNull()
 		fireEvent.click(anchor)
 		expect(document.activeElement?.id).toBe('catalogue')
-		expect(
-			screen.queryByText(/compare alternatives|trending|Last commit/)
-		).toBeNull()
+		expect(screen.queryByText(/compare alternatives|trending/)).toBeNull()
 	})
 	it('keeps Verify disabled while Bookmark, Report and Embed are available', async () => {
 		const router = await routerAt('/test-zed', true)
@@ -1249,16 +1285,22 @@ describe('L2 public affordances and recovery', () => {
 		expect(previous).toHaveProperty('disabled', true)
 		expect(previous.getAttribute('href')).toBeNull()
 	})
-	it('renders a single card link with visible details and decorative logo semantics', async () => {
+	it('renders an accessible card title link with visible metadata and decorative logo semantics', async () => {
 		await routerAt('/', true)
-		const card = screen.getByRole('heading', { name: 'Zed' }).closest('a')!
-		expect(card.getAttribute('href')).toBe('/test-zed')
-		expect(card.querySelector('a, button')).toBeNull()
+		const card = screen
+			.getByRole('heading', { name: 'Zed' })
+			.closest('article')!
 		expect(
-			screen.getByRole('link', {
-				name: 'Zed Synthetic code editor. Stars 123 Forks 12 View project details',
-			})
-		).toBe(card)
+			within(card).getByRole('link', { name: 'Zed' }).getAttribute('href')
+		).toBe('/test-zed')
+		expect(card.querySelector('a a, button')).toBeNull()
+		expect(within(card).getByRole('link', { name: 'Zed' })).toBeTruthy()
+		expect(
+			['Stars', 'Last commit', 'License'].map(
+				(label) => within(card).getByText(label).textContent
+			)
+		).toEqual(['Stars', 'Last commit', 'License'])
+		expect(within(card).queryByText('Forks')).toBeNull()
 		expect(within(card).queryByRole('img')).toBeNull()
 	})
 })
@@ -1476,5 +1518,214 @@ describe('public tags', () => {
 			sort: undefined,
 			page: undefined,
 		})
+	})
+})
+
+describe('public license routes', () => {
+	it('renders the empty directory without inventing licenses', async () => {
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'license/list'
+				? Promise.resolve({ licenses: [] })
+				: original(path, input)
+		)
+		await routerAt('/licenses', true)
+		expect(screen.getByText('No licenses to explore yet')).toBeTruthy()
+		expect(screen.queryByRole('link', { name: 'MIT 1 project' })).toBeNull()
+	})
+	it('recovers directory fetch errors through the shared retry control', async () => {
+		const original = rpc.getMockImplementation()!
+		let failing = true
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'license/list' && failing
+				? Promise.reject(new ORPCError('INTERNAL_SERVER_ERROR'))
+				: original(path, input)
+		)
+		await routerAt('/licenses', true)
+		expect(
+			screen.getByRole('heading', { name: 'Unable to load licenses' })
+		).toBeTruthy()
+		failing = false
+		fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+		expect(
+			await screen.findByRole('heading', {
+				name: 'Browse Open Source Software Licenses',
+			})
+		).toBeTruthy()
+	})
+
+	it('keeps card metadata order, independent discovery links, archival, and detail license document access', async () => {
+		const original = rpc.getMockImplementation()!
+		const detected = {
+			licenseKey: 'mit',
+			licenseName: 'MIT License',
+			licenseSpdxId: 'MIT',
+			licenseSlug: 'mit',
+			licenseUrl: 'https://spdx.org/licenses/MIT.html',
+			archived: true,
+		}
+		rpc.mockImplementation(async (path, input) => {
+			if (path.join('/') === 'project/search') {
+				return {
+					projects: [
+						{ ...zed, github: { ...zed.github, ...detected }, categories: [] },
+					],
+					pagination: {
+						page: 1,
+						limit: 12,
+						totalItems: 1,
+						totalPages: 1,
+						hasNextPage: false,
+						hasPreviousPage: false,
+					},
+				}
+			}
+			if (path.join('/') === 'project/getBySlug') {
+				return { ...zed, github: { ...zed.github, ...detected } }
+			}
+			return original(path, input)
+		})
+		const router = await routerAt('/', true)
+		const card = screen
+			.getByRole('heading', { name: 'Zed' })
+			.closest('article')!
+		expect(within(card).getByText('Archived')).toBeTruthy()
+		expect(
+			Array.from(card.querySelectorAll('span.text-muted-foreground'))
+				.map((node) => node.textContent)
+				.filter(Boolean)
+		).toEqual(['Stars', 'Last commit', 'License'])
+		expect(
+			within(card).getByRole('link', { name: 'MIT' }).getAttribute('href')
+		).toBe('/licenses/mit')
+		expect(card.querySelector('a a')).toBeNull()
+		await act(() =>
+			router.navigate({ to: '/$slug', params: { slug: 'test-zed' } })
+		)
+		expect(screen.getByText('Archived')).toBeTruthy()
+		const label = screen.getByText('License', { selector: 'span' })
+		expect(
+			label.parentElement?.parentElement?.nextElementSibling?.textContent
+		).toContain('Repository')
+		expect(screen.getByRole('link', { name: 'MIT' }).getAttribute('href')).toBe(
+			'/licenses/mit'
+		)
+		expect(
+			screen
+				.getByRole('link', { name: 'Read MIT license document' })
+				.getAttribute('href')
+		).toBe('https://spdx.org/licenses/MIT.html')
+	})
+
+	it('renders published counts, discovery links, breadcrumbs and directory SEO', async () => {
+		const router = await routerAt('/licenses', true)
+		expect(
+			screen.getByRole('heading', {
+				name: 'Browse Open Source Software Licenses',
+			})
+		).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: 'MIT 1 project' }).getAttribute('href')
+		).toBe('/licenses/mit')
+		expect(screen.getByRole('link', { name: 'unknown 1 project' })).toBeTruthy()
+		expect(router.state.matches.at(-1)?.links).toContainEqual({
+			rel: 'canonical',
+			href: 'https://altstack.test/licenses',
+		})
+	})
+	it('keeps license-scoped filters, pagination and history in the URL', async () => {
+		total = 25
+		const router = await routerAt('/licenses/mit?page=2&sort=last-commit', true)
+		expect(
+			screen.getByRole('heading', { name: 'MIT Licensed Open Source Software' })
+		).toBeTruthy()
+		expect(
+			screen.getByText('25 published projects licensed under MIT.')
+		).toBeTruthy()
+		expect(
+			rpc.mock.calls.some(([path, input]) => {
+				if (path.join('/') !== 'project/search') return false
+				const query = searchProjectsInputSchema.parse(input).query
+				return (
+					query.license === 'mit' &&
+					query.page === 2 &&
+					query.sort === 'last-commit'
+				)
+			})
+		).toBe(true)
+		await act(() =>
+			router.navigate({
+				to: '/licenses/$slug',
+				params: { slug: 'mit' },
+				search: { q: 'absent', sort: 'name-desc' },
+			})
+		)
+		expect(
+			await screen.findByRole('heading', { name: 'No projects found' })
+		).toBeTruthy()
+		expect(
+			screen.getByRole('textbox', { name: 'Search in "MIT"...' })
+		).toHaveProperty('value', 'absent')
+		await act(async () => {
+			router.history.back()
+			await router.load()
+		})
+		await waitFor(() => expect(router.state.location.search.page).toBe(2))
+		expect(
+			screen.getByRole('textbox', { name: 'Search in "MIT"...' })
+		).toHaveProperty('value', '')
+		await act(async () => {
+			router.history.forward()
+			await router.load()
+		})
+		await waitFor(() => expect(router.state.location.search.q).toBe('absent'))
+		expect(
+			screen.getByRole('textbox', { name: 'Search in "MIT"...' })
+		).toHaveProperty('value', 'absent')
+	})
+	it('validates direct search state and provides out-of-range recovery', async () => {
+		const router = await routerAt('/licenses/mit?sort=invalid&page=-1', true)
+		expect(router.state.location.search.sort).toBe('newest')
+		expect(router.state.location.search.page).toBe(1)
+		await act(() =>
+			router.navigate({
+				to: '/licenses/$slug',
+				params: { slug: 'mit' },
+				search: { page: 999 },
+			})
+		)
+		expect(
+			await screen.findByRole('heading', { name: 'No projects on this page' })
+		).toBeTruthy()
+		fireEvent.click(screen.getByRole('link', { name: 'First page' }))
+		await waitFor(() =>
+			expect(router.state.location.search.page).toBeUndefined()
+		)
+	})
+	it('shows a factual unknown catalogue, noindex, and real missing-license 404s', async () => {
+		const router = await routerAt('/licenses/unknown', true)
+		expect(
+			screen.getByRole('heading', { name: 'Projects with unknown License' })
+		).toBeTruthy()
+		expect(
+			screen.getByText(
+				/including custom licenses|This includes custom licenses/
+			)
+		).toBeTruthy()
+		expect(router.state.matches.at(-1)?.meta).toContainEqual({
+			name: 'robots',
+			content: 'noindex, follow',
+		})
+		await act(() =>
+			router.navigate({
+				to: '/licenses/$slug',
+				params: { slug: 'private-only' },
+				search: {},
+			})
+		)
+		expect(
+			await screen.findByRole('heading', { name: 'License not found' })
+		).toBeTruthy()
+		expect(router.state.matches.at(-1)?.status).toBe('notFound')
 	})
 })

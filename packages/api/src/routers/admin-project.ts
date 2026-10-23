@@ -262,15 +262,26 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 
 				const fetchedAt = new Date()
 
-				await tx.insert(githubRepository).values({
-					projectId: inserted.id,
-					githubRepositoryId: resolved.githubRepositoryId,
-					owner,
-					repo,
-					stars,
-					forks,
-					fetchedAt,
-				})
+				const [githubRow] = await tx
+					.insert(githubRepository)
+					.values({
+						projectId: inserted.id,
+						githubRepositoryId: resolved.githubRepositoryId,
+						licenseKey: resolved.licenseKey,
+						licenseName: resolved.licenseName,
+						licenseSpdxId: resolved.licenseSpdxId,
+						licenseSlug: resolved.licenseSlug,
+						licenseUrl: resolved.licenseUrl,
+						archived: resolved.archived,
+
+						owner,
+						repo,
+						stars,
+						forks,
+						fetchedAt,
+					})
+					.returning()
+				if (!githubRow) throw errors.INTERNAL_SERVER_ERROR()
 
 				await syncProjectTags(tx, inserted.id, resolved.topics)
 
@@ -302,14 +313,7 @@ const adminCreateProjectHandler = adminProcedure.admin.project.create.handler(
 					logo: rest.logo,
 					screenshot: rest.screenshot,
 					categories: uniqueCategorySlugs,
-					github: {
-						owner,
-						repo,
-						stars,
-						forks,
-						fetchedAt,
-						...emptyGithubMetadata,
-					},
+					github: githubDetail(githubRow),
 				}
 			})
 			const enriched = await enrichProjectGithubBestEffort(
@@ -638,6 +642,12 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 										fetchedAt: new Date(),
 									}
 								: {}),
+							licenseKey: refreshedGithub.licenseKey,
+							licenseName: refreshedGithub.licenseName,
+							licenseSpdxId: refreshedGithub.licenseSpdxId,
+							licenseSlug: refreshedGithub.licenseSlug,
+							licenseUrl: refreshedGithub.licenseUrl,
+							archived: refreshedGithub.archived,
 							githubRepositoryId: refreshedGithub.githubRepositoryId,
 							owner: refreshedGithub.owner,
 							repo: refreshedGithub.repo,

@@ -6,6 +6,7 @@ import { altstackContract } from '@altstack/api/contracts/altstack'
 import { bookmarkContract } from '@altstack/api/contracts/bookmark'
 import { categoryContract } from '@altstack/api/contracts/category'
 import { healthContract } from '@altstack/api/contracts/health'
+import { licenseContract } from '@altstack/api/contracts/license'
 import { projectContract } from '@altstack/api/contracts/project'
 import { reportContract } from '@altstack/api/contracts/report'
 import { submissionContract } from '@altstack/api/contracts/submission'
@@ -13,6 +14,7 @@ import { tagContract, adminTagContract } from '@altstack/api/contracts/tag'
 import { uploadContract } from '@altstack/api/contracts/upload'
 
 export const contracts = {
+	license: licenseContract,
 	tag: tagContract,
 	bookmark: bookmarkContract,
 	admin: {

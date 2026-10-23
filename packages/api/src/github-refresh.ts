@@ -20,6 +20,12 @@ export const emptyGithubMetadata = {
 	repositoryCreatedAt: null,
 	latestReleaseTag: null,
 	metadataFetchedAt: null,
+	licenseKey: null,
+	licenseName: null,
+	licenseSpdxId: null,
+	licenseSlug: null,
+	licenseUrl: null,
+	archived: null,
 }
 
 export function githubDetail(row: typeof githubRepository.$inferSelect) {
@@ -29,6 +35,13 @@ export function githubDetail(row: typeof githubRepository.$inferSelect) {
 		stars: row.stars,
 		forks: row.forks,
 		fetchedAt: row.fetchedAt,
+		licenseKey: row.licenseKey,
+		licenseName: row.licenseName,
+		licenseSpdxId: row.licenseSpdxId,
+		licenseSlug: row.licenseSlug,
+		licenseUrl: row.licenseUrl,
+		archived: row.archived,
+
 		lastCommitAt: row.lastCommitAt,
 		repositoryCreatedAt: row.repositoryCreatedAt,
 		latestReleaseTag: row.latestReleaseTag,
@@ -128,6 +141,13 @@ export async function refreshProjectGithub(
 					repo: fetched.repo,
 					stars: fetched.stars,
 					forks: fetched.forks,
+					licenseKey: fetched.licenseKey,
+					licenseName: fetched.licenseName,
+					licenseSpdxId: fetched.licenseSpdxId,
+					licenseSlug: fetched.licenseSlug,
+					licenseUrl: fetched.licenseUrl,
+					archived: fetched.archived,
+
 					lastCommitAt: fetched.lastCommitAt,
 					repositoryCreatedAt: fetched.repositoryCreatedAt,
 					latestReleaseTag: fetched.latestReleaseTag,

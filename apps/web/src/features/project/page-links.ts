@@ -33,7 +33,23 @@ export function tagProjectPageLink(slug: string, page: number) {
 	} satisfies LinkOptions<RegisteredRouter, '/tags/$slug', '/tags/$slug'>
 }
 
+export function licenseProjectPageLink(slug: string, page: number) {
+	return {
+		from: '/licenses/$slug' as const,
+		to: '/licenses/$slug' as const,
+		params: { slug },
+		search: (prev) => {
+			return { ...prev, page: page === 1 ? undefined : page }
+		},
+	} satisfies LinkOptions<
+		RegisteredRouter,
+		'/licenses/$slug',
+		'/licenses/$slug'
+	>
+}
+
 export type ProjectPageLinkOptions =
+	| ReturnType<typeof licenseProjectPageLink>
 	| ReturnType<typeof tagProjectPageLink>
 	| ReturnType<typeof homeProjectPageLink>
 	| ReturnType<typeof categoryProjectPageLink>

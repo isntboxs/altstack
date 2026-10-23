@@ -395,6 +395,12 @@ describe('transactional file seeding in disposable PostgreSQL schemas', () => {
 				githubRepositoryId: 123,
 				stars: 321,
 				forks: 12,
+				licenseKey: 'mit',
+				licenseName: 'MIT License',
+				licenseSpdxId: 'MIT',
+				licenseSlug: 'mit',
+				licenseUrl: 'https://spdx.org/licenses/MIT.html',
+				archived: true,
 				repositoryCreatedAt: new Date('2020-01-01'),
 				lastCommitAt: null,
 				latestReleaseTag: null,
@@ -415,6 +421,9 @@ describe('transactional file seeding in disposable PostgreSQL schemas', () => {
 		})
 		expect(saved.repositories[0]).toMatchObject({
 			owner: 'renamed',
+			licenseSlug: 'mit',
+			licenseUrl: 'https://spdx.org/licenses/MIT.html',
+			archived: true,
 			repo: 'tool',
 			stars: 321,
 			forks: 12,

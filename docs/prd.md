@@ -1,8 +1,8 @@
 ---
 title: AltStack Product Requirements
-version: 2.7
+version: 2.8
 status: v0.3.0 rolled out — review-email implementation pending rollout
-last_updated: 2026-10-23
+last_updated: 2026-10-24
 ---
 
 # AltStack
@@ -41,7 +41,7 @@ capability, separate from submission provenance.
 
 1. Finish one useful user journey at a time.
 2. Reuse existing infrastructure; introduce dependencies for observed needs.
-3. Use truthful labels: most-starred sorting and observed star changes do not constitute trending.
+3. Use truthful labels: Most popular explicitly means total stars; Trending means observed seven-day star growth, with insufficient observations ranked last. Neither implies a broader popularity signal.
 4. Enforce authorization in server/API procedures independently from UI guards.
 5. Measure PostgreSQL search on representative data before adding another search service.
 6. Distinguish implemented features, automated checks, and operator rollout.
@@ -125,6 +125,16 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Category hierarchy has at most three levels; published projects need 1–3 direct leaf assignments.
 - Public category pages have canonical paths, historical redirects, published-only counts, and basic metadata.
 - Admins manage taxonomy with server-side hierarchy/path/assignment integrity.
+
+### License browsing and archived repositories
+
+- Implemented in the license feature worktree based on `04d19eb`; production rollout is pending. See [license behavior, validation and rollout](licenses.md).
+- Persist GitHub license key/name/SPDX identity, canonical lowercase route slug, human document URL, and factual archived state. Full upstream SPDX identifier data avoids a small hardcoded license list; custom/nonstandard/undetected values display exactly `unknown` without an invented document link.
+- Reuse existing GitHub initial/manual/daily/import pathways. Failed fetches preserve prior snapshots; successful snapshots can remove/change license and archival. Repository-ID replacements clear unrelated metadata/history; archived alone does not unpublish a project.
+- `/licenses` and `/licenses/$slug` expose only published visible projects, scoped search/sort/pagination, stable URL history, accurate counts and category/tag-consistent SEO. The unknown bucket is discoverable but noindex; private-only/missing licenses return 404.
+- Public catalogue cards show Stars → Last commit → License plus Archived where reported. Detail statistics place License immediately above Repository, retain Forks, and provide separate discovery/document links. Public navigation/footer expose Licenses.
+- Ten catalogue sorts match the requested menu order. Existing query sort values remain compatible. The user selected Most popular = total stars and Trending = first-to-last observed star delta in the trailing seven-day WIB window, requiring two dates and placing missing observations last. Last commit uses newest first; Repository age uses oldest first; nulls last and project-ID ties are stable.
+- Apply the additive migration before matching API/web images, then backfill and retain the existing daily schedule. No new admin CRUD or scheduler, R6, collections, or comparison scope.
 
 ### GitHub Topics tags
 
