@@ -1,18 +1,20 @@
 # AltStack Roadmap — Lean Releases
 
-> Execution companion to [the PRD](prd.md). Reconciled on **2026-10-13** against
-> baseline commit `f876eb1`. Checked items mean implemented in this checkout,
-> not deployed or verified in production. Open acceptance/rollout items remain
-> release gates.
+> Execution companion to [the PRD](prd.md). Reconciled on **2026-10-23** against
+> `dev` commit **`4ce2d9c`**. Checked implementation items describe this checkout.
+> Release contents, operator-reported rollout and recorded verification are
+> tracked separately; unchecked operational items mean evidence is still missing.
 
-R5a implementation updated on **2026-10-14** from baseline `8127d34`.
-R5b implementation updated on **2026-10-14** from baseline `4adb6b6`.
-L1 implementation merged into `dev` at **`a650dd0`**, reconciled on **2026-10-15**.
-L2 implementation merged into `dev` at **`b83b448`**, reconciled on **2026-10-16**.
-Project Embed merged into `dev` at **`d49273a`**, reconciled on **2026-10-17**.
-Public Markdown merged into `dev` at **`8128e0f`**; media/content fixes are present
-at **`840f1fd`**, reconciled on **2026-10-18**.
-Merged-revision and production acceptance remain open.
+## Release baseline and evidence
+
+- **v0.2.0** (`0c75022`): project mentions/hover previews, sharing, footer and media fixes, on top of the existing catalogue, submission, SEO and Embed capabilities.
+- **v0.3.0** (`bb30efe`): includes Bookmarks (#105), report intake (#108), admin report inbox (#109), revised R7 Featured Projects (#110), and related UI fixes. The operator confirmed rollout on **2026-10-22** in the project conversation. Production was not independently inspected in this reconciliation.
+- **After v0.3.0, merged into this baseline:** Docker development/test databases (#112, `6a1f465`), GitHub Topics tags (#113, `f023003`), GitHub + Resend Magic Link auth and rate-limit fixes (#115, `34d63a7`), and scoped-validation instructions (`4ce2d9c`). Their deployment is not established by the v0.3.0 rollout confirmation.
+
+Feature documents retain their original branch test/QA results. Those historical
+runs are not fresh checks of this baseline. This reconciliation changes only
+documentation and uses diff, local-link and formatting checks; it does not rerun
+application tests, apply migrations, or certify production acceptance.
 
 ## Operating rules
 
@@ -26,43 +28,52 @@ Merged-revision and production acceptance remain open.
 
 - **R0 — Catalogue data:** schema and CSV/JSON importer implemented; real launch content needs verification.
 - **R1 — Browse:** public list/detail implemented.
-- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages, and admin taxonomy implemented.
-- **R3 — Sign in:** OAuth configuration, session-aware navigation, private route guards, and API authorization implemented; real OAuth smoke remains open.
+- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages/admin taxonomy, and GitHub Topics tags with public/admin pages implemented. Tags are merged after v0.3.0.
+- **R3 — Sign in:** GitHub OAuth + Resend Magic Link, server-disabled password auth, shared dialog/route, session-aware navigation, route guards and API authorization implemented. Magic Link is merged after v0.3.0; live delivery and production cookie checks remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
-- **L2 — Public UI:** disabled deferred actions, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented and merged; scope and release gates below.
-- **Project Embed:** public URL-controlled dialog and SVG badges implemented and merged, including the designer-provided artwork; merged-revision and deployment acceptance remain open.
-- **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, public project mentions, cached-image decoding and stored-public-content preparation implemented in `dev`; release verification remains separate.
-- **Private Bookmarks:** implemented after v0.2.0 on the feature branch for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
+- **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; only Verify remains deferred.
+- **Project Embed:** public URL-controlled dialog and SVG badges implemented, including the designer-provided artwork; included in the released baseline, with domain/CDN acceptance evidence still separate.
+- **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, project mentions/hover previews, cached-image decoding and stored-public-content preparation implemented and included in released code.
+- **Private Bookmarks:** merged and included in v0.3.0 for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
+- **Report intake and admin inbox:** merged and included in v0.3.0; guest/session-aware private intake and admin-only Open → Resolved/Dismissed moderation. See [reports](project-reports.md).
+- **R7 — Featured Projects:** revised detail-page curation implemented and included in v0.3.0; homepage remains the Latest catalogue.
+- **Development/test infrastructure:** separate local Docker PostgreSQL 18 databases, disposable test schemas, browser/HTTP acceptance tools and scoped validation policy implemented.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
-- **R6:** ownership/maintainer editing remains MVP+ work. **R7** is revised to admin-curated Featured Projects on detail pages; implementation and rollout are tracked below.
+- **R6:** repository ownership/maintainer editing remains unimplemented; login and submission provenance confer no ownership.
 
-Next: complete launch acceptance and operations before adding
-ownership or editorial sections. Bookmarks are the separately authorized slice
-tracked below.
+Next product work: R6 ownership/maintainer editing and submission-review
+notifications, selected from user needs. Track post-v0.3.0 migration/configuration
+and live acceptance separately from those feature decisions. Homepage editorial
+sections, collections and comparisons remain deferred.
 
 ## Repository conventions and validation
 
 - Use one branch and one checklist per vertical slice, such as `feat/r5-resubmit`.
 - Define oRPC contracts before handlers. API authorization is independent from route guards.
-- Public list/detail/search/category counts and future sitemap queries select `published` on the server.
-- Follow the root README's disposable-schema wrapper for database-dependent checks. It migrates a temporary schema in `altstack_test` without resetting application data in `public`.
+- Public list/detail/search/category/tag counts and existing sitemap queries select `published` on the server. Private bookmark state and report data stay outside public projections.
+- Development uses Docker PostgreSQL 18 database `altstack` on loopback port 5432; tests use separate local `altstack_test` on port 5433. Test helpers require the local test target and never fall back to `DATABASE_URL`.
+- Follow the root README's disposable-schema wrapper for database-dependent checks. It migrates a temporary schema in `altstack_test` without resetting development application data.
+- Follow [AGENTS.md](../AGENTS.md#testing-scope): start with specific affected tests, expand only for concrete impact or failures, and state the reason before any justified full-suite run. Documentation-only changes need diff/link/format checks, not application tests.
 
 ```sh
 vp install
-vp check
-vp run --filter @altstack/db test:scoped -- vp test run
-vp run --filter @altstack/db test:scoped -- vp run -r test
-vp run -r build
+# Example: scoped formatting for a documentation-only change.
+vp fmt docs/roadmap.md docs/prd.md --check
+# Example: one affected database-backed API feature, when code changes.
+vp run db:test:start
+vp run --filter @altstack/db test:scoped -- vp run --filter @altstack/api test tests/bookmark.test.ts
 ```
 
-The root `ready` script combines check, recursive tests, and builds; run it through
-`test:scoped` for acceptance. The existing `test:categories-http` script uses
-`test:isolated`, which resets only the Docker test database; provide a scoped
-replacement before routine release use.
+Choose lint/typecheck/build and HTTP/browser checks for the affected packages and
+callers. Root `ready`, `vp run check` and unfiltered recursive/root tests are broad
+commands, not routine completion steps. When a full-suite run is justified, use
+`test:scoped` for database-backed work. The legacy category HTTP acceptance runner
+uses `test:isolated`, which resets the Docker test database; keep it separate from
+development data and prefer disposable-schema acceptance runners for new work.
 
-### Reconciliation evidence — 2026-10-13
+### Historical reconciliation evidence — 2026-10-13
 
 - `vp install`: passed, no dependency changes.
 - `vp check`: format, lint, and typecheck passed.
@@ -80,9 +91,10 @@ replacement before routine release use.
 - `submission.create` atomically inserts a `draft` project, basic repository metadata, and `project_submitted` audit event. The UI labels the draft **Awaiting review**.
 - `submission.list` derives the submitter from the session and returns only that user's projects, statuses, and rejection notes.
 - Admin `admin.project.update` publishes, rejects, restores to draft, or unpublishes the existing project; publication does not create another listing.
-- `removed` is a supported hidden status. `admin.project.remove` physically deletes the project and cascades repository/category/history rows; its audit remains with the project FK set to null. Deletion is not a retained terminal submission record.
+- `removed` is a supported hidden status. `admin.project.remove` physically deletes the project and cascades repository/category/history, bookmark, Featured selection and tag-assignment rows. Audit and reports remain with their project FK set to null. Deletion is not a retained terminal submission record.
 - Original submitters can correct only their rejected intake through `submission.getById` / `submission.resubmit` and a private Edit & Resubmit modal. Name/repository/website changes retain ID, slug, provenance, enrichment and media; state returns to draft and current feedback clears transactionally. Repeating create still returns `409` for existing repositories, including rejected ones.
 - Private procedures require a session; admin project/category/upload procedures also require role `admin`.
+- Bookmark procedures derive account identity from the session. Report intake permits guests; report reads/moderation, Featured selection and tag administration require admin role independently of route guards.
 - Intake accepts GitHub and verified email Magic Link sessions. Password authentication is disabled on the server. Neither method grants repository ownership; see [auth](auth.md).
 
 ### Publish, audit, search, and GitHub
@@ -93,6 +105,7 @@ replacement before routine release use.
 - Rejection requires a trimmed, nonblank reason of at most 1000 characters in API and UI. Both admin create and the final merged PATCH state are checked before GitHub/media work. A PATCH may retain a valid stored reason but cannot clear it while remaining rejected. Legacy rejected records remain readable; restoring them clears the current note while audit history retains prior feedback.
 - Homepage validates `q`, `category`, `sort`, and `page`; only these values are loader dependencies. Filter changes preserve other filters and reset pagination.
 - Search uses PostgreSQL generated `tsvector` + GIN. Category filtering includes descendants; direct assignments use leaves in a maximum three-level hierarchy.
+- Tags use GitHub Topics with immutable topic slugs and admin-curated labels/visibility. Project search supports a visible tag filter; `/tags/$slug` scopes the catalogue to that tag. Homepage URL state remains `q`, `category`, `sort`, `page`.
 - Canonical URLs and GitHub-resolved identity constraints protect duplicates. A service token validates public data, not maintainer ownership.
 - Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations, not reconstructed data or a trending score.
 
@@ -132,6 +145,7 @@ Evidence: `packages/api/src/routers/project.ts`, `apps/web/src/routes/_app/`,
 - [x] Debounced search, filters, validated URL state, empty/reset/pagination states.
 - [x] Hierarchy/subtree filtering, published-only counts, `/categories` and nested category pages, breadcrumbs, canonical metadata, and historical-path redirects.
 - [x] Admin category CRUD at `/admin/categories` with depth/cycle/leaf/path integrity.
+- [x] GitHub Topics sync, `/tags` directory, `/tags/$slug` published catalogue, detail tag links and `/admin/tags` curation. See [tags](tags.md); merged after v0.3.0.
 - [x] API/model/route/form/catalogue UI tests; category HTTP acceptance script exists.
 - [ ] Verify shared URL, reload, back/forward, redirects, and combined filters in staging.
 - [ ] Record EXPLAIN/index evidence on a representative dataset; a declared index alone does not prove performance.
@@ -144,6 +158,7 @@ and [admin category API notes](category-admin-api.md).
 **Outcome:** developers establish sessions for private submission workflows.
 
 - [x] Better Auth GitHub OAuth + Resend Magic Link, server password rejection, shared auth dialog/route, sign-in/out and session-aware navigation.
+- [x] Hashed ten-minute single-use links, React Email delivery, persistent PostgreSQL IP/recipient quotas and safe callbacks. Better Auth/Drizzle adapter are aligned at 1.7.12 with row-lock contention regression coverage; see [auth](auth.md).
 - [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
 - [ ] Verify real GitHub login, refresh, logout, expired session, and return URL in staging.
 - [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; ownership/claims remain deferred.
@@ -218,14 +233,12 @@ previous identity. No synthetic history or media work. Slug stays unchanged.
 See [resubmission contract and policy](submission-resubmit.md), submission router,
 `packages/api/tests/submission-resubmit.test.ts`, and web resubmit/route tests.
 
-**Merged-revision verification gate:** record the tested merged commit and actual
-results for `vp check`, the disposable-schema root test suite, and
-`vp run -r build` before release. Implementation-branch runs do not establish
-verification of the merged revision.
-
-**Separate R5b release gates:** real OAuth/Upstash and keyboard/mobile staging
-smoke, reject → correct → resubmit → re-review, and matching deployment remain
-unverified. Automated implementation completion does not close these gates.
+**Verification record:** the branch results above are historical evidence, not
+verification of `4ce2d9c`. Record affected-feature checks and justified integration
+checks against the actual release revision under the current testing policy.
+Real OAuth/Upstash and reject → correct → resubmit → re-review staging evidence
+remain unrecorded here. The v0.3.0 rollout confirmation establishes operator-reported
+deployment, not the outcome of each smoke check.
 
 ## Delivered scope beyond the initial plan
 
@@ -240,10 +253,12 @@ unverified. Automated implementation completion does not close these gates.
 
 These implementations do not prove production service/schedule configuration.
 
-## Next public-release slices
+## Delivered public-release slices
 
-R5a/R5b, L1 and L2 are implemented and merged; next is **launch acceptance**.
-Project Embed is also merged. Their open acceptance gates still apply before release.
+R5a/R5b, L1/L2, Embed, public content, Bookmarks, Reports and revised R7 are
+implemented in released code. The dated verification below is retained as
+history; it does not put v0.3.0 back into pre-launch status. Outstanding live
+checks are tracked under operations evidence.
 
 ### L1 — Catalogue SEO and link previews
 
@@ -266,7 +281,7 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [x] Retain Verify/Bookmark/Report/Embed and account Bookmarks on desktop/compact/mobile, semantically disabled with visible “Coming soon”; remove the unsupported verification/ranking promise.
+- [x] Original L2 scope retained disabled Verify/Bookmark/Report/Embed and account Bookmarks with accessible “Coming soon” labels. Subsequent slices enabled Embed, Bookmark and Report; only Verify is currently disabled.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
 - [x] Replace generic screenshot placeholders with honest empty states.
 - [x] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
@@ -278,8 +293,8 @@ reported passing check/build, **952 root tests**, **950 workspace tests** and
 five desktop/mobile browser scenarios on branch revision `357d536`; both test
 suites skipped the opt-in Upstash integration. These are branch verification
 results; merged-revision checks remain separate.
-No deferred feature workflow was enabled. Historical research and local evidence
-artifacts have been removed from the repository.
+No deferred workflow was enabled by that original L2 slice. Historical research
+and local evidence artifacts have been removed from the repository.
 
 **Done when:** every enabled action works and public copy matches the product.
 
@@ -294,7 +309,7 @@ Release/staging acceptance remains a separate gate.
 `apps/web/public/badge.svg`, bundled by the generator with dark/light variants
 and proportional custom sizing.
 
-- [x] Enable only Embed on desktop and More; preserve disabled deferred siblings.
+- [x] Original Embed slice enabled Embed on desktop and More; subsequent slices also enabled Bookmark and Report, leaving Verify deferred.
 - [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
       dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
 - [x] Public SVG generator with approved AltStack signature, live published-only
@@ -322,7 +337,8 @@ dark/light visual checks. The 992-test full-suite result above predates this
 artwork update; it is not verification of the final merged revision.
 
 See [Embed parameters, lifecycle and rollout](project-embed.md). L2's historical
-all-disabled decision above is superseded only for Embed by this slice.
+all-disabled decision was superseded for Embed by this slice, and later for
+Bookmark and Report by their own implementations.
 
 ### Public content and media polish — 2026-10-18
 
@@ -340,16 +356,23 @@ release-revision suite or staging/production acceptance.
 
 ### Launch acceptance and operations
 
-- [ ] Pass L1 release-domain/social-crawler and R5a/R5b staging acceptance after merged L2, and resolve the intake-account policy.
+- [x] Record operator-confirmed v0.3.0 rollout on 2026-10-22; its tag contains Bookmarks, Reports/inbox and revised R7. This does not certify every service check below.
+- [x] Resolve intake policy: authenticated GitHub and verified email Magic Link sessions are supported in current code; password authentication is disabled. Magic Link is a post-v0.3.0 change.
+- [ ] Record L1 release-domain/social-crawler and R5a/R5b live acceptance evidence.
 - [ ] Verify at least 20 accurate published listings and real media/links.
-- [ ] Pass format/lint/typecheck, root/workspace tests, and builds on the release revision; explicitly record skipped integrations.
-- [ ] Staging smoke: browse → search/shared URL → categories → GitHub sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review.
+- [ ] Attach revision-specific, affected-feature validation and justified integration/build evidence for the next release; explicitly record skipped integrations. Do not require a full suite for every task.
+- [ ] Record staging smoke: browse → search/shared URL → categories/tags → GitHub or Magic Link sign in → submit → enrich/publish → public detail; reject → private feedback → correct/resubmit → re-review; bookmark → report → admin decision → Featured selection.
 - [ ] Verify direct API `401`/`403`, hidden draft/rejected/removed detail, quotas/capacity, and expired sessions.
-- [ ] Document OAuth callback/admin bootstrap/CORS/runtime secrets/S3 public URL and lifecycle/Redis without exposing secret values.
-- [ ] Apply migrations, confirm matching Docker tags and rollback/forward-fix procedure, verify backup/restore readiness.
+- [x] Document Docker dev/test separation and current auth/Resend/proxy/cookie configuration in the root README and [auth guide](auth.md).
+- [ ] Verify real OAuth callback/admin bootstrap/CORS, storage public URL/lifecycle and Redis configuration without recording secret values.
+- [ ] Record migration execution, matching API/web image tags, rollback/forward-fix procedure and backup/restore readiness for the deployment target.
+- [ ] For post-v0.3.0 tags, apply `20261022111024_github-topic-tags` before API/web and run the existing GitHub refresh for topics backfill; confirm ongoing sync. See [tags](tags.md).
+- [ ] For post-v0.3.0 auth, apply `20261022142815_organic_silver_samurai` (`rate_limit`) before API/web, configure server-only Resend sender/key and trusted proxy headers, and verify live delivery, one-use/expiry, GitHub and cross-subdomain session behavior. See [auth](auth.md).
 - [ ] Inspect statistics CLI, first history point, daily schedule, and failure logs. A full 30-day history is not a launch blocker; observations start after rollout.
 
-Keep operator items open until execution evidence exists.
+Keep evidence gaps open until execution is recorded. The earlier feature-branch
+docs' statements that no deploy/merge occurred describe those test runs; the
+release baseline above supersedes them for merge and operator rollout status.
 
 ## R6 — Own and edit (MVP+)
 
@@ -366,20 +389,21 @@ Start after launch when maintainers request control.
 
 User-revised scope on **2026-10-22**: keep the homepage unchanged and curate a
 global Featured Projects icon panel on public project detail pages.
+Merged via #110 (`02bfe55`) and included in the operator-reported v0.3.0 rollout.
 
 - [x] Admin-only `/admin/featured`, search/add/remove/order and explicit save, bounded to 21 projects with concurrent-save protection.
 - [x] Additive selection table; public reads require published status, repository data and a valid website, exclude the current project, and expose only preview fields.
 - [x] Sidebar panel below stats on two-column layouts; stats scroll away and Featured sticks below the header until the sidebar ends.
 - [x] Mobile panel after Copy link/Share buttons without sticky positioning; direct external website links and existing Markdown mention hover previews.
 - [x] Empty selections omit the panel and preserve the existing stats sticky behavior. Homepage sorting and content are unchanged.
-- [ ] Apply the additive migration and verify the deployed revision/domain.
+- [ ] Attach target migration and domain/browser acceptance evidence to the rollout record; do not infer it from branch QA.
 
 See [behavior, concurrency, migration and verification](featured-projects.md).
 Homepage editorial sections, trending, scores and personalized feeds remain deferred.
 
 ## Private Bookmarks — 2026-10-21
 
-Implemented on the feature branch after v0.2.0; merge/deployment remain separate.
+Merged via #105 (`6753d8a`) and included in the operator-reported v0.3.0 rollout.
 All authenticated users/admins can save/remove published projects, with private
 persistent bookmarks, desktop/compact/mobile actions, account/sidebar navigation,
 and protected `/bookmarks` containing only Name, Description (tagline), and one
@@ -390,8 +414,9 @@ comparisons remain out of scope.
 
 ## Admin report inbox — 2026-10-21
 
-Implemented on `feat/admin-reports` from merged intake #108 (`9d404c2`).
-Merge/deployment and shared DB migration remain separate.
+Intake merged via #108 (`9d404c2`); the inbox merged via #109 (`dc447b8`),
+including the cached-page refresh fix. Both are included in the operator-reported
+v0.3.0 rollout. Target migration and live acceptance evidence remain separate.
 
 - [x] Admin sidebar and guarded `/admin/reports`, reusing the admin table components; email/type/message/date/status and existing project editor navigation.
 - [x] Admin-only RPC/REST list and moderation, 401/403 before data access, Open → Resolved/Dismissed with atomic concurrent-decision protection.
@@ -402,12 +427,25 @@ Merge/deployment and shared DB migration remain separate.
 See [behavior, rollout and verification](project-reports.md). Automatic changes,
 assignment/comments/email and reopen workflows remain outside this slice.
 
+## GitHub Topics tags — merged after v0.3.0
+
+Merged via #113 (`f023003`); implementation includes its review fixes.
+
+- [x] `tags` / `project_tags`, immutable lowercase topic slugs, transactional sync during submission/resubmit/admin repository changes, manual/daily refresh and opt-in GitHub file import.
+- [x] Admin `/admin/tags` create/search/edit/hide/unhide/delete; sync preserves display-name/description/hidden curation and deletion is restricted while any assignments remain.
+- [x] Public `/tags` with search, alphabetical filtering, popular/name sorting and pagination; `/tags/$slug` published-project catalogue and project detail tag links.
+- [x] Hidden/unknown/empty-public tags do not expose a public tag page; counts require published projects with repository rows. Topics are unrelated to GitHub release tags.
+- [ ] Record target migration, initial topics backfill and production acceptance. The existing GitHub refresh job performs backfill; no new scheduler is required.
+
+Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
+`packages/api/src/routers/tag.ts`, `packages/api/tests/tags.test.ts` and web tag routes.
+
 ## Later, only when justified
 
-- Guest submission/abuse review when OAuth blocks legitimate submissions.
+- Guest project submission/abuse review when GitHub or email sign-in blocks legitimate intake. Anonymous report submission is already implemented.
 - Collections/compare when users return to evaluate saved tools.
-- [x] [Report / suggest correction](project-reports.md): guest/session-aware intake via `?dialog=report`, private durable storage, shared validation, Redis quotas and admin inbox. Automatic corrections remain deferred.
-- Notifications when review turnaround/status checking becomes a problem.
+- Submission-review notifications when review turnaround/status checking becomes a problem. Magic Link email is implemented authentication, not review-status notification delivery.
+- Automatic corrections, report assignment/comments/email/reopen, and homepage editorial sections beyond the revised R7 scope.
 - Webhooks/trending when observed refresh/history data supports them.
 - Meilisearch when measured PostgreSQL search quality/latency is insufficient.
 - Galleries/video, scores, analytics, newsletter/RSS, profiles/reviews, SDKs, extensions after feedback.
