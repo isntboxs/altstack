@@ -1,13 +1,5 @@
-import { IconBrandGithub } from '@tabler/icons-react'
-import { log } from 'evlog/client'
-import { useTransition } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
-import { authClient } from '@altstack/auth/client'
-
-import { env } from '@altstack/env/web'
-
-import { Button } from '@altstack/ui/components/button'
 import {
 	Dialog,
 	DialogContent,
@@ -15,11 +7,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@altstack/ui/components/dialog'
-import { Spinner } from '@altstack/ui/components/spinner'
 
-import { resolveReturnTo } from '#/utils/return-to'
+import { SignInForm, signInDescription } from '#/components/sign-in-form'
 
-interface AuthDialogpros {
+interface AuthDialogProps {
 	open: boolean
 	onOpenChange: Dispatch<SetStateAction<boolean>>
 	returnTo?: string
@@ -29,54 +20,14 @@ export const AuthDialog = ({
 	open,
 	onOpenChange,
 	returnTo,
-}: AuthDialogpros) => {
-	const [isLoading, startTransition] = useTransition()
-
-	const callbackURL = new URL(
-		resolveReturnTo(returnTo, '/'),
-		env.VITE_APP_URL
-	).toString()
-
-	const signIn = () => {
-		startTransition(async () => {
-			await authClient.signIn.social({
-				provider: 'github',
-				callbackURL,
-				fetchOptions: {
-					onSuccess: () => onOpenChange(false),
-					onError: (ctx) => {
-						onOpenChange(false)
-						log.error({ error: ctx.error })
-					},
-				},
-			})
-		})
-	}
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-sm">
-				<DialogHeader>
-					<DialogTitle className="text-lg font-medium">
-						Welcome back!
-					</DialogTitle>
-					<DialogDescription>
-						Sign in to submit open-source projects and track your submissions.
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="flex items-center justify-center">
-					<Button
-						variant="outline"
-						className="w-full"
-						onClick={signIn}
-						disabled={isLoading}
-					>
-						<span>Continue with Github</span>
-						{isLoading ? <Spinner /> : <IconBrandGithub />}
-					</Button>
-				</div>
-			</DialogContent>
-		</Dialog>
-	)
-}
+}: AuthDialogProps) => (
+	<Dialog open={open} onOpenChange={onOpenChange}>
+		<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-sm">
+			<DialogHeader className="text-left">
+				<DialogTitle>Sign in</DialogTitle>
+				<DialogDescription>{signInDescription}</DialogDescription>
+			</DialogHeader>
+			{open && <SignInForm returnTo={returnTo} />}
+		</DialogContent>
+	</Dialog>
+)

@@ -8,6 +8,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Pool } from 'pg'
 
+import { createMagicLinkMailbox } from './helpers/magic-link-mailbox.ts'
+
 // Run with Node so detached server process groups terminate independently.
 // Only test:scoped may supply this process's database and own its cleanup.
 assert.equal(
@@ -35,9 +37,12 @@ for (const url of [web, api]) {
 assert.notEqual(web.port, api.port)
 const evidence = await mkdtemp(join(tmpdir(), 'altstack-featured-http-'))
 const children: Array<ReturnType<typeof spawn>> = []
-const password = 'synthetic-local-test-password'
+const mailbox = await createMagicLinkMailbox({
+	preview: process.argv.includes('--preview'),
+})
 const env = {
 	...process.env,
+	...mailbox.env,
 	NODE_ENV: 'production',
 	BETTER_AUTH_URL: api.origin,
 	BETTER_AUTH_COOKIE_DOMAIN: '',
@@ -101,21 +106,7 @@ async function apiRequest(
 }
 async function signup(name: string) {
 	const accountEmail = `featured-${crypto.randomUUID()}@example.test`
-	const response = await fetch(new URL('/api/auth/sign-up/email', api), {
-		method: 'POST',
-		headers: { 'content-type': 'application/json', origin: web.origin },
-		body: JSON.stringify({ email: accountEmail, password, name }),
-	})
-	assert.equal(response.status, 200)
-	const identity = (await response.json()) as { user: { id: string } }
-	return {
-		id: identity.user.id,
-		email: accountEmail,
-		cookie: response.headers
-			.getSetCookie()
-			.map((value) => value.split(';')[0])
-			.join('; '),
-	}
+	return mailbox.signIn(api, web, accountEmail, name)
 }
 try {
 	if (!process.argv.includes('--skip-build')) {
@@ -125,7 +116,12 @@ try {
 	}
 	const server = start(
 		'bun',
-		['run', 'apps/server/dist/index.mjs'],
+		[
+			'run',
+			'--preload',
+			'./apps/web/tests/helpers/mock-resend-preload.ts',
+			'apps/server/dist/index.mjs',
+		],
 		'api',
 		api.port
 	)
@@ -261,9 +257,9 @@ try {
 		await writeFile(
 			join(evidence, 'preview.json'),
 			JSON.stringify({
+				mailboxURL: mailbox.previewURL,
 				email: visitor.email,
 				adminEmail: reviewer.email,
-				password,
 				slug: targets[0].slug,
 				projectId: targets[0].id,
 				featuredIds: ids,
@@ -303,5 +299,6 @@ try {
 			await exited
 		}
 	}
+	await mailbox.close()
 	await pool.end()
 }

@@ -6,6 +6,7 @@ import { seoHead } from '#/features/seo/meta'
 import { resolveReturnTo } from '#/utils/return-to'
 
 const searchSchema = z.object({
+	error: z.string().max(100).optional().catch(undefined),
 	returnTo: z
 		.string()
 		.transform((v) => resolveReturnTo(v, '/'))
@@ -15,9 +16,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/auth')({
 	validateSearch: z.compile(searchSchema),
-	beforeLoad: ({ context: { auth } }) => {
+	beforeLoad: ({ context: { auth }, search: { returnTo } }) => {
 		if (auth) {
-			throw redirect({ to: '/', replace: true, viewTransition: true })
+			throw redirect({ href: resolveReturnTo(returnTo, '/'), replace: true })
 		}
 	},
 	head: () =>
