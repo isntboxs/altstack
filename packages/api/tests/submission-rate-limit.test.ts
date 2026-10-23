@@ -141,6 +141,12 @@ beforeEach(() => {
 	select.mockClear()
 	transaction.mockClear()
 	vi.mocked(fetchPublicGithubRepository).mockReset().mockResolvedValue({
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		githubRepositoryId: 123,
 		topics: [],
 		canonicalUrl: 'https://github.com/example/tool',

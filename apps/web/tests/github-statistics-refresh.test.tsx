@@ -52,6 +52,12 @@ const url = 'https://github.com/owner/repo'
 const statistics: ORPCRouterOutputs['admin']['project']['githubRefresh'] = {
 	repositoryUrl: url,
 	github: {
+		licenseKey: null,
+		licenseName: null,
+		licenseSpdxId: null,
+		licenseSlug: null,
+		licenseUrl: null,
+		archived: null,
 		owner: 'owner',
 		repo: 'repo',
 		stars: 99,

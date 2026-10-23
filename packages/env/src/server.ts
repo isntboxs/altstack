@@ -57,6 +57,9 @@ export const env = createEnv({
 		// until both server-only settings are configured.
 		RESEND_API_KEY: z.string().min(1).optional(),
 		RESEND_FROM_EMAIL: z.email().optional(),
+		// Explicit web origin used for review links and email brand assets. The
+		// dispatcher also requires it to match an existing trusted CORS origin.
+		EMAIL_APP_URL: z.url().optional(),
 		UPSTASH_REDIS_REST_URL: z
 			.url()
 			.refine((url) => url.startsWith('https://'), {

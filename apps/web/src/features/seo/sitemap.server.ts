@@ -1,5 +1,6 @@
 import {
 	sitemapCategories,
+	sitemapLicenses,
 	sitemapPageSize,
 	sitemapProjectCount,
 	sitemapProjects,
@@ -53,10 +54,19 @@ export async function sitemapIndex() {
 	)
 }
 export async function sitemapPages() {
-	const categories = await sitemapCategories()
+	const [categories, licenses] = await Promise.all([
+		sitemapCategories(),
+		sitemapLicenses(),
+	])
 	return urls([
 		{ path: '/' },
 		{ path: '/categories' },
+		{ path: '/licenses' },
+		...licenses
+			.filter((license) => license.slug !== 'unknown')
+			.map((license) => {
+				return { path: `/licenses/${license.slug}` }
+			}),
 		{ path: '/activity' },
 		...categories.map((category) => {
 			return { path: `/categories/${category.path}` }

@@ -186,6 +186,13 @@ export const submissionRouter = {
 							repo: fetched.repo,
 							stars: fetched.stars,
 							forks: fetched.forks,
+							licenseKey: fetched.licenseKey,
+							licenseName: fetched.licenseName,
+							licenseSpdxId: fetched.licenseSpdxId,
+							licenseSlug: fetched.licenseSlug,
+							licenseUrl: fetched.licenseUrl,
+							archived: fetched.archived,
+
 							fetchedAt: new Date(),
 						}
 						if (currentGithub) {
@@ -197,6 +204,12 @@ export const submissionRouter = {
 									...(sameRepository
 										? {}
 										: { ...emptyGithubMetadata, ...basic }),
+									licenseKey: fetched.licenseKey,
+									licenseName: fetched.licenseName,
+									licenseSpdxId: fetched.licenseSpdxId,
+									licenseSlug: fetched.licenseSlug,
+									licenseUrl: fetched.licenseUrl,
+									archived: fetched.archived,
 									githubRepositoryId: fetched.githubRepositoryId,
 									owner: fetched.owner,
 									repo: fetched.repo,
@@ -338,6 +351,12 @@ export const submissionRouter = {
 				forks,
 				githubRepositoryId,
 				topics,
+				licenseKey,
+				licenseName,
+				licenseSpdxId,
+				licenseSlug,
+				licenseUrl,
+				archived,
 			} = await fetchPublicGithubRepository(submitted.owner, submitted.repo)
 			const [resolvedExisting] = await db
 				.select({ id: project.id })
@@ -406,6 +425,12 @@ export const submissionRouter = {
 						repo,
 						stars,
 						forks,
+						licenseKey,
+						licenseName,
+						licenseSpdxId,
+						licenseSlug,
+						licenseUrl,
+						archived,
 						fetchedAt: new Date(),
 					})
 					await syncProjectTags(tx, inserted.id, topics)

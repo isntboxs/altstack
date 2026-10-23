@@ -20,6 +20,12 @@ const history: ORPCRouterOutputs['project']['getBySlug']['githubStarsHistory'] =
 
 const now = Date.parse('2026-10-10T12:00:00Z')
 const github: ORPCRouterOutputs['project']['getBySlug']['github'] = {
+	licenseKey: null,
+	licenseName: null,
+	licenseSpdxId: null,
+	licenseSlug: null,
+	licenseUrl: null,
+	archived: null,
 	owner: 'owner',
 	repo: 'repo',
 	stars: 12345,

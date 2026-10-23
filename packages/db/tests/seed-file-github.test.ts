@@ -60,6 +60,31 @@ beforeEach(() => {
 })
 
 describe('mocked file seed GitHub adapter', () => {
+	it('normalizes actual license and archival metadata for import without another endpoint', async () => {
+		mocks.get.mockResolvedValue({
+			data: {
+				...repository,
+				archived: true,
+				license: {
+					key: 'apache-2.0',
+					name: 'Apache License 2.0',
+					spdx_id: 'Apache-2.0',
+					url: 'https://api.github.com/licenses/apache-2.0',
+				},
+			},
+		})
+		expect(
+			await createSeedGithubClient().statistics('old', 'tool')
+		).toMatchObject({
+			licenseSlug: 'apache-2.0',
+			licenseSpdxId: 'Apache-2.0',
+			licenseName: 'Apache License 2.0',
+			licenseUrl: 'https://spdx.org/licenses/Apache-2.0.html',
+			archived: true,
+		})
+		expect(mocks.get).toHaveBeenCalledTimes(1)
+	})
+
 	it('fetches public statistics with the normalized renamed identity and bounded requests', async () => {
 		const result = await createSeedGithubClient('test-token').statistics(
 			'old',
@@ -68,6 +93,12 @@ describe('mocked file seed GitHub adapter', () => {
 		expect(result).toEqual({
 			repositoryUrl: 'https://github.com/renamed/tool',
 			githubRepositoryId: 123,
+			licenseKey: null,
+			licenseName: null,
+			licenseSpdxId: null,
+			licenseSlug: null,
+			licenseUrl: null,
+			archived: null,
 			topics: [],
 			stars: 321,
 			forks: 12,

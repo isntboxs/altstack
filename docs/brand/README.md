@@ -44,6 +44,10 @@ simple diagonal split was refined with those notches before implementation.
   ICO fallback with 16/32/48 px images.
 - App icons: white mark on black at 192/512 px; Apple touch icon at 180 px.
   The manifest and document head reference the new assets and Altstack name.
+- Transactional email: [128 px transparent PNG](../../apps/web/public/brand/altstack-email-symbol.png)
+  derived from the same bundled SVG, displayed at 32 px beside the lowercase
+  text wordmark. Shared email layout and templates live in `packages/ui/src/emails`;
+  [synthetic previews](../email-previews/README.md) record their separate QA.
 
 Use the symbol in pure black on light surfaces and pure white on dark
 surfaces. Keep the geometry and aspect ratio intact. Minimum screen size is

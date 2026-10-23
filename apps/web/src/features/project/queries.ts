@@ -9,6 +9,7 @@ export interface SearchProjectsParams {
 	sort?: SearchSortType
 	category?: string
 	tag?: string
+	license?: string
 	q?: string
 }
 

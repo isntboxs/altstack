@@ -5,6 +5,10 @@
 > Release contents, operator-reported rollout and recorded verification are
 > tracked separately; unchecked operational items mean evidence is still missing.
 
+Review-email implementation notes below apply to this feature worktree based on
+`c3e0980` (including current auth fixes and Vite+ 1.4.0). They are not a new release
+or production-rollout confirmation.
+
 ## Release baseline and evidence
 
 - **v0.2.0** (`0c75022`): project mentions/hover previews, sharing, footer and media fixes, on top of the existing catalogue, submission, SEO and Embed capabilities.
@@ -12,9 +16,9 @@
 - **After v0.3.0, merged into this baseline:** Docker development/test databases (#112, `6a1f465`), GitHub Topics tags (#113, `f023003`), GitHub + Resend Magic Link auth and rate-limit fixes (#115, `34d63a7`), and scoped-validation instructions (`4ce2d9c`). Their deployment is not established by the v0.3.0 rollout confirmation.
 
 Feature documents retain their original branch test/QA results. Those historical
-runs are not fresh checks of this baseline. This reconciliation changes only
-documentation and uses diff, local-link and formatting checks; it does not rerun
-application tests, apply migrations, or certify production acceptance.
+runs are not fresh checks of this baseline. The original reconciliation used
+documentation checks only. Fresh, targeted checks for the later review-email
+implementation are recorded under R5c; production acceptance remains separate.
 
 ## Operating rules
 
@@ -28,10 +32,11 @@ application tests, apply migrations, or certify production acceptance.
 
 - **R0 — Catalogue data:** schema and CSV/JSON importer implemented; real launch content needs verification.
 - **R1 — Browse:** public list/detail implemented.
-- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages/admin taxonomy, and GitHub Topics tags with public/admin pages implemented. Tags are merged after v0.3.0.
+- **R2 — Find:** full-text search, filters, sorting, pagination, public category pages/admin taxonomy, and GitHub Topics tags implemented. This worktree additionally implements license browsing, archived metadata, and ten catalogue sorts; rollout remains pending. See [licenses](licenses.md).
 - **R3 — Sign in:** GitHub OAuth + Resend Magic Link, server-disabled password auth, shared dialog/route, session-aware navigation, route guards and API authorization implemented. Magic Link is merged after v0.3.0; live delivery and production cookie checks remain open.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
+- **R5c — Review emails:** Published/Rejected decision outbox, bounded Resend retry and shared React Email templates implemented in this worktree; migration, scheduler and live inbox acceptance pending.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; only Verify remains deferred.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented, including the designer-provided artwork; included in the released baseline, with domain/CDN acceptance evidence still separate.
@@ -43,8 +48,8 @@ application tests, apply migrations, or certify production acceptance.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, 30-day star history, and file seeding.
 - **R6:** repository ownership/maintainer editing remains unimplemented; login and submission provenance confer no ownership.
 
-Next product work: R6 ownership/maintainer editing and submission-review
-notifications, selected from user needs. Track post-v0.3.0 migration/configuration
+Next product work: R6 ownership/maintainer editing, selected from user needs.
+Review notifications are implemented in this worktree. Track migration/configuration
 and live acceptance separately from those feature decisions. Homepage editorial
 sections, collections and comparisons remain deferred.
 
@@ -107,7 +112,7 @@ development data and prefer disposable-schema acceptance runners for new work.
 - Search uses PostgreSQL generated `tsvector` + GIN. Category filtering includes descendants; direct assignments use leaves in a maximum three-level hierarchy.
 - Tags use GitHub Topics with immutable topic slugs and admin-curated labels/visibility. Project search supports a visible tag filter; `/tags/$slug` scopes the catalogue to that tag. Homepage URL state remains `q`, `category`, `sort`, `page`.
 - Canonical URLs and GitHub-resolved identity constraints protect duplicates. A service token validates public data, not maintainer ownership.
-- Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations, not reconstructed data or a trending score.
+- Public statistics read DB snapshots. Refresh stores stars/forks, last commit, repository creation, latest release, and fetch timestamps. History uses actual observations. License browsing adds the user-approved seven-day observed star-delta Trending sort; it does not reconstruct history.
 
 ---
 
@@ -239,6 +244,24 @@ checks against the actual release revision under the current testing policy.
 Real OAuth/Upstash and reject → correct → resubmit → re-review staging evidence
 remain unrecorded here. The v0.3.0 rollout confirmation establishes operator-reported
 deployment, not the outcome of each smoke check.
+
+### R5c — Submission decision email
+
+- [x] Notify the stored original submitter on actual Published/Rejected transitions; skip records without a recipient, unchanged saves and feedback-only edits.
+- [x] Commit an outbox row with its status audit UUID; no mail before commit, rollback/stale-write protection, separate identities for resubmission/re-review.
+- [x] Reuse Resend and existing private `/submission` → sign-in → Edit & Resubmit. Public links use `/$slug`; feedback remains private, escaped text.
+- [x] Consolidate all React Email components in `packages/ui/src/emails` with shared brand layout/primitives and explicit exports. Preserve Magic Link HTML/text, ten-minute expiry and one-use copy.
+- [x] Add the private scheduled server CLI, frozen payloads, concurrent-worker leases, eight-attempt/23-hour retry limits and synthetic HTML/text previews.
+- [ ] Apply the additive outbox migration and runtime `EMAIL_APP_URL` configuration, deploy Web/API, and enable the every-minute container job.
+- [ ] Record actual mail-client and live delivery/bounce acceptance with operator-owned test accounts.
+
+Fresh local evidence on 2026-10-23: 146 scoped API review/resubmit/history/notification
+tests, 44 auth, 23 web journey/sign-in, 8 shared email, 5 CLI and 1 additive migration
+test passed. Scoped formatting/typed lint/typechecks, affected package builds and
+web production build passed; T3 visual inspection covered desktop/360 px, long
+feedback and hidden images. See [delivery/rollout limits](review-notifications.md)
+and [rendered previews and exact verification scope](email-previews/README.md).
+No real email, production migration, deployment or live scheduler was run.
 
 ## Delivered scope beyond the initial plan
 
@@ -444,7 +467,6 @@ Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 
 - Guest project submission/abuse review when GitHub or email sign-in blocks legitimate intake. Anonymous report submission is already implemented.
 - Collections/compare when users return to evaluate saved tools.
-- Submission-review notifications when review turnaround/status checking becomes a problem. Magic Link email is implemented authentication, not review-status notification delivery.
 - Automatic corrections, report assignment/comments/email/reopen, and homepage editorial sections beyond the revised R7 scope.
 - Webhooks/trending when observed refresh/history data supports them.
 - Meilisearch when measured PostgreSQL search quality/latency is insufficient.
@@ -457,3 +479,17 @@ Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 - Migration and rollback/forward-fix notes.
 - Test commands/results and manual smoke evidence.
 - Operator status, limitations, observed need for the next slice.
+
+## License browsing and archived metadata — implemented, rollout pending
+
+Feature worktree based on `04d19eb` (merged #117); this is not a deployment claim.
+
+- [x] Additive nullable license identity/name/slug/document URL and archived metadata; shared normalization against the vendored full SPDX identifier list.
+- [x] Initial intake/resubmit/admin/import and existing manual/daily GitHub refresh paths; failed fetch preservation and repository-ID continuity.
+- [x] `/licenses` published-only directory/counts and `/licenses/$slug` scoped search/sort/pagination; unknown/filter/not-found/error states, canonical/noindex and sitemap policy.
+- [x] Internal discovery links, public navigation/footer, card Stars → Last commit → License and Archived badge; detail License immediately above Repository with a separate human document link.
+- [x] Ten requested sorts, preserving legacy query values. User selected Most popular = total stars; Trending = observed seven-day star delta, insufficient observations last. No ranking decision remains open.
+- [ ] Apply `20261023175513_github-license-archived` on target, deploy matching API/web revisions, backfill with the existing refresh job, and verify daily synchronization/live GitHub metadata.
+
+Focused checks, reproducible commands, browser evidence and rollout limits:
+[license feature notes](licenses.md). No R6, collections or compare work is included.

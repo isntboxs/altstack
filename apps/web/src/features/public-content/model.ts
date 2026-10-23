@@ -42,6 +42,7 @@ const reservedPaths = new Set([
 	'activity',
 	'submit',
 	'categories',
+	'licenses',
 	'projects',
 	'submission',
 	'auth',

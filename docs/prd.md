@@ -1,8 +1,8 @@
 ---
 title: AltStack Product Requirements
-version: 2.6
-status: v0.3.0 rolled out — post-release implementation reconciled
-last_updated: 2026-10-23
+version: 2.8
+status: v0.3.0 rolled out — review-email implementation pending rollout
+last_updated: 2026-10-24
 ---
 
 # AltStack
@@ -15,6 +15,8 @@ answer: **“What open-source tool should I try for this job?”**
 The product is a small, trustworthy catalogue. [The roadmap](roadmap.md) records
 implementation status, remaining slices and operational evidence. This PRD is
 reconciled against `dev` commit **`4ce2d9c`** on **2026-10-23**.
+Review-email updates describe this feature worktree on **`c3e0980`**, including
+the latest auth fixes and Vite+ 1.4.0. They do not establish a new deployment.
 
 The operator confirmed **v0.3.0** (`bb30efe`) rollout on 2026-10-22. It includes
 Bookmarks, Report intake/admin inbox and the revised R7 Featured Projects scope.
@@ -39,7 +41,7 @@ capability, separate from submission provenance.
 
 1. Finish one useful user journey at a time.
 2. Reuse existing infrastructure; introduce dependencies for observed needs.
-3. Use truthful labels: most-starred sorting and observed star changes do not constitute trending.
+3. Use truthful labels: Most popular explicitly means total stars; Trending means observed seven-day star growth, with insufficient observations ranked last. Neither implies a broader popularity signal.
 4. Enforce authorization in server/API procedures independently from UI guards.
 5. Measure PostgreSQL search on representative data before adding another search service.
 6. Distinguish implemented features, automated checks, and operator rollout.
@@ -68,14 +70,15 @@ feature-branch proposals.
 - Collections, comparisons, reviews, ratings, follows, and profiles.
 - Quality scores, hidden-gem/fast-growing rankings, personalized/trending feeds.
 - Guest project submission. Anonymous reports already work; Magic Link auth already uses persistent IP and recipient limits.
-- Queues/webhooks/workers beyond the existing daily GitHub statistics CLI.
+- Queues/webhooks/workers beyond the daily GitHub CLI and focused review-email outbox CLI.
 - Rich media galleries/video, analytics dashboards, newsletters, extensions, SDKs.
 - A separate moderator/curator role or multi-role moderation product.
 
 Current capabilities also include category/tag management, S3-compatible media,
 README import, Upstash submission/report limits, GitHub refresh, observed star
-history and transactional Magic Link email. These supersede initial lean-scope
-exclusions; review-status notifications remain deferred.
+history, transactional Magic Link email and review-decision email. These
+supersede initial lean-scope exclusions. Review email migration/configuration,
+scheduler activation and live inbox acceptance remain rollout work.
 
 ## Release scope
 
@@ -116,12 +119,22 @@ See the roadmap for checked implementation items versus unverified acceptance.
 ### R2 — Find and categories
 
 - Text, one category subtree, sorting, and pagination work together.
-- Sorts: newest, oldest, name, most-stars, most-forks.
+- Sorts in display order: Oldest, Latest, Most popular, Name (A to Z), Name (Z to A), Most stars, Trending, Most forks, Last commit, Repository age. See [License browsing and archived repositories](#license-browsing-and-archived-repositories) for ranking definitions.
 - Homepage validates `q`, `category`, `sort`, `page`; changes preserve other filters and reset the page.
 - PostgreSQL full-text search indexes name/tagline/description.
 - Category hierarchy has at most three levels; published projects need 1–3 direct leaf assignments.
 - Public category pages have canonical paths, historical redirects, published-only counts, and basic metadata.
 - Admins manage taxonomy with server-side hierarchy/path/assignment integrity.
+
+### License browsing and archived repositories
+
+- Implemented in the license feature worktree based on `04d19eb`; production rollout is pending. See [license behavior, validation and rollout](licenses.md).
+- Persist GitHub license key/name/SPDX identity, canonical lowercase route slug, human document URL, and factual archived state. Full upstream SPDX identifier data avoids a small hardcoded license list; custom/nonstandard/undetected values display exactly `unknown` without an invented document link.
+- Reuse existing GitHub initial/manual/daily/import pathways. Failed fetches preserve prior snapshots; successful snapshots can remove/change license and archival. Repository-ID replacements clear unrelated metadata/history; archived alone does not unpublish a project.
+- `/licenses` and `/licenses/$slug` expose only published visible projects, scoped search/sort/pagination, stable URL history, accurate counts and category/tag-consistent SEO. The unknown bucket is discoverable but noindex; private-only/missing licenses return 404.
+- Public catalogue cards show Stars → Last commit → License plus Archived where reported. Detail statistics place License immediately above Repository, retain Forks, and provide separate discovery/document links. Public navigation/footer expose Licenses.
+- Ten catalogue sorts match the requested menu order. Existing query sort values remain compatible. The user selected Most popular = total stars and Trending = first-to-last observed star delta in the trailing seven-day WIB window, requiring two dates and placing missing observations last. Last commit uses newest first; Repository age uses oldest first; nulls last and project-ID ties are stable.
+- Apply the additive migration before matching API/web images, then backfill and retain the existing daily schedule. No new admin CRUD or scheduler, R6, collections, or comparison scope.
 
 ### GitHub Topics tags
 
@@ -166,6 +179,10 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
 - Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
 - Resubmission confers no ownership or permission to edit published content. Live OAuth/Redis, reject → correct → re-review and target keyboard/mobile acceptance still need recorded evidence; the overall v0.3.0 rollout has been operator-confirmed.
+- Actual Published/Rejected transitions enqueue email for the stored original submitter in the review transaction, keyed by the audit UUID. Repeated saves/content/feedback edits and records without a recipient generate no mail; later resubmission/review can notify again.
+- Published mail includes project name and public/private links. Rejected mail includes escaped actionable feedback and the existing private `/submission` → safe sign-in returnTo → Edit & Resubmit journey. It grants no ownership or public access to feedback.
+- All React Email templates/layout/primitives live under `packages/ui/src/emails`, isolated from interactive UI exports; rendering/delivery/configuration stay server-side. Magic Link retains HTML/text and its original expiry/one-use lifecycle.
+- A scheduled private CLI sends only committed outbox rows, freezes payloads, fences concurrent workers and retries with the same Resend key up to eight attempts within 23 hours. This is bounded provider deduplication, not exactly-once/inbox delivery. Missing configuration retains pending work; terminal/uncertain failures require operator reconciliation. See [rollout, scheduling, limits and fresh targeted verification](review-notifications.md).
 
 Feature documents preserve historical verification. Record checks scoped to the
 affected behavior and release revision under current AGENTS.md policy; do not
@@ -178,7 +195,7 @@ service acceptance results are separate evidence.
 - GitHub description/website prefill and pinned sanitized README import preview changes locally; Save persists them.
 - Manual/admin and daily CLI refresh update repository statistics/metadata; public pages read DB snapshots.
 - Public `/activity` displays recent AltStack repository commits.
-- Star history records actual daily WIB observations, with cold-start/gap/staleness handling and 90-date retention. No synthetic 30-day backfill or trending ranking.
+- Star history records actual daily WIB observations, with cold-start/gap/staleness handling and 90-date retention. No synthetic 30-day backfill. Trending uses these observations for an observed seven-day star delta.
 - Operator migration/backfill/schedule remains separate from implementation. See [statistics rollout](github-statistics-refresh.md) and [README import](github-readme-import.md).
 
 ### L1 / L2 — Public release completion
@@ -303,6 +320,7 @@ for admin updates.
 - `featured_projects`: global project/unique-position selection (0–20); no per-project featured boolean.
 - Auth `user`, `session`, `account`, `verification` plus `rate_limit`: existing identities/roles, OAuth/session state, hashed Magic Link verification and persistent request/send quotas.
 - `audit_log`: create/update/remove/submit/status events, actor, nullable project FK, reason/metadata/time.
+- `submission_review_notifications`: private decision snapshot keyed by audit UUID; original recipient FK, frozen payload, attempt/lease/deadline/delivery state. Additive with no historical backfill; never exposed in public projections.
 
 There is no active separate submission table. Canonical repository URL is unique
 on projects; repository metadata also has unique project and owner/repo identity.
@@ -324,8 +342,9 @@ Publication enriches the existing submitted project.
 After rollout, measure accurate catalogue coverage, successful browse/search/detail
 journeys, submission decisions within one business day, and authorization checks.
 
-Remaining primary product candidates are R6 ownership/maintainer editing and
-submission-review notifications. Collections/compare, homepage editorial
+The remaining primary product candidate is R6 ownership/maintainer editing.
+Submission-review notifications are implemented here with rollout tracked
+separately. Collections/compare, homepage editorial
 sections, guest project submission and expanded report workflows depend on
 observed demand. Existing Featured curation, report intake/admin decisions and
 Magic Link email are implemented; they do not imply these deferred workflows.

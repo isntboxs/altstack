@@ -7,6 +7,10 @@ page, preserving search and pagination. Existing sign-in guards and sanitized
 return navigation apply. Draft, published and removed rows have no correction
 action. Admins using this flow have the same submitter restrictions.
 
+Published/Rejected decisions now queue [review email notifications](review-notifications.md)
+for the original account. Rejected email links to this existing private table
+and its Edit & Resubmit action; no new editing permission or route is introduced.
+
 ## Contract and authorization
 
 - `submission.getById`: `QUERY /submissions/{id}`, input `{ params: { id } }`.

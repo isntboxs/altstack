@@ -75,6 +75,12 @@ describe('GitHub statistics fetch', () => {
 			lastCommitAt: new Date('2026-10-09T06:07:08Z'),
 			repositoryCreatedAt: new Date('2020-01-02T03:04:05Z'),
 			latestReleaseTag: 'v3.4.5',
+			licenseKey: null,
+			licenseName: null,
+			licenseSpdxId: null,
+			licenseSlug: null,
+			licenseUrl: null,
+			archived: null,
 		})
 		expect(octokit.rest.repos.getCommit).toHaveBeenCalledExactlyOnceWith({
 			owner: 'canonicalowner',

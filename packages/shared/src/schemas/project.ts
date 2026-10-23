@@ -5,6 +5,10 @@ import { z } from 'zod'
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
 import { featuredProjectPreviewSchema } from '@altstack/shared/schemas/featured'
+import {
+	githubLicenseFields,
+	licenseSlugSchema,
+} from '@altstack/shared/schemas/license'
 import { tagSchema, tagSlugSchema } from '@altstack/shared/schemas/tag'
 
 const slugSchema = z
@@ -35,6 +39,9 @@ const projectField = {
 }
 
 const githubField = {
+	...githubLicenseFields,
+	lastCommitAt: z.coerce.date().nullable().default(null),
+	metadataFetchedAt: z.coerce.date().nullable().default(null),
 	owner: z.string(),
 	repo: z.string(),
 	stars: z.number().int().nonnegative(),
@@ -129,6 +136,11 @@ export const searchSortSchema = z.enum([
 	'name',
 	'most-stars',
 	'most-forks',
+	'most-popular',
+	'name-desc',
+	'trending',
+	'last-commit',
+	'repository-age',
 ])
 
 export type SearchSortType = z.infer<typeof searchSortSchema>
@@ -143,6 +155,7 @@ export const searchProjectsQuerySchema = z.object({
 		),
 	category: z.string().trim().min(1).max(100).optional(),
 	tag: tagSlugSchema.optional(),
+	license: licenseSlugSchema.optional(),
 	sort: searchSortSchema.optional().default('newest'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),
@@ -153,6 +166,7 @@ export const searchProjectsInputSchema = z.object({
 })
 
 export const searchProjectsOutputSchema = z.object({
+	asOf: z.coerce.date().optional(),
 	projects: z.array(
 		listProjectItemSchema.extend({ categories: z.array(z.string()) })
 	),
