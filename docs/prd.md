@@ -119,7 +119,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 ### R2 — Find and categories
 
 - Text, one category subtree, sorting, and pagination work together.
-- Sorts: newest, oldest, name, most-stars, most-forks.
+- Sorts in display order: Oldest, Latest, Most popular, Name (A to Z), Name (Z to A), Most stars, Trending, Most forks, Last commit, Repository age. See [License browsing and archived repositories](#license-browsing-and-archived-repositories) for ranking definitions.
 - Homepage validates `q`, `category`, `sort`, `page`; changes preserve other filters and reset the page.
 - PostgreSQL full-text search indexes name/tagline/description.
 - Category hierarchy has at most three levels; published projects need 1–3 direct leaf assignments.
@@ -195,7 +195,7 @@ service acceptance results are separate evidence.
 - GitHub description/website prefill and pinned sanitized README import preview changes locally; Save persists them.
 - Manual/admin and daily CLI refresh update repository statistics/metadata; public pages read DB snapshots.
 - Public `/activity` displays recent AltStack repository commits.
-- Star history records actual daily WIB observations, with cold-start/gap/staleness handling and 90-date retention. No synthetic 30-day backfill or trending ranking.
+- Star history records actual daily WIB observations, with cold-start/gap/staleness handling and 90-date retention. No synthetic 30-day backfill. Trending uses these observations for an observed seven-day star delta.
 - Operator migration/backfill/schedule remains separate from implementation. See [statistics rollout](github-statistics-refresh.md) and [README import](github-readme-import.md).
 
 ### L1 / L2 — Public release completion
