@@ -1,7 +1,7 @@
 ---
 title: AltStack Product Requirements
-version: 2.9
-status: v0.4.0 rolled out — operational close-out first, R6 next
+version: 2.10
+status: v0.4.0 core operations verified — R6 next; recovery follow-up open
 last_updated: 2026-10-24
 ---
 
@@ -23,9 +23,11 @@ Featured baseline, plus GitHub Topics tags, GitHub + Resend Magic Link and auth
 fixes, review-decision emails, license discovery, archived metadata and ten
 catalogue sorts including observed seven-day Trending. Docker dev/test isolation
 and Vite+ 1.4.0 are also included in the release source.
-Individual migration, scheduler, backfill and live-service checks still need
-recorded evidence where absent. This reconciliation does not independently
-inspect production or rerun historical feature tests.
+The [2026-10-24 production record](production-verification-v0.4.0.md) verifies
+matching release revisions, 25 migrations, both scheduled jobs, actual email
+delivery, the focused auth/review journey and 20 accurate published listings.
+P0 core verification is complete. Backup/restore, storage lifecycle inspection
+and explicitly unexercised integrations remain follow-ups, not passing checks.
 
 ## Problem and target users
 
@@ -59,21 +61,21 @@ The original launch journey remains the core acceptance baseline:
 5. Have an admin enrich/publish or reject with actionable feedback.
 6. Correct a rejected submission and return it to review without creating another listing.
 
-The supporting workflows are implemented; the count and accuracy of real
-published listings still need recorded evidence. The roadmap keeps content/service
-smoke, migration/configuration and backup/restore checks separate from the
-operator-confirmed rollout. Repository ownership and maintainer editing remain
-future work. Bookmarks, guest/session-aware Reports, the admin report inbox and
+The supporting workflows and 20-listing catalogue have focused production
+evidence in the linked record. Recovery readiness and additional unexercised
+checks remain separate follow-ups. Repository ownership and maintainer editing
+are the next product work. Bookmarks, guest/session-aware Reports, the admin report inbox and
 detail-page Featured Projects are current capabilities, not launch blockers or
 feature-branch proposals.
 
 ## Ordered priorities after v0.4.0
 
 This is the execution order, shared with the [roadmap](roadmap.md#ordered-priorities-after-v040).
-P0 is immediate release follow-through, not evidence of an active incident.
-Missing acceptance records do not mean deployed features are unimplemented.
+P0 core production verification is complete; P1 is the next feature work.
+Recovery follow-ups remain operational work with explicit owners, and unexercised
+checks are not counted as passing.
 
-1. **P0 — Close out v0.4.0 operations and catalogue quality.** Record or verify the release's migrations/configuration, every-minute review-email job and live decision mail, daily GitHub refresh/topics/license backfill and Trending observations, auth/submission/review smoke, and at least 20 accurate published listings. The [2026-10-24 production record](production-verification-v0.4.0.md) verifies these focused checks: the missing email schedule is enabled, metadata backfilled, and 20 listings reviewed. **Backup/restore remains open**: no backup exists and a private destination plus isolated restore proof are needed; storage lifecycle and unexercised integrations remain explicit gaps. Done when the focused checks and failures have recorded outcomes/owners; historical unchecked items alone do not block R6.
+1. **P0 — Close out v0.4.0 operations and catalogue quality.** Core verification completed on 2026-10-24: release revisions/migrations, both jobs, decision-email inbox delivery, GitHub/Magic Link auth, review/resubmission, discovery and 20 listings passed in the [production record](production-verification-v0.4.0.md). **Recovery follow-up remains open:** the deployment operator must provision private off-host backups and prove an isolated restore; the storage operator must inspect lifecycle policy. Additional unexercised integrations remain explicitly unverified. P0 core checks are not queued again; P1 is next product work.
 2. **P1 — R6 ownership, then maintainer editing.** The next feature candidate for v0.5.0: R6a establishes a documented GitHub claim policy and Verify flow; R6b depends on it and enables authorized edits of published listings. Done when verified owners can maintain their listing, unauthorized updates fail and admin moderation remains intact. R6 is still unimplemented; v0.5.0 is a candidate, not a release commitment.
 3. **P2 — Collections, then comparison.** Build on private Bookmarks when returning users need organized shortlists. Start with private named collections; define comparison fields and build comparison only after evaluation needs are confirmed. Public sharing and social features are separate decisions. Neither slice is implemented or assigned a release.
 4. **P3 — Report workflow improvements.** Address observed admin bottlenecks with the smallest needed slice, such as reopen or follow-up, before assignment/comments/email or automated corrections. Existing intake and Open → Resolved/Dismissed decisions already work. No expansion is scheduled without report-volume or operator evidence.
@@ -98,19 +100,19 @@ Current capabilities also include category/tag management, S3-compatible media,
 README import, Upstash submission/report limits, GitHub refresh, observed star
 history, transactional Magic Link email and review-decision email. These
 supersede initial lean-scope exclusions. Review email migration/configuration,
-scheduler and live inbox evidence belong to P0 close-out of the confirmed v0.4.0
-rollout; missing records do not establish missing configuration.
+scheduler and live inbox evidence are recorded in the completed P0 core
+verification; remaining recovery/integration follow-ups are tracked separately.
 
 ## Release scope
 
-- **R0 — Catalogue data:** migrations and repeatable CSV/JSON import; verify real launch content.
+- **R0 — Catalogue data:** migrations and repeatable CSV/JSON import; 20 real published listings verified in production.
 - **R1 — Browse:** published-only list/detail and public links.
 - **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, GitHub Topics tags, license browsing, archived metadata, ten catalogue sorts and admin taxonomy/tag management.
 - **R3 — Sign in:** GitHub OAuth + email Magic Link through Resend, private routes, session-aware navigation, API checks.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
 - **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback, original-submitter rejected-intake resubmission and R5c decision emails.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
-- **R6 — Own & edit:** unimplemented P1; R6a claim/Verify → R6b maintainer editing, next feature candidate for v0.5.0 after P0 follow-through.
+- **R6 — Own & edit:** next product work, unimplemented P1; R6a claim/Verify → R6b maintainer editing, candidate for v0.5.0 following completed P0 core verification.
 - **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
 - **Private Bookmarks:** per-account saved published projects and protected three-column table; included in v0.3.0.
 - **Reports:** guest/session-aware private intake and admin-only inbox/moderation; included in v0.3.0.
@@ -155,7 +157,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - `/licenses` and `/licenses/$slug` expose only published visible projects, scoped search/sort/pagination, stable URL history, accurate counts and category/tag-consistent SEO. The unknown bucket is discoverable but noindex; private-only/missing licenses return 404.
 - Public catalogue cards show Stars → Last commit → License plus Archived where reported. Detail statistics place License immediately above Repository, retain Forks, and provide separate discovery/document links. Public navigation/footer expose Licenses.
 - Ten catalogue sorts match the requested menu order. Existing query sort values remain compatible. The user selected Most popular = total stars and Trending = first-to-last observed star delta in the trailing seven-day WIB window, requiring two dates and placing missing observations last. Last commit uses newest first; Repository age uses oldest first; nulls last and project-ID ties are stable.
-- P0 records target migration/matching API-web revisions, backfill and daily synchronization evidence. The feature requires no new admin CRUD or scheduler and includes no R6, collections or comparison scope.
+- P0 recorded target migration/matching API-web revisions, backfill and daily synchronization evidence in the [production record](production-verification-v0.4.0.md#github-schedule-and-backfill). The feature requires no new admin CRUD or scheduler and includes no R6, collections or comparison scope.
 
 ### GitHub Topics tags
 
@@ -164,7 +166,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - `/tags` supports `q`, popular/name sorting, alphabetical/non-A–Z filtering and page-based directory browsing (60 per page). Popularity is published-project count, not stars.
 - `/tags/$slug` uses existing project search/sort/pagination with a server-scoped tag filter. Hidden, unknown and zero-public-project tags return 404; the directory excludes them. Project detail shows visible tag links below categories. Homepage search values remain `q`, `category`, `sort`, `page`.
 - `/admin/tags` permits create/edit/hide/unhide/delete with admin API checks. Display name/description/hidden curation survives sync; assigned tags cannot be deleted. Hidden tags are excluded from public displays and tag-filtered results. Deleting an unused tag does not prevent a future sync recreating it.
-- Included in v0.4.0. Record migration, topic backfill and daily refresh evidence under P0; the existing GitHub job performs backfill. See [tags](tags.md).
+- Included in v0.4.0. Migration, topic backfill and daily refresh were verified in P0 using the existing GitHub job. See [production evidence](production-verification-v0.4.0.md#github-schedule-and-backfill) and [tags](tags.md).
 
 ### R3 — Sign in
 
@@ -176,7 +178,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Tokens are hashed, expire in ten minutes and are consumed once. PostgreSQL `rate_limit` persists five email requests per IP and five send attempts per normalized recipient across IPs per ten minutes, plus twenty verification requests per minute. The recipient key is HMAC-derived, and storage/delivery failures do not silently bypass quotas. The UI offers a sixty-second resend cooldown and honors server retry timing.
 - Server-only Resend sender/key, React Email HTML/text, configured-origin callbacks, private/no-store auth responses and existing SSR cookie propagation are part of the implementation. Better Auth and its Drizzle adapter are aligned at 1.7.12 with PostgreSQL contention coverage.
 - Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 is planned as P1 and remains unimplemented.
-- Included in v0.4.0. Live Resend delivery/verified sender, real GitHub OAuth, trusted proxy headers, cross-subdomain cookie flow and admin provisioning need target evidence under P0. Mock-mailbox HTTP evidence does not establish live delivery. See [auth rollout](auth.md).
+- Included in v0.4.0. P0 verified live Resend/Magic Link delivery and sign-in, GitHub callback/return and authenticated cross-subdomain requests. Initial admin bootstrap, expiry/replay and forced logout/session expiry were not exercised; preserve those gaps in the [production record](production-verification-v0.4.0.md#open-outcomes-owners-and-recovery). See [auth rollout](auth.md).
 
 ### R4 — Submit intake
 
@@ -199,7 +201,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Original submitters can edit only rejected intake name/repository/website in a prefilled private Edit & Resubmit modal and atomically return it to `draft`, clearing the current reason. Preserve project ID, slug, submission provenance, enriched copy/media/categories and previous audit events; the submitter transition event records previous feedback and intake changes.
 - Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
 - Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
-- Resubmission confers no ownership or permission to edit published content. Live OAuth/Redis, reject → correct → re-review and target keyboard/mobile acceptance still need recorded evidence where absent; the overall v0.4.0 rollout has been operator-confirmed.
+- Resubmission confers no ownership or permission to edit published content. P0 exercised live OAuth/Upstash and submit → reject → correct/resubmit → publish with both decision emails. Desktop/mobile discovery was checked; additional accessibility and integration scenarios are not implied by this focused [production evidence](production-verification-v0.4.0.md#live-product-and-service-checks).
 - Actual Published/Rejected transitions enqueue email for the stored original submitter in the review transaction, keyed by the audit UUID. Repeated saves/content/feedback edits and records without a recipient generate no mail; later resubmission/review can notify again.
 - Published mail includes project name and public/private links. Rejected mail includes escaped actionable feedback and the existing private `/submission` → safe sign-in returnTo → Edit & Resubmit journey. It grants no ownership or public access to feedback.
 - All React Email templates/layout/primitives live under `packages/ui/src/emails`, isolated from interactive UI exports; rendering/delivery/configuration stay server-side. Magic Link retains HTML/text and its original expiry/one-use lifecycle.
@@ -367,10 +369,12 @@ Publication enriches the existing submitted project.
 After rollout, measure accurate catalogue coverage, successful browse/search/detail
 journeys, submission decisions within one business day, and authorization checks.
 
-Follow the [ordered priorities](#ordered-priorities-after-v040): P0 release
-follow-through → P1 R6a claim/Verify → R6b maintainer editing → P2 collections
+Follow the [ordered priorities](#ordered-priorities-after-v040): P0 core
+verification complete → P1 R6a claim/Verify → R6b maintainer editing → P2 collections
 then comparison → P3 report improvements → P4 homepage editorial → P5 backlog.
 P2–P5 remain conditional on observed needs, not committed releases. Existing
 review emails, Featured, report intake/admin decisions, Magic Link and Trending
 sort are delivered in the v0.4.0 baseline. Broader feeds, webhooks and social/media
 work do not follow automatically from those features.
+Private backup/restore and storage lifecycle remain owned operational follow-ups;
+their implementation and additional acceptance checks are not marked complete.

@@ -20,8 +20,9 @@ this baseline. Individual live-service outcomes are recorded separately in the
 Feature documents retain their original branch test/QA results. Those historical
 runs are not fresh checks of this baseline. The initial reconciliation changed
 documents only; the linked production follow-up records authorized live changes.
-Historical targeted review-email checks are recorded under R5c; missing
-production acceptance records belong to P0, not to the unimplemented feature list.
+Historical targeted review-email checks are recorded under R5c. P0 core
+verification is complete; recovery and explicitly unexercised checks remain
+owned follow-ups, not unimplemented product features or passing acceptance.
 
 ## Operating rules
 
@@ -33,13 +34,13 @@ production acceptance records belong to P0, not to the unimplemented feature lis
 
 ## Current delivery status
 
-- **R0 — Catalogue data:** schema and CSV/JSON importer implemented; real launch content needs verification.
+- **R0 — Catalogue data:** schema and CSV/JSON importer implemented; 20 real published listings and their media/links verified in production on 2026-10-24.
 - **R1 — Browse:** public list/detail implemented.
 - **R2 — Find:** full-text search, filters, pagination, public category pages/admin taxonomy, GitHub Topics tags, license browsing, archived metadata and ten sorts including Trending are included in v0.4.0. See [licenses](licenses.md).
-- **R3 — Sign in:** GitHub OAuth + Resend Magic Link, server-disabled password auth, shared dialog/route, session-aware navigation, route guards and API authorization included in v0.4.0; live delivery/cookie evidence remains open where absent.
+- **R3 — Sign in:** GitHub OAuth + Resend Magic Link, server-disabled password auth, shared dialog/route, session-aware navigation, route guards and API authorization included in v0.4.0; live login/return, inbox delivery and authenticated cross-subdomain requests verified in P0. Expiry/replay and initial bootstrap remain unexercised.
 - **R4 — Submit intake:** authenticated minimal intake and private tracking implemented with `projects.status = 'draft'`.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
-- **R5c — Review emails:** Published/Rejected decision outbox, bounded Resend retry and shared React Email templates included in v0.4.0; record migration, every-minute scheduler and live inbox evidence under P0.
+- **R5c — Review emails:** Published/Rejected decision outbox, bounded Resend retry and shared React Email templates included in v0.4.0; migration, every-minute scheduler, both decision mails and inbox links verified in P0.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
 - **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; only Verify remains deferred.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented, including the designer-provided artwork; included in the released baseline, with domain/CDN acceptance evidence still separate.
@@ -51,8 +52,10 @@ production acceptance records belong to P0, not to the unimplemented feature lis
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, observed star history with 90-date retention, and file seeding.
 - **R6:** repository ownership/maintainer editing remains unimplemented; login and submission provenance confer no ownership.
 
-Next: P0 release follow-through, then P1 R6a claim/Verify → R6b maintainer
-editing. R6 is the next feature candidate for v0.5.0, not a committed release.
+P0 core production verification is complete. Next product work: **P1 R6a
+claim/Verify → R6b maintainer editing**. Private backup/restore and storage
+lifecycle remain owned operational follow-ups. R6 is the next feature candidate
+for v0.5.0, not a committed release.
 P2–P5 are conditional candidates in the execution order below.
 
 ## Ordered priorities after v0.4.0
@@ -64,15 +67,18 @@ Reuse recorded checks rather than rerunning historical acceptance by default.
 
 ### P0 — Close out v0.4.0 operations and catalogue quality
 
-**Why first:** the newly deployed email and discovery features depend on working
-jobs and populated metadata; their rollout confirmation is recorded, but individual
-service outcomes are not. Resolve confirmed user-facing failures before new scope.
+**Status: core production verification completed on 2026-10-24; recovery
+follow-up open.** Working jobs, metadata, inbox delivery and the focused product
+journey have recorded evidence. P1 is now the next product work; do not queue
+these completed checks again without a relevant change or failure.
 
 **2026-10-24 outcome:** focused production checks passed. The missing email
 schedule was enabled, GitHub backfill completed, and the catalogue grew from
 7 to 20 verified listings. **Backup/restore remains open**; lifecycle inspection
 and unexercised integrations are explicitly scoped in the
 [production record](production-verification-v0.4.0.md).
+
+Source: [Verifikasi Operasional Production Altstack](t3-thread://v1/456a157b-30fb-4bc9-afb6-e04106a4fd81).
 
 - [x] Record operator-confirmed v0.4.0 rollout, tag `b79593d` and shipped scope.
 - [x] Record target migration/configuration and matching API/web revision evidence: OCI revision `b79593d` on both containers, 25 migrations including review-email and license/archived, and runtime configuration.
@@ -216,8 +222,9 @@ development data and prefer disposable-schema acceptance runners for new work.
 - [x] CSV/JSON importer with dry-run, validation, transactional writes, idempotent skipping, and optional GitHub statistics/README fetch.
 - [x] Parser, importer, CLI, migration, and concurrency tests.
 - [x] Import/review at least **20 real published projects** with correct copy, logo, links, and leaf categories; verified in [production on 2026-10-24](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
-- [ ] Verify target migrations and repeat the curated import without duplicates or changes to existing records.
-- [ ] Verify real metadata/media. Committed `data/projects.*` files are draft templates with example URLs, not verified launch content.
+- [x] Verify target migration journal: 25 entries applied, including all v0.4.0 additions; see [deployment evidence](production-verification-v0.4.0.md#deployment-and-migrations).
+- [ ] Repeat-import idempotency against the target remains unexercised; production curation used admin APIs, not a file import. This is not an outstanding catalogue-count check.
+- [x] Verify real metadata/media: 20 listings, 20 logos and 7 screenshots passed in the [production record](production-verification-v0.4.0.md). Committed `data/projects.*` files remain example templates, not production evidence.
 
 Evidence: [file-seeding guide](file-seeding.md), `packages/db/src/seed-file-*.ts`,
 and `packages/db/tests/seed-file-*.test.ts`. The demo seed has been removed.
@@ -229,7 +236,7 @@ and `packages/db/tests/seed-file-*.test.ts`. The demo seed has been removed.
 - [x] `project.list` / `project.getBySlug`, pagination, published-only visibility, and generic not-found behavior.
 - [x] Homepage grid and `/$slug` detail with identity, links, Markdown, categories, optional screenshot, and GitHub statistics.
 - [x] Empty states, safe optional website handling, and API/UI visibility/statistics coverage.
-- [ ] Complete staging browse/detail/mobile smoke with real content and storage.
+- [x] Complete focused production browse/detail/mobile smoke with real content/storage; 20 detail pages and 27 media assets passed. See [production journeys](production-verification-v0.4.0.md).
 
 Evidence: `packages/api/src/routers/project.ts`, `apps/web/src/routes/_app/`,
 `packages/api/tests/submission-review.test.ts`, and web GitHub statistics tests.
@@ -245,7 +252,8 @@ Evidence: `packages/api/src/routers/project.ts`, `apps/web/src/routes/_app/`,
 - [x] GitHub Topics sync, `/tags` directory, `/tags/$slug` published catalogue, detail tag links and `/admin/tags` curation. See [tags](tags.md); included in v0.4.0.
 - [x] License directory/scoped catalogue, archived metadata and ten catalogue sorts including observed seven-day Trending; included in v0.4.0. See [licenses](licenses.md).
 - [x] API/model/route/form/catalogue UI tests; category HTTP acceptance script exists.
-- [ ] Verify shared URL, reload, back/forward, redirects, and combined filters in staging.
+- [x] Verify shared filter URLs, detail reload, back/forward and combined filters in production; see [production journeys](production-verification-v0.4.0.md). Historical-category redirect acceptance was not separately exercised.
+- [ ] Exercise historical-category redirects on the target when that acceptance scenario is selected.
 - [ ] Record EXPLAIN/index evidence on a representative dataset; a declared index alone does not prove performance.
 
 Evidence: project/category/admin-category routers, web category features/tests,
@@ -258,10 +266,12 @@ and [admin category API notes](category-admin-api.md).
 - [x] Better Auth GitHub OAuth + Resend Magic Link, server password rejection, shared auth dialog/route, sign-in/out and session-aware navigation.
 - [x] Hashed ten-minute single-use links, React Email delivery, persistent PostgreSQL IP/recipient quotas and safe callbacks. Better Auth/Drizzle adapter are aligned at 1.7.12 with row-lock contention regression coverage; see [auth](auth.md).
 - [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
-- [ ] Verify real GitHub login, refresh, logout, expired session, and return URL in staging.
+- [x] Verify real GitHub login/callback/return and Magic Link sign-in with authenticated requests and anonymous private-route redirect; see [production record](production-verification-v0.4.0.md).
+- [ ] Exercise forced session expiry/logout and Magic Link expiry/replay separately; these were not forced in P0.
 - [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; ownership/claims remain deferred.
-- [ ] Verify live Resend delivery with a verified sender and production cookie flow in staging; see [auth rollout](auth.md).
-- [ ] Document/verify OAuth callback and initial admin provisioning.
+- [x] Verify live Resend/Magic Link delivery, successful sign-in and cross-subdomain authenticated requests; operator inbox confirmation is in the [production record](production-verification-v0.4.0.md).
+- [x] Verify the existing GitHub OAuth callback and return to `/submission` in production.
+- [ ] Verify initial admin provisioning separately; an existing admin account was used in P0.
 
 Evidence: `packages/auth/src/server/config.ts`, API procedures, auth/main routes,
 and `apps/web/src/utils/return-to.ts`.
@@ -275,7 +285,7 @@ and `apps/web/src/utils/return-to.ts`.
 - [x] Shared create/resubmit Upstash quota: five validated attempts per ten minutes/account; race-safe ten-open-draft cap.
 - [x] Typed `429` data and RPC/REST headers; editable form/countdown, no automatic retry, Redis failure stops creation.
 - [x] Tests for authorization, identity/races/capacity, rollback, visibility, quota, and cooldown.
-- [ ] Verify real Redis behavior with dedicated development/staging credentials; Upstash integration is opt-in.
+- [x] Exercise real configured Upstash during live submission/resubmission/report operations without service failure; see [production record](production-verification-v0.4.0.md). Quota/capacity exhaustion was not forced, and the opt-in automated integration remains separate.
 
 Evidence: submission router/rate limiter, web submission features, and
 [rate-limit operations](../README.md#submission-rate-limit).
@@ -334,9 +344,9 @@ See [resubmission contract and policy](submission-resubmit.md), submission route
 **Verification record:** the branch results above are historical evidence, not
 fresh verification of v0.4.0. Record affected-feature checks and justified integration
 checks against the actual release revision under the current testing policy.
-Real OAuth/Upstash and reject → correct → resubmit → re-review staging evidence
-remain unrecorded here. The v0.4.0 rollout confirmation establishes operator-reported
-deployment, not the outcome of each smoke check.
+The [production record](production-verification-v0.4.0.md) now establishes real
+OAuth/Upstash and reject → correct → resubmit → publish with decision-email
+delivery. Its focused scope does not imply every historical acceptance check ran.
 
 ### R5c — Submission decision email
 
@@ -485,7 +495,8 @@ not proof that migration, configuration or deployment has not happened.
 - [ ] Record L1 release-domain/social-crawler and R5a/R5b live acceptance evidence.
 - [x] Verify at least 20 accurate published listings and real media/links; [2026-10-24 production evidence](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
 - [ ] Attach revision-specific, affected-feature validation and justified integration/build evidence for the next release; explicitly record skipped integrations. Do not require a full suite for every task.
-- [ ] Record relevant staging/live smoke: browse → search/shared URL → categories/tags/licenses/Trending → GitHub or Magic Link sign in → submit → enrich/publish → decision email → public detail; reject → email/private feedback → correct/resubmit → re-review; bookmark → report → admin decision → Featured selection. Reuse prior evidence for unchanged features.
+- [x] Record focused production browse/search/categories/tags/licenses/Trending, GitHub/Magic Link, submit → reject → email/correct/resubmit → publish → email/public detail, bookmark and report → dismiss smoke; existing Featured selections were served. See [production record](production-verification-v0.4.0.md).
+- [ ] Exercise Featured selection editing separately; serving the existing selection does not establish that its admin editor was retested live.
 - [ ] Verify direct API `401`/`403`, hidden draft/rejected/removed detail, quotas/capacity, and expired sessions.
 - [x] Document Docker dev/test separation and current auth/Resend/proxy/cookie configuration in the root README and [auth guide](auth.md).
 - [ ] Verify real OAuth callback/admin bootstrap/CORS, storage public URL/lifecycle and Redis configuration without recording secret values.
@@ -502,8 +513,8 @@ release baseline above supersedes them for merge and operator rollout status.
 
 ## R6 — Own and edit (MVP+)
 
-**P1, next feature candidate for v0.5.0; unimplemented.** Follow P0 release
-follow-through. Deliver R6a before R6b and split further if a slice exceeds the
+**P1, next product work and feature candidate for v0.5.0; unimplemented.** P0
+core verification is complete. Deliver R6a before R6b and split further if a slice exceeds the
 focused 1–3-day target; no delivery date or release inclusion is committed.
 
 ### R6a — Claim / Verify
