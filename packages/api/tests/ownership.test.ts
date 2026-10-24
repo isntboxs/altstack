@@ -1,10 +1,11 @@
 import { createRouterClient } from '@orpc/server'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
 import { claimCodeHash, enforceClaimQuota } from '@altstack/api/ownership-otp'
+import { lockCategoryIntegrity } from '@altstack/api/queries/category-integrity'
 import { routers } from '@altstack/api/routers'
 import * as storage from '@altstack/api/storage'
 
@@ -225,6 +226,19 @@ async function approved(
 		body: { decision: 'approve' },
 	})
 	return value
+}
+
+async function mediaUploads(f: Fixture) {
+	const keys = {
+		logo: `tmp/logos/claim-${randomUUID()}-${Date.now()}.png`,
+		screenshot: `tmp/screenshots/claim-${randomUUID()}-${Date.now()}.png`,
+	}
+	await db.insert(projectUpload).values(
+		Object.values(keys).map((key) => {
+			return { key, projectId: f.params.id, userId: f.users[1]!.id }
+		})
+	)
+	return keys
 }
 
 describe('project claims and scoped Better Auth roles', () => {
@@ -646,6 +660,196 @@ describe('project claims and scoped Better Auth roles', () => {
 				.from(projectUpload)
 				.where(eq(projectUpload.key, upload.key))
 		).toEqual([])
+	})
+	it('validates both upload grants before promoting either image', async () => {
+		const f = await fixture()
+		await approved(f)
+		const current = await f.alice.ownership.get({ params: f.params })
+		const keys = await mediaUploads(f)
+		const promotion = vi
+			.spyOn(storage, 'promoteTempImageToProject')
+			.mockResolvedValue(`projects/${current.slug}/logo-${randomUUID()}.png`)
+		vi.spyOn(storage, 'deleteFinalKeysBestEffort').mockResolvedValue()
+		await expect(
+			f.alice.ownership.update({
+				params: f.params,
+				body: {
+					revision: current.revision,
+					logo: keys.logo,
+					screenshot: 'tmp/screenshots/foreign-123.png',
+				},
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		expect(promotion).not.toHaveBeenCalled()
+		expect(
+			await db
+				.select()
+				.from(projectUpload)
+				.where(eq(projectUpload.key, keys.logo))
+		).toHaveLength(1)
+		expect((await f.alice.ownership.get({ params: f.params })).logo).toBe(
+			current.logo
+		)
+	})
+	it('promotes both images without holding category or project locks and consumes grants only at commit', async () => {
+		const f = await fixture()
+		await approved(f)
+		const current = await f.alice.ownership.get({ params: f.params })
+		const keys = await mediaUploads(f)
+		const finals = {
+			logo: `projects/${current.slug}/logo-${randomUUID()}.png`,
+			screenshot: `projects/${current.slug}/screenshot-${randomUUID()}.png`,
+		}
+		const promotion = vi
+			.spyOn(storage, 'promoteTempImageToProject')
+			.mockImplementation(async ({ kind }) => {
+				await db.transaction(async (tx) => {
+					await tx.execute(sql`SET LOCAL lock_timeout = '1s'`)
+					await lockCategoryIntegrity(tx)
+					await tx
+						.select()
+						.from(project)
+						.where(eq(project.id, f.params.id))
+						.for('update')
+				})
+				expect(
+					await db
+						.select()
+						.from(projectUpload)
+						.where(inArray(projectUpload.key, Object.values(keys)))
+				).toHaveLength(2)
+				return finals[kind]
+			})
+		const cleanup = vi
+			.spyOn(storage, 'deleteFinalKeysBestEffort')
+			.mockResolvedValue()
+		await f.alice.ownership.update({
+			params: f.params,
+			body: { revision: current.revision, ...keys },
+		})
+		expect(promotion).toHaveBeenCalledTimes(2)
+		expect(await f.alice.ownership.get({ params: f.params })).toMatchObject(
+			finals
+		)
+		expect(
+			await db
+				.select()
+				.from(projectUpload)
+				.where(inArray(projectUpload.key, Object.values(keys)))
+		).toEqual([])
+		expect(cleanup).toHaveBeenCalledWith([current.logo])
+	})
+	it.each(['revision', 'membership', 'upload', 'visibility'] as const)(
+		'rechecks %s after S3 work and cleans up both promoted images on failure',
+		async (change) => {
+			const f = await fixture()
+			await approved(f)
+			const current = await f.alice.ownership.get({ params: f.params })
+			const keys = await mediaUploads(f)
+			const finals = {
+				logo: `projects/${current.slug}/logo-${randomUUID()}.png`,
+				screenshot: `projects/${current.slug}/screenshot-${randomUUID()}.png`,
+			}
+			vi.spyOn(storage, 'promoteTempImageToProject').mockImplementation(
+				async ({ kind }) => {
+					if (kind === 'logo') {
+						await db.transaction(async (tx) => {
+							await tx.execute(sql`SET LOCAL lock_timeout = '1s'`)
+							await lockCategoryIntegrity(tx)
+							await tx
+								.select()
+								.from(project)
+								.where(eq(project.id, f.params.id))
+								.for('update')
+							switch (change) {
+								case 'revision':
+									await tx
+										.update(project)
+										.set({ name: 'Concurrent edit' })
+										.where(eq(project.id, f.params.id))
+									break
+								case 'membership':
+									await tx
+										.delete(projectMember)
+										.where(eq(projectMember.projectId, f.params.id))
+									break
+								case 'upload':
+									await tx
+										.delete(projectUpload)
+										.where(eq(projectUpload.key, keys.screenshot))
+									break
+								case 'visibility':
+									await tx
+										.update(project)
+										.set({ status: 'rejected' })
+										.where(eq(project.id, f.params.id))
+									break
+							}
+						})
+					}
+					return finals[kind]
+				}
+			)
+			const cleanup = vi
+				.spyOn(storage, 'deleteFinalKeysBestEffort')
+				.mockResolvedValue()
+			await expect(
+				f.alice.ownership.update({
+					params: f.params,
+					body: { revision: current.revision, ...keys },
+				})
+			).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
+			expect(cleanup).toHaveBeenCalledExactlyOnceWith(Object.values(finals))
+			const [saved] = await db
+				.select()
+				.from(project)
+				.where(eq(project.id, f.params.id))
+			expect(saved).toMatchObject({
+				logo: current.logo,
+				screenshot: current.screenshot,
+			})
+			expect(
+				await db
+					.select()
+					.from(projectUpload)
+					.where(eq(projectUpload.key, keys.logo))
+			).toHaveLength(1)
+			expect(
+				await db
+					.select()
+					.from(auditLog)
+					.where(
+						and(
+							eq(auditLog.projectId, f.params.id),
+							eq(auditLog.action, 'project_member_updated')
+						)
+					)
+			).toEqual([])
+		}
+	)
+	it('cleans up a promoted logo when the second storage promotion fails', async () => {
+		const f = await fixture()
+		await approved(f)
+		const current = await f.alice.ownership.get({ params: f.params })
+		const keys = await mediaUploads(f)
+		const finalLogo = `projects/${current.slug}/logo-${randomUUID()}.png`
+		vi.spyOn(storage, 'promoteTempImageToProject')
+			.mockResolvedValueOnce(finalLogo)
+			.mockRejectedValueOnce(new storage.TempUploadMissingError())
+		const cleanup = vi
+			.spyOn(storage, 'deleteFinalKeysBestEffort')
+			.mockResolvedValue()
+		await expect(
+			f.alice.ownership.update({
+				params: f.params,
+				body: { revision: current.revision, ...keys },
+			})
+		).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
+		expect(cleanup).toHaveBeenCalledExactlyOnceWith([finalLogo])
+		expect(await f.alice.ownership.get({ params: f.params })).toMatchObject({
+			logo: current.logo,
+			screenshot: current.screenshot,
+		})
 	})
 	it('keeps public projections private, ranks verified listings first with stable ties, and hides unpublished/deleted projects', async () => {
 		const f = await fixture()

@@ -644,100 +644,142 @@ export const ownershipRouter = {
 				stale: Array<string> = []
 			const promotion = { consumed: false }
 			try {
-				await db.transaction(async (tx) => {
-					await lockCategoryIntegrity(tx)
-					const [current] = await tx
-						.select({
-							...getTableColumns(project),
-							revision: sql<string>`xmin::text`,
+				const [current] = await db
+					.select({
+						...getTableColumns(project),
+						revision: sql<string>`xmin::text`,
+					})
+					.from(project)
+					.where(
+						and(eq(project.id, params.id), eq(project.status, 'published'))
+					)
+				if (!current) throw errors.NOT_FOUND()
+				await requireProjectMember(db, params.id, auth.user.id)
+				if (current.revision !== body.revision) {
+					throw errors.CONFLICT({
+						message: 'This project changed. Reload it before saving.',
+					})
+				}
+				const assignments = await db
+					.select({ slug: category.slug })
+					.from(projectCategory)
+					.innerJoin(category, eq(category.id, projectCategory.categoryId))
+					.where(eq(projectCategory.projectId, params.id))
+				const categorySlugs =
+					body.categorySlugs ?? assignments.map((item) => item.slug)
+				const {
+					revision: _revision,
+					logo: logoInput,
+					screenshot: screenshotInput,
+					categorySlugs: _categories,
+					...copy
+				} = body
+				void _revision
+				void _categories
+				const merged = {
+					...current,
+					...copy,
+					logo: logoInput === undefined ? current.logo : logoInput,
+					categorySlugs,
+				}
+				const publishable = publishProjectSchema.safeParse(merged)
+				if (!publishable.success) {
+					throw errors.BAD_REQUEST({
+						message: publishable.error.issues
+							.map((issue) => issue.message)
+							.join('; '),
+					})
+				}
+				await validateLeafCategoryAssignments(db, categorySlugs)
+				const images = [
+					['logo', logoInput],
+					['screenshot', screenshotInput],
+				] as const
+				// Validate every grant before any promotion can consume a temp image.
+				const requireUploads = async (
+					database: Pick<typeof db, 'select'>,
+					lock: boolean
+				) => {
+					for (const [, key] of images) {
+						if (key == null) continue
+						const query = database
+							.select({ key: projectUpload.key })
+							.from(projectUpload)
+							.where(
+								and(
+									eq(projectUpload.key, key),
+									eq(projectUpload.projectId, params.id),
+									eq(projectUpload.userId, auth.user.id)
+								)
+							)
+						const [upload] = lock ? await query.for('update') : await query
+						if (!upload) {
+							throw errors.BAD_REQUEST({
+								message: 'Upload this image again from this project editor.',
+							})
+						}
+					}
+				}
+				await requireUploads(db, false)
+				let logo = current.logo,
+					screenshot = current.screenshot
+				for (const [kind, key] of images) {
+					if (key === undefined) continue
+					if (key !== null) {
+						const final = await promoteTempImageToProject({
+							tmpKey: key,
+							slug: current.slug,
+							kind,
 						})
+						promotion.consumed = true
+						promoted.push(final)
+						if (kind === 'logo') logo = final
+						else screenshot = final
+					} else if (kind === 'screenshot') screenshot = null
+					if (current[kind]) stale.push(current[kind])
+				}
+				await db.transaction(async (tx) => {
+					// External storage work finishes before category and project locks.
+					await lockCategoryIntegrity(tx)
+					const [locked] = await tx
+						.select({ revision: sql<string>`xmin::text` })
 						.from(project)
 						.where(
 							and(eq(project.id, params.id), eq(project.status, 'published'))
 						)
 						.for('update')
-					if (!current) throw errors.NOT_FOUND()
+					if (!locked) throw errors.NOT_FOUND()
 					await requireProjectMember(tx, params.id, auth.user.id)
-					if (current.revision !== body.revision) {
-						throw errors.CONFLICT({
-							message: 'This project changed. Reload it before saving.',
-						})
-					}
-					const assignments = await tx
+					const currentAssignments = await tx
 						.select({ slug: category.slug })
 						.from(projectCategory)
 						.innerJoin(category, eq(category.id, projectCategory.categoryId))
 						.where(eq(projectCategory.projectId, params.id))
-					const categorySlugs =
-						body.categorySlugs ?? assignments.map((item) => item.slug)
-					const {
-						revision: _revision,
-						logo: logoInput,
-						screenshot: screenshotInput,
-						categorySlugs: _categories,
-						...copy
-					} = body
-					void _revision
-					void _categories
-					const merged = {
-						...current,
-						...copy,
-						logo: logoInput === undefined ? current.logo : logoInput,
-						categorySlugs,
-					}
-					const publishable = publishProjectSchema.safeParse(merged)
-					if (!publishable.success) {
-						throw errors.BAD_REQUEST({
-							message: publishable.error.issues
-								.map((issue) => issue.message)
-								.join('; '),
+					if (
+						locked.revision !== body.revision ||
+						JSON.stringify(
+							currentAssignments.map((item) => item.slug).toSorted()
+						) !==
+							JSON.stringify(assignments.map((item) => item.slug).toSorted())
+					) {
+						throw errors.CONFLICT({
+							message: 'This project changed. Reload it before saving.',
 						})
 					}
 					const categoryIds = await validateLeafCategoryAssignments(
 						tx,
 						categorySlugs
 					)
-					let logo = current.logo,
-						screenshot = current.screenshot
-					for (const [kind, key] of [
-						['logo', logoInput],
-						['screenshot', screenshotInput],
-					] as const) {
-						if (key === undefined) continue
-						if (key !== null) {
-							const [upload] = await tx
-								.select()
-								.from(projectUpload)
-								.where(
-									and(
-										eq(projectUpload.key, key),
-										eq(projectUpload.projectId, params.id),
-										eq(projectUpload.userId, auth.user.id)
-									)
-								)
-								.for('update')
-							if (!upload) {
-								throw errors.BAD_REQUEST({
-									message: 'Upload this image again from this project editor.',
-								})
-							}
-							const final = await promoteTempImageToProject({
-								tmpKey: key,
-								slug: current.slug,
-								kind,
-							})
-							promotion.consumed = true
-							promoted.push(final)
-							await tx.delete(projectUpload).where(eq(projectUpload.key, key))
-							if (kind === 'logo') logo = final
-							else screenshot = final
-						} else if (kind === 'screenshot') screenshot = null
-						if (current[kind]) stale.push(current[kind])
-					}
+					await requireUploads(tx, true)
 					await tx
 						.update(project)
 						.set({ ...copy, logo, screenshot })
 						.where(eq(project.id, params.id))
+					for (const [, key] of images) {
+						if (key != null) {
+							await tx.delete(projectUpload).where(eq(projectUpload.key, key))
+						}
+					}
 					if (body.categorySlugs !== undefined) {
 						await tx
 							.delete(projectCategory)

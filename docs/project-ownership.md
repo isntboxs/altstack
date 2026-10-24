@@ -115,6 +115,13 @@ lifecycle; unconsumed ledger records are harmless grants limited to their accoun
 and project and disappear with those records. They can be pruned after the
 24-hour temporary-object retention window during routine DB maintenance.
 
+Both image grants and the publishable payload are validated before promoting
+either image. S3 promotion runs outside database transactions. A short write
+transaction then locks and rechecks publication, membership, revision, category
+assignments and upload grants before consuming the grants and committing the
+edit. Failed writes clean up only this attempt's promoted copies; replaced public
+media is removed only after commit.
+
 ## Public behavior
 
 The small warm verified icon appears beside project names in catalogue cards,
@@ -249,3 +256,13 @@ Rollout must still confirm actual GitHub personal/organization permissions with
 the deployed OAuth app, organization/SSO restrictions, reconnection and controlled
 mail delivery. Synthetic permissions establish local handling, not those live
 provider results.
+
+### PR review fixes — 2026-10-25
+
+Focused runs passed 35 ownership API tests, 68 OpenAPI compatibility tests,
+12 Verify/inbox UI tests and three contact-email schema tests. New regressions
+cover validation of both upload grants before promotion, category/project locks
+remaining available during S3 calls, cleanup after partial storage failure, and
+rechecking revision, membership, upload grants and publication before commit.
+Email tests cover padded mixed-case input, invalid addresses and the normalized
+254-character limit. Changed-file formatting, lint and type checks passed.

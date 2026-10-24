@@ -55,11 +55,7 @@ export const claimGithubEvidenceSchema = z.object({
 })
 export type ClaimGithubEvidence = z.infer<typeof claimGithubEvidenceSchema>
 export const claimBodySchema = z.strictObject({
-	email: z
-		.email()
-		.trim()
-		.max(254)
-		.transform((email) => email.toLowerCase()),
+	email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
 	role: projectMemberRoleSchema,
 })
 export const claimRequestInputSchema = z.object({
