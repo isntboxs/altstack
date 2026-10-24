@@ -328,6 +328,43 @@ describe('project claims and scoped Better Auth roles', () => {
 			})
 		).rejects.toMatchObject({ code: 'FORBIDDEN' })
 	})
+	it.each([undefined, '192.0.2.10, 198.51.100.20'])(
+		'does not share unavailable-IP quotas between claimants (%s)',
+		async (forwardedFor) => {
+			const f = await fixture()
+			// Exhaust legacy unknown-IP buckets to prove no endpoint reuses them.
+			for (const action of ['send', 'verify', 'github']) {
+				const max = action === 'send' ? 5 : action === 'verify' ? 20 : 40
+				await Promise.allSettled(
+					Array.from({ length: max + 1 }, () =>
+						enforceClaimQuota(db, `${action}-ip:unknown`, max)
+					)
+				)
+			}
+			for (const person of f.users.slice(1, 3)) {
+				const headers = new Headers({ 'x-real-ip': '192.0.2.99' })
+				if (forwardedFor) headers.set('x-forwarded-for', forwardedFor)
+				const client = createRouterClient(routers, {
+					context: {
+						db,
+						auth: { user: person } as unknown as ORPCContext['auth'],
+						requestHeaders: headers,
+					},
+				})
+				await expect(
+					client.ownership.github({ params: f.params })
+				).resolves.toMatchObject({ status: 'verified' })
+				await confirmed(f, client)
+				// Account quotas still apply even when no IP can be trusted.
+				for (let n = 1; n < 20; n++) {
+					await client.ownership.github({ params: f.params })
+				}
+				await expect(
+					client.ownership.github({ params: f.params })
+				).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' })
+			}
+		}
+	)
 	it('rejects anonymous/direct writes and protected reads, and rejects privileged fields', async () => {
 		const f = await fixture()
 		for (const operation of [
@@ -1202,6 +1239,41 @@ describe('project claims and scoped Better Auth roles', () => {
 		).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' })
 		const state = await f.alice.ownership.state({ params: f.params })
 		expect(state.claim?.challenge).toBeNull()
+		const [failed] = await db
+			.select()
+			.from(projectClaim)
+			.where(eq(projectClaim.userId, f.users[1]!.id))
+		expect(failed?.codeHash).toBeNull()
+		const retry = await f.alice.ownership.request({
+			params: f.params,
+			body: { email: 'failure@example.test', role: 'owner' },
+		})
+		expect(retry.challengeId).not.toBe(failed!.challengeId)
+		expect(sent).toHaveBeenCalledTimes(2)
+		await expect(
+			f.alice.ownership.request({
+				params: f.params,
+				body: { email: 'failure@example.test', role: 'owner' },
+			})
+		).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' })
+		await expect(
+			f.alice.ownership.verify({
+				params: f.params,
+				body: {
+					challengeId: failed!.challengeId,
+					code: sent.mock.calls[0]![0].code,
+				},
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		await expect(
+			f.alice.ownership.verify({
+				params: f.params,
+				body: {
+					challengeId: retry.challengeId,
+					code: sent.mock.calls[1]![0].code,
+				},
+			})
+		).resolves.toMatchObject({ success: true })
 		const subject = `race:${randomUUID()}`
 		const results = await Promise.allSettled(
 			Array.from({ length: 12 }, () => enforceClaimQuota(db, subject, 5))

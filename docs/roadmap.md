@@ -265,7 +265,7 @@ and [admin category API notes](category-admin-api.md).
 - [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
 - [x] Verify real GitHub login/callback/return and Magic Link sign-in with authenticated requests and anonymous private-route redirect; see [production record](production-verification-v0.4.0.md).
 - [ ] Exercise forced session expiry/logout and Magic Link expiry/replay separately; these were not forced in P0.
-- [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; ownership/claims remain deferred.
+- [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; R6 ownership/claims are implemented locally, with deployment and live acceptance pending.
 - [x] Verify live Resend/Magic Link delivery, successful sign-in and cross-subdomain authenticated requests; operator inbox confirmation is in the [production record](production-verification-v0.4.0.md).
 - [x] Verify the existing GitHub OAuth callback and return to `/submission` in production.
 - [ ] Verify initial admin provisioning separately; an existing admin account was used in P0.

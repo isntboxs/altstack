@@ -52,7 +52,7 @@ export function claimClientIp(headers?: Headers) {
 	// Same trusted single-address reverse-proxy contract as Better Auth. Never
 	// trust a chain or fall back to a caller-selected alternate header.
 	const value = headers?.get('x-forwarded-for')?.trim()
-	return value && isIP(value) ? value : 'unknown'
+	return value && isIP(value) ? value : undefined
 }
 export async function enforceClaimQuota(
 	database: typeof db,

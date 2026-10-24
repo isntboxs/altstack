@@ -46,6 +46,42 @@ bucket when no trusted IP is available. Do not let external clients access an
 unprotected origin and spoof that header. Multiple proxies require a deliberate
 `advanced.ipAddress.trustedProxies` configuration for the actual proxy addresses.
 
+### Dokploy client IP configuration
+
+For direct Internet → Dokploy Traefik → API traffic, merge this fragment into
+the existing Traefik **static** configuration, retaining its addresses, TLS and
+other settings:
+
+```yaml
+entryPoints:
+  web:
+    forwardedHeaders:
+      insecure: false
+      trustedIPs: []
+  websecure:
+    forwardedHeaders:
+      insecure: false
+      trustedIPs: []
+```
+
+With no upstream proxy trusted, Traefik strips client-supplied forwarded headers
+and its reverse proxy supplies the connection's client IP. See the
+[Traefik entrypoint reference](https://doc.traefik.io/traefik/reference/install-configuration/entrypoints/#forwarded-headers)
+and [header sanitization implementation](https://github.com/traefik/traefik/blob/v3.6/pkg/middlewares/forwardedheaders/forwarded_header.go).
+Keep the API port private to Traefik. After applying the configuration through
+Dokploy and restarting Traefik, inspect the API-bound header through a temporary
+private diagnostic backend: normal requests and requests containing a forged
+single IP or comma-separated chain must all produce exactly one actual client
+address. Test from two client networks to rule out a shared Docker gateway IP;
+remove the diagnostic backend afterward. Do not log authentication traffic.
+
+If a CDN or another proxy is added, this fragment no longer establishes the
+original client address. Configure only that proxy's actual addresses as trusted
+and normalize the validated chain to one address before it reaches the API.
+Ownership claims deliberately reject chains; they retain account/recipient
+quotas when an IP is unavailable instead of sharing an unknown-IP bucket.
+This is deployment guidance; local tests do not verify the live proxy settings.
+
 ## Link lifecycle and account semantics
 
 Better Auth 1.7.12's supported `magicLink`/`magicLinkClient` plugins generate,

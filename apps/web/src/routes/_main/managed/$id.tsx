@@ -55,7 +55,7 @@ function ManagedProject() {
 				</Link>
 			</header>
 			<MemberProjectEditor
-				key={data.revision}
+				key={`${data.id}:${data.revision}`}
 				project={data}
 				categories={categories}
 			/>

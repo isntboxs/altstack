@@ -154,11 +154,15 @@ account and IP, in addition to the five guesses per challenge. Upload issuance
 allows forty per ten minutes/account. Keys are HMACs; raw recipients/IPs are not
 stored in rate-limit keys. Quota failures stop delivery; existing daily auth
 rate-limit pruning covers these buckets too. Delivery failures invalidate the
-undelivered challenge and return a generic retryable error.
+undelivered challenge, reset its resend cooldown and return a generic retryable
+error. Failed attempts still count toward account, recipient and valid-IP quotas.
 
-The API uses the same trusted-proxy single `X-Forwarded-For` contract documented
-in [auth](auth.md); invalid/missing addresses share an unknown-IP bucket. Production
-must prevent direct-origin header spoofing. Ownership endpoints reject foreign
+The API uses the trusted-proxy single `X-Forwarded-For` contract documented in
+[auth](auth.md#dokploy-client-ip-configuration). Missing, invalid or chained
+addresses do not create an IP bucket or use an alternate header; authenticated
+account limits and recipient limits still apply. Unrelated claimants never share
+an unknown-IP bucket. Production must supply one valid client address and prevent
+direct-origin header spoofing. Ownership endpoints reject foreign
 browser origins/cross-site requests. Their RPC/REST responses are private/no-store;
 workspace SSR is noindex and private/no-store. Public projections expose only
 verification state, never claim contact emails, codes, IDs or approver identity.

@@ -108,11 +108,8 @@ export const ownershipRouter = {
 	github: procedure.ownership.github.handler(
 		async ({ context: { db, auth, requestHeaders }, input: { params } }) => {
 			await enforceClaimQuota(db, `github-account:${auth.user.id}`, 20)
-			await enforceClaimQuota(
-				db,
-				`github-ip:${claimClientIp(requestHeaders)}`,
-				40
-			)
+			const ip = claimClientIp(requestHeaders)
+			if (ip) await enforceClaimQuota(db, `github-ip:${ip}`, 40)
 			return (await checkClaimGithub(db, auth.user.id, params.id)).evidence
 		}
 	),
@@ -123,7 +120,8 @@ export const ownershipRouter = {
 			errors,
 		}) => {
 			await enforceClaimQuota(db, `send-account:${auth.user.id}`, 5)
-			await enforceClaimQuota(db, `send-ip:${claimClientIp(requestHeaders)}`, 5)
+			const ip = claimClientIp(requestHeaders)
+			if (ip) await enforceClaimQuota(db, `send-ip:${ip}`, 5)
 			await enforceClaimQuota(db, `send-recipient:${body.email}`, 5)
 			const github = await checkClaimGithub(db, auth.user.id, params.id)
 			requireClaimGithub(github.evidence)
@@ -226,7 +224,11 @@ export const ownershipRouter = {
 			} catch {
 				await db
 					.update(projectClaim)
-					.set({ codeHash: null })
+					.set({
+						codeHash: null,
+						// An undelivered code must not start the resend cooldown.
+						requestedAt: new Date(now.getTime() - CLAIM_RESEND_MS),
+					})
 					.where(eq(projectClaim.challengeId, binding.challengeId))
 				throw errors.SERVICE_UNAVAILABLE({
 					message:
@@ -242,11 +244,8 @@ export const ownershipRouter = {
 			input: { params, body },
 		}) => {
 			await enforceClaimQuota(db, `verify-account:${auth.user.id}`, 20)
-			await enforceClaimQuota(
-				db,
-				`verify-ip:${claimClientIp(requestHeaders)}`,
-				20
-			)
+			const ip = claimClientIp(requestHeaders)
+			if (ip) await enforceClaimQuota(db, `verify-ip:${ip}`, 20)
 			const valid = await db.transaction(async (tx) => {
 				const [target] = await tx
 					.select({ id: project.id })

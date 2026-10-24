@@ -62,7 +62,11 @@ ditambahkan. Pantau `github-history-pruned`, `github-refresh-failure`,
 sesudah deployment untuk memverifikasi titik awal, lalu tunggu koleksi harian;
 delta 30 hari memerlukan dua endpoint berjarak 30 tanggal.
 
-## Rollout
+## Rollout untuk deployment baru
+
+Production existing sudah menyelesaikan migration, backfill dan aktivasi schedule
+pada 2026-10-24 sesuai bukti di atas. Langkah berikut berlaku untuk deployment
+baru; pertahankan schedule existing tanpa membuat job kedua.
 
 1. Terapkan migration nullable `github-statistics-metadata` dari checkout release
    dengan `vp run db:migrate` dan `DATABASE_URL` target deployment. Migration hanya
@@ -89,7 +93,7 @@ delta 30 hari memerlukan dua endpoint berjarak 30 tanggal.
    berikut. Proyek gagal bisa dicoba lagi secara manual atau pada jadwal berikutnya.
 
 Kode ini tidak menjalankan migration saat startup ataupun mengubah scheduler.
-Deployment dan langkah di atas tetap perlu dilakukan oleh operator.
+Untuk deployment baru, langkah di atas dijalankan oleh operator.
 
 ## Schedule Dokploy: setiap hari 02:00 Asia/Jakarta
 
@@ -103,7 +107,8 @@ service server jika deployment memakai Compose), dengan konfigurasi:
 - Command: `bun run apps/server/dist/jobs/github-refresh.mjs`
 - Cron expression: `0 2 * * *`
 - Timezone: `Asia/Jakarta`
-- Enabled: aktifkan setelah manual backfill selesai.
+- Enabled: sudah aktif di production existing; pada deployment baru, aktifkan
+  setelah manual backfill selesai.
 
 Field `timezone` tersedia pada
 [API resmi schedule.create/update](https://docs.dokploy.com/docs/api/schedule).

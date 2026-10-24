@@ -13,7 +13,7 @@ import {
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
-import type { ORPCRouterClient } from '@altstack/api/routers'
+import type { ORPCRouterClient, ORPCRouterInputs } from '@altstack/api/routers'
 
 import type * as AuthClientModule from '@altstack/auth/client'
 
@@ -98,6 +98,25 @@ vi.mock('#/components/theme-switcher', () => {
 vi.mock('#/components/block-note/view.tsx', () => {
 	return {
 		BlockNoteViewBlocks: () => null,
+	}
+})
+vi.mock('#/components/block-note/editor', () => {
+	return { default: () => null }
+})
+vi.mock('#/components/category-combobox-view', () => {
+	return { CategoryComboboxView: () => null }
+})
+vi.mock('#/components/image-uploader', () => {
+	return {
+		LogoUploader: ({ onChange }: { onChange: (key: string) => void }) => (
+			<button
+				type="button"
+				onClick={() => onChange('tmp/logos/first-project.png')}
+			>
+				Upload test logo
+			</button>
+		),
+		ScreenshotUploader: () => null,
 	}
 })
 vi.mock('@altstack/api/routers', () => {
@@ -318,6 +337,91 @@ describe('project report URL lifecycle', () => {
 			expect(projectReads()).toBe(reads)
 		}
 	)
+})
+
+describe('managed project editor navigation', () => {
+	it('resets drafts and uploads across projects with equal revisions and after a revision reload', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const first = {
+			...project,
+			logo: 'projects/example/logo.png',
+			revision: '42',
+			categorySlugs: ['tools'],
+		}
+		let second = {
+			...first,
+			id: '550e8400-e29b-41d4-a716-446655440001',
+			name: 'Second project',
+			slug: 'second',
+			tagline: 'Second tagline',
+			description: 'Second description',
+			content: 'Second content',
+		}
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/get') {
+				const { params } = input as ORPCRouterInputs['ownership']['get']
+				return Promise.resolve(params.id === first.id ? first : second)
+			}
+			if (path.join('/') === 'ownership/categories') {
+				return Promise.resolve({ categories: [] })
+			}
+			if (path.join('/') === 'ownership/update') {
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		const router = await routerAt(`/managed/${first.id}`)
+		const firstName = await screen.findByRole('textbox', {
+			name: 'Project name',
+		})
+		fireEvent.change(firstName, { target: { value: 'Unsaved first draft' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Upload test logo' }))
+		await act(async () => {
+			await router.navigate({ to: '/managed/$id', params: { id: second.id } })
+		})
+		await screen.findByRole('heading', { name: 'Edit Second project' })
+		expect(
+			screen.getByRole('textbox', { name: 'Project name' })
+		).toHaveProperty('value', 'Second project')
+		fireEvent.click(screen.getByRole('button', { name: 'Publish changes' }))
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.find(
+					([path]) => path.join('/') === 'ownership/update'
+				)?.[1]
+			).toEqual({
+				params: { id: second.id },
+				body: {
+					revision: '42',
+					name: 'Second project',
+					tagline: 'Second tagline',
+					description: 'Second description',
+					websiteUrl: null,
+					content: 'Second content',
+					categorySlugs: ['tools'],
+				},
+			})
+		)
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Publish changes' })
+			).toHaveProperty('disabled', false)
+		)
+		fireEvent.change(screen.getByRole('textbox', { name: 'Project name' }), {
+			target: { value: 'Unsaved second draft' },
+		})
+		second = { ...second, revision: '43', name: 'Reloaded project' }
+		fireEvent.click(screen.getByRole('button', { name: 'Reload project' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('textbox', { name: 'Project name' })
+			).toHaveProperty('value', 'Reloaded project')
+		)
+	})
 })
 
 describe('project Verify URL and claim flow', () => {
