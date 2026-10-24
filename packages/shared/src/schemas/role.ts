@@ -1,7 +1,7 @@
 import 'zod/compile'
 import { z } from 'zod'
 
-export const ROLES = ['admin', 'user'] as const
+export const ROLES = ['admin', 'user', 'owner', 'maintainer'] as const
 
 export const roleSchema = z.enum(ROLES)
 export type Role = z.infer<typeof roleSchema>
@@ -12,6 +12,8 @@ export type RolesMap = z.infer<typeof rolesMapSchema>
 export const ROLES_MAP = {
 	ADMIN: 'admin',
 	USER: 'user',
+	OWNER: 'owner',
+	MAINTAINER: 'maintainer',
 } as const satisfies RolesMap
 
 export const DEFAULT_ROLE: Role = 'user'

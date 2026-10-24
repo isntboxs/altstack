@@ -5,6 +5,7 @@ import {
 	desc,
 	eq,
 	gte,
+	getTableColumns,
 	inArray,
 	lte,
 	ne,
@@ -20,6 +21,7 @@ import {
 } from '@altstack/api/queries/category'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 import { projectHasLicense } from '@altstack/api/queries/license'
+import { projectIsVerified } from '@altstack/api/queries/ownership'
 import { searchPublicProjectMentions } from '@altstack/api/queries/project-mentions'
 import { getProjectTags, projectHasPublicTag } from '@altstack/api/queries/tag'
 
@@ -48,7 +50,11 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 		return db.transaction(
 			async (tx) => {
 				const [row] = await tx
-					.select()
+					.select({
+						projects: getTableColumns(project),
+						github_repositories: getTableColumns(githubRepository),
+						verified: projectIsVerified,
+					})
 					.from(project)
 					.where(
 						and(
@@ -70,6 +76,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 						id: project.id,
 						slug: project.slug,
 						name: project.name,
+						verified: projectIsVerified,
 						logo: project.logo,
 						tagline: project.tagline,
 						websiteUrl: project.websiteUrl,
@@ -111,7 +118,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 					.orderBy(asc(githubStarHistory.snapshotDate))
 
 				return {
-					...publicFields.parse(row.projects),
+					...publicFields.parse({ ...row.projects, verified: row.verified }),
 					featuredProjects,
 					tags: await getProjectTags(tx, row.projects.id),
 					categoryDetails: await getDirectProjectCategories(
@@ -140,7 +147,11 @@ const listHandler = publicProcedure.project.list.handler(
 
 		const [rows, [countRow]] = await Promise.all([
 			db
-				.select()
+				.select({
+					projects: getTableColumns(project),
+					github_repositories: getTableColumns(githubRepository),
+					verified: projectIsVerified,
+				})
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
@@ -164,7 +175,7 @@ const listHandler = publicProcedure.project.list.handler(
 		return {
 			projects: rows.map((row) => {
 				return {
-					...publicFields.parse(row.projects),
+					...publicFields.parse({ ...row.projects, verified: row.verified }),
 					screenshot: row.projects.screenshot,
 					github: githubDetail(row.github_repositories),
 				}
@@ -197,6 +208,11 @@ function searchSortOrder(now: Date) {
 		having count(*) >= 2
 	)`
 	return {
+		recommended: [
+			desc(projectIsVerified),
+			desc(project.createdAt),
+			desc(project.id),
+		],
 		newest: [desc(project.createdAt), desc(project.id)],
 		oldest: [asc(project.createdAt), asc(project.id)],
 		name: [asc(project.name), asc(project.id)],
@@ -249,7 +265,11 @@ const searchHandler = publicProcedure.project.search.handler(
 
 		const [rows, [countRow]] = await Promise.all([
 			db
-				.select()
+				.select({
+					projects: getTableColumns(project),
+					github_repositories: getTableColumns(githubRepository),
+					verified: projectIsVerified,
+				})
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
@@ -296,7 +316,7 @@ const searchHandler = publicProcedure.project.search.handler(
 			asOf: new Date(),
 			projects: rows.map((row) => {
 				return {
-					...publicFields.parse(row.projects),
+					...publicFields.parse({ ...row.projects, verified: row.verified }),
 					github: githubDetail(row.github_repositories),
 					categories: slugsByProject.get(row.projects.id) ?? [],
 				}

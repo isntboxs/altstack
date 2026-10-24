@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 
+import { projectIsVerified } from '@altstack/api/queries/ownership'
+
 import { db } from '@altstack/db'
 import { githubRepository, project } from '@altstack/db/schemas'
 
@@ -28,6 +30,7 @@ export async function publicProjectMentions(
 			name: project.name,
 			logo: project.logo,
 			tagline: project.tagline,
+			verified: projectIsVerified,
 			stars: githubRepository.stars,
 			forks: githubRepository.forks,
 		})

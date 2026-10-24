@@ -5,7 +5,7 @@ export const indexingMiddleware = createMiddleware().server(
 		const result = await next()
 		const path = new URL(request.url).pathname
 		if (
-			/^\/(?:auth|submit|submission|bookmarks|projects|admin)(?:\/|$)/.test(
+			/^\/(?:auth|submit|submission|bookmarks|projects|managed|admin)(?:\/|$)/.test(
 				path
 			) ||
 			result.response.status >= 400

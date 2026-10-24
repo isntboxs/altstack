@@ -189,10 +189,13 @@ export type LogoUploaderProps = Pick<
 	| 'onChange'
 	| 'onDisplayUrlChange'
 > &
-	Omit<HTMLAttributes<HTMLDivElement>, 'onChange'>
+	Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
+		api?: ImageUploadEndpoints
+	}
 
 export const LogoUploader: FC<LogoUploaderProps> = ({
 	className,
+	api = client.admin.upload.logo,
 	...props
 }) => (
 	<ImageUploader
@@ -201,7 +204,7 @@ export const LogoUploader: FC<LogoUploaderProps> = ({
 		accept={IMAGE_ACCEPT}
 		maxSize={LOGO_MAX_SIZE}
 		mimeTypes={LOGO_MIME}
-		api={client.admin.upload.logo}
+		api={api}
 		copy={LOGO_COPY}
 		className={cn('aspect-square w-full max-w-56', className)}
 	/>
@@ -211,6 +214,7 @@ export type ScreenshotUploaderProps = LogoUploaderProps
 
 export const ScreenshotUploader: FC<ScreenshotUploaderProps> = ({
 	className,
+	api = client.admin.upload.screenshot,
 	...props
 }) => (
 	<ImageUploader
@@ -219,7 +223,7 @@ export const ScreenshotUploader: FC<ScreenshotUploaderProps> = ({
 		accept={IMAGE_ACCEPT}
 		maxSize={SCREENSHOT_MAX_SIZE}
 		mimeTypes={SCREENSHOT_MIME}
-		api={client.admin.upload.screenshot}
+		api={api}
 		copy={SCREENSHOT_COPY}
 		className={cn('aspect-video w-full', className)}
 	/>

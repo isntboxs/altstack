@@ -111,6 +111,7 @@ const actionProps = {
 	projectId: 'project-id',
 	userId: 'user-a',
 	slug: 'example',
+	verified: false,
 	name: 'Example',
 	reportOpen: false,
 	onReportOpenChange: vi.fn(),
@@ -291,6 +292,7 @@ describe('project bookmark actions', () => {
 
 describe('bookmarks table and navigation', () => {
 	const project = {
+		verified: false,
 		id: 'project-id',
 		slug: 'example',
 		name: 'Example',

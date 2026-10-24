@@ -16,7 +16,8 @@
 		"./emails/primitives": "./src/emails/primitives.tsx",
 		"./emails/magic-link": "./src/emails/magic-link.tsx",
 		"./emails/submission-published": "./src/emails/submission-published.tsx",
-		"./emails/submission-rejected": "./src/emails/submission-rejected.tsx"
+		"./emails/submission-rejected": "./src/emails/submission-rejected.tsx",
+		"./emails/project-claim": "./src/emails/project-claim.tsx"
 	},
 	"scripts": {
 		"build": "vp pack",

@@ -1,5 +1,11 @@
 # GitHub license, Archived, dan katalog lisensi
 
+Production 2026-10-24: migration, revision API/Web dan backfill existing-job
+terverifikasi. Katalog memiliki 20 listing dengan 17 lisensi SPDX yang dikenali
+dan 3 unknown sesuai metadata GitHub. Lihat
+[bukti production](production-verification-v0.4.0.md).
+Pernyataan implementasi/QA di bawah adalah catatan branch semula.
+
 Implemented pada worktree `feat-licenses-archived`, berbasis `04d19eb` (#117).
 Dokumen ini mencatat implementasi dan verifikasi lokal, bukan deployment.
 
@@ -92,7 +98,11 @@ Tautan judul dan lisensi terpisah tanpa nested anchors; hover description tetap
 tersedia. Statistik detail mempertahankan Forks dan menaruh License tepat di atas
 Repository. Statistik hover preview/Featured dan fitur Bookmark/Report tetap ada.
 
-## Rollout yang masih perlu dijalankan operator
+## Rollout untuk deployment baru
+
+Production existing sudah menyelesaikan migration, backfill dan verifikasi
+sinkronisasi pada 2026-10-24 sesuai bukti di atas. Checklist berikut berlaku
+untuk deployment baru.
 
 1. Terapkan migration additive `20261023175513_github-license-archived` sebelum
    server/web baru. Tidak ada migration otomatis saat startup dan tidak ada
@@ -108,9 +118,10 @@ Repository. Statistik hover preview/Featured dan fitur Bookmark/Report tetap ada
    Jangan tambahkan scheduler metadata kedua. Trending memerlukan minimal dua
    observasi dalam window dan bertambah coverage setelah refresh harian berjalan.
 
-Migration production, backfill repo sungguhan, dan scheduler target belum dijalankan.
-GitHub pada automated tests di-mock; callback OAuth, live GitHub rate limits,
-dan data lisensi target tetap membutuhkan acceptance setelah rollout.
+Migration production, backfill repo sungguhan dan scheduler existing telah
+terverifikasi dalam catatan production di atas. GitHub pada automated tests
+di-mock; deployment baru tetap membutuhkan acceptance callback OAuth, live
+GitHub rate limits dan data lisensi target setelah rollout.
 
 ## Pemeriksaan lokal yang dapat diulang
 

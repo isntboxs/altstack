@@ -113,6 +113,7 @@ describe('private bookmarks', () => {
 		expect(listed.bookmarks).toEqual([
 			{
 				id: row.id,
+				verified: false,
 				name: row.name,
 				slug: row.slug,
 				logo: row.logo,

@@ -1,5 +1,9 @@
 # Tags dari GitHub Topics
 
+Production 2026-10-24: migration dan backfill topics terverifikasi; katalog
+20 listing memiliki 119 public tags setelah kurasi. Lihat
+[bukti production](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
+
 Tags memakai field `topics` dari metadata repository GitHub, bukan release tags.
 Referensi upstream: https://docs.github.com/en/rest/repos/repos#get-a-repository.
 

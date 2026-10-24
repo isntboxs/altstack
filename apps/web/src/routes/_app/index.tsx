@@ -24,7 +24,9 @@ export const Route = createFileRoute('/_app/')({
 		}
 	},
 	loader: ({ context, deps }) =>
-		context.queryClient.query(projectQueries.search(deps)),
+		context.queryClient.query(
+			projectQueries.search({ ...deps, sort: deps.sort ?? 'recommended' })
+		),
 	head: ({ loaderData, match }) => {
 		if (!loaderData) return unavailableHead()
 		const policy = cataloguePolicy(
@@ -56,7 +58,9 @@ function Home() {
 	const { category, page, q, sort } = Route.useSearch()
 	const data = Route.useLoaderData()
 	const hasFilters =
-		Boolean(category) || Boolean(q) || (sort !== undefined && sort !== 'newest')
+		Boolean(category) ||
+		Boolean(q) ||
+		(sort !== undefined && sort !== 'recommended')
 
 	return (
 		<>

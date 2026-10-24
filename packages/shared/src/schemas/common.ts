@@ -20,6 +20,7 @@ export const slugSchema = z
 export const projectSchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
+	verified: z.boolean().default(false),
 	slug: z.string(),
 	tagline: z.string(),
 	description: z.string(),

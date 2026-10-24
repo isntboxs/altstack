@@ -49,6 +49,9 @@ import {
 	githubStarHistory,
 	project,
 	projectCategory,
+	projectMember,
+	projectClaim,
+	projectUpload,
 	user,
 } from '@altstack/db/schemas'
 import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
@@ -627,6 +630,15 @@ const adminUpdateProjectHandler = adminProcedure.admin.project.update.handler(
 						currentGithub.githubRepositoryId ===
 						refreshedGithub.githubRepositoryId
 					if (!sameRepository) {
+						await tx
+							.delete(projectMember)
+							.where(eq(projectMember.projectId, existing.id))
+						await tx
+							.delete(projectClaim)
+							.where(eq(projectClaim.projectId, existing.id))
+						await tx
+							.delete(projectUpload)
+							.where(eq(projectUpload.projectId, existing.id))
 						await tx
 							.delete(githubStarHistory)
 							.where(eq(githubStarHistory.projectId, existing.id))

@@ -1,5 +1,11 @@
 # Submission review emails
 
+Production follow-up on 2026-10-24 verified the migration and configuration,
+enabled the missing every-minute Dokploy job, and confirmed Published/Rejected
+delivery with provider and operator inbox/link evidence. See the
+[production record](production-verification-v0.4.0.md#review-emails-repaired-and-exercised).
+The implementation/QA statements below describe the original branch work.
+
 Implemented in this worktree on 2026-10-23, on top of `c3e0980`. This is local
 implementation/verification evidence, not a deployment or live-delivery claim.
 

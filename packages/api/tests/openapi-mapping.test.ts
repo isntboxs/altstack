@@ -17,6 +17,70 @@ import baseline from './fixtures/openapi-wire-contract.json'
 const ID = '550e8400-e29b-41d4-a716-446655440000'
 const LOGO = 'tmp/logos/example-1.png'
 const SCREENSHOT = 'tmp/screenshots/example-1.png'
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+// Keep checking every legacy field while allowing the documented catalogue
+// additions since the frozen pre-QUERY baseline (license metadata and R6).
+function legacyCatalogueSchema(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(legacyCatalogueSchema)
+	if (!isRecord(value)) return value
+	const additions = new Set([
+		'verified',
+		'licenseKey',
+		'licenseName',
+		'licenseSpdxId',
+		'licenseSlug',
+		'licenseUrl',
+		'archived',
+		'asOf',
+	])
+	const properties = 'properties' in value ? value.properties : undefined
+	if (
+		properties &&
+		typeof properties === 'object' &&
+		'owner' in properties &&
+		'repo' in properties &&
+		!('repositoryCreatedAt' in properties)
+	) {
+		additions.add('lastCommitAt')
+		additions.add('metadataFetchedAt')
+	}
+	return Object.fromEntries(
+		Object.entries<unknown>(value).map(([key, item]) => [
+			key,
+			key === 'required' && Array.isArray(item)
+				? item
+						.filter(
+							(field: unknown): field is string =>
+								typeof field === 'string' && !additions.has(field)
+						)
+						.toSorted((a, b) => a.localeCompare(b))
+				: key === 'properties' && isRecord(item)
+					? Object.fromEntries(
+							Object.entries<unknown>(item)
+								.filter(([field]) => !additions.has(field))
+								.map(([field, schema]) => [
+									field,
+									legacyCatalogueSchema(schema),
+								])
+						)
+					: key === 'enum' && Array.isArray(item)
+						? item.filter(
+								(option: unknown) =>
+									![
+										'recommended',
+										'most-popular',
+										'name-desc',
+										'trending',
+										'last-commit',
+										'repository-age',
+									].includes(String(option))
+							)
+						: legacyCatalogueSchema(item),
+		])
+	)
+}
 const node = {
 	id: ID,
 	parentId: null,
@@ -53,6 +117,12 @@ const project = {
 		repositoryCreatedAt: null,
 		latestReleaseTag: null,
 		metadataFetchedAt: null,
+		archived: null,
+		licenseKey: null,
+		licenseName: null,
+		licenseSlug: null,
+		licenseSpdxId: null,
+		licenseUrl: null,
 	},
 }
 const pagination = {
@@ -129,6 +199,7 @@ const responses = {
 	checkHealth: { message: 'OK' },
 	getProjectBySlug: {
 		...project,
+		verified: false,
 		featuredProjects: [],
 		tags: [],
 		categoryDetails: [node],
@@ -970,7 +1041,43 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(46)
+		expect(operations).toHaveLength(60)
+		for (const contract of Object.values(contracts.ownership)) {
+			const metadata = getOpenAPIMeta(contract)!
+			const operation = operations.find(
+				(item) => item.operation.operationId === metadata.operationId
+			)
+			expect(operation?.path).toBe(metadata.path)
+			expect(operation?.operation.tags).toEqual(['ProjectOwnership'])
+			expect(operation?.operation.security ?? spec.security).toEqual(
+				baseline.security
+			)
+		}
+		expect(paths['/projects/{id}/claim']?.post?.requestBody).toMatchObject({
+			required: true,
+			content: {
+				'application/json': {
+					schema: {
+						additionalProperties: false,
+						required: ['email', 'role'],
+						properties: { role: { enum: ['owner', 'maintainer'] } },
+					},
+				},
+			},
+		})
+		expect(paths['/managed-projects']?.query?.parameters).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ name: 'page', in: 'query' }),
+				expect.objectContaining({ name: 'limit', in: 'query' }),
+			])
+		)
+		expect(paths['/projects/{slug}']?.query?.responses?.['200']).toMatchObject({
+			content: {
+				'application/json': {
+					schema: { properties: { verified: { type: 'boolean' } } },
+				},
+			},
+		})
 		expect(paths['/tags']?.query).toMatchObject({
 			operationId: 'listTags',
 			security: [],
@@ -995,6 +1102,7 @@ describe('generated OpenAPI compatibility', () => {
 										'id',
 										'slug',
 										'name',
+										'verified',
 										'logo',
 										'tagline',
 										'websiteUrl',
@@ -1038,7 +1146,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			23
+			30
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1050,15 +1158,17 @@ describe('generated OpenAPI compatibility', () => {
 				expected.method === 'get' ? 'query' : expected.method
 			)
 			expect(
-				(actual?.operation.parameters ?? []).filter(
-					(parameter) =>
-						!(
-							'name' in parameter &&
-							operationId === 'searchProjects' &&
-							parameter.name === 'tag'
-						)
+				legacyCatalogueSchema(
+					(actual?.operation.parameters ?? []).filter(
+						(parameter) =>
+							!(
+								'name' in parameter &&
+								operationId === 'searchProjects' &&
+								['tag', 'license'].includes(parameter.name)
+							)
+					)
 				)
-			).toEqual(expected.parameters)
+			).toEqual(legacyCatalogueSchema(expected.parameters))
 			expect(actual?.operation.requestBody ?? null).toEqual(
 				expected.requestBody
 			)
@@ -1106,27 +1216,29 @@ describe('generated OpenAPI compatibility', () => {
 					(field) => field !== 'featuredProjects' && field !== 'tags'
 				)
 			}
-			expect(comparableResponses).toEqual({
-				...baseline.errorResponses,
-				...(['createSubmission', 'resubmitSubmission'].includes(operationId)
-					? {
-							'429': {
-								...baseline.errorResponses['429'],
-								content: {
-									'application/json': {
-										schema: {
-											oneOf: [
-												{ $ref: '#/components/schemas/TooManyRequests2' },
-												{ $ref: '#/components/schemas/UndefinedError' },
-											],
+			expect(legacyCatalogueSchema(comparableResponses)).toEqual(
+				legacyCatalogueSchema({
+					...baseline.errorResponses,
+					...(['createSubmission', 'resubmitSubmission'].includes(operationId)
+						? {
+								'429': {
+									...baseline.errorResponses['429'],
+									content: {
+										'application/json': {
+											schema: {
+												oneOf: [
+													{ $ref: '#/components/schemas/TooManyRequests2' },
+													{ $ref: '#/components/schemas/UndefinedError' },
+												],
+											},
 										},
 									},
 								},
-							},
-						}
-					: {}),
-				...successResponses,
-			})
+							}
+						: {}),
+					...successResponses,
+				})
+			)
 		}
 		expect(spec.components?.schemas?.TooManyRequests2).toMatchObject({
 			properties: {
@@ -1150,6 +1262,7 @@ describe('generated OpenAPI compatibility', () => {
 	it('applies detailed input and compact output only to explicitly mapped procedures with explicit scalar styles', () => {
 		const procedures = [
 			...Object.values(contracts.bookmark),
+			...Object.values(contracts.ownership),
 			contracts.health,
 			...Object.values(contracts.altstack),
 			...Object.values(contracts.category),
@@ -1166,9 +1279,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(36)
+		expect(mapped).toHaveLength(48)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(19)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(24)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(
@@ -1188,6 +1301,8 @@ describe('generated OpenAPI compatibility', () => {
 		expect(getOpenAPIMeta(contracts.project.search)?.queryStyles).toEqual({
 			q: 'primitive',
 			category: 'primitive',
+			tag: 'primitive',
+			license: 'primitive',
 			sort: 'primitive',
 			page: 'primitive',
 			limit: 'primitive',

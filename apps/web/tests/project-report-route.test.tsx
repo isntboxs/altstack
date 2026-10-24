@@ -13,14 +13,25 @@ import {
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
-import type { ORPCRouterClient } from '@altstack/api/routers'
+import type { ORPCRouterClient, ORPCRouterInputs } from '@altstack/api/routers'
+
+import type * as AuthClientModule from '@altstack/auth/client'
 
 import { getRouter } from '#/router'
 import type * as AppRouteModule from '#/routes/_app/route'
+import type * as MainRouteModule from '#/routes/_main/route'
 import type { orpc } from '#/utils/orpc'
 
-const { getAuthFn, rpc } = vi.hoisted(() => {
+const { getAuthFn, rpc, linkSocial } = vi.hoisted(() => {
 	return {
+		linkSocial:
+			vi.fn<
+				(input: {
+					provider: string
+					callbackURL: string
+					errorCallbackURL: string
+				}) => Promise<{ error: null }>
+			>(),
 		getAuthFn: vi.fn<
 			() => Promise<{
 				user: { id: string; role: 'user' | 'admin' }
@@ -28,6 +39,17 @@ const { getAuthFn, rpc } = vi.hoisted(() => {
 			} | null>
 		>(),
 		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
+	}
+})
+vi.mock('@altstack/auth/client', async (importOriginal) => {
+	const actual = await importOriginal<typeof AuthClientModule>()
+	return {
+		...actual,
+		authClient: {
+			...actual.authClient,
+			signIn: actual.authClient.signIn,
+			linkSocial,
+		},
 	}
 })
 vi.mock('#/routes/__root', async () => {
@@ -53,6 +75,14 @@ vi.mock('#/routes/_app/route', async () => {
 	actual.Route.update({ component: Outlet })
 	return actual
 })
+vi.mock('#/routes/_main/route', async () => {
+	const actual = await vi.importActual<typeof MainRouteModule>(
+		'#/routes/_main/route'
+	)
+	const { Outlet } = await import('@tanstack/react-router')
+	actual.Route.update({ component: Outlet })
+	return actual
+})
 vi.mock('#/functions/get-auth-fn', () => {
 	return { getAuthFn }
 })
@@ -68,6 +98,25 @@ vi.mock('#/components/theme-switcher', () => {
 vi.mock('#/components/block-note/view.tsx', () => {
 	return {
 		BlockNoteViewBlocks: () => null,
+	}
+})
+vi.mock('#/components/block-note/editor', () => {
+	return { default: () => null }
+})
+vi.mock('#/components/category-combobox-view', () => {
+	return { CategoryComboboxView: () => null }
+})
+vi.mock('#/components/image-uploader', () => {
+	return {
+		LogoUploader: ({ onChange }: { onChange: (key: string) => void }) => (
+			<button
+				type="button"
+				onClick={() => onChange('tmp/logos/first-project.png')}
+			>
+				Upload test logo
+			</button>
+		),
+		ScreenshotUploader: () => null,
 	}
 })
 vi.mock('@altstack/api/routers', () => {
@@ -117,6 +166,7 @@ vi.mock('@altstack/ui/components/toast', () => {
 const project = {
 	id: '550e8400-e29b-41d4-a716-446655440000',
 	name: 'Example',
+	verified: false,
 	slug: 'example',
 	tagline: 'Test project',
 	description: 'Published description',
@@ -162,8 +212,23 @@ beforeEach(() => {
 		})
 	)
 	getAuthFn.mockReset().mockResolvedValue(null)
+	linkSocial.mockReset().mockResolvedValue({ error: null })
 	rpc.mockReset().mockImplementation((path) => {
 		if (path.join('/') === 'project/getBySlug') return Promise.resolve(project)
+		if (path.join('/') === 'ownership/github') {
+			return Promise.resolve({
+				status: 'verified',
+				permission: 'maintain',
+				reason: null,
+				githubUserId: '123',
+				login: 'representative',
+				repositoryId: '456',
+				checkedAt: new Date().toISOString(),
+			})
+		}
+		if (path.join('/') === 'ownership/state') {
+			return Promise.resolve({ membership: null, claim: null })
+		}
 		if (path.join('/') === 'bookmark/get') {
 			return Promise.resolve({ bookmarked: false })
 		}
@@ -272,4 +337,467 @@ describe('project report URL lifecycle', () => {
 			expect(projectReads()).toBe(reads)
 		}
 	)
+})
+
+describe('managed project editor navigation', () => {
+	it('resets drafts and uploads across projects with equal revisions and after a revision reload', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const first = {
+			...project,
+			logo: 'projects/example/logo.png',
+			revision: '42',
+			categorySlugs: ['tools'],
+		}
+		let second = {
+			...first,
+			id: '550e8400-e29b-41d4-a716-446655440001',
+			name: 'Second project',
+			slug: 'second',
+			tagline: 'Second tagline',
+			description: 'Second description',
+			content: 'Second content',
+		}
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/get') {
+				const { params } = input as ORPCRouterInputs['ownership']['get']
+				return Promise.resolve(params.id === first.id ? first : second)
+			}
+			if (path.join('/') === 'ownership/categories') {
+				return Promise.resolve({ categories: [] })
+			}
+			if (path.join('/') === 'ownership/update') {
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		const router = await routerAt(`/managed/${first.id}`)
+		const firstName = await screen.findByRole('textbox', {
+			name: 'Project name',
+		})
+		fireEvent.change(firstName, { target: { value: 'Unsaved first draft' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Upload test logo' }))
+		await act(async () => {
+			await router.navigate({ to: '/managed/$id', params: { id: second.id } })
+		})
+		await screen.findByRole('heading', { name: 'Edit Second project' })
+		expect(
+			screen.getByRole('textbox', { name: 'Project name' })
+		).toHaveProperty('value', 'Second project')
+		fireEvent.click(screen.getByRole('button', { name: 'Publish changes' }))
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.find(
+					([path]) => path.join('/') === 'ownership/update'
+				)?.[1]
+			).toEqual({
+				params: { id: second.id },
+				body: {
+					revision: '42',
+					name: 'Second project',
+					tagline: 'Second tagline',
+					description: 'Second description',
+					websiteUrl: null,
+					content: 'Second content',
+					categorySlugs: ['tools'],
+				},
+			})
+		)
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Publish changes' })
+			).toHaveProperty('disabled', false)
+		)
+		fireEvent.change(screen.getByRole('textbox', { name: 'Project name' }), {
+			target: { value: 'Unsaved second draft' },
+		})
+		second = { ...second, revision: '43', name: 'Reloaded project' }
+		fireEvent.click(screen.getByRole('button', { name: 'Reload project' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('textbox', { name: 'Project name' })
+			).toHaveProperty('value', 'Reloaded project')
+		)
+	})
+})
+
+describe('project Verify URL and claim flow', () => {
+	it('opens direct/reloaded URLs, preserves other search/hash, restores history and does not reload detail data', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const router = await routerAt('/example?dialog=verify&ref=docs#details')
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		await screen.findByRole('textbox', { name: 'Email address' })
+		const reads = projectReads()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(router.state.location.search.ref).toBe('docs')
+		expect(router.state.location.hash).toBe('details')
+		act(() => router.history.back())
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		act(() => router.history.forward())
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
+		const dialog = await screen.findByRole('dialog', { name: 'Verify Example' })
+		await waitFor(() =>
+			expect(dialog.contains(document.activeElement)).toBe(true)
+		)
+		fireEvent.keyDown(document.activeElement!, {
+			key: 'Escape',
+			code: 'Escape',
+		})
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(projectReads()).toBe(reads)
+		cleanup()
+		await routerAt('/example?dialog=verify&ref=reload')
+		await screen.findByRole('textbox', { name: 'Email address' })
+	})
+	it('hands anonymous visitors to sign-in within the same URL-controlled dialog', async () => {
+		const router = await routerAt('/example?dialog=verify&ref=auth')
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		expect(
+			screen.getByText('Sign in to attach this request to your account.')
+		).toBeTruthy()
+		expect(
+			screen.getByRole('button', { name: 'Continue with GitHub' })
+		).toBeTruthy()
+		expect(router.state.location.search.dialog).toBe('verify')
+		expect(rpc.mock.calls.some(([path]) => path[0] === 'ownership')).toBe(false)
+	})
+	it('requires GitHub connection and preserves the exact Verify return URL when linking', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: 'disconnected',
+						permission: 'unknown',
+						reason: 'account_required',
+						githubUserId: null,
+						login: null,
+						repositoryId: null,
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify&ref=claim#screenshots')
+		await screen.findByText(/Connect your GitHub account before requesting/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', true)
+		fireEvent.click(screen.getByRole('button', { name: 'Connect GitHub' }))
+		await waitFor(() => expect(linkSocial).toHaveBeenCalledOnce())
+		const callbackURL = new URL(
+			'/example?dialog=verify&ref=claim#screenshots',
+			window.location.origin
+		).href
+		expect(linkSocial).toHaveBeenCalledWith({
+			provider: 'github',
+			callbackURL,
+			errorCallbackURL: callbackURL,
+		})
+		expect(
+			rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/request')
+		).toBe(false)
+	})
+	it('blocks read-only claims and lets a successful recheck enable the email flow', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		let allowed = false
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: allowed ? 'verified' : 'denied',
+						permission: allowed ? 'maintain' : 'read',
+						reason: allowed ? null : 'insufficient_access',
+						githubUserId: '123',
+						login: 'reader',
+						repositoryId: '456',
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify')
+		await screen.findByText(/does not have write or maintainer access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', true)
+		allowed = true
+		fireEvent.click(screen.getByRole('button', { name: 'Check GitHub again' }))
+		await screen.findByText(/reader has maintain access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', false)
+	})
+	it('labels unavailable GitHub proof for manual review without presenting it as verified', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: 'unavailable',
+						permission: 'unknown',
+						reason: 'github_unavailable',
+						githubUserId: '123',
+						login: null,
+						repositoryId: null,
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify')
+		await screen.findByText(/GitHub could not confirm repository access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', false)
+		expect(screen.queryByText('Verified project')).toBeNull()
+	})
+	it('shows private GitHub evidence in the reviewer inbox and submits independent verification notes', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'reviewer-a', role: 'admin' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		const pagination = {
+			page: 1,
+			limit: 25,
+			totalItems: 1,
+			totalPages: 1,
+			hasNextPage: false,
+			hasPreviousPage: false,
+		}
+		let reviewed = false
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/list') {
+				return Promise.resolve({ projects: [], pagination })
+			}
+			if (path.join('/') === 'ownership/inbox') {
+				return Promise.resolve({
+					claims: reviewed
+						? []
+						: [
+								{
+									id: project.id,
+									projectId: project.id,
+									projectName: 'Example',
+									projectSlug: 'example',
+									name: 'Representative',
+									email: 'contact@example.test',
+									role: 'maintainer',
+									requestedAt: new Date(),
+									githubEvidence: {
+										status: 'limited',
+										permission: 'write',
+										reason: null,
+										githubUserId: '123',
+										login: 'representative',
+										repositoryId: '456',
+										checkedAt: new Date().toISOString(),
+									},
+								},
+							],
+					pagination,
+				})
+			}
+			if (path.join('/') === 'ownership/review') {
+				reviewed = true
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		await routerAt('/managed')
+		await screen.findByText(/representative has write access/)
+		const manualEvidence =
+			'Confirmed representation through the established project contact in a separate channel.'
+		fireEvent.change(
+			screen.getByRole('textbox', {
+				name: 'Independent verification notes for Example',
+			}),
+			{ target: { value: manualEvidence } }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.find(
+					([path]) => path.join('/') === 'ownership/review'
+				)?.[1]
+			).toEqual({
+				params: { id: project.id },
+				body: { decision: 'approve', manualEvidence },
+			})
+		)
+		await screen.findByText('No requests awaiting your review.')
+	})
+	it('sends the selected email and role, confirms a six-digit code, and shows pending approval without a badge', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const challengeId = '550e8400-e29b-41d4-a716-446655440001'
+		let confirmed = false
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/state') {
+				return Promise.resolve({
+					membership: null,
+					claim: confirmed
+						? {
+								status: 'pending',
+								role: 'maintainer',
+								email: 'contact@example.test',
+								challenge: null,
+							}
+						: null,
+				})
+			}
+			if (path.join('/') === 'ownership/request') {
+				return Promise.resolve({
+					challengeId,
+					expiresAt: new Date(Date.now() + 600000),
+					resendAt: new Date(Date.now() + 60000),
+				})
+			}
+			if (path.join('/') === 'ownership/verify') {
+				confirmed = true
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		await routerAt('/example?dialog=verify')
+		fireEvent.change(
+			await screen.findByRole('textbox', { name: 'Email address' }),
+			{ target: { value: 'contact@example.test' } }
+		)
+		fireEvent.click(screen.getByRole('combobox', { name: 'Your role' }))
+		fireEvent.pointerDown(
+			await screen.findByRole('option', { name: 'Maintainer' }),
+			{ pointerType: 'mouse' }
+		)
+		fireEvent.mouseUp(screen.getByRole('option', { name: 'Maintainer' }))
+		fireEvent.click(screen.getByRole('option', { name: 'Maintainer' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('combobox', { name: 'Your role' }).textContent
+			).toContain('Maintainer')
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Send verification code' })
+		)
+		const code = await screen.findByRole('textbox', {
+			name: 'Verification code',
+		})
+		expect(
+			rpc.mock.calls.find(
+				([path]) => path.join('/') === 'ownership/request'
+			)?.[1]
+		).toEqual({
+			params: { id: project.id },
+			body: { email: 'contact@example.test', role: 'maintainer' },
+		})
+		expect(screen.getByRole('button', { name: /Resend in/ })).toHaveProperty(
+			'disabled',
+			true
+		)
+		fireEvent.change(code, { target: { value: '123456' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Confirm code' }))
+		await screen.findByText(
+			/Email confirmed\. Your maintainer request is awaiting/
+		)
+		expect(screen.queryByText('Verified project')).toBeNull()
+	})
+	it('hides Verify on verified listings and keeps Request access available from compact actions', async () => {
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'project/getBySlug'
+				? Promise.resolve({ ...project, verified: true })
+				: original(path, input)
+		)
+		await routerAt('/example')
+		await screen.findByText('Verified project')
+		expect(screen.queryByRole('button', { name: 'Verify' })).toBeNull()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'More project actions' })
+		)
+		expect(screen.queryByRole('menuitem', { name: 'Verify' })).toBeNull()
+		fireEvent.click(
+			await screen.findByRole('menuitem', { name: 'Request access' })
+		)
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+	})
+	it('restores a sent challenge after reload, handles expiry/resend, and retains a code after verification errors', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		const challengeId = '550e8400-e29b-41d4-a716-446655440001'
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/state') {
+				return Promise.resolve({
+					membership: null,
+					claim: {
+						status: 'email_pending',
+						role: 'maintainer',
+						email: 'contact@example.test',
+						challenge: {
+							challengeId,
+							expiresAt: new Date(Date.now() - 1000),
+							resendAt: new Date(Date.now() - 1000),
+						},
+					},
+				})
+			}
+			if (path.join('/') === 'ownership/request') {
+				return Promise.resolve({
+					challengeId: '550e8400-e29b-41d4-a716-446655440002',
+					expiresAt: new Date(Date.now() + 600000),
+					resendAt: new Date(Date.now() + 60000),
+				})
+			}
+			if (path.join('/') === 'ownership/verify') {
+				return Promise.reject(
+					new Error(
+						'The code is invalid or expired. Request a new code and try again.'
+					)
+				)
+			}
+			return original(path, input)
+		})
+		await routerAt('/example?dialog=verify')
+		await screen.findByRole('textbox', { name: 'Verification code' })
+		expect(screen.getByText(/This code has expired/)).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Confirm code' })).toHaveProperty(
+			'disabled',
+			true
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Resend code' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Confirm code' })
+			).toHaveProperty('disabled', false)
+		)
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Verification code' }),
+			{ target: { value: '123456' } }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Confirm code' }))
+		await screen.findByRole('alert')
+		expect(
+			screen.getByRole('textbox', { name: 'Verification code' })
+		).toHaveProperty('value', '123456')
+	})
 })

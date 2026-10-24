@@ -28,6 +28,7 @@ const projects: FeaturedProjectsData = Array.from(
 		return {
 			id: `featured-${index}`,
 			name: `Featured ${index}`,
+			verified: false,
 			slug: `featured-${index}`,
 			logo: null,
 			tagline: `Useful open-source project ${index}`,

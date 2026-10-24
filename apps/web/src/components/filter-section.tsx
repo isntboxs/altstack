@@ -34,6 +34,7 @@ import {
 
 export const selectSortItems: Array<{ label: string; value: SearchSortType }> =
 	[
+		{ label: 'Verified first', value: 'recommended' },
 		{ label: 'Oldest', value: 'oldest' },
 		{ label: 'Latest', value: 'newest' },
 		{ label: 'Most popular', value: 'most-popular' },
@@ -54,7 +55,7 @@ const SelectSortBar = ({
 	onSortChange: (sort: SearchSortType | undefined) => void
 }) => {
 	const handleSortChange = (value: SearchSortType | null) => {
-		if (value !== null) onSortChange(value === 'newest' ? undefined : value)
+		if (value !== null) onSortChange(value)
 	}
 
 	return (
@@ -88,6 +89,7 @@ export const FilterSection = ({
 	category,
 	categorySelector,
 	placeholder = 'Search...',
+	defaultSort = 'newest',
 	onQueryChange,
 	onSortChange,
 	onReset,
@@ -98,6 +100,7 @@ export const FilterSection = ({
 	category?: string
 	categorySelector?: ReactNode
 	placeholder?: string
+	defaultSort?: SearchSortType
 	onQueryChange: (q: string | undefined) => void
 	onSortChange: (sort: SearchSortType | undefined) => void
 	onReset: () => void
@@ -134,7 +137,7 @@ export const FilterSection = ({
 	const hasActiveFilters =
 		Boolean(inputValue) ||
 		Boolean(category) ||
-		(sort !== undefined && sort !== 'newest') ||
+		(sort !== undefined && sort !== defaultSort) ||
 		(page ?? 1) > 1
 	const handleReset = () => {
 		setInputValue('')

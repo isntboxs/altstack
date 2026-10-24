@@ -23,6 +23,7 @@ const slugSchema = z
 const projectField = {
 	id: z.uuid(),
 	name: z.string(),
+	verified: z.boolean().default(false),
 	slug: z.string(),
 	tagline: z.string(),
 	description: z.string(),
@@ -131,6 +132,7 @@ export const listProjectsOutputSchema = z.object({
 })
 
 export const searchSortSchema = z.enum([
+	'recommended',
 	'newest',
 	'oldest',
 	'name',

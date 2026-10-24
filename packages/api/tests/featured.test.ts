@@ -224,6 +224,7 @@ describe('global featured project curation', () => {
 				'logo',
 				'tagline',
 				'websiteUrl',
+				'verified',
 				'stars',
 				'forks',
 			].toSorted()

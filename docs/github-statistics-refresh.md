@@ -1,5 +1,11 @@
 # GitHub statistics: rollout dan operasi
 
+Verifikasi production 2026-10-24 mengonfirmasi jadwal 02:00 Asia/Jakarta,
+histori harian, revision API/Web dan journal migration. Backfill manual 7/7
+berhasil mengisi topics, lisensi dan archived; refresh akhir seluruh katalog
+juga lulus 20/20. Lihat
+[bukti production dan batasan recovery](production-verification-v0.4.0.md#github-schedule-and-backfill).
+
 Scope tambahan ini disetujui pada 10 Oktober 2026: stars/forks diperbarui harian
 dan secara manual oleh admin; aside menampilkan HEAD commit default branch, umur
 repository, dan tag latest release. Halaman publik membaca snapshot PostgreSQL.
@@ -56,7 +62,11 @@ ditambahkan. Pantau `github-history-pruned`, `github-refresh-failure`,
 sesudah deployment untuk memverifikasi titik awal, lalu tunggu koleksi harian;
 delta 30 hari memerlukan dua endpoint berjarak 30 tanggal.
 
-## Rollout
+## Rollout untuk deployment baru
+
+Production existing sudah menyelesaikan migration, backfill dan aktivasi schedule
+pada 2026-10-24 sesuai bukti di atas. Langkah berikut berlaku untuk deployment
+baru; pertahankan schedule existing tanpa membuat job kedua.
 
 1. Terapkan migration nullable `github-statistics-metadata` dari checkout release
    dengan `vp run db:migrate` dan `DATABASE_URL` target deployment. Migration hanya
@@ -83,7 +93,7 @@ delta 30 hari memerlukan dua endpoint berjarak 30 tanggal.
    berikut. Proyek gagal bisa dicoba lagi secara manual atau pada jadwal berikutnya.
 
 Kode ini tidak menjalankan migration saat startup ataupun mengubah scheduler.
-Deployment dan langkah di atas tetap perlu dilakukan oleh operator.
+Untuk deployment baru, langkah di atas dijalankan oleh operator.
 
 ## Schedule Dokploy: setiap hari 02:00 Asia/Jakarta
 
@@ -97,7 +107,8 @@ service server jika deployment memakai Compose), dengan konfigurasi:
 - Command: `bun run apps/server/dist/jobs/github-refresh.mjs`
 - Cron expression: `0 2 * * *`
 - Timezone: `Asia/Jakarta`
-- Enabled: aktifkan setelah manual backfill selesai.
+- Enabled: sudah aktif di production existing; pada deployment baru, aktifkan
+  setelah manual backfill selesai.
 
 Field `timezone` tersedia pada
 [API resmi schedule.create/update](https://docs.dokploy.com/docs/api/schedule).
