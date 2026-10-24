@@ -1,5 +1,11 @@
 # GitHub license, Archived, dan katalog lisensi
 
+Production 2026-10-24: migration, revision API/Web dan backfill existing-job
+terverifikasi. Katalog memiliki 20 listing dengan 17 lisensi SPDX yang dikenali
+dan 3 unknown sesuai metadata GitHub. Lihat
+[bukti production](production-verification-v0.4.0.md).
+Pernyataan implementasi/QA di bawah adalah catatan branch semula.
+
 Implemented pada worktree `feat-licenses-archived`, berbasis `04d19eb` (#117).
 Dokumen ini mencatat implementasi dan verifikasi lokal, bukan deployment.
 

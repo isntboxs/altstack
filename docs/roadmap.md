@@ -8,17 +8,19 @@
 The operator confirmed v0.4.0 production rollout in the project conversation on
 2026-10-24. Older feature documents retain their branch verification and rollout
 instructions; their pending-deployment statements are historical, superseded by
-this baseline. Individual live-service outcomes are recorded separately.
+this baseline. Individual live-service outcomes are recorded separately in the
+[2026-10-24 production verification](production-verification-v0.4.0.md).
 
 ## Release baseline and evidence
 
 - **v0.2.0** (`0c75022`): project mentions/hover previews, sharing, footer and media fixes, on top of the existing catalogue, submission, SEO and Embed capabilities.
 - **v0.3.0** (`bb30efe`): includes Bookmarks (#105), report intake (#108), admin report inbox (#109), revised R7 Featured Projects (#110), and related UI fixes. The operator confirmed rollout on **2026-10-22** in the project conversation. Production was not independently inspected in this reconciliation.
-- **v0.4.0** (`b79593d`, release merge #119): includes the v0.3.0 baseline, Docker development/test databases (#112), GitHub Topics tags (#113), GitHub + Resend Magic Link and auth/rate-limit fixes (#115 and subsequent fixes), review-decision emails (#117), license discovery/archived metadata/ten sorts including observed seven-day Trending (#118), scoped-validation instructions and Vite+ 1.4.0. The operator confirmed production rollout on **2026-10-24**. Production was not independently inspected in this reconciliation.
+- **v0.4.0** (`b79593d`, release merge #119): includes the v0.3.0 baseline, Docker development/test databases (#112), GitHub Topics tags (#113), GitHub + Resend Magic Link and auth/rate-limit fixes (#115 and subsequent fixes), review-decision emails (#117), license discovery/archived metadata/ten sorts including observed seven-day Trending (#118), scoped-validation instructions and Vite+ 1.4.0. The operator confirmed production rollout on **2026-10-24**. Subsequent live inspection verified matching API/Web OCI revisions, 25 migrations, both jobs, delivery and 20 published listings; recovery gaps remain explicit in the [production record](production-verification-v0.4.0.md).
 
 Feature documents retain their original branch test/QA results. Those historical
-runs are not fresh checks of this baseline. This reconciliation changes documents
-only. Historical targeted review-email checks are recorded under R5c; missing
+runs are not fresh checks of this baseline. The initial reconciliation changed
+documents only; the linked production follow-up records authorized live changes.
+Historical targeted review-email checks are recorded under R5c; missing
 production acceptance records belong to P0, not to the unimplemented feature list.
 
 ## Operating rules
@@ -66,18 +68,25 @@ Reuse recorded checks rather than rerunning historical acceptance by default.
 jobs and populated metadata; their rollout confirmation is recorded, but individual
 service outcomes are not. Resolve confirmed user-facing failures before new scope.
 
+**2026-10-24 outcome:** focused production checks passed. The missing email
+schedule was enabled, GitHub backfill completed, and the catalogue grew from
+7 to 20 verified listings. **Backup/restore remains open**; lifecycle inspection
+and unexercised integrations are explicitly scoped in the
+[production record](production-verification-v0.4.0.md).
+
 - [x] Record operator-confirmed v0.4.0 rollout, tag `b79593d` and shipped scope.
-- [ ] Record target migration/configuration and matching API/web revision evidence, including review-email and license/archived migrations; inspect actual state before treating configuration as missing.
-- [ ] Verify or attach evidence for the existing every-minute review-email job and actual Published/Rejected mail to operator-owned test accounts, including backlog/failure status. A deployed CLI alone does not establish an enabled scheduler.
-- [ ] Verify or attach evidence for the existing daily **02:00 Asia/Jakarta** GitHub job, topics/license backfill and refresh logs. Trending needs at least two observed dates in its seven-day WIB window; sparse history is an honest cold start, not a reason to synthesize data or wait 30 days.
-- [ ] Verify or attach focused live GitHub/Magic Link sign-in and submit → review → email → public detail / rejected correction → re-review evidence, plus license/tag discovery. Use the existing [operations checklist](#launch-acceptance-and-operations) for relevant authorization/service checks and record skipped integrations.
-- [ ] Verify and record at least **20 accurate published listings**, working links/media, and useful categories/tags/licenses. Record actual coverage before deciding that more import work is needed.
-- [ ] Give each confirmed failure an outcome, owner and next action; fix broken access, publication, delivery or refresh before feature expansion. Attach existing backup/restore and recovery records where available.
+- [x] Record target migration/configuration and matching API/web revision evidence: OCI revision `b79593d` on both containers, 25 migrations including review-email and license/archived, and runtime configuration.
+- [x] Verify the every-minute review-email job and actual Published/Rejected mail to the operator account: enabled the missing schedule; 2 sent rows, one attempt each, no pending/failed/cancelled rows, provider delivery and operator inbox/link confirmations.
+- [x] Verify the existing daily **02:00 Asia/Jakarta** GitHub job, topics/license backfill and refresh logs. Both the original 7/7 backfill and the final 20/20 catalogue run succeeded; established projects have 6–7 observed dates and newly curated projects begin with one real date.
+- [x] Record focused live GitHub/Magic Link sign-in, submit → reject → email/private correction → resubmit → publish → email/public detail, and license/tag discovery. Bookmark/report smoke, CORS, anonymous 401 and explicit skipped integrations are in the [production record](production-verification-v0.4.0.md).
+- [x] Verify **20 accurate published listings**, 20 logos + 7 screenshots, working official links and seven leaf categories. Record 119 public tags and honest GitHub license/empty-topic cases in the [catalogue snapshot](production-catalogue-v0.4.0.json).
+- [x] Give confirmed failures outcomes, owners and next actions: email scheduling/backfill/content gaps fixed; recovery and lifecycle gaps assigned to the deployment/storage operator.
+- [ ] Configure private off-host PostgreSQL backups and prove an isolated restore. The operator confirmed no backup/restore exists; a private destination is still needed. Storage lifecycle inspection remains unverified with application-level R2 access (403).
 
 **Done when:** the focused release/service/content results and any follow-ups have
 recorded outcomes/owners. Historical unchecked items alone do not block R6 or
-reopen the confirmed rollout. This documentation change does not execute those
-checks or modify production.
+reopen the confirmed rollout. The linked production record distinguishes executed
+checks, live changes and remaining recovery/integration gaps.
 
 Delivery/bounce webhooks and automatic outbox retention are unimplemented
 reliability follow-ups. Select a focused slice if observed delivery failures or
@@ -206,7 +215,7 @@ development data and prefer disposable-schema acceptance runners for new work.
 - [x] Project/repository/category/path/assignment/audit schemas, migrations, and canonical uniqueness.
 - [x] CSV/JSON importer with dry-run, validation, transactional writes, idempotent skipping, and optional GitHub statistics/README fetch.
 - [x] Parser, importer, CLI, migration, and concurrency tests.
-- [ ] Import/review at least **20 real published projects** with correct copy, logo, links, and leaf categories.
+- [x] Import/review at least **20 real published projects** with correct copy, logo, links, and leaf categories; verified in [production on 2026-10-24](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
 - [ ] Verify target migrations and repeat the curated import without duplicates or changes to existing records.
 - [ ] Verify real metadata/media. Committed `data/projects.*` files are draft templates with example URLs, not verified launch content.
 
@@ -336,8 +345,8 @@ deployment, not the outcome of each smoke check.
 - [x] Reuse Resend and existing private `/submission` → sign-in → Edit & Resubmit. Public links use `/$slug`; feedback remains private, escaped text.
 - [x] Consolidate all React Email components in `packages/ui/src/emails` with shared brand layout/primitives and explicit exports. Preserve Magic Link HTML/text, ten-minute expiry and one-use copy.
 - [x] Add the private scheduled server CLI, frozen payloads, concurrent-worker leases, eight-attempt/23-hour retry limits and synthetic HTML/text previews.
-- [ ] Record target outbox migration, runtime `EMAIL_APP_URL`, matching Web/API revisions and every-minute job evidence under P0; v0.4.0 rollout is confirmed, individual configuration outcomes are not recorded here.
-- [ ] Record actual mail-client and live delivery/bounce acceptance with operator-owned test accounts.
+- [x] Record target outbox migration, runtime `EMAIL_APP_URL`, matching Web/API revisions and every-minute job evidence under P0; see [production verification](production-verification-v0.4.0.md#review-emails-repaired-and-exercised).
+- [ ] Complete the mail-client matrix and bounce acceptance; live Published/Rejected delivery and operator inbox/link checks passed on 2026-10-24, but these additional integrations were not exercised.
 
 Historical local evidence on 2026-10-23: 146 scoped API review/resubmit/history/notification
 tests, 44 auth, 23 web journey/sign-in, 8 shared email, 5 CLI and 1 additive migration
@@ -358,7 +367,7 @@ operator-confirmed v0.4.0 rollout; individual live outcomes remain P0 evidence.
 - [x] **Star history:** additive migration, daily WIB observations, honest cold-start/gap/staleness states, detail chart/comparison, repository-ID continuity, and 90-date retention. v0.4.0 additionally delivers observed seven-day Trending sort; broader feeds/rankings remain deferred.
 - [x] **CSV/JSON seeding:** replaces demo seed; categories/projects/relationships, optional GitHub enrichment, dry-run, repeat imports.
 - [x] **Project activity:** public `/activity` displays recent commits from the AltStack repository.
-- [ ] Record metadata/history migration and matching revision evidence, inspect refresh/history points, and verify the existing daily **02:00 Asia/Jakarta** schedule under P0. See [rollout guide](github-statistics-refresh.md).
+- [x] Record matching revision/migration journal evidence, inspect refresh/history points, and verify the existing daily **02:00 Asia/Jakarta** schedule under P0. See the [production record](production-verification-v0.4.0.md#github-schedule-and-backfill) and [rollout guide](github-statistics-refresh.md).
 
 These implementations do not prove production service/schedule configuration.
 
@@ -474,18 +483,18 @@ not proof that migration, configuration or deployment has not happened.
 - [x] Record operator-confirmed v0.4.0 production rollout on 2026-10-24 at `b79593d`; shipped scope is recorded in the release baseline.
 - [x] Resolve intake policy: authenticated GitHub and verified email Magic Link sessions are supported; password authentication is disabled. Magic Link is included in v0.4.0.
 - [ ] Record L1 release-domain/social-crawler and R5a/R5b live acceptance evidence.
-- [ ] Verify at least 20 accurate published listings and real media/links.
+- [x] Verify at least 20 accurate published listings and real media/links; [2026-10-24 production evidence](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
 - [ ] Attach revision-specific, affected-feature validation and justified integration/build evidence for the next release; explicitly record skipped integrations. Do not require a full suite for every task.
 - [ ] Record relevant staging/live smoke: browse → search/shared URL → categories/tags/licenses/Trending → GitHub or Magic Link sign in → submit → enrich/publish → decision email → public detail; reject → email/private feedback → correct/resubmit → re-review; bookmark → report → admin decision → Featured selection. Reuse prior evidence for unchanged features.
 - [ ] Verify direct API `401`/`403`, hidden draft/rejected/removed detail, quotas/capacity, and expired sessions.
 - [x] Document Docker dev/test separation and current auth/Resend/proxy/cookie configuration in the root README and [auth guide](auth.md).
 - [ ] Verify real OAuth callback/admin bootstrap/CORS, storage public URL/lifecycle and Redis configuration without recording secret values.
 - [ ] Record migration execution, matching API/web image tags, rollback/forward-fix procedure and backup/restore readiness for the deployment target.
-- [ ] Record v0.4.0 tags migration `20261022111024_github-topic-tags`, topics backfill and ongoing sync evidence. Use the existing GitHub refresh, not a second scheduler. See [tags](tags.md).
+- [x] Record v0.4.0 tags migration `20261022111024_github-topic-tags`, topics backfill and existing daily sync evidence; [production record](production-verification-v0.4.0.md#github-schedule-and-backfill). No second GitHub scheduler was added.
 - [ ] Record v0.4.0 auth migrations (including `20261022142815_organic_silver_samurai` and rate-limit retention), server-only Resend sender/key and trusted proxy configuration evidence; verify live delivery, one-use/expiry, GitHub and cross-subdomain sessions. See [auth](auth.md).
-- [ ] Record v0.4.0 review-email migration `20261023074640_submission-review-notifications`, `EMAIL_APP_URL`, every-minute job and live mail evidence. See [review emails](review-notifications.md).
-- [ ] Record v0.4.0 license/archived migration `20261023175513_github-license-archived`, existing-job backfill and daily sync evidence. See [licenses](licenses.md).
-- [ ] Inspect statistics CLI, first history point, daily schedule, and failure logs. A full 30-day history is not a launch blocker; observations start after rollout.
+- [x] Record v0.4.0 review-email migration `20261023074640_submission-review-notifications`, `EMAIL_APP_URL`, every-minute job and live mail evidence; [production record](production-verification-v0.4.0.md#review-emails-repaired-and-exercised).
+- [x] Record v0.4.0 license/archived migration `20261023175513_github-license-archived`, existing-job backfill and daily sync evidence; [production record](production-verification-v0.4.0.md#github-schedule-and-backfill).
+- [x] Inspect statistics CLI, real history points, daily schedule, and failure logs; backfill 7/7 and final catalogue refresh 20/20 passed. A full 30-day history is not a launch blocker.
 
 Keep evidence gaps open until execution is recorded. The earlier feature-branch
 docs' statements that no deploy/merge occurred describe those test runs; the
@@ -571,7 +580,7 @@ included in the operator-confirmed v0.4.0 rollout.
 - [x] Admin `/admin/tags` create/search/edit/hide/unhide/delete; sync preserves display-name/description/hidden curation and deletion is restricted while any assignments remain.
 - [x] Public `/tags` with search, alphabetical filtering, popular/name sorting and pagination; `/tags/$slug` published-project catalogue and project detail tag links.
 - [x] Hidden/unknown/empty-public tags do not expose a public tag page; counts require published projects with repository rows. Topics are unrelated to GitHub release tags.
-- [ ] Record target migration, initial topics backfill and production acceptance. The existing GitHub refresh job performs backfill; no new scheduler is required.
+- [x] Record target migration, initial topics backfill and focused production acceptance in the [2026-10-24 record](production-verification-v0.4.0.md). The existing GitHub refresh job performs backfill; no new GitHub scheduler was added.
 
 Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 `packages/api/src/routers/tag.ts`, `packages/api/tests/tags.test.ts` and web tag routes.
@@ -605,7 +614,7 @@ whose production rollout was operator-confirmed on 2026-10-24.
 - [x] `/licenses` published-only directory/counts and `/licenses/$slug` scoped search/sort/pagination; unknown/filter/not-found/error states, canonical/noindex and sitemap policy.
 - [x] Internal discovery links, public navigation/footer, card Stars → Last commit → License and Archived badge; detail License immediately above Repository with a separate human document link.
 - [x] Ten requested sorts, preserving legacy query values. User selected Most popular = total stars; Trending = observed seven-day star delta, insufficient observations last. No ranking decision remains open.
-- [ ] Record `20261023175513_github-license-archived`, matching API/web revisions, existing-job backfill and daily synchronization/live GitHub metadata evidence under P0.
+- [x] Record `20261023175513_github-license-archived`, matching API/web revisions, existing-job backfill and daily synchronization/live GitHub metadata evidence under P0; [production verification](production-verification-v0.4.0.md).
 
 Focused checks, reproducible commands, browser evidence and rollout limits:
 [license feature notes](licenses.md). No R6, collections or compare work is included.

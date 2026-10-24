@@ -1,5 +1,11 @@
 # GitHub statistics: rollout dan operasi
 
+Verifikasi production 2026-10-24 mengonfirmasi jadwal 02:00 Asia/Jakarta,
+histori harian, revision API/Web dan journal migration. Backfill manual 7/7
+berhasil mengisi topics, lisensi dan archived; refresh akhir seluruh katalog
+juga lulus 20/20. Lihat
+[bukti production dan batasan recovery](production-verification-v0.4.0.md#github-schedule-and-backfill).
+
 Scope tambahan ini disetujui pada 10 Oktober 2026: stars/forks diperbarui harian
 dan secara manual oleh admin; aside menampilkan HEAD commit default branch, umur
 repository, dan tag latest release. Halaman publik membaca snapshot PostgreSQL.

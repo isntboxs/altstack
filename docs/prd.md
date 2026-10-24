@@ -73,7 +73,7 @@ This is the execution order, shared with the [roadmap](roadmap.md#ordered-priori
 P0 is immediate release follow-through, not evidence of an active incident.
 Missing acceptance records do not mean deployed features are unimplemented.
 
-1. **P0 — Close out v0.4.0 operations and catalogue quality.** Record or verify the release's migrations/configuration, every-minute review-email job and live decision mail, daily GitHub refresh/topics/license backfill and Trending observations, auth/submission/review smoke, and at least 20 accurate published listings. Reuse existing evidence; fix confirmed user-facing failures before new features. Done when the focused checks and any failures have recorded outcomes/owners; historical unchecked items alone do not block R6.
+1. **P0 — Close out v0.4.0 operations and catalogue quality.** Record or verify the release's migrations/configuration, every-minute review-email job and live decision mail, daily GitHub refresh/topics/license backfill and Trending observations, auth/submission/review smoke, and at least 20 accurate published listings. The [2026-10-24 production record](production-verification-v0.4.0.md) verifies these focused checks: the missing email schedule is enabled, metadata backfilled, and 20 listings reviewed. **Backup/restore remains open**: no backup exists and a private destination plus isolated restore proof are needed; storage lifecycle and unexercised integrations remain explicit gaps. Done when the focused checks and failures have recorded outcomes/owners; historical unchecked items alone do not block R6.
 2. **P1 — R6 ownership, then maintainer editing.** The next feature candidate for v0.5.0: R6a establishes a documented GitHub claim policy and Verify flow; R6b depends on it and enables authorized edits of published listings. Done when verified owners can maintain their listing, unauthorized updates fail and admin moderation remains intact. R6 is still unimplemented; v0.5.0 is a candidate, not a release commitment.
 3. **P2 — Collections, then comparison.** Build on private Bookmarks when returning users need organized shortlists. Start with private named collections; define comparison fields and build comparison only after evaluation needs are confirmed. Public sharing and social features are separate decisions. Neither slice is implemented or assigned a release.
 4. **P3 — Report workflow improvements.** Address observed admin bottlenecks with the smallest needed slice, such as reopen or follow-up, before assignment/comments/email or automated corrections. Existing intake and Open → Resolved/Dismissed decisions already work. No expansion is scheduled without report-volume or operator evidence.
@@ -125,7 +125,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Validate publishable copy/media/category fields; use canonical repository uniqueness.
 - Repeat imports skip existing records without overwriting user submissions.
 - GitHub enrichment is opt-in; templates are examples, not verified repositories.
-- Verify and record at least 20 accurate published listings in P0 post-rollout acceptance.
+- Verify and record at least 20 accurate published listings in P0 post-rollout acceptance; [completed in production on 2026-10-24](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
 
 ### R1 — Browse
 
