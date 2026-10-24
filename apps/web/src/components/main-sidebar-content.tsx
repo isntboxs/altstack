@@ -27,6 +27,7 @@ import {
 type MainSidebarContentProps = ComponentProps<typeof SidebarContent>
 
 const navLinks = linkOptions([
+	{ to: '/managed', icon: IconPackage, label: 'My projects' },
 	{ to: '/bookmarks', icon: IconBookmark, label: 'Bookmarks' },
 	{
 		to: '/projects',
@@ -40,6 +41,7 @@ const navLinks = linkOptions([
 ])
 
 const userNavLinks = linkOptions([
+	{ to: '/managed', icon: IconPackage, label: 'My projects' },
 	{ to: '/submission', icon: IconInbox, label: 'Submission' },
 	{ to: '/bookmarks', icon: IconBookmark, label: 'Bookmarks' },
 ])

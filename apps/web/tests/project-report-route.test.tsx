@@ -117,6 +117,7 @@ vi.mock('@altstack/ui/components/toast', () => {
 const project = {
 	id: '550e8400-e29b-41d4-a716-446655440000',
 	name: 'Example',
+	verified: false,
 	slug: 'example',
 	tagline: 'Test project',
 	description: 'Published description',
@@ -164,6 +165,9 @@ beforeEach(() => {
 	getAuthFn.mockReset().mockResolvedValue(null)
 	rpc.mockReset().mockImplementation((path) => {
 		if (path.join('/') === 'project/getBySlug') return Promise.resolve(project)
+		if (path.join('/') === 'ownership/state') {
+			return Promise.resolve({ membership: null, claim: null })
+		}
 		if (path.join('/') === 'bookmark/get') {
 			return Promise.resolve({ bookmarked: false })
 		}
@@ -272,4 +276,209 @@ describe('project report URL lifecycle', () => {
 			expect(projectReads()).toBe(reads)
 		}
 	)
+})
+
+describe('project Verify URL and claim flow', () => {
+	it('opens direct/reloaded URLs, preserves other search/hash, restores history and does not reload detail data', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const router = await routerAt('/example?dialog=verify&ref=docs#details')
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		await screen.findByRole('textbox', { name: 'Email address' })
+		const reads = projectReads()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(router.state.location.search.ref).toBe('docs')
+		expect(router.state.location.hash).toBe('details')
+		act(() => router.history.back())
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		act(() => router.history.forward())
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
+		const dialog = await screen.findByRole('dialog', { name: 'Verify Example' })
+		await waitFor(() =>
+			expect(dialog.contains(document.activeElement)).toBe(true)
+		)
+		fireEvent.keyDown(document.activeElement!, {
+			key: 'Escape',
+			code: 'Escape',
+		})
+		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+		expect(projectReads()).toBe(reads)
+		cleanup()
+		await routerAt('/example?dialog=verify&ref=reload')
+		await screen.findByRole('textbox', { name: 'Email address' })
+	})
+	it('hands anonymous visitors to sign-in within the same URL-controlled dialog', async () => {
+		const router = await routerAt('/example?dialog=verify&ref=auth')
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+		expect(
+			screen.getByText('Sign in to attach this request to your account.')
+		).toBeTruthy()
+		expect(
+			screen.getByRole('button', { name: 'Continue with GitHub' })
+		).toBeTruthy()
+		expect(router.state.location.search.dialog).toBe('verify')
+		expect(rpc.mock.calls.some(([path]) => path[0] === 'ownership')).toBe(false)
+	})
+	it('sends the selected email and role, confirms a six-digit code, and shows pending approval without a badge', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const challengeId = '550e8400-e29b-41d4-a716-446655440001'
+		let confirmed = false
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/state') {
+				return Promise.resolve({
+					membership: null,
+					claim: confirmed
+						? {
+								status: 'pending',
+								role: 'maintainer',
+								email: 'contact@example.test',
+								challenge: null,
+							}
+						: null,
+				})
+			}
+			if (path.join('/') === 'ownership/request') {
+				return Promise.resolve({
+					challengeId,
+					expiresAt: new Date(Date.now() + 600000),
+					resendAt: new Date(Date.now() + 60000),
+				})
+			}
+			if (path.join('/') === 'ownership/verify') {
+				confirmed = true
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		await routerAt('/example?dialog=verify')
+		fireEvent.change(
+			await screen.findByRole('textbox', { name: 'Email address' }),
+			{ target: { value: 'contact@example.test' } }
+		)
+		fireEvent.click(screen.getByRole('combobox', { name: 'Your role' }))
+		fireEvent.pointerDown(
+			await screen.findByRole('option', { name: 'Maintainer' }),
+			{ pointerType: 'mouse' }
+		)
+		fireEvent.mouseUp(screen.getByRole('option', { name: 'Maintainer' }))
+		fireEvent.click(screen.getByRole('option', { name: 'Maintainer' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('combobox', { name: 'Your role' }).textContent
+			).toContain('Maintainer')
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Send verification code' })
+		)
+		const code = await screen.findByRole('textbox', {
+			name: 'Verification code',
+		})
+		expect(
+			rpc.mock.calls.find(
+				([path]) => path.join('/') === 'ownership/request'
+			)?.[1]
+		).toEqual({
+			params: { id: project.id },
+			body: { email: 'contact@example.test', role: 'maintainer' },
+		})
+		expect(screen.getByRole('button', { name: /Resend in/ })).toHaveProperty(
+			'disabled',
+			true
+		)
+		fireEvent.change(code, { target: { value: '123456' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Confirm code' }))
+		await screen.findByText(
+			/Email confirmed\. Your maintainer request is awaiting/
+		)
+		expect(screen.queryByText('Verified project')).toBeNull()
+	})
+	it('hides Verify on verified listings and keeps Request access available from compact actions', async () => {
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'project/getBySlug'
+				? Promise.resolve({ ...project, verified: true })
+				: original(path, input)
+		)
+		await routerAt('/example')
+		await screen.findByText('Verified project')
+		expect(screen.queryByRole('button', { name: 'Verify' })).toBeNull()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'More project actions' })
+		)
+		expect(screen.queryByRole('menuitem', { name: 'Verify' })).toBeNull()
+		fireEvent.click(
+			await screen.findByRole('menuitem', { name: 'Request access' })
+		)
+		await screen.findByRole('dialog', { name: 'Verify Example' })
+	})
+	it('restores a sent challenge after reload, handles expiry/resend, and retains a code after verification errors', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		const challengeId = '550e8400-e29b-41d4-a716-446655440001'
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/state') {
+				return Promise.resolve({
+					membership: null,
+					claim: {
+						status: 'email_pending',
+						role: 'maintainer',
+						email: 'contact@example.test',
+						challenge: {
+							challengeId,
+							expiresAt: new Date(Date.now() - 1000),
+							resendAt: new Date(Date.now() - 1000),
+						},
+					},
+				})
+			}
+			if (path.join('/') === 'ownership/request') {
+				return Promise.resolve({
+					challengeId: '550e8400-e29b-41d4-a716-446655440002',
+					expiresAt: new Date(Date.now() + 600000),
+					resendAt: new Date(Date.now() + 60000),
+				})
+			}
+			if (path.join('/') === 'ownership/verify') {
+				return Promise.reject(
+					new Error(
+						'The code is invalid or expired. Request a new code and try again.'
+					)
+				)
+			}
+			return original(path, input)
+		})
+		await routerAt('/example?dialog=verify')
+		await screen.findByRole('textbox', { name: 'Verification code' })
+		expect(screen.getByText(/This code has expired/)).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Confirm code' })).toHaveProperty(
+			'disabled',
+			true
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Resend code' }))
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Confirm code' })
+			).toHaveProperty('disabled', false)
+		)
+		fireEvent.change(
+			screen.getByRole('textbox', { name: 'Verification code' }),
+			{ target: { value: '123456' } }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Confirm code' }))
+		await screen.findByRole('alert')
+		expect(
+			screen.getByRole('textbox', { name: 'Verification code' })
+		).toHaveProperty('value', '123456')
+	})
 })

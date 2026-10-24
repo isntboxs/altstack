@@ -13,6 +13,10 @@ export const AUDIT_ACTIONS = [
 	'project_removed',
 	'project_submitted',
 	'project_status_changed',
+	'project_claim_requested',
+	'project_claim_approved',
+	'project_claim_rejected',
+	'project_member_updated',
 ] as const
 
 export type ProjectStatus = (typeof PROJECT_STATUS)[number]

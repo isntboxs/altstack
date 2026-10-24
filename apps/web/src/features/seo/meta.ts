@@ -110,7 +110,9 @@ export function cataloguePolicy(
 	const filtered = Boolean(
 		Boolean(search.q) ||
 		Boolean(search.category) ||
-		Boolean(search.sort && search.sort !== 'newest')
+		Boolean(
+			search.sort && search.sort !== (path === '/' ? 'recommended' : 'newest')
+		)
 	)
 	const page = search.page ?? 1
 	return {

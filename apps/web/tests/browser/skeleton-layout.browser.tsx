@@ -38,6 +38,7 @@ const projects = Array.from({ length: 12 }, (_, index) => {
 	return {
 		id: `project-${index}`,
 		slug: `project-${index}`,
+		verified: false,
 		name: `Project ${index}`,
 		logo: '',
 		screenshot: null,

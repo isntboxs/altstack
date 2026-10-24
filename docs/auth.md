@@ -7,7 +7,7 @@ so legacy credential accounts cannot use `/sign-in/username`. Existing username
 database columns and credential rows are retained; no destructive migration is
 needed to disable that path. The dialog and `/auth/sign-in` reuse `SignInForm`.
 Authenticated users can submit and bookmark; neither method proves repository
-ownership. R6 ownership/claims and notifications remain outside this change.
+ownership. R6 adds separate contact-email proof and project approval; see [project ownership](project-ownership.md). Sign-in still grants no project authority.
 
 ## Configuration and rollout
 
@@ -237,3 +237,15 @@ Targeted verification from `89924c5` plus this follow-up working tree:
 
 No full-suite rerun was needed for these focused review changes. Live delivery
 and production acceptance remain separate from the above checks.
+
+## Project roles (R6)
+
+Better Auth 1.7.12 registers `owner` and `maintainer` with the same project update
+and claim-review permissions. These global labels confer no global project or
+admin rights: API checks load the approved per-project membership and authorize
+its role. Admin bootstrap approval is limited to projects without members and
+cannot approve the admin's own claim. Claims preserve existing admin roles.
+Project OTP is a purpose-specific workflow, not Better Auth sign-in or account
+email verification: the built-in email OTP plugin only covers account purposes
+and cannot by itself bind an approval to a project and requested role. See the
+[claim lifecycle and rollout](project-ownership.md) for that binding and quotas.

@@ -31,6 +31,7 @@ import {
 import { Separator } from '@altstack/ui/components/separator'
 
 import { ProjectLogo } from '#/components/project-media'
+import { VerifiedBadge } from '#/components/verified-badge'
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
@@ -167,7 +168,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 								viewTransition
 								className="after:absolute after:inset-0 after:z-10 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-ring"
 							>
-								{projectData.name}
+								{projectData.name} {projectData.verified && <VerifiedBadge />}
 							</Link>
 						</h2>
 						{projectData.github.archived === true && (

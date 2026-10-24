@@ -162,6 +162,7 @@ const flat = categoryFixture(105, {
 })
 const nodes = [general, root, ai, flat, editors]
 const zed: ORPCRouterOutputs['project']['getBySlug'] = {
+	verified: false,
 	featuredProjects: [],
 	tags: [
 		{
@@ -979,60 +980,20 @@ describe('L2 public affordances and recovery', () => {
 		expect(document.activeElement?.id).toBe('catalogue')
 		expect(screen.queryByText(/compare alternatives|trending/)).toBeNull()
 	})
-	it('keeps Verify disabled while Bookmark, Report and Embed are available', async () => {
-		const router = await routerAt('/test-zed', true)
-		const before = rpc.mock.calls.length
-		for (const name of ['Verify']) {
-			const action = screen.getByRole('button', { name })
-			expect(action).toHaveProperty('disabled', true)
-			expect(
-				document.getElementById(action.getAttribute('aria-describedby')!)
-					?.textContent
-			).toContain('coming soon')
-			fireEvent.click(action)
-			fireEvent.keyDown(action, { key: 'Enter' })
-			fireEvent.keyDown(action, { key: ' ' })
-		}
-		const trigger = screen.getByRole('button', { name: 'More project actions' })
-		fireEvent.keyDown(trigger, { key: 'ArrowDown' })
-		for (const name of ['Verify']) {
-			const action = await screen.findByRole('menuitem', {
-				name: name + ' — Coming soon',
-			})
-			expect(action.getAttribute('aria-disabled')).toBe('true')
-			fireEvent.click(action)
-			fireEvent.keyDown(action, { key: 'Enter' })
-			fireEvent.keyDown(action, { key: ' ' })
-		}
-		expect(router.state.location.pathname).toBe('/test-zed')
-		expect(screen.queryByRole('dialog')).toBeNull()
-		expect(rpc.mock.calls.length).toBe(before)
-		expect(
-			screen
-				.getByRole('menuitem', { name: 'Bookmark' })
-				.getAttribute('aria-disabled')
-		).not.toBe('true')
-		expect(
-			screen
-				.getByRole('menuitem', { name: 'Report' })
-				.getAttribute('aria-disabled')
-		).not.toBe('true')
-		fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
-		await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
-		await waitFor(() => expect(document.activeElement).toBe(trigger))
-		expect(screen.getByRole('button', { name: 'Bookmark' })).toHaveProperty(
+	it('enables Verify alongside Bookmark, Report and Embed', async () => {
+		await routerAt('/test-zed', true)
+		expect(screen.getByRole('button', { name: 'Verify' })).toHaveProperty(
 			'disabled',
 			false
 		)
-		expect(screen.getByRole('button', { name: 'Report' })).toHaveProperty(
-			'disabled',
-			false
+		fireEvent.click(
+			screen.getByRole('button', { name: 'More project actions' })
 		)
-		expect(screen.getByRole('button', { name: 'Embed' })).toHaveProperty(
-			'disabled',
-			false
-		)
+		expect(await screen.findByRole('menuitem', { name: 'Verify' })).toBeTruthy()
+		expect(screen.getByRole('menuitem', { name: 'Report' })).toBeTruthy()
+		expect(screen.getByRole('menuitem', { name: 'Embed' })).toBeTruthy()
 	})
+
 	it('opens/closes Embed through URL history without reloading stale project data and preserves other search state', async () => {
 		const router = await routerAt('/test-zed?ref=docs&dialog=unknown', true)
 		expect(screen.queryByRole('dialog')).toBeNull()
@@ -1082,8 +1043,8 @@ describe('L2 public affordances and recovery', () => {
 			)
 		)
 	})
-	it.each(['unknown', 'verify', 'bookmark'])(
-		'ignores direct unimplemented dialog=%s without phantom flows',
+	it.each(['unknown', 'bookmark'])(
+		'ignores unknown dialog=%s without phantom flows',
 		async (dialog) => {
 			await routerAt(`/test-zed?dialog=${dialog}`, true)
 			expect(screen.queryByRole('dialog')).toBeNull()

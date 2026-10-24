@@ -18,6 +18,7 @@
 		"test:browser:watch": "vp test watch --project browser --browser.headless=false",
 		"test:categories-http": "vp run --filter @altstack/db test:isolated -- bun run apps/web/tests/category-http.acceptance.ts",
 		"test:featured-http": "vp run --filter @altstack/db test:scoped -- vp exec node apps/web/tests/featured-http.acceptance.ts",
+		"test:ownership-http": "vp run --filter @altstack/db test:scoped -- vp exec node apps/web/tests/ownership-http.acceptance.ts",
 		"test:seo-http": "vp run --filter @altstack/db test:scoped -- bun run apps/web/tests/seo-http.acceptance.ts",
 		"test:unit": "vp test run --project unit"
 	},

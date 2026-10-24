@@ -1,7 +1,7 @@
 ---
 title: AltStack Product Requirements
-version: 2.10
-status: v0.4.0 core operations verified — R6 next; recovery follow-up open
+version: 2.11
+status: v0.4.0 baseline verified — R6 implemented locally; rollout pending
 last_updated: 2026-10-24
 ---
 
@@ -15,7 +15,7 @@ answer: **“What open-source tool should I try for this job?”**
 The product is a small, trustworthy catalogue. [The roadmap](roadmap.md) records
 implementation status, ordered priorities and operational evidence. This PRD is
 reconciled on **2026-10-24** against release tag **v0.4.0** (`b79593d`), whose
-source tree matches this `dev` checkout at `08bb687`.
+source tree matched the reconciled `dev` baseline. R6 implementation starts from local `dev` at `e98a4c1` and is not production rollout evidence.
 
 The operator confirmed **v0.4.0 production rollout** in the project conversation
 on 2026-10-24. It includes the v0.3.0 Bookmarks, Reports/admin inbox and detail-page
@@ -38,8 +38,7 @@ Maintainers need a focused place to present their projects.
 - **Maintainer/submitter:** suggests a repository and follows its review.
 - **Admin:** reviews, enriches, and maintains accurate catalogue entries.
 
-The product has only `user` and `admin` database roles. Verified ownership is a later
-capability, separate from submission provenance.
+The product has `user`, `admin`, `owner` and `maintainer` account roles. Owner and maintainer have identical permissions scoped to approved project memberships, separate from submission provenance.
 
 ## Product principles
 
@@ -76,10 +75,10 @@ Recovery follow-ups remain operational work with explicit owners, and unexercise
 checks are not counted as passing.
 
 1. **P0 — Close out v0.4.0 operations and catalogue quality.** Core verification completed on 2026-10-24: release revisions/migrations, both jobs, decision-email inbox delivery, GitHub/Magic Link auth, review/resubmission, discovery and 20 listings passed in the [production record](production-verification-v0.4.0.md). **Recovery follow-up remains open:** the deployment operator must provision private off-host backups and prove an isolated restore; the storage operator must inspect lifecycle policy. Additional unexercised integrations remain explicitly unverified. P0 core checks are not queued again; P1 is next product work.
-2. **P1 — R6 ownership, then maintainer editing.** The next feature candidate for v0.5.0: R6a establishes a documented GitHub claim policy and Verify flow; R6b depends on it and enables authorized edits of published listings. Done when verified owners can maintain their listing, unauthorized updates fail and admin moderation remains intact. R6 is still unimplemented; v0.5.0 is a candidate, not a release commitment.
+2. **P1 — R6 ownership and maintainer editing.** Implemented together locally under the user-approved 2026-10-24 policy: project contact email OTP plus approval, identical project-scoped owner/maintainer roles, immediate public edits, and verified-first default home ordering. Deployment remains pending; see [behavior and rollout](project-ownership.md).
 3. **P2 — Collections, then comparison.** Build on private Bookmarks when returning users need organized shortlists. Start with private named collections; define comparison fields and build comparison only after evaluation needs are confirmed. Public sharing and social features are separate decisions. Neither slice is implemented or assigned a release.
 4. **P3 — Report workflow improvements.** Address observed admin bottlenecks with the smallest needed slice, such as reopen or follow-up, before assignment/comments/email or automated corrections. Existing intake and Open → Resolved/Dismissed decisions already work. No expansion is scheduled without report-volume or operator evidence.
-5. **P4 — Homepage editorial discovery.** Consider curated homepage sections after catalogue coverage and browse feedback justify them. Existing detail Featured and Trending sort are delivered; a dedicated Trending/personalized feed is separate deferred scope. The current homepage stays unchanged until that scope is selected.
+5. **P4 — Homepage editorial discovery.** Consider curated homepage sections after catalogue coverage and browse feedback justify them. Existing detail Featured and Trending sort are delivered; a dedicated Trending/personalized feed is separate deferred scope. Editorial sections remain deferred; R6 separately changes default catalogue ranking to verified first.
 6. **P5 — Demand-driven backlog.** Guest submission, profiles/follows/reviews/ratings, galleries/video, newsletter/RSS, analytics dashboards, scores, SDKs and extensions stay deferred. Add Meilisearch only for measured PostgreSQL search limitations. Choose each slice from an observed problem rather than a target release number.
 
 Email delivery/bounce webhooks and automatic outbox retention are unimplemented
@@ -112,7 +111,7 @@ verification; remaining recovery/integration follow-ups are tracked separately.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
 - **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback, original-submitter rejected-intake resubmission and R5c decision emails.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
-- **R6 — Own & edit:** next product work, unimplemented P1; R6a claim/Verify → R6b maintainer editing, candidate for v0.5.0 following completed P0 core verification.
+- **R6 — Own & edit:** implemented locally together as P1; email OTP + independent project approval, scoped owner/maintainer edits and verified-first default homepage. Rollout pending.
 - **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
 - **Private Bookmarks:** per-account saved published projects and protected three-column table; included in v0.3.0.
 - **Reports:** guest/session-aware private intake and admin-only inbox/moderation; included in v0.3.0.
@@ -177,7 +176,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Magic Link verification proves inbox ownership, signs in or creates a verified user, and preserves verified existing user identities, roles and GitHub associations. User-specific repository permissions are not inferred from email verification. Unverified legacy account cleanup follows Better Auth's documented protections; do not bulk-mark old accounts verified.
 - Tokens are hashed, expire in ten minutes and are consumed once. PostgreSQL `rate_limit` persists five email requests per IP and five send attempts per normalized recipient across IPs per ten minutes, plus twenty verification requests per minute. The recipient key is HMAC-derived, and storage/delivery failures do not silently bypass quotas. The UI offers a sixty-second resend cooldown and honors server retry timing.
 - Server-only Resend sender/key, React Email HTML/text, configured-origin callbacks, private/no-store auth responses and existing SSR cookie propagation are part of the implementation. Better Auth and its Drizzle adapter are aligned at 1.7.12 with PostgreSQL contention coverage.
-- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 is planned as P1 and remains unimplemented.
+- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 uses separate project approval and contact-email proof; sign-in does not grant membership.
 - Included in v0.4.0. P0 verified live Resend/Magic Link delivery and sign-in, GitHub callback/return and authenticated cross-subdomain requests. Initial admin bootstrap, expiry/replay and forced logout/session expiry were not exercised; preserve those gaps in the [production record](production-verification-v0.4.0.md#open-outcomes-owners-and-recovery). See [auth rollout](auth.md).
 
 ### R4 — Submit intake
@@ -229,9 +228,9 @@ they do not change the v0.4.0 rollout status. See [historical L1 verification](s
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; Verify retains its accessible “Coming soon” explanation.
+- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; R6 now enables Verify through `?dialog=verify`.
 - Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. Ownership remains backlog; private report intake, its admin inbox and bookmarks are tracked separately.
+- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. R6 now supplies ownership and member editing; private report intake, its admin inbox and bookmarks are tracked separately.
 
 ### Private Bookmarks
 
@@ -299,22 +298,25 @@ artwork. Feature-local test results and target domain/CDN acceptance are separat
 - Implementation/local verification and deployment are separate. See
   [Embed contract, cache and deployment notes](project-embed.md).
 
-### R6 — Ownership and maintainer editing (unimplemented)
+### R6 — Ownership and maintainer editing
 
-**P1, next feature candidate for v0.5.0.** Deliver R6a before R6b, using the
-[roadmap's slice checklists](roadmap.md#r6--own-and-edit-mvp).
+User-approved scope on **2026-10-24**, superseding the previous GitHub-only proof,
+no-new-global-role and unchanged-home-ranking decisions. Implemented locally;
+production rollout is separate.
 
-- **R6a — Claim / Verify:** define eligible personal/organization repository permissions, credential/linking requirements and revoked-access handling before implementation. Verify through user-specific GitHub credentials, never the shared service token, email verification or submitter identity. Keep nullable `ownerId` / `claimedAt` separate from `submitterId`; protect competing claims and provide actionable verification recovery.
-- **R6b — Maintainer editing:** verified owners can edit published copy/links/media/content/categories with server authorization, existing content/category validation, stale-write protection and audit. Decide and document immediate publication versus admin review before implementing owner writes. Extend media authorization for owners without granting admin-wide upload access.
-- Admin status changes, deletion, taxonomy/Featured/report management and repository ownership/identity changes remain governed by their explicit permissions. R6 does not implicitly grant these capabilities or introduce a new global account role.
-- Acceptance covers owner/non-owner/admin, email-only/unlinked accounts, denied/revoked GitHub access, concurrent claims and edits, media access and direct API bypass attempts. Both slices remain unimplemented.
+- `?dialog=verify` follows Report/Embed URL history, reload and close behavior. Sign-in retains the dialog URL. Two fields: project contact email and Owner/Maintainer role; send code, confirm code, then await approval.
+- OTP proves contact-email control. An independent admin approves the first representative when no members exist; an existing owner or maintainer approves additional representatives. A session, OTP or submission by itself grants no ownership. No domain or GitHub-only UX is imposed.
+- Better Auth registers `owner` and `maintainer` with identical project update/review permissions. `project_members` binds these capabilities to specific projects; `submitterId` retains provenance. A claim never downgrades an admin or grants admin tools.
+- Approved representatives directly publish copy, website, content, media and 1–3 leaf-category edits through `/managed`, with API authorization, existing validation, upload binding, revision checks and audit. Repository identity, slug, status/deletion, taxonomy, Featured and reports remain admin-controlled.
+- Public cards/detail show a warm verified badge when a membership exists and hide Verify. Request access remains available for additional representatives. Default home order is verified first, then listing `createdAt` descending and ID descending; there is no `publishedAt` column. Explicit Latest and other sorts retain their semantics. This exposure benefit adds no payments or separate plan.
+- See [claim policy, security, acceptance and rollout](project-ownership.md). No legacy listing is assigned an owner or verified automatically.
 
 ### R7 — Featured Projects (revised and delivered)
 
 - Merged and included in v0.3.0. Admin `/admin/featured` selects/reorders/removes up to 21 projects, explicitly saves the global list and detects concurrent saves.
 - Public detail uses published projects with repository rows and valid HTTP(S) websites, excludes the current project and exposes only preview fields. Logos open external websites; hover previews link back to public AltStack detail.
 - Desktop/tablet places the panel below GitHub statistics; Featured sticks below the header while stats scroll away. Mobile puts the panel after Share buttons without sticky positioning. Empty selections hide the panel and preserve sticky statistics.
-- Homepage remains the Latest catalogue ordered by project `createdAt`; R7 does not add homepage sections, a project `featured` boolean or trending rankings. Homepage editorial sections remain deferred. See [Featured Projects](featured-projects.md).
+- R7 itself adds no homepage sections or project `featured` boolean. R6 now orders the default home catalogue by verification, then project `createdAt`/ID; explicit Latest remains chronological. Homepage editorial sections remain deferred. See [Featured Projects](featured-projects.md).
 
 ## Project lifecycle
 

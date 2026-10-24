@@ -13,6 +13,7 @@
 		"./server/magic-link-email": "./src/server/magic-link-email.ts",
 		"./server/magic-link-rate-limit": "./src/server/magic-link-rate-limit.ts",
 		"./server/permissions": "./src/server/permissions.ts",
+		"./server/project-claim-email": "./src/server/project-claim-email.ts",
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
@@ -23,6 +24,7 @@
 			"./server/magic-link-email": "./dist/server/magic-link-email.mjs",
 			"./server/magic-link-rate-limit": "./dist/server/magic-link-rate-limit.mjs",
 			"./server/permissions": "./dist/server/permissions.mjs",
+			"./server/project-claim-email": "./dist/server/project-claim-email.mjs",
 			"./package.json": "./package.json"
 		}
 	},

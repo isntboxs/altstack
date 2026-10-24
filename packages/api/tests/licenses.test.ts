@@ -289,6 +289,7 @@ describe('public license catalogue', () => {
 						? -1
 						: direction * (a[key].getTime() - b[key].getTime())
 		const expected = {
+			recommended: fixtures.toReversed(),
 			oldest: fixtures,
 			newest: fixtures.toReversed(),
 			name: fixtures,

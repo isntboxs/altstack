@@ -1,9 +1,10 @@
 import {
 	QueryErrorResetBoundary,
 	useSuspenseQuery,
+	useQuery,
 } from '@tanstack/react-query'
-import { CatchBoundary, useLocation } from '@tanstack/react-router'
-import { Suspense, useId, useRef, useState } from 'react'
+import { CatchBoundary, Link, useLocation } from '@tanstack/react-router'
+import { Suspense, useRef, useState } from 'react'
 import { Bookmark, Code, Flag, More, Verified } from 'reicon-react'
 
 import { Button } from '@altstack/ui/components/button'
@@ -28,11 +29,16 @@ import {
 	bookmarkQueries,
 	useBookmarkMutation,
 } from '#/features/bookmarks/queries'
+import { ownershipQueries } from '#/features/project/ownership'
 import { ProjectEmbedDialog } from './project-embed-dialog'
 import { ProjectReportDialog } from './project-report-dialog'
+import { ProjectVerifyDialog } from './project-verify-dialog'
 
 type ProjectActionsProps = {
 	projectId: string
+	verified?: boolean
+	verifyOpen?: boolean
+	onVerifyOpenChange?: (open: boolean) => void
 	userId: string | undefined
 	slug: string
 	name: string
@@ -54,6 +60,25 @@ export function ProjectActions(props: ProjectActionsProps) {
 	return (
 		<>
 			<ProjectBookmarkBoundary {...props} />
+			<ProjectVerifyDialog
+				projectId={props.projectId}
+				name={props.name}
+				userId={props.userId}
+				open={props.verifyOpen ?? false}
+				onOpenChange={(open) => props.onVerifyOpenChange?.(open)}
+				finalFocus={() => {
+					const trigger = document.querySelector<HTMLButtonElement>(
+						'[data-project-verify], [data-project-access]'
+					)
+					if (trigger?.getClientRects().length) return trigger
+					const more = document.querySelector<HTMLButtonElement>(
+						'[aria-label="More project actions"]'
+					)
+					return more?.getClientRects().length
+						? more
+						: document.querySelector<HTMLElement>('h1')
+				}}
+			/>
 			<ProjectReportDialog
 				key={props.userId ?? 'guest'}
 				projectId={props.projectId}
@@ -151,22 +176,30 @@ function ProjectBookmarkActions(
 }
 
 function ProjectActionsView({
+	projectId,
+	userId,
 	slug,
 	name,
 	embedOpen,
 	onEmbedOpenChange,
 	reportOpen,
 	onReportOpenChange,
+	verified,
+	onVerifyOpenChange,
 	bookmark,
 }: ProjectActionsProps & {
 	bookmark?: BookmarkAction
 }) {
-	const explanationId = useId()
 	const moreRef = useRef<HTMLButtonElement>(null)
 	const embedRef = useRef<HTMLButtonElement>(null)
 	const returnFocus = useRef<HTMLElement | null>(null)
 	const [authOpen, setAuthOpen] = useState(false)
 	const { href } = useLocation()
+	const access = useQuery({
+		...ownershipQueries.state(userId, projectId),
+		enabled: Boolean(userId && verified),
+		retry: false,
+	})
 	const saved = bookmark?.saved ?? false
 	const bookmarkPending = bookmark?.pending ?? false
 	const bookmarkLabel = bookmark?.label ?? 'Bookmark'
@@ -191,12 +224,31 @@ function ProjectActionsView({
 					/>
 					<DropdownMenuContent align="end" className="w-60">
 						<DropdownMenuGroup>
-							<DropdownMenuItem disabled aria-label="Verify — Coming soon">
-								<Verified aria-hidden="true" /> Verify
-								<span className="ml-auto text-xs">Coming soon</span>
-							</DropdownMenuItem>
+							{verified && (
+								<DropdownMenuItem
+									render={
+										access.data?.membership ? (
+											<Link to="/managed/$id" params={{ id: projectId }} />
+										) : undefined
+									}
+									onClick={() => {
+										if (!access.data?.membership) onVerifyOpenChange?.(true)
+									}}
+								>
+									{access.data?.membership
+										? 'Manage project'
+										: 'Request access'}
+								</DropdownMenuItem>
+							)}
+							{!verified && (
+								<>
+									<DropdownMenuItem onClick={() => onVerifyOpenChange?.(true)}>
+										<Verified aria-hidden="true" /> Verify
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+								</>
+							)}
 
-							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								disabled={bookmarkPending}
 								onClick={changeBookmark}
@@ -229,23 +281,33 @@ function ProjectActionsView({
 				</DropdownMenu>
 			</div>
 			<div className="hidden flex-wrap gap-2 xl:flex">
-				<Tooltip>
-					<TooltipTrigger
-						disabled
-						render={
-							<Button
-								disabled
-								variant="outline"
-								aria-describedby={explanationId}
-							>
-								<Verified aria-hidden="true" />
-								Verify
-							</Button>
-						}
-					/>
-
-					<TooltipContent>Project verification is coming soon.</TooltipContent>
-				</Tooltip>
+				{verified &&
+					(access.data?.membership ? (
+						<Button
+							variant="outline"
+							render={<Link to="/managed/$id" params={{ id: projectId }} />}
+						>
+							Manage project
+						</Button>
+					) : (
+						<Button
+							variant="outline"
+							data-project-access
+							onClick={() => onVerifyOpenChange?.(true)}
+						>
+							Request access
+						</Button>
+					))}
+				{!verified && (
+					<Button
+						variant="outline"
+						data-project-verify
+						onClick={() => onVerifyOpenChange?.(true)}
+					>
+						<Verified aria-hidden="true" />
+						Verify
+					</Button>
+				)}
 
 				<ButtonGroup>
 					<Tooltip>
@@ -303,12 +365,7 @@ function ProjectActionsView({
 					</Button>
 				</ButtonGroup>
 			</div>
-			<p
-				id={explanationId}
-				className="hidden text-xs text-muted-foreground xl:block"
-			>
-				Verify is coming soon.
-			</p>
+
 			{bookmark?.error && (
 				<p role="alert" className="max-w-60 text-xs text-destructive">
 					{bookmark.error}

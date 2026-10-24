@@ -54,21 +54,23 @@ export const publishProjectSchema = z.object({
 	),
 })
 
-export const adminProjectSchema = projectSchema.extend({
-	tagline: z.string().nullable(),
-	description: z.string().nullable(),
-	logo: z.string().nullable(),
-	submitterId: z.uuid().nullable(),
-	submitter: z
-		.object({
-			id: z.uuid(),
-			name: z.string(),
-			email: z.string(),
-			image: z.string().nullable(),
-		})
-		.nullable(),
-	rejectionReason: z.string().nullable(),
-})
+export const adminProjectSchema = projectSchema
+	.omit({ verified: true })
+	.extend({
+		tagline: z.string().nullable(),
+		description: z.string().nullable(),
+		logo: z.string().nullable(),
+		submitterId: z.uuid().nullable(),
+		submitter: z
+			.object({
+				id: z.uuid(),
+				name: z.string(),
+				email: z.string(),
+				image: z.string().nullable(),
+			})
+			.nullable(),
+		rejectionReason: z.string().nullable(),
+	})
 
 export const adminProjectParamsSchema = z.object({ id: z.uuid() })
 

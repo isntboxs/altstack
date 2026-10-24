@@ -42,18 +42,17 @@ owned follow-ups, not unimplemented product features or passing acceptance.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **R5c — Review emails:** Published/Rejected decision outbox, bounded Resend retry and shared React Email templates included in v0.4.0; migration, every-minute scheduler, both decision mails and inbox links verified in P0.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
-- **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; only Verify remains deferred.
+- **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; R6 now enables Verify locally; deployment remains separate.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented, including the designer-provided artwork; included in the released baseline, with domain/CDN acceptance evidence still separate.
 - **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, project mentions/hover previews, cached-image decoding and stored-public-content preparation implemented and included in released code.
 - **Private Bookmarks:** merged and included in v0.3.0 for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
 - **Report intake and admin inbox:** merged and included in v0.3.0; guest/session-aware private intake and admin-only Open → Resolved/Dismissed moderation. See [reports](project-reports.md).
-- **R7 — Featured Projects:** revised detail-page curation implemented and included in v0.3.0; homepage remains the Latest catalogue.
+- **R7 — Featured Projects:** revised detail-page curation implemented and included in v0.3.0; R7 does not affect homepage ordering; R6 subsequently adds verified-first default ranking.
 - **Development/test infrastructure:** separate local Docker PostgreSQL 18 databases, disposable test schemas, browser/HTTP acceptance tools and scoped validation policy implemented.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, observed star history with 90-date retention, and file seeding.
-- **R6:** repository ownership/maintainer editing remains unimplemented; login and submission provenance confer no ownership.
+- **R6:** implemented locally with email OTP + independent approval, project-scoped owner/maintainer editing and verified-first default home ranking. Login and submission provenance confer no ownership. See [rollout](project-ownership.md).
 
-P0 core production verification is complete. Next product work: **P1 R6a
-claim/Verify → R6b maintainer editing**. Private backup/restore and storage
+P0 core production verification is complete. **P1 R6a claim/Verify + R6b maintainer editing** are now implemented locally together; target rollout remains pending. Private backup/restore and storage
 lifecycle remain owned operational follow-ups. R6 is the next feature candidate
 for v0.5.0, not a committed release.
 P2–P5 are conditional candidates in the execution order below.
@@ -99,19 +98,17 @@ reliability follow-ups. Select a focused slice if observed delivery failures or
 retention requirements justify it; neither is a prerequisite for shipped review
 mail, and neither introduces a new platform into P0.
 
-### P1 — R6 ownership, then maintainer editing
+### P1 — R6 ownership and maintainer editing
 
-**Why next:** Verify is the remaining disabled public action, and maintainers
-still rely on admins for published-listing edits. Deliver **R6a claim/Verify**
-before **R6b owner editing** using the [R6 checklists](#r6--own-and-edit-mvp).
-Resolve claim eligibility, revoked access and owner-edit publication policy before
-their respective implementation slices. Split further to keep vertical slices
-focused; do not bundle collections or homepage work into R6.
+Implemented together locally under the 2026-10-24 user decision: project-contact
+OTP plus independent approval, identical project-scoped Owner/Maintainer access,
+immediate publication and verified-first default home ordering. The first
+representative requires admin approval; subsequent claims require either existing
+project role. Submission provenance and admin-only powers remain separate.
 
-**Done when:** a verified owner can maintain an authorized listing, competing
-claims/stale edits are handled and direct unauthorized writes fail. Admin
-moderation and submission provenance retain their existing boundaries.
-Both slices are unimplemented; **v0.5.0 is a candidate**, not a release commitment.
+Local acceptance and target rollout are tracked in [R6](#r6--own-and-edit) and
+[feature notes](project-ownership.md). Production deployment is not included;
+**v0.5.0 remains a candidate**, not a release commitment.
 
 ### P2 — Collections, then comparison
 
@@ -139,7 +136,7 @@ there is no scheduled expansion yet.
 Proceed when catalogue coverage and browse feedback justify curated homepage
 sections. Detail-page Featured and catalogue Trending sort already work. A
 dedicated Trending/personalized feed requires separate scope and evidence.
-The homepage remains unchanged until a slice is selected; completion should
+Homepage editorial sections remain deferred; R6 separately adds verified-first default ranking. Completion of editorial discovery should
 demonstrate a useful discovery journey rather than duplicate existing sorting.
 
 ### P5 — Demand-driven backlog
@@ -409,7 +406,7 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [x] Original L2 scope retained disabled Verify/Bookmark/Report/Embed and account Bookmarks with accessible “Coming soon” labels. Subsequent slices enabled Embed, Bookmark and Report; only Verify is currently disabled.
+- [x] Original L2 scope retained disabled Verify/Bookmark/Report/Embed and account Bookmarks with accessible “Coming soon” labels. Subsequent slices enabled Embed, Bookmark and Report; R6 now enables Verify locally.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
 - [x] Replace generic screenshot placeholders with honest empty states.
 - [x] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
@@ -427,7 +424,7 @@ and local evidence artifacts have been removed from the repository.
 **Done when:** every enabled action works and public copy matches the product.
 
 The implementation followed the 2026-10-15 reference research and the user's
-decision to retain disabled controls. Verify remains a future workflow.
+decision to retain disabled controls. R6 now supplies the Verify workflow.
 Bookmarks and the report inbox are separately implemented below after v0.2.0.
 Release/staging acceptance remains a separate gate.
 
@@ -437,7 +434,7 @@ Release/staging acceptance remains a separate gate.
 `apps/web/public/badge.svg`, bundled by the generator with dark/light variants
 and proportional custom sizing.
 
-- [x] Original Embed slice enabled Embed on desktop and More; subsequent slices also enabled Bookmark and Report, leaving Verify deferred.
+- [x] Original Embed slice enabled Embed on desktop and More; subsequent slices also enabled Bookmark and Report, R6 subsequently enables Verify locally.
 - [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
       dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
 - [x] Public SVG generator with approved AltStack signature, live published-only
@@ -511,33 +508,26 @@ Keep evidence gaps open until execution is recorded. The earlier feature-branch
 docs' statements that no deploy/merge occurred describe those test runs; the
 release baseline above supersedes them for merge and operator rollout status.
 
-## R6 — Own and edit (MVP+)
+## R6 — Own and edit
 
-**P1, next product work and feature candidate for v0.5.0; unimplemented.** P0
-core verification is complete. Deliver R6a before R6b and split further if a slice exceeds the
-focused 1–3-day target; no delivery date or release inclusion is committed.
+**P1 implemented locally together; deployment and live acceptance pending.** The
+2026-10-24 user decision replaces the previous GitHub-only claim policy.
 
 ### R6a — Claim / Verify
 
-- [ ] Document eligible personal/organization GitHub repository permissions, user credential/linking requirements, revoked-access handling and claim conflict policy before implementing verification.
-- [ ] Nullable `ownerId` / `claimedAt`, separate from submission provenance.
-- [ ] One claim policy verified with user-specific GitHub credentials, never service-token permissions.
-- [ ] Protected claim procedure and usable Verify flow with success, pending, denied/unlinked and recovery states; serialize competing claims. Email verification or submission alone never grants ownership.
-- [ ] Focused owner/non-owner/admin, email-only/unlinked, denied/revoked credential and concurrent-claim coverage; additive migration and target verification.
+- [x] Two-field email/role dialog at `?dialog=verify`, auth handoff, OTP confirmation, expiry/resend/error/pending states and URL history.
+- [x] Contact OTP plus independent approval: admin for the first representative, then either project role for additional claims. No automatic ownership from email or submission alone.
+- [x] Additive claim/membership/upload tables, separate from `submitterId`; bound hashed short-lived single-use codes, persistent quotas and serialized claim decisions.
+- [x] Better Auth owner/maintainer roles with identical capabilities restricted to approved memberships; admin role preserved.
+- [x] Public verified badge, hidden Verify after approval, Request access for additional representatives, default home verified-first then `createdAt`/ID; explicit alternative sorts preserved. No billing scope.
+- [ ] Apply migration and matching API/Web revisions on the intended target; validate controlled-inbox delivery and real reviewer workflow.
 
-**Done when:** an eligible maintainer can claim the correct project through
-user-specific GitHub proof, and conflicting/unauthorized claims fail without
-changing submission provenance.
+### R6b — Maintainer editing
 
-### R6b — Maintainer editing (depends on R6a)
-
-- [ ] Decide and document immediate publication versus admin review of owner edits before implementing writes.
-- [ ] Owner-authorized API/UI for copy, links, media, content and categories, reusing publish/content/category validation, stale-write checks and audit.
-- [ ] Extend media authorization for owners of the target project without exposing admin-wide uploads or mutation of another project's media.
-- [ ] Preserve explicit permissions for admin moderation/deletion, taxonomy, Featured and reports; define repository identity/ownership changes separately rather than implicitly granting them through content editing.
-- [ ] Focused owner/non-owner/admin, direct API bypass, lost-access, concurrent-edit and media coverage; affected submission/admin/public cache integrations and target journey verification.
-
-**Done when:** verified owners maintain listings; direct unauthorized mutations fail.
+- [x] `/managed` and per-project editor for immediate publication of copy, website, content, media and 1–3 leaf categories; private approval inbox.
+- [x] Direct API membership checks, publication validation, stale-write protection, audit and account/project-bound temporary uploads.
+- [x] Preserve admin moderation/deletion, repository identity, taxonomy, Featured and report permissions. Changing to a different repository identity clears memberships and pending claims.
+- [ ] Complete target acceptance after rollout; local validation is recorded in [feature notes](project-ownership.md).
 
 ## R7 — Featured Projects on detail pages
 

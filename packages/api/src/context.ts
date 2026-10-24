@@ -8,8 +8,10 @@ export async function createORPCContext({ headers }: { headers: Headers }) {
 
 	const session = await auth.api.getSession({ headers })
 
-	return { db, auth: session }
+	return { db, auth: session, requestHeaders: headers }
 }
 
-export type ORPCContext = Awaited<ReturnType<typeof createORPCContext>> &
-	LoggerContext
+export type ORPCContext = Omit<
+	Awaited<ReturnType<typeof createORPCContext>>,
+	'requestHeaders'
+> & { requestHeaders?: Headers } & LoggerContext

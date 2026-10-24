@@ -1,6 +1,7 @@
 import { and, count, desc, eq } from 'drizzle-orm'
 
 import { protectedProcedure } from '@altstack/api/procedures'
+import { projectIsVerified } from '@altstack/api/queries/ownership'
 
 import { bookmark, project } from '@altstack/db/schemas'
 
@@ -18,6 +19,7 @@ export const bookmarkRouter = {
 						.select({
 							id: project.id,
 							name: project.name,
+							verified: projectIsVerified,
 							slug: project.slug,
 							logo: project.logo,
 							tagline: project.tagline,
