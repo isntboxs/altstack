@@ -34,6 +34,8 @@ import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.ca
 import { Route as MainAdminFeaturedRouteImport } from './routes/_main/admin.featured'
 import { Route as MainAdminReportsRouteImport } from './routes/_main/admin.reports'
 import { Route as MainAdminTagsRouteImport } from './routes/_main/admin.tags'
+import { Route as MainManagedIndexRouteImport } from './routes/_main/managed/index'
+import { Route as MainManagedIdRouteImport } from './routes/_main/managed/$id'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
 import { Route as OgCategoryIdRouteImport } from './routes/og.category.$id'
@@ -167,6 +169,16 @@ const MainAdminTagsRoute = MainAdminTagsRouteImport.update({
   path: '/admin/tags',
   getParentRoute: () => MainRouteRoute,
 } as any)
+const MainManagedIndexRoute = MainManagedIndexRouteImport.update({
+  id: '/managed/',
+  path: '/managed/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainManagedIdRoute = MainManagedIdRouteImport.update({
+  id: '/managed/$id',
+  path: '/managed/$id',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainProjectsIndexRoute = MainProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -237,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/reports': typeof MainAdminReportsRoute
   '/admin/tags': typeof MainAdminTagsRoute
+  '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -244,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/categories/': typeof AppCategoriesIndexRoute
   '/licenses/': typeof AppLicensesIndexRoute
   '/tags/': typeof AppTagsIndexRoute
+  '/managed/': typeof MainManagedIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -269,6 +283,7 @@ export interface FileRoutesByTo {
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/reports': typeof MainAdminReportsRoute
   '/admin/tags': typeof MainAdminTagsRoute
+  '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -276,6 +291,7 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesIndexRoute
   '/licenses': typeof AppLicensesIndexRoute
   '/tags': typeof AppTagsIndexRoute
+  '/managed': typeof MainManagedIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -306,6 +322,7 @@ export interface FileRoutesById {
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
   '/_main/admin/reports': typeof MainAdminReportsRoute
   '/_main/admin/tags': typeof MainAdminTagsRoute
+  '/_main/managed/$id': typeof MainManagedIdRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
@@ -313,6 +330,7 @@ export interface FileRoutesById {
   '/_app/categories/': typeof AppCategoriesIndexRoute
   '/_app/licenses/': typeof AppLicensesIndexRoute
   '/_app/tags/': typeof AppTagsIndexRoute
+  '/_main/managed/': typeof MainManagedIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
@@ -342,6 +360,7 @@ export interface FileRouteTypes {
     | '/admin/featured'
     | '/admin/reports'
     | '/admin/tags'
+    | '/managed/$id'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -349,6 +368,7 @@ export interface FileRouteTypes {
     | '/categories/'
     | '/licenses/'
     | '/tags/'
+    | '/managed/'
     | '/projects/'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -374,6 +394,7 @@ export interface FileRouteTypes {
     | '/admin/featured'
     | '/admin/reports'
     | '/admin/tags'
+    | '/managed/$id'
     | '/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -381,6 +402,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/licenses'
     | '/tags'
+    | '/managed'
     | '/projects'
     | '/admin/categories/create'
     | '/projects/$id/edit'
@@ -410,6 +432,7 @@ export interface FileRouteTypes {
     | '/_main/admin/featured'
     | '/_main/admin/reports'
     | '/_main/admin/tags'
+    | '/_main/managed/$id'
     | '/_main/projects/create'
     | '/og/category/$id'
     | '/og/project/$id'
@@ -417,6 +440,7 @@ export interface FileRouteTypes {
     | '/_app/categories/'
     | '/_app/licenses/'
     | '/_app/tags/'
+    | '/_main/managed/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
     | '/_main/projects/$id/edit'
@@ -614,6 +638,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminTagsRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/managed/': {
+      id: '/_main/managed/'
+      path: '/managed'
+      fullPath: '/managed/'
+      preLoaderRoute: typeof MainManagedIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/managed/$id': {
+      id: '/_main/managed/$id'
+      path: '/managed/$id'
+      fullPath: '/managed/$id'
+      preLoaderRoute: typeof MainManagedIdRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/projects/': {
       id: '/_main/projects/'
       path: '/'
@@ -749,6 +787,8 @@ interface MainRouteRouteChildren {
   MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
   MainAdminReportsRoute: typeof MainAdminReportsRoute
   MainAdminTagsRoute: typeof MainAdminTagsRoute
+  MainManagedIdRoute: typeof MainManagedIdRoute
+  MainManagedIndexRoute: typeof MainManagedIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -759,6 +799,8 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAdminFeaturedRoute: MainAdminFeaturedRoute,
   MainAdminReportsRoute: MainAdminReportsRoute,
   MainAdminTagsRoute: MainAdminTagsRoute,
+  MainManagedIdRoute: MainManagedIdRoute,
+  MainManagedIndexRoute: MainManagedIndexRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

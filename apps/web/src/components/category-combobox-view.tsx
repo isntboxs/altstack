@@ -1,3 +1,5 @@
+import type { CategoryNode } from '@altstack/shared/schemas/category'
+
 import {
 	Combobox,
 	ComboboxChip,
@@ -11,7 +13,6 @@ import {
 	useComboboxAnchor,
 } from '@altstack/ui/components/combobox'
 
-import type { AdminCategory } from '#/features/admin-categories/model'
 import { categoryHelp, categoryLabel } from '#/features/admin-categories/model'
 
 const MAX_CATEGORIES = 3
@@ -27,7 +28,9 @@ export const CategoryComboboxView = ({
 	value,
 	onValueChange,
 	categories,
-}: CategoryComboboxProps & { categories: Array<AdminCategory> }) => {
+}: CategoryComboboxProps & {
+	categories: Array<CategoryNode & { directProjectCount?: number }>
+}) => {
 	const anchor = useComboboxAnchor()
 
 	const nameBySlug = new Map<string, string>(

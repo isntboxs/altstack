@@ -1,6 +1,7 @@
 export type ProjectMention = {
 	slug: string
 	name: string
+	verified?: boolean
 	logo: string | null
 	tagline: string | null
 	stars: number
@@ -40,6 +41,7 @@ export function emptyPublicContent(): PreparedPublicContent {
 // These paths resolve to static/layout routes rather than /$slug.
 const reservedPaths = new Set([
 	'activity',
+	'managed',
 	'submit',
 	'categories',
 	'licenses',

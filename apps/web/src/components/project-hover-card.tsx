@@ -19,6 +19,7 @@ import {
 import { Separator } from '@altstack/ui/components/separator'
 
 import { ProjectLogo } from '#/components/project-media'
+import { VerifiedBadge } from '#/components/verified-badge'
 import type { ProjectMention } from '#/features/public-content/model'
 import { resolveFileUrl } from '#/utils/storage'
 
@@ -60,7 +61,7 @@ export function ProjectHoverCard({
 								className="size-7 rounded-md"
 							/>
 							<CardTitle className="min-w-0 truncate text-xl leading-7 font-semibold">
-								{project.name}
+								{project.name} {project.verified && <VerifiedBadge />}
 							</CardTitle>
 						</div>
 						<CardDescription className="line-clamp-2 min-h-10 text-sm leading-5">

@@ -66,10 +66,13 @@ export function badgeSnippet(
 // One discriminator keeps project dialogs mutually exclusive.
 export function projectDialogSearch(
 	search: Record<string, unknown>
-): Record<string, unknown> & { dialog?: 'embed' | 'report' } {
+): Record<string, unknown> & { dialog?: 'embed' | 'report' | 'verify' } {
 	const { dialog, ...rest } = search
 	return {
 		...rest,
-		dialog: dialog === 'embed' || dialog === 'report' ? dialog : undefined,
+		dialog:
+			dialog === 'embed' || dialog === 'report' || dialog === 'verify'
+				? dialog
+				: undefined,
 	}
 }

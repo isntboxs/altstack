@@ -13,7 +13,10 @@ import { submissionContract } from '@altstack/api/contracts/submission'
 import { tagContract, adminTagContract } from '@altstack/api/contracts/tag'
 import { uploadContract } from '@altstack/api/contracts/upload'
 
+import { ownershipContract } from './ownership'
+
 export const contracts = {
+	ownership: ownershipContract,
 	license: licenseContract,
 	tag: tagContract,
 	bookmark: bookmarkContract,

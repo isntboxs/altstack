@@ -242,6 +242,9 @@ const UserButton = ({
 					>
 						{user.role === 'admin' ? 'Projects' : 'Submission'}
 					</DropdownMenuItem>
+					<DropdownMenuItem render={<Link to="/managed" />}>
+						My projects
+					</DropdownMenuItem>
 					<DropdownMenuItem render={<Link to="/bookmarks" />}>
 						<Bookmark2 aria-hidden="true" />
 						Bookmarks

@@ -34,6 +34,9 @@ import {
 	githubStarHistory,
 	project,
 	projectCategory,
+	projectClaim,
+	projectMember,
+	projectUpload,
 	user,
 } from '@altstack/db/schemas'
 import { seedTaxonomy } from '@altstack/db/seed-taxonomy'
@@ -627,6 +630,63 @@ describe('admin refresh endpoint and atomic storage', () => {
 				stars: 5,
 				forks: 2,
 			})
+		}
+	)
+	it.each([123, 456])(
+		'retains project access only for the same repository identity (%s)',
+		async (repositoryId) => {
+			const item = await fixture()
+			await scope.db
+				.update(githubRepository)
+				.set({ githubRepositoryId: 123 })
+				.where(eq(githubRepository.projectId, item.id))
+			await scope.db
+				.insert(projectMember)
+				.values({ projectId: item.id, userId: adminId, role: 'owner' })
+			await scope.db.insert(projectClaim).values({
+				projectId: item.id,
+				userId: adminId,
+				email: 'claim@example.test',
+				role: 'owner',
+				status: 'approved',
+				challengeId: randomUUID(),
+				codeExpiresAt: new Date(),
+			})
+			await scope.db.insert(projectUpload).values({
+				projectId: item.id,
+				userId: adminId,
+				key: `tmp/logos/claim-${randomUUID()}.png`,
+			})
+			vi.mocked(octokit.rest.repos.get).mockResolvedValue(
+				repository('renamed', `repo-${item.id}`, repositoryId)
+			)
+			await client().admin.project.update({
+				params: { id: item.id },
+				body: { repositoryUrl: `renamed/repo-${item.id}` },
+			})
+			const expected = repositoryId === 123 ? 1 : 0
+			expect(
+				await scope.db
+					.select()
+					.from(projectMember)
+					.where(eq(projectMember.projectId, item.id))
+			).toHaveLength(expected)
+			expect(
+				await scope.db
+					.select()
+					.from(projectClaim)
+					.where(eq(projectClaim.projectId, item.id))
+			).toHaveLength(expected)
+			expect(
+				await scope.db
+					.select()
+					.from(projectUpload)
+					.where(eq(projectUpload.projectId, item.id))
+			).toHaveLength(expected)
+			expect(
+				(await client().project.getBySlug({ params: { slug: item.slug } }))
+					.verified
+			).toBe(expected === 1)
 		}
 	)
 	it('stores basic license/archival on create despite enrichment failure and clears unrelated identity on replacement', async () => {

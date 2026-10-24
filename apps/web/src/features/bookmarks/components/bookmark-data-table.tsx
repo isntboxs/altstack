@@ -26,6 +26,7 @@ import {
 } from '@altstack/ui/components/table'
 
 import { ProjectLogo } from '#/components/project-media'
+import { VerifiedBadge } from '#/components/verified-badge'
 import { useBookmarkMutation } from '#/features/bookmarks/queries'
 
 type BookmarkList = ORPCRouterOutputs['bookmark']['list']
@@ -66,6 +67,7 @@ export function BookmarkDataTable({
 											className="size-8"
 										/>
 										<span className="max-w-64 truncate">{project.name}</span>
+										{project.verified && <VerifiedBadge />}
 									</Link>
 								</TableCell>
 								<TableCell className="min-w-40 whitespace-normal text-muted-foreground">

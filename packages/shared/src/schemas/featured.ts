@@ -20,6 +20,7 @@ export const featuredProjectPreviewSchema = z.object({
 	id: z.uuid(),
 	slug: z.string(),
 	name: z.string(),
+	verified: z.boolean().default(false),
 	logo: z.string().nullable(),
 	tagline: z.string().nullable(),
 	websiteUrl: z.url({ protocol: /^https?$/ }),

@@ -27,6 +27,7 @@ describe('public Markdown preparation', () => {
 		vi.mocked(publicProjectMentions).mockResolvedValue([
 			{
 				slug: 'supabase',
+				verified: false,
 				name: 'Supabase',
 				logo: null,
 				tagline: 'An open-source backend.',
@@ -51,6 +52,7 @@ describe('public Markdown preparation', () => {
 		expect(result.projectsBySlug).toEqual({
 			supabase: {
 				slug: 'supabase',
+				verified: false,
 				name: 'Supabase',
 				logo: null,
 				tagline: 'An open-source backend.',

@@ -6,6 +6,7 @@ import {
 	adminCreateCategoryBodySchema,
 	adminUpdateCategoryInputSchema,
 } from '@altstack/shared/schemas/admin-category'
+import type { CategoryNode } from '@altstack/shared/schemas/category'
 import { slugSchema } from '@altstack/shared/schemas/common'
 
 export const categoryHelp =
@@ -16,8 +17,8 @@ export type AdminCategory =
 export type CategoryFormValues = z.input<typeof adminCreateCategoryBodySchema>
 
 export function categoryAncestry(
-	category: AdminCategory,
-	categories: Array<AdminCategory>
+	category: CategoryNode,
+	categories: Array<CategoryNode>
 ) {
 	const chain = [category]
 	const seen = new Set([category.id])
@@ -33,8 +34,8 @@ export function categoryAncestry(
 }
 
 export function categoryLabel(
-	category: AdminCategory,
-	categories: Array<AdminCategory>
+	category: CategoryNode,
+	categories: Array<CategoryNode>
 ) {
 	return categoryAncestry(category, categories)
 		.map((node) => node.name)

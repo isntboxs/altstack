@@ -23,6 +23,7 @@ export const listBookmarkInputSchema = z.object({
 export const bookmarkListItemSchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
+	verified: z.boolean().default(false),
 	slug: z.string(),
 	logo: z.string().nullable(),
 	tagline: z.string().nullable(),

@@ -13,6 +13,7 @@ import {
 	PublicNotFound,
 } from '#/components/public-page-state'
 import { ShareButtons } from '#/components/share-buttons'
+import { VerifiedBadge } from '#/components/verified-badge'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { ProjectSidebar } from '#/features/project/components/featured-projects'
 import { ProjectActions } from '#/features/project/components/project-actions'
@@ -94,14 +95,35 @@ function RouteComponent() {
 								name={projectData.name}
 								className="size-7.5"
 							/>
-							<h1 className="min-w-0 text-3xl font-bold wrap-anywhere">
-								{projectData.name}
+							<h1
+								tabIndex={-1}
+								className="min-w-0 text-3xl font-bold wrap-anywhere"
+							>
+								{projectData.name} {projectData.verified && <VerifiedBadge />}
 							</h1>
 						</div>
 
 						<ProjectActions
 							key={slug}
 							projectId={projectData.id}
+							verified={projectData.verified}
+							verifyOpen={dialog === 'verify'}
+							onVerifyOpenChange={(open) => {
+								void navigate({
+									search: (previous) => {
+										return {
+											...previous,
+											dialog: open
+												? 'verify'
+												: previous.dialog === 'verify'
+													? undefined
+													: previous.dialog,
+										}
+									},
+									resetScroll: false,
+									hash: true,
+								})
+							}}
 							userId={auth?.user.id}
 							slug={slug}
 							name={projectData.name}
