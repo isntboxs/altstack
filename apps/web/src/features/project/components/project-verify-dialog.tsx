@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useRouter } from '@tanstack/react-router'
 import { useEffect, useId, useRef, useState } from 'react'
 
+import { authClient } from '@altstack/auth/client'
+
 import {
 	claimBodySchema,
 	projectMemberRoleSchema,
@@ -33,6 +35,7 @@ import { SignInForm } from '#/components/sign-in-form'
 import { ownershipQueries } from '#/features/project/ownership'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import { client } from '#/utils/orpc'
+import { ClaimGithubEvidenceView } from './claim-github-evidence'
 
 export function ProjectVerifyDialog({
 	projectId,
@@ -59,9 +62,9 @@ export function ProjectVerifyDialog({
 				<DialogHeader className="min-w-0 pr-6">
 					<DialogTitle className="wrap-anywhere">Verify {name}</DialogTitle>
 					<DialogDescription>
-						Confirm that you represent this project. Verify your contact email,
-						then get approval from a project representative, or AltStack admin
-						for its first claim.
+						Connect GitHub to check your project access. Verify your contact
+						email, then get approval from a project representative, or AltStack
+						admin for its first claim.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-3 text-sm text-muted-foreground">
@@ -108,6 +111,7 @@ function VerificationForm({
 	const id = useId()
 	const queryClient = useQueryClient()
 	const router = useRouter()
+	const { href } = useLocation()
 	const [email, setEmail] = useState<string>()
 	const [role, setRole] = useState<'owner' | 'maintainer'>()
 	const [code, setCode] = useState('')
@@ -159,6 +163,33 @@ function VerificationForm({
 	const challengeId = currentChallenge?.challengeId
 	const membership = state.data?.membership
 	const claimStatus = state.data?.claim?.status
+	const github = useQuery({
+		...ownershipQueries.github(userId, projectId),
+		enabled: state.isSuccess && !membership && claimStatus !== 'pending',
+	})
+	const link = useMutation({
+		mutationFn: async () => {
+			const callback = new URL(href, window.location.origin)
+			callback.searchParams.delete('error')
+			callback.searchParams.delete('error_description')
+			const result = await authClient.linkSocial({
+				provider: 'github',
+				callbackURL: callback.href,
+				errorCallbackURL: callback.href,
+			})
+			if (result.error) {
+				throw new Error(
+					'Unable to connect GitHub. Use the same verified email as your AltStack account and try again.'
+				)
+			}
+		},
+		retry: false,
+	})
+	const githubBlocked =
+		github.isPending ||
+		github.isError ||
+		github.data.status === 'denied' ||
+		github.data.status === 'disconnected'
 	useEffect(() => {
 		if (
 			state.isSuccess &&
@@ -193,6 +224,7 @@ function VerificationForm({
 			setError(parsed.error.issues[0]?.message ?? 'Enter a valid email.')
 			return
 		}
+		if (githubBlocked) return
 		sending.current = true
 		setError('')
 		try {
@@ -265,6 +297,16 @@ function VerificationForm({
 	if (state.data.claim?.status === 'pending') {
 		return (
 			<div className="flex flex-col gap-4">
+				<ClaimGithubEvidenceView evidence={state.data.claim.githubEvidence} />
+				<Button
+					type="button"
+					variant="outline"
+					disabled={link.isPending}
+					onClick={() => link.mutate()}
+				>
+					Connect or refresh GitHub
+				</Button>
+				{link.isError && <p role="alert">{link.error.message}</p>}
 				<output>
 					Email confirmed. Your {state.data.claim.role} request is awaiting
 					approval. Access and the project badge activate after approval.
@@ -281,6 +323,60 @@ function VerificationForm({
 			className="flex min-w-0 flex-col gap-5"
 			aria-busy={pending}
 		>
+			{!currentChallenge && (
+				<div className="flex flex-col gap-3">
+					{github.isPending ? (
+						<output className="flex items-center gap-2 text-sm">
+							<Spinner /> Checking GitHub access…
+						</output>
+					) : github.isError ? (
+						<Alert variant="destructive">
+							<AlertDescription>
+								Unable to check GitHub access. Retry before requesting a code.
+							</AlertDescription>
+						</Alert>
+					) : (
+						<ClaimGithubEvidenceView evidence={github.data} />
+					)}
+					<div className="flex flex-wrap gap-2">
+						{github.data?.status !== 'verified' &&
+							github.data?.status !== 'limited' && (
+								<Button
+									type="button"
+									variant="outline"
+									disabled={link.isPending}
+									onClick={() => link.mutate()}
+								>
+									{link.isPending && <Spinner />}
+									{github.data?.status === 'disconnected'
+										? 'Connect GitHub'
+										: 'Reconnect GitHub'}
+								</Button>
+							)}
+						<Button
+							type="button"
+							variant="ghost"
+							disabled={github.isFetching}
+							onClick={() => void github.refetch()}
+						>
+							Check GitHub again
+						</Button>
+					</div>
+					{link.isError && (
+						<p role="alert" className="text-sm text-destructive">
+							{link.error.message}
+						</p>
+					)}
+					{new URLSearchParams(href.split('?')[1]?.split('#')[0]).has(
+						'error'
+					) && (
+						<p role="alert" className="text-sm text-destructive">
+							GitHub connection failed. Use the same verified email as your
+							AltStack account and try again.
+						</p>
+					)}
+				</div>
+			)}
 			{state.data.claim?.status === 'rejected' && (
 				<p className="text-sm text-muted-foreground">
 					Your previous request was declined. Confirm your details before
@@ -398,7 +494,12 @@ function VerificationForm({
 				</Button>
 				<Button
 					type="submit"
-					disabled={pending || (currentChallenge ? expired : cooldown > 0)}
+					disabled={
+						pending ||
+						(currentChallenge
+							? expired
+							: cooldown > 0 || githubBlocked || link.isPending)
+					}
 				>
 					{pending && <Spinner />}
 					{currentChallenge

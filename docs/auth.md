@@ -240,6 +240,17 @@ and production acceptance remain separate from the above checks.
 
 ## Project roles (R6)
 
+Claims now require a linked GitHub account and server checks using that claimant's
+own token, obtained through Better Auth's account-specific `getAccessToken` API.
+The local account record ID is selected server-side; the provider user ID is
+checked against GitHub `/user`. Token decryption/refresh remains Better Auth's
+responsibility. Linking uses `linkSocial` with the existing verified same-email
+policy and returns to Verify. Catalogue credentials and client-provided usernames
+cannot stand in for claimant authority; no additional repository write scope is
+requested. OTP and independent approval remain mandatory. Confirmed read-only
+access is denied; write or unavailable evidence needs recorded independent
+verification. See [GitHub evidence policy](project-ownership.md#github-evidence-follow-up--2026-10-24).
+
 Better Auth 1.7.12 registers `owner` and `maintainer` with the same project update
 and claim-review permissions. These global labels confer no global project or
 admin rights: API checks load the approved per-project membership and authorize

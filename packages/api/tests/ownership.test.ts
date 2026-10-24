@@ -1,7 +1,7 @@
 import { createRouterClient } from '@orpc/server'
 import { eq, inArray } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
 import { claimCodeHash, enforceClaimQuota } from '@altstack/api/ownership-otp'
@@ -10,6 +10,7 @@ import * as storage from '@altstack/api/storage'
 
 import { db } from '@altstack/db'
 import {
+	account,
 	auditLog,
 	category,
 	githubRepository,
@@ -46,6 +47,37 @@ vi.mock('@aws-sdk/s3-request-presigner', () => {
 	}
 })
 
+vi.mock('@altstack/auth/server/github-access-token', () => {
+	return {
+		getClaimGithubAccessToken: vi.fn(() =>
+			Promise.resolve('synthetic-claim-github-token')
+		),
+	}
+})
+function githubResponses(respond: (url: URL) => Response | Promise<Response>) {
+	vi.mocked(fetch).mockImplementation((input) =>
+		Promise.resolve(
+			respond(new URL(input instanceof Request ? input.url : input))
+		)
+	)
+}
+beforeEach(() => {
+	vi.stubGlobal('fetch', vi.fn())
+	githubResponses((url) => {
+		if (url.hostname !== 'api.github.com') {
+			throw new Error('No external requests in ownership tests')
+		}
+		if (url.pathname === '/user') {
+			return Response.json({ id: 123, login: 'representative' })
+		}
+		return Response.json({
+			id: 456,
+			private: false,
+			permissions: { admin: false, maintain: true, push: true, pull: true },
+		})
+	})
+})
+
 const projectIds: Array<string> = [],
 	userIds: Array<string> = [],
 	categoryIds: Array<string> = []
@@ -60,6 +92,7 @@ afterEach(async () => {
 		await db.delete(category).where(inArray(category.id, categoryIds.splice(0)))
 	}
 	vi.restoreAllMocks()
+	vi.unstubAllGlobals()
 	sent.mockReset()
 })
 
@@ -79,6 +112,15 @@ async function fixture() {
 		)
 		.returning()
 	userIds.push(...users.map((item) => item.id))
+	await db.insert(account).values(
+		users.map((person) => {
+			return {
+				userId: person.id,
+				accountId: '123',
+				providerId: 'github',
+			}
+		})
+	)
 	const projects = await db
 		.insert(project)
 		.values(
@@ -221,6 +263,15 @@ describe('project claims and scoped Better Auth roles', () => {
 			)
 			.returning()
 		userIds.push(...people.map((person) => person.id))
+		await db.insert(account).values(
+			people.map((person) => {
+				return {
+					userId: person.id,
+					accountId: '123',
+					providerId: 'github',
+				}
+			})
+		)
 		const clients = people.map((person) =>
 			createRouterClient(routers, {
 				context: {
@@ -689,6 +740,253 @@ describe('project claims and scoped Better Auth roles', () => {
 				.where(eq(projectMember.projectId, f.params.id))
 		).toEqual([])
 	})
+	it('requires a linked GitHub identity and never emails a disconnected claimant', async () => {
+		const f = await fixture()
+		await db.delete(account).where(eq(account.userId, f.users[1]!.id))
+		expect(await f.alice.ownership.github({ params: f.params })).toMatchObject({
+			status: 'disconnected',
+			githubUserId: null,
+		})
+		await expect(
+			f.alice.ownership.request({
+				params: f.params,
+				body: { email: 'claim@example.test', role: 'owner' },
+			})
+		).rejects.toMatchObject({ code: 'FORBIDDEN' })
+		expect(sent).not.toHaveBeenCalled()
+		await expect(
+			f.anon.ownership.github({ params: f.params })
+		).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+	})
+	it.each(['read', 'triage', 'none'])(
+		'blocks confirmed %s access rather than treating public visibility as project authority',
+		async (permission) => {
+			const f = await fixture()
+			githubResponses((url) =>
+				url.pathname === '/user'
+					? Response.json({ id: 123, login: 'reader' })
+					: Response.json({
+							id: 456,
+							private: false,
+							permissions: {
+								admin: false,
+								push: false,
+								pull: permission !== 'none',
+								triage: permission === 'triage',
+							},
+						})
+			)
+			expect(
+				await f.alice.ownership.github({ params: f.params })
+			).toMatchObject({ status: 'denied', permission })
+			await expect(
+				f.alice.ownership.request({
+					params: f.params,
+					body: { email: 'reader@example.test', role: 'maintainer' },
+				})
+			).rejects.toMatchObject({ code: 'FORBIDDEN' })
+			expect(sent).not.toHaveBeenCalled()
+		}
+	)
+	it('binds GitHub evidence to the OTP and rechecks lost permissions before approval even with manual notes', async () => {
+		const f = await fixture()
+		const pending = await confirmed(f)
+		expect(pending.claim.githubEvidence).toMatchObject({
+			status: 'verified',
+			permission: 'maintain',
+			githubUserId: '123',
+			repositoryId: '456',
+		})
+		const [call] = vi.mocked(fetch).mock.calls
+		expect(new Headers(call![1]?.headers).get('authorization')).toBe(
+			'Bearer synthetic-claim-github-token'
+		)
+		const body = {
+			params: { id: pending.claim.id },
+			body: {
+				decision: 'approve' as const,
+				manualEvidence:
+					'Independent confirmation cannot override a confirmed loss of access.',
+			},
+		}
+		githubResponses((url) =>
+			url.pathname === '/user'
+				? Response.json({ id: 123, login: 'reader' })
+				: Response.json({
+						id: 456,
+						private: false,
+						permissions: { admin: false, push: false, pull: true },
+					})
+		)
+		await expect(f.admin.ownership.review(body)).rejects.toMatchObject({
+			code: 'FORBIDDEN',
+		})
+		expect(
+			await db
+				.select()
+				.from(projectMember)
+				.where(eq(projectMember.projectId, f.params.id))
+		).toEqual([])
+		const changedProof = {
+			...pending.claim,
+			githubEvidence: { ...pending.claim.githubEvidence!, githubUserId: '999' },
+		}
+		expect(claimCodeHash(changedProof, pending.mail.code)).not.toBe(
+			claimCodeHash(pending.claim, pending.mail.code)
+		)
+	})
+	it.each(['write', 'unavailable'])(
+		'requires recorded independent evidence for %s and audits the approved proof privately',
+		async (kind) => {
+			const f = await fixture()
+			githubResponses((url) =>
+				url.pathname === '/user'
+					? Response.json({ id: 123, login: 'representative' })
+					: kind === 'unavailable'
+						? Response.json(
+								{ message: 'Sensitive upstream payload' },
+								{ status: 403 }
+							)
+						: Response.json({
+								id: 456,
+								private: false,
+								permissions: { admin: false, push: true, pull: true },
+							})
+			)
+			const pending = await confirmed(f)
+			await expect(
+				f.admin.ownership.review({
+					params: { id: pending.claim.id },
+					body: { decision: 'approve' },
+				})
+			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+			const manualEvidence =
+				'Confirmed with the established project representative through a separate existing channel.'
+			await f.admin.ownership.review({
+				params: { id: pending.claim.id },
+				body: { decision: 'approve', manualEvidence },
+			})
+			const events = await db
+				.select()
+				.from(auditLog)
+				.where(eq(auditLog.projectId, f.params.id))
+			expect(
+				events.find((event) => event.action === 'project_claim_approved')
+					?.metadata
+			).toMatchObject({
+				manualEvidence,
+				github: { status: kind === 'write' ? 'limited' : 'unavailable' },
+			})
+			const listing = await f.anon.project.getBySlug({
+				params: { slug: f.projects[0]!.slug },
+			})
+			expect(JSON.stringify(listing)).not.toMatch(
+				/manualEvidence|githubEvidence|Sensitive upstream|synthetic-claim-github-token/
+			)
+		}
+	)
+	it.each(['identity', 'repository'])(
+		'rejects a mismatched %s instead of trusting the supplied username or project URL',
+		async (mismatch) => {
+			const f = await fixture()
+			await db
+				.update(githubRepository)
+				.set({ githubRepositoryId: 456 })
+				.where(eq(githubRepository.projectId, f.params.id))
+			githubResponses((url) =>
+				url.pathname === '/user'
+					? Response.json({
+							id: mismatch === 'identity' ? 999 : 123,
+							login: 'somebody',
+						})
+					: Response.json({
+							id: 999,
+							private: false,
+							permissions: { admin: true, push: true, pull: true },
+						})
+			)
+			expect(
+				await f.alice.ownership.github({ params: f.params })
+			).toMatchObject({
+				status: 'denied',
+				reason:
+					mismatch === 'identity' ? 'identity_mismatch' : 'repository_changed',
+			})
+			await expect(
+				f.alice.ownership.request({
+					params: f.params,
+					body: { email: 'mismatch@example.test', role: 'owner' },
+				})
+			).rejects.toMatchObject({ code: 'FORBIDDEN' })
+		}
+	)
+	it.each(['unlink', 'project', 'repository-id'])(
+		'rejects a concurrent %s change before issuing a bound challenge',
+		async (change) => {
+			const f = await fixture()
+			vi.mocked(fetch).mockImplementation(async (input) => {
+				if (
+					new URL(input instanceof Request ? input.url : input).pathname ===
+					'/user'
+				) {
+					return Response.json({ id: 123, login: 'representative' })
+				}
+				if (change === 'unlink') {
+					await db.delete(account).where(eq(account.userId, f.users[1]!.id))
+				} else if (change === 'repository-id') {
+					await db
+						.update(githubRepository)
+						.set({ githubRepositoryId: 999 })
+						.where(eq(githubRepository.projectId, f.params.id))
+				} else {
+					await db
+						.update(project)
+						.set({ repositoryUrl: 'https://github.com/new/project' })
+						.where(eq(project.id, f.params.id))
+				}
+				return Response.json({
+					id: 456,
+					private: false,
+					permissions: { admin: true, push: true, pull: true },
+				})
+			})
+			await expect(
+				f.alice.ownership.request({
+					params: f.params,
+					body: { email: 'changed@example.test', role: 'owner' },
+				})
+			).rejects.toMatchObject({ code: 'CONFLICT' })
+			expect(sent).not.toHaveBeenCalled()
+		}
+	)
+	it('does not turn omitted permission metadata into successful verification', async () => {
+		const f = await fixture()
+		githubResponses((url) =>
+			url.pathname === '/user'
+				? Response.json({ id: 123, login: 'representative' })
+				: Response.json({ id: 456, private: false })
+		)
+		expect(await f.alice.ownership.github({ params: f.params })).toMatchObject({
+			status: 'unavailable',
+			permission: 'unknown',
+			reason: 'github_unavailable',
+		})
+	})
+	it.each([401, 403, 404, 429, 500])(
+		'keeps GitHub %s failures unverified and never leaks upstream errors',
+		async (status) => {
+			const f = await fixture()
+			vi.mocked(fetch).mockResolvedValue(
+				Response.json({ message: 'Private provider response' }, { status })
+			)
+			const proof = await f.alice.ownership.github({ params: f.params })
+			expect(proof).toMatchObject({
+				status: 'unavailable',
+				permission: 'unknown',
+			})
+			expect(JSON.stringify(proof)).not.toContain('Private provider response')
+		}
+	)
 	it('fails closed on email delivery errors and enforces an atomic persistent quota', async () => {
 		const f = await fixture()
 		sent.mockRejectedValueOnce(new Error('provider secret details'))

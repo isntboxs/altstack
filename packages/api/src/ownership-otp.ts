@@ -17,6 +17,10 @@ export function claimCodeHash(
 		projectId: string
 		email: string
 		role: string
+		githubEvidence?: {
+			githubUserId: string | null
+			repositoryId: string | null
+		} | null
 	},
 	code: string
 ) {
@@ -29,6 +33,12 @@ export function claimCodeHash(
 				binding.email,
 				binding.role,
 				code,
+				...(binding.githubEvidence
+					? [
+							binding.githubEvidence.githubUserId,
+							binding.githubEvidence.repositoryId,
+						]
+					: []),
 			])
 		)
 		.digest('hex')

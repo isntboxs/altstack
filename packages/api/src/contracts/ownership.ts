@@ -5,6 +5,7 @@ import { baseContract } from '@altstack/api/contracts/base'
 
 import {
 	claimRequestInputSchema,
+	claimGithubEvidenceSchema,
 	claimChallengeSchema,
 	claimVerifyInputSchema,
 	claimStateSchema,
@@ -50,6 +51,13 @@ const endpoint = (
 const params = z.object({ params: managedProjectParamsSchema })
 const success = z.object({ success: z.literal(true) })
 export const ownershipContract = {
+	github: endpoint(
+		'/projects/{id}/claim/github-check',
+		'POST',
+		'checkProjectClaimGithub'
+	)
+		.input(params)
+		.output(claimGithubEvidenceSchema),
 	request: endpoint('/projects/{id}/claim', 'POST', 'requestProjectClaim')
 		.input(claimRequestInputSchema)
 		.output(claimChallengeSchema),

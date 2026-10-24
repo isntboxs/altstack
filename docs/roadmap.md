@@ -517,6 +517,7 @@ release baseline above supersedes them for merge and operator rollout status.
 
 - [x] Two-field email/role dialog at `?dialog=verify`, auth handoff, OTP confirmation, expiry/resend/error/pending states and URL history.
 - [x] Contact OTP plus independent approval: admin for the first representative, then either project role for additional claims. No automatic ownership from email or submission alone.
+- [x] User-approved GitHub evidence follow-up: claimant account linking, permissions before code issuance and fresh approval checks; read-only denial, independent notes for write/unavailable evidence, private proof migration and no extra repository write scope.
 - [x] Additive claim/membership/upload tables, separate from `submitterId`; bound hashed short-lived single-use codes, persistent quotas and serialized claim decisions.
 - [x] Better Auth owner/maintainer roles with identical capabilities restricted to approved memberships; admin role preserved.
 - [x] Public verified badge, hidden Verify after approval, Request access for additional representatives, default home verified-first then `createdAt`/ID; explicit alternative sorts preserved. No billing scope.

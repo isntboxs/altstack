@@ -1,0 +1,1 @@
+ALTER TABLE "project_claims" ADD COLUMN "github_evidence" jsonb;

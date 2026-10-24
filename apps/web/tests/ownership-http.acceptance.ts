@@ -119,7 +119,7 @@ try {
 		[
 			'run',
 			'--preload',
-			'./apps/web/tests/helpers/mock-resend-preload.ts',
+			'./apps/web/tests/helpers/mock-claim-github-preload.ts',
 			'apps/server/dist/index.mjs',
 		],
 		'api',
@@ -185,6 +185,73 @@ try {
 			})
 		).status,
 		401
+	)
+	assert.equal(
+		(
+			await apiRequest(`/projects/${id}/claim`, 'POST', stranger.cookie, {
+				email: 'unrelated@example.test',
+				role: 'owner',
+			})
+		).status,
+		403
+	)
+	// Exercise Better Auth's real session-bound OAuth linking/callback and
+	// encrypted token storage. Only the external GitHub transport is mocked.
+	const link = await fetch(new URL('/api/auth/link-social', api), {
+		method: 'POST',
+		headers: {
+			cookie: claimant.cookie,
+			origin: web.origin,
+			'content-type': 'application/json',
+		},
+		body: JSON.stringify({
+			provider: 'github',
+			callbackURL: new URL('/ownership-preview?dialog=verify', web).href,
+		}),
+	})
+	assert.equal(link.status, 200)
+	const authorization = new URL(((await link.json()) as { url: string }).url)
+	const stateCookie = link.headers
+		.getSetCookie()
+		.map((value) => value.split(';')[0])
+		.join('; ')
+	const callback = new URL('/api/auth/callback/github', api)
+	callback.searchParams.set('state', authorization.searchParams.get('state')!)
+	const fixtureCode = Buffer.from(
+		JSON.stringify({ id: 123, email: claimant.email })
+	).toString('base64url')
+	callback.searchParams.set('code', fixtureCode)
+	const linked = await fetch(callback, {
+		redirect: 'manual',
+		headers: {
+			cookie: [claimant.cookie, stateCookie].filter(Boolean).join('; '),
+		},
+	})
+	assert.equal(linked.status, 302)
+	assert.equal(
+		new URL(linked.headers.get('location')!).pathname,
+		'/ownership-preview'
+	)
+	const storedAccount = (
+		await pool.query<{ access_token: string }>(
+			'SELECT access_token FROM account WHERE user_id = $1 AND provider_id = $2',
+			[claimant.id, 'github']
+		)
+	).rows[0]
+	assert.ok(storedAccount)
+	assert.notEqual(
+		storedAccount.access_token,
+		'synthetic-claim-github-' + fixtureCode
+	)
+	const githubCheck = await apiRequest(
+		`/projects/${id}/claim/github-check`,
+		'POST',
+		claimant.cookie
+	)
+	assert.equal(githubCheck.status, 200)
+	assert.equal(
+		((await githubCheck.json()) as { status: string }).status,
+		'verified'
 	)
 	const request = await apiRequest(
 		`/projects/${id}/claim`,

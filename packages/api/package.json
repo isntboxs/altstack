@@ -8,6 +8,7 @@
 	"type": "module",
 	"exports": {
 		"./base": "./src/base.ts",
+		"./claim-github": "./src/claim-github.ts",
 		"./context": "./src/context.ts",
 		"./contracts": "./src/contracts/index.ts",
 		"./contracts/admin-category": "./src/contracts/admin-category.ts",
@@ -70,6 +71,7 @@
 	"publishConfig": {
 		"exports": {
 			"./base": "./dist/base.mjs",
+			"./claim-github": "./dist/claim-github.mjs",
 			"./context": "./dist/context.mjs",
 			"./contracts": "./dist/contracts/index.mjs",
 			"./contracts/admin-category": "./dist/contracts/admin-category.mjs",

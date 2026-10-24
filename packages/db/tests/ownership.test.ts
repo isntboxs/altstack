@@ -93,3 +93,85 @@ it('migrates existing listings additively without assigning owners and enforces 
 		await rm(baseline, { recursive: true, force: true })
 	}
 }, 60000)
+
+it('adds nullable GitHub proof without inventing evidence or changing existing claims and members', async () => {
+	const postgres = await connectTestPostgres(),
+		scope = await postgres.createSchema()
+	const baseline = await mkdtemp(
+		join(tmpdir(), 'altstack-claim-github-migration-')
+	)
+	try {
+		const folder = fileURLToPath(new URL('../src/migrations', import.meta.url))
+		for (const name of (await readdir(folder)).filter(
+			(entry) => !entry.endsWith('_claim-github-evidence')
+		)) {
+			await cp(join(folder, name), join(baseline, name), { recursive: true })
+		}
+		const options = {
+			migrationsFolder: baseline,
+			migrationsSchema: scope.migrationsSchema,
+		}
+		await migrate(scope.db, options)
+		const [actor] = await scope.db
+			.insert(user)
+			.values({
+				name: 'Existing representative',
+				email: 'representative@example.test',
+				role: 'maintainer',
+			})
+			.returning()
+		const [listing] = await scope.db
+			.insert(project)
+			.values({
+				name: 'Existing verified listing',
+				slug: 'existing-verified',
+				repositoryUrl: 'https://github.com/test/existing-verified',
+				status: 'published',
+			})
+			.returning()
+		await scope.db
+			.insert(projectMember)
+			.values({ projectId: listing!.id, userId: actor!.id, role: 'maintainer' })
+		await scope.pool.query(
+			'INSERT INTO project_claims (project_id,user_id,email,role,status,challenge_id,code_expires_at) VALUES ($1,$2,$3,$4,$5,$6,now())',
+			[
+				listing!.id,
+				actor!.id,
+				'contact@example.test',
+				'maintainer',
+				'approved',
+				actor!.id,
+			]
+		)
+		const before = (
+			await scope.pool.query<Record<string, unknown>>(
+				'SELECT * FROM project_claims'
+			)
+		).rows
+		await migrate(scope.db, { ...options, migrationsFolder: folder })
+		await migrate(scope.db, { ...options, migrationsFolder: folder })
+		expect(
+			(
+				await scope.pool.query<Record<string, unknown>>(
+					'SELECT * FROM project_claims'
+				)
+			).rows
+		).toEqual(
+			before.map((claim: Record<string, unknown>) => {
+				return {
+					...claim,
+					github_evidence: null,
+				}
+			})
+		)
+		expect((await scope.db.select().from(projectMember))[0]).toMatchObject({
+			projectId: listing!.id,
+			userId: actor!.id,
+			role: 'maintainer',
+		})
+	} finally {
+		await scope.close()
+		await postgres.close()
+		await rm(baseline, { recursive: true, force: true })
+	}
+}, 60000)

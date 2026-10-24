@@ -3,6 +3,7 @@ import {
 	check,
 	index,
 	integer,
+	jsonb,
 	pgTable,
 	primaryKey,
 	text,
@@ -13,6 +14,8 @@ import {
 
 import { user } from '@altstack/db/schemas/auth'
 import { project } from '@altstack/db/schemas/project'
+
+import type { ClaimGithubEvidence } from '@altstack/shared/schemas/ownership'
 
 export const projectClaim = pgTable(
 	'project_claims',
@@ -38,6 +41,7 @@ export const projectClaim = pgTable(
 		sentAt: timestamp('sent_at'),
 		requestedAt: timestamp('requested_at').defaultNow().notNull(),
 		emailVerifiedAt: timestamp('email_verified_at'),
+		githubEvidence: jsonb('github_evidence').$type<ClaimGithubEvidence>(),
 		reviewerId: uuid('reviewer_id').references(() => user.id, {
 			onDelete: 'set null',
 		}),

@@ -15,12 +15,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient } from '@altstack/api/routers'
 
+import type * as AuthClientModule from '@altstack/auth/client'
+
 import { getRouter } from '#/router'
 import type * as AppRouteModule from '#/routes/_app/route'
+import type * as MainRouteModule from '#/routes/_main/route'
 import type { orpc } from '#/utils/orpc'
 
-const { getAuthFn, rpc } = vi.hoisted(() => {
+const { getAuthFn, rpc, linkSocial } = vi.hoisted(() => {
 	return {
+		linkSocial:
+			vi.fn<
+				(input: {
+					provider: string
+					callbackURL: string
+					errorCallbackURL: string
+				}) => Promise<{ error: null }>
+			>(),
 		getAuthFn: vi.fn<
 			() => Promise<{
 				user: { id: string; role: 'user' | 'admin' }
@@ -28,6 +39,17 @@ const { getAuthFn, rpc } = vi.hoisted(() => {
 			} | null>
 		>(),
 		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
+	}
+})
+vi.mock('@altstack/auth/client', async (importOriginal) => {
+	const actual = await importOriginal<typeof AuthClientModule>()
+	return {
+		...actual,
+		authClient: {
+			...actual.authClient,
+			signIn: actual.authClient.signIn,
+			linkSocial,
+		},
 	}
 })
 vi.mock('#/routes/__root', async () => {
@@ -48,6 +70,14 @@ vi.mock('#/routes/__root', async () => {
 vi.mock('#/routes/_app/route', async () => {
 	const actual = await vi.importActual<typeof AppRouteModule>(
 		'#/routes/_app/route'
+	)
+	const { Outlet } = await import('@tanstack/react-router')
+	actual.Route.update({ component: Outlet })
+	return actual
+})
+vi.mock('#/routes/_main/route', async () => {
+	const actual = await vi.importActual<typeof MainRouteModule>(
+		'#/routes/_main/route'
 	)
 	const { Outlet } = await import('@tanstack/react-router')
 	actual.Route.update({ component: Outlet })
@@ -163,8 +193,20 @@ beforeEach(() => {
 		})
 	)
 	getAuthFn.mockReset().mockResolvedValue(null)
+	linkSocial.mockReset().mockResolvedValue({ error: null })
 	rpc.mockReset().mockImplementation((path) => {
 		if (path.join('/') === 'project/getBySlug') return Promise.resolve(project)
+		if (path.join('/') === 'ownership/github') {
+			return Promise.resolve({
+				status: 'verified',
+				permission: 'maintain',
+				reason: null,
+				githubUserId: '123',
+				login: 'representative',
+				repositoryId: '456',
+				checkedAt: new Date().toISOString(),
+			})
+		}
 		if (path.join('/') === 'ownership/state') {
 			return Promise.resolve({ membership: null, claim: null })
 		}
@@ -322,6 +364,179 @@ describe('project Verify URL and claim flow', () => {
 		).toBeTruthy()
 		expect(router.state.location.search.dialog).toBe('verify')
 		expect(rpc.mock.calls.some(([path]) => path[0] === 'ownership')).toBe(false)
+	})
+	it('requires GitHub connection and preserves the exact Verify return URL when linking', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: 'disconnected',
+						permission: 'unknown',
+						reason: 'account_required',
+						githubUserId: null,
+						login: null,
+						repositoryId: null,
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify&ref=claim#screenshots')
+		await screen.findByText(/Connect your GitHub account before requesting/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', true)
+		fireEvent.click(screen.getByRole('button', { name: 'Connect GitHub' }))
+		await waitFor(() => expect(linkSocial).toHaveBeenCalledOnce())
+		const callbackURL = new URL(
+			'/example?dialog=verify&ref=claim#screenshots',
+			window.location.origin
+		).href
+		expect(linkSocial).toHaveBeenCalledWith({
+			provider: 'github',
+			callbackURL,
+			errorCallbackURL: callbackURL,
+		})
+		expect(
+			rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/request')
+		).toBe(false)
+	})
+	it('blocks read-only claims and lets a successful recheck enable the email flow', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		let allowed = false
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: allowed ? 'verified' : 'denied',
+						permission: allowed ? 'maintain' : 'read',
+						reason: allowed ? null : 'insufficient_access',
+						githubUserId: '123',
+						login: 'reader',
+						repositoryId: '456',
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify')
+		await screen.findByText(/does not have write or maintainer access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', true)
+		allowed = true
+		fireEvent.click(screen.getByRole('button', { name: 'Check GitHub again' }))
+		await screen.findByText(/reader has maintain access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', false)
+	})
+	it('labels unavailable GitHub proof for manual review without presenting it as verified', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'account-a', role: 'user' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'ownership/github'
+				? Promise.resolve({
+						status: 'unavailable',
+						permission: 'unknown',
+						reason: 'github_unavailable',
+						githubUserId: '123',
+						login: null,
+						repositoryId: null,
+						checkedAt: new Date().toISOString(),
+					})
+				: original(path, input)
+		)
+		await routerAt('/example?dialog=verify')
+		await screen.findByText(/GitHub could not confirm repository access/)
+		expect(
+			screen.getByRole('button', { name: 'Send verification code' })
+		).toHaveProperty('disabled', false)
+		expect(screen.queryByText('Verified project')).toBeNull()
+	})
+	it('shows private GitHub evidence in the reviewer inbox and submits independent verification notes', async () => {
+		getAuthFn.mockResolvedValue({
+			user: { id: 'reviewer-a', role: 'admin' },
+			session: {},
+		})
+		const original = rpc.getMockImplementation()!
+		const pagination = {
+			page: 1,
+			limit: 25,
+			totalItems: 1,
+			totalPages: 1,
+			hasNextPage: false,
+			hasPreviousPage: false,
+		}
+		let reviewed = false
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') === 'ownership/list') {
+				return Promise.resolve({ projects: [], pagination })
+			}
+			if (path.join('/') === 'ownership/inbox') {
+				return Promise.resolve({
+					claims: reviewed
+						? []
+						: [
+								{
+									id: project.id,
+									projectId: project.id,
+									projectName: 'Example',
+									projectSlug: 'example',
+									name: 'Representative',
+									email: 'contact@example.test',
+									role: 'maintainer',
+									requestedAt: new Date(),
+									githubEvidence: {
+										status: 'limited',
+										permission: 'write',
+										reason: null,
+										githubUserId: '123',
+										login: 'representative',
+										repositoryId: '456',
+										checkedAt: new Date().toISOString(),
+									},
+								},
+							],
+					pagination,
+				})
+			}
+			if (path.join('/') === 'ownership/review') {
+				reviewed = true
+				return Promise.resolve({ success: true })
+			}
+			return original(path, input)
+		})
+		await routerAt('/managed')
+		await screen.findByText(/representative has write access/)
+		const manualEvidence =
+			'Confirmed representation through the established project contact in a separate channel.'
+		fireEvent.change(
+			screen.getByRole('textbox', {
+				name: 'Independent verification notes for Example',
+			}),
+			{ target: { value: manualEvidence } }
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.find(
+					([path]) => path.join('/') === 'ownership/review'
+				)?.[1]
+			).toEqual({
+				params: { id: project.id },
+				body: { decision: 'approve', manualEvidence },
+			})
+		)
+		await screen.findByText('No requests awaiting your review.')
 	})
 	it('sends the selected email and role, confirms a six-digit code, and shows pending approval without a badge', async () => {
 		getAuthFn.mockResolvedValue({

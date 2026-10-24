@@ -1041,7 +1041,7 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(59)
+		expect(operations).toHaveLength(60)
 		for (const contract of Object.values(contracts.ownership)) {
 			const metadata = getOpenAPIMeta(contract)!
 			const operation = operations.find(
@@ -1279,7 +1279,7 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(47)
+		expect(mapped).toHaveLength(48)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
 		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(24)
 		for (const meta of mapped) {

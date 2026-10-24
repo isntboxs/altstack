@@ -4,6 +4,7 @@ import {
 	useSuspenseQuery,
 } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { z } from 'zod'
 
 import { Alert, AlertDescription } from '@altstack/ui/components/alert'
@@ -14,9 +15,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@altstack/ui/components/card'
+import { Field, FieldLabel, FieldGroup } from '@altstack/ui/components/field'
+import { Textarea } from '@altstack/ui/components/textarea'
 
 import { PublicError } from '#/components/public-page-state'
 import { VerifiedBadge } from '#/components/verified-badge'
+import { ClaimGithubEvidenceView } from '#/features/project/components/claim-github-evidence'
 import { ownershipQueries, ownershipKey } from '#/features/project/ownership'
 import { seoHead } from '#/features/seo/meta'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
@@ -63,14 +67,21 @@ function ManagedProjects() {
 		ownershipQueries.inbox(auth.user.id, claimsPage)
 	).data
 	const queryClient = useQueryClient()
+	const [notes, setNotes] = useState<Record<string, string>>({})
 	const review = useMutation({
 		mutationFn: ({
 			id,
 			decision,
+			manualEvidence,
 		}: {
 			id: string
 			decision: 'approve' | 'reject'
-		}) => client.ownership.review({ params: { id }, body: { decision } }),
+			manualEvidence?: string
+		}) =>
+			client.ownership.review({
+				params: { id },
+				body: { decision, ...(manualEvidence ? { manualEvidence } : {}) },
+			}),
 		retry: false,
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: ownershipKey })
@@ -203,11 +214,45 @@ function ManagedProjects() {
 								<Button
 									disabled={review.isPending}
 									onClick={() =>
-										review.mutate({ id: claim.id, decision: 'approve' })
+										review.mutate({
+											id: claim.id,
+											decision: 'approve',
+											manualEvidence: notes[claim.id]?.trim() || undefined,
+										})
 									}
 								>
 									Approve
 								</Button>
+							</div>
+							<div className="flex w-full flex-col gap-3">
+								<ClaimGithubEvidenceView evidence={claim.githubEvidence} />
+								<FieldGroup>
+									<Field>
+										<FieldLabel htmlFor={`evidence-${claim.id}`}>
+											Independent verification notes for {claim.projectName}
+										</FieldLabel>
+										<Textarea
+											id={`evidence-${claim.id}`}
+											value={notes[claim.id] ?? ''}
+											onChange={(event) =>
+												setNotes((previous) => {
+													return {
+														...previous,
+														[claim.id]: event.target.value,
+													}
+												})
+											}
+											maxLength={1000}
+											disabled={review.isPending}
+											placeholder="How did you confirm this person represents the project?"
+										/>
+										<p className="text-xs text-muted-foreground">
+											Required for write access or when GitHub cannot confirm
+											access (20–1000 characters). GitHub access is checked
+											again on approval.
+										</p>
+									</Field>
+								</FieldGroup>
 							</div>
 						</CardContent>
 					</Card>

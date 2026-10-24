@@ -15,6 +15,11 @@ import {
 import { randomInt, randomUUID } from 'node:crypto'
 
 import {
+	checkClaimGithub,
+	requireClaimGithub,
+	lockClaimGithubAccount,
+} from '@altstack/api/claim-github'
+import {
 	CLAIM_CODE_LIFETIME_MS,
 	CLAIM_RESEND_MS,
 	claimClientIp,
@@ -100,6 +105,17 @@ const invalidCode = () =>
 	})
 
 export const ownershipRouter = {
+	github: procedure.ownership.github.handler(
+		async ({ context: { db, auth, requestHeaders }, input: { params } }) => {
+			await enforceClaimQuota(db, `github-account:${auth.user.id}`, 20)
+			await enforceClaimQuota(
+				db,
+				`github-ip:${claimClientIp(requestHeaders)}`,
+				40
+			)
+			return (await checkClaimGithub(db, auth.user.id, params.id)).evidence
+		}
+	),
 	request: procedure.ownership.request.handler(
 		async ({
 			context: { db, auth, requestHeaders },
@@ -109,6 +125,8 @@ export const ownershipRouter = {
 			await enforceClaimQuota(db, `send-account:${auth.user.id}`, 5)
 			await enforceClaimQuota(db, `send-ip:${claimClientIp(requestHeaders)}`, 5)
 			await enforceClaimQuota(db, `send-recipient:${body.email}`, 5)
+			const github = await checkClaimGithub(db, auth.user.id, params.id)
+			requireClaimGithub(github.evidence)
 			const code = String(randomInt(0, 1000000)).padStart(6, '0')
 			const now = new Date()
 			const binding = {
@@ -116,16 +134,27 @@ export const ownershipRouter = {
 				projectId: params.id,
 				userId: auth.user.id,
 				...body,
+				githubEvidence: github.evidence,
 			}
 			const prepared = await db.transaction(async (tx) => {
 				const [target] = await tx
-					.select({ id: project.id, name: project.name })
+					.select({
+						id: project.id,
+						name: project.name,
+						repositoryUrl: project.repositoryUrl,
+					})
 					.from(project)
 					.where(
 						and(eq(project.id, params.id), eq(project.status, 'published'))
 					)
 					.for('update')
 				if (!target) throw errors.NOT_FOUND()
+				await lockClaimGithubAccount(
+					tx,
+					auth.user.id,
+					github,
+					target.repositoryUrl
+				)
 				const [member] = await tx
 					.select()
 					.from(projectMember)
@@ -319,6 +348,7 @@ export const ownershipRouter = {
 								claim.codeHash
 									? challenge(claim)
 									: null,
+							githubEvidence: claim.githubEvidence,
 						}
 					: null,
 			}
@@ -399,6 +429,7 @@ export const ownershipRouter = {
 							email: projectClaim.email,
 							role: projectClaim.role,
 							requestedAt: projectClaim.requestedAt,
+							githubEvidence: projectClaim.githubEvidence,
 						})
 						.from(projectClaim)
 						.innerJoin(project, eq(project.id, projectClaim.projectId))
@@ -424,13 +455,56 @@ export const ownershipRouter = {
 	review: procedure.ownership.review.handler(
 		async ({ context: { db, auth }, input: { params, body }, errors }) => {
 			const [target] = await db
-				.select({ projectId: projectClaim.projectId })
+				.select({
+					projectId: projectClaim.projectId,
+					userId: projectClaim.userId,
+					challengeId: projectClaim.challengeId,
+				})
 				.from(projectClaim)
 				.where(eq(projectClaim.id, params.id))
 			if (!target) throw errors.NOT_FOUND()
+			if (target.userId === auth.user.id) throw errors.FORBIDDEN()
+			const [reviewable] = await db
+				.select({ id: project.id })
+				.from(project)
+				.where(
+					and(
+						eq(project.id, target.projectId),
+						eq(project.status, 'published'),
+						or(
+							memberOfProject(auth.user.id),
+							auth.user.role === 'admin'
+								? sql`not (${projectIsVerified})`
+								: undefined
+						)
+					)
+				)
+			if (!reviewable) throw errors.NOT_FOUND()
+			const github =
+				body.decision === 'approve'
+					? await (async () => {
+							await enforceClaimQuota(db, `review-github:${auth.user.id}`, 30)
+							const result = await checkClaimGithub(
+								db,
+								target.userId,
+								target.projectId
+							)
+							requireClaimGithub(result.evidence)
+							if (
+								result.evidence.status !== 'verified' &&
+								!body.manualEvidence
+							) {
+								throw errors.BAD_REQUEST({
+									message:
+										'GitHub cannot confirm maintainer access. Record at least 20 characters of independent verification evidence before approving.',
+								})
+							}
+							return result
+						})()
+					: null
 			return db.transaction(async (tx) => {
 				const [visible] = await tx
-					.select({ id: project.id })
+					.select({ id: project.id, repositoryUrl: project.repositoryUrl })
 					.from(project)
 					.where(
 						and(
@@ -460,12 +534,23 @@ export const ownershipRouter = {
 					.where(eq(projectClaim.id, params.id))
 					.for('update')
 				if (!claim || claim.userId === auth.user.id) throw errors.FORBIDDEN()
-				if (claim.status !== 'pending' || !claim.emailVerifiedAt) {
+				if (
+					claim.status !== 'pending' ||
+					!claim.emailVerifiedAt ||
+					claim.challengeId !== target.challengeId
+				) {
 					throw errors.CONFLICT({
 						message: 'This request has already changed. Refresh the inbox.',
 					})
 				}
 				if (body.decision === 'approve') {
+					if (!github) throw errors.INTERNAL_SERVER_ERROR()
+					await lockClaimGithubAccount(
+						tx,
+						claim.userId,
+						github,
+						visible.repositoryUrl
+					)
 					await tx.insert(projectMember).values({
 						projectId: visible.id,
 						userId: claim.userId,
@@ -485,6 +570,7 @@ export const ownershipRouter = {
 					.update(projectClaim)
 					.set({
 						status: body.decision === 'approve' ? 'approved' : 'rejected',
+						...(github ? { githubEvidence: github.evidence } : {}),
 						reviewerId: auth.user.id,
 						reviewedAt: new Date(),
 					})
@@ -496,7 +582,18 @@ export const ownershipRouter = {
 						body.decision === 'approve'
 							? 'project_claim_approved'
 							: 'project_claim_rejected',
-					metadata: { claimId: claim.id, role: claim.role },
+					metadata: {
+						claimId: claim.id,
+						role: claim.role,
+						...(github
+							? {
+									github: github.evidence,
+									...(body.manualEvidence
+										? { manualEvidence: body.manualEvidence }
+										: {}),
+								}
+							: {}),
+					},
 				})
 				return { success: true as const }
 			})

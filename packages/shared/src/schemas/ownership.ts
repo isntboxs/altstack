@@ -21,6 +21,39 @@ export const claimStatusSchema = z.enum([
 	'rejected',
 ])
 export const managedProjectParamsSchema = z.strictObject({ id: z.uuid() })
+export const claimGithubEvidenceSchema = z.object({
+	status: z.enum([
+		'verified',
+		'limited',
+		'denied',
+		'unavailable',
+		'disconnected',
+	]),
+	permission: z.enum([
+		'admin',
+		'maintain',
+		'write',
+		'read',
+		'triage',
+		'none',
+		'unknown',
+	]),
+	reason: z
+		.enum([
+			'account_required',
+			'reconnect',
+			'github_unavailable',
+			'insufficient_access',
+			'identity_mismatch',
+			'repository_changed',
+		])
+		.nullable(),
+	githubUserId: z.string().nullable(),
+	login: z.string().max(100).nullable(),
+	repositoryId: z.string().nullable(),
+	checkedAt: z.iso.datetime(),
+})
+export type ClaimGithubEvidence = z.infer<typeof claimGithubEvidenceSchema>
 export const claimBodySchema = z.strictObject({
 	email: z
 		.email()
@@ -53,6 +86,7 @@ export const claimStateSchema = z.object({
 			role: projectMemberRoleSchema,
 			email: z.string(),
 			challenge: claimChallengeSchema.nullable(),
+			githubEvidence: claimGithubEvidenceSchema.nullable(),
 		})
 		.nullable(),
 })
@@ -108,13 +142,17 @@ export const claimInboxOutputSchema = z.object({
 			email: z.string(),
 			role: projectMemberRoleSchema,
 			requestedAt: z.coerce.date(),
+			githubEvidence: claimGithubEvidenceSchema.nullable(),
 		})
 	),
 	pagination: paginationSchema,
 })
 export const claimReviewInputSchema = z.object({
 	params: z.strictObject({ id: z.uuid() }),
-	body: z.strictObject({ decision: z.enum(['approve', 'reject']) }),
+	body: z.strictObject({
+		decision: z.enum(['approve', 'reject']),
+		manualEvidence: z.string().trim().min(20).max(1000).optional(),
+	}),
 })
 export const memberCategoriesOutputSchema = z.object({
 	categories: z.array(categoryNodeSchema),

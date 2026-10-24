@@ -5,6 +5,14 @@ import { client } from '#/utils/orpc'
 
 export const ownershipKey = ['ownership'] as const
 export const ownershipQueries = {
+	github: (userId: string, id: string) =>
+		queryOptions({
+			queryKey: [...ownershipKey, 'github', id, userId],
+			queryFn: () => client.ownership.github({ params: { id } }),
+			staleTime: 60000,
+			refetchOnWindowFocus: false,
+			retry: false,
+		}),
 	state: (userId: string | undefined, id: string) =>
 		queryOptions({
 			queryKey: [...ownershipKey, 'state', id, userId],
