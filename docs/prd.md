@@ -1,7 +1,7 @@
 ---
 title: AltStack Product Requirements
-version: 2.8
-status: v0.3.0 rolled out — review-email implementation pending rollout
+version: 2.9
+status: v0.4.0 rolled out — operational close-out first, R6 next
 last_updated: 2026-10-24
 ---
 
@@ -13,17 +13,19 @@ AltStack is a curated directory for open-source software. It helps developers
 answer: **“What open-source tool should I try for this job?”**
 
 The product is a small, trustworthy catalogue. [The roadmap](roadmap.md) records
-implementation status, remaining slices and operational evidence. This PRD is
-reconciled against `dev` commit **`4ce2d9c`** on **2026-10-23**.
-Review-email updates describe this feature worktree on **`c3e0980`**, including
-the latest auth fixes and Vite+ 1.4.0. They do not establish a new deployment.
+implementation status, ordered priorities and operational evidence. This PRD is
+reconciled on **2026-10-24** against release tag **v0.4.0** (`b79593d`), whose
+source tree matches this `dev` checkout at `08bb687`.
 
-The operator confirmed **v0.3.0** (`bb30efe`) rollout on 2026-10-22. It includes
-Bookmarks, Report intake/admin inbox and the revised R7 Featured Projects scope.
-Docker development/test isolation, GitHub Topics tags and GitHub + Resend Magic
-Link auth are merged after that tag; their production rollout is not established
-by the v0.3.0 confirmation. Reconciliation inspects source and recorded evidence,
-without independently verifying deployment or rerunning historical test suites.
+The operator confirmed **v0.4.0 production rollout** in the project conversation
+on 2026-10-24. It includes the v0.3.0 Bookmarks, Reports/admin inbox and detail-page
+Featured baseline, plus GitHub Topics tags, GitHub + Resend Magic Link and auth
+fixes, review-decision emails, license discovery, archived metadata and ten
+catalogue sorts including observed seven-day Trending. Docker dev/test isolation
+and Vite+ 1.4.0 are also included in the release source.
+Individual migration, scheduler, backfill and live-service checks still need
+recorded evidence where absent. This reconciliation does not independently
+inspect production or rerun historical feature tests.
 
 ## Problem and target users
 
@@ -65,6 +67,24 @@ future work. Bookmarks, guest/session-aware Reports, the admin report inbox and
 detail-page Featured Projects are current capabilities, not launch blockers or
 feature-branch proposals.
 
+## Ordered priorities after v0.4.0
+
+This is the execution order, shared with the [roadmap](roadmap.md#ordered-priorities-after-v040).
+P0 is immediate release follow-through, not evidence of an active incident.
+Missing acceptance records do not mean deployed features are unimplemented.
+
+1. **P0 — Close out v0.4.0 operations and catalogue quality.** Record or verify the release's migrations/configuration, every-minute review-email job and live decision mail, daily GitHub refresh/topics/license backfill and Trending observations, auth/submission/review smoke, and at least 20 accurate published listings. Reuse existing evidence; fix confirmed user-facing failures before new features. Done when the focused checks and any failures have recorded outcomes/owners; historical unchecked items alone do not block R6.
+2. **P1 — R6 ownership, then maintainer editing.** The next feature candidate for v0.5.0: R6a establishes a documented GitHub claim policy and Verify flow; R6b depends on it and enables authorized edits of published listings. Done when verified owners can maintain their listing, unauthorized updates fail and admin moderation remains intact. R6 is still unimplemented; v0.5.0 is a candidate, not a release commitment.
+3. **P2 — Collections, then comparison.** Build on private Bookmarks when returning users need organized shortlists. Start with private named collections; define comparison fields and build comparison only after evaluation needs are confirmed. Public sharing and social features are separate decisions. Neither slice is implemented or assigned a release.
+4. **P3 — Report workflow improvements.** Address observed admin bottlenecks with the smallest needed slice, such as reopen or follow-up, before assignment/comments/email or automated corrections. Existing intake and Open → Resolved/Dismissed decisions already work. No expansion is scheduled without report-volume or operator evidence.
+5. **P4 — Homepage editorial discovery.** Consider curated homepage sections after catalogue coverage and browse feedback justify them. Existing detail Featured and Trending sort are delivered; a dedicated Trending/personalized feed is separate deferred scope. The current homepage stays unchanged until that scope is selected.
+6. **P5 — Demand-driven backlog.** Guest submission, profiles/follows/reviews/ratings, galleries/video, newsletter/RSS, analytics dashboards, scores, SDKs and extensions stay deferred. Add Meilisearch only for measured PostgreSQL search limitations. Choose each slice from an observed problem rather than a target release number.
+
+Email delivery/bounce webhooks and automatic outbox retention are unimplemented
+reliability follow-ups, not prerequisites for the existing mail feature. Promote
+a focused fix if delivery failures or retention requirements establish a need;
+do not expand P0 into a new worker/webhook platform.
+
 ## Deferred product scope
 
 - Collections, comparisons, reviews, ratings, follows, and profiles.
@@ -78,18 +98,19 @@ Current capabilities also include category/tag management, S3-compatible media,
 README import, Upstash submission/report limits, GitHub refresh, observed star
 history, transactional Magic Link email and review-decision email. These
 supersede initial lean-scope exclusions. Review email migration/configuration,
-scheduler activation and live inbox acceptance remain rollout work.
+scheduler and live inbox evidence belong to P0 close-out of the confirmed v0.4.0
+rollout; missing records do not establish missing configuration.
 
 ## Release scope
 
 - **R0 — Catalogue data:** migrations and repeatable CSV/JSON import; verify real launch content.
 - **R1 — Browse:** published-only list/detail and public links.
-- **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, GitHub Topics tags, and admin taxonomy/tag management.
+- **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, GitHub Topics tags, license browsing, archived metadata, ten catalogue sorts and admin taxonomy/tag management.
 - **R3 — Sign in:** GitHub OAuth + email Magic Link through Resend, private routes, session-aware navigation, API checks.
 - **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
-- **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback and original-submitter rejected-intake resubmission.
+- **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback, original-submitter rejected-intake resubmission and R5c decision emails.
 - **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
-- **R6 — Own & edit:** verified ownership and maintainer editing after launch.
+- **R6 — Own & edit:** unimplemented P1; R6a claim/Verify → R6b maintainer editing, next feature candidate for v0.5.0 after P0 follow-through.
 - **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
 - **Private Bookmarks:** per-account saved published projects and protected three-column table; included in v0.3.0.
 - **Reports:** guest/session-aware private intake and admin-only inbox/moderation; included in v0.3.0.
@@ -104,7 +125,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Validate publishable copy/media/category fields; use canonical repository uniqueness.
 - Repeat imports skip existing records without overwriting user submissions.
 - GitHub enrichment is opt-in; templates are examples, not verified repositories.
-- Verify at least 20 accurate published listings before launch.
+- Verify and record at least 20 accurate published listings in P0 post-rollout acceptance.
 
 ### R1 — Browse
 
@@ -128,13 +149,13 @@ See the roadmap for checked implementation items versus unverified acceptance.
 
 ### License browsing and archived repositories
 
-- Implemented in the license feature worktree based on `04d19eb`; production rollout is pending. See [license behavior, validation and rollout](licenses.md).
+- Included in the operator-confirmed v0.4.0 rollout. The [license guide](licenses.md) preserves feature-branch validation and deployment instructions; its historical pending-rollout statements are superseded by this release baseline.
 - Persist GitHub license key/name/SPDX identity, canonical lowercase route slug, human document URL, and factual archived state. Full upstream SPDX identifier data avoids a small hardcoded license list; custom/nonstandard/undetected values display exactly `unknown` without an invented document link.
 - Reuse existing GitHub initial/manual/daily/import pathways. Failed fetches preserve prior snapshots; successful snapshots can remove/change license and archival. Repository-ID replacements clear unrelated metadata/history; archived alone does not unpublish a project.
 - `/licenses` and `/licenses/$slug` expose only published visible projects, scoped search/sort/pagination, stable URL history, accurate counts and category/tag-consistent SEO. The unknown bucket is discoverable but noindex; private-only/missing licenses return 404.
 - Public catalogue cards show Stars → Last commit → License plus Archived where reported. Detail statistics place License immediately above Repository, retain Forks, and provide separate discovery/document links. Public navigation/footer expose Licenses.
 - Ten catalogue sorts match the requested menu order. Existing query sort values remain compatible. The user selected Most popular = total stars and Trending = first-to-last observed star delta in the trailing seven-day WIB window, requiring two dates and placing missing observations last. Last commit uses newest first; Repository age uses oldest first; nulls last and project-ID ties are stable.
-- Apply the additive migration before matching API/web images, then backfill and retain the existing daily schedule. No new admin CRUD or scheduler, R6, collections, or comparison scope.
+- P0 records target migration/matching API-web revisions, backfill and daily synchronization evidence. The feature requires no new admin CRUD or scheduler and includes no R6, collections or comparison scope.
 
 ### GitHub Topics tags
 
@@ -143,7 +164,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - `/tags` supports `q`, popular/name sorting, alphabetical/non-A–Z filtering and page-based directory browsing (60 per page). Popularity is published-project count, not stars.
 - `/tags/$slug` uses existing project search/sort/pagination with a server-scoped tag filter. Hidden, unknown and zero-public-project tags return 404; the directory excludes them. Project detail shows visible tag links below categories. Homepage search values remain `q`, `category`, `sort`, `page`.
 - `/admin/tags` permits create/edit/hide/unhide/delete with admin API checks. Display name/description/hidden curation survives sync; assigned tags cannot be deleted. Hidden tags are excluded from public displays and tag-filtered results. Deleting an unused tag does not prevent a future sync recreating it.
-- This is merged after v0.3.0. Apply its additive migration and backfill with the existing GitHub refresh job before claiming deployed topic coverage. See [tags](tags.md).
+- Included in v0.4.0. Record migration, topic backfill and daily refresh evidence under P0; the existing GitHub job performs backfill. See [tags](tags.md).
 
 ### R3 — Sign in
 
@@ -154,8 +175,8 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Magic Link verification proves inbox ownership, signs in or creates a verified user, and preserves verified existing user identities, roles and GitHub associations. User-specific repository permissions are not inferred from email verification. Unverified legacy account cleanup follows Better Auth's documented protections; do not bulk-mark old accounts verified.
 - Tokens are hashed, expire in ten minutes and are consumed once. PostgreSQL `rate_limit` persists five email requests per IP and five send attempts per normalized recipient across IPs per ten minutes, plus twenty verification requests per minute. The recipient key is HMAC-derived, and storage/delivery failures do not silently bypass quotas. The UI offers a sixty-second resend cooldown and honors server retry timing.
 - Server-only Resend sender/key, React Email HTML/text, configured-origin callbacks, private/no-store auth responses and existing SSR cookie propagation are part of the implementation. Better Auth and its Drizzle adapter are aligned at 1.7.12 with PostgreSQL contention coverage.
-- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 remains deferred.
-- Auth is merged after v0.3.0. Live Resend delivery/verified sender, real GitHub OAuth, trusted proxy headers, cross-subdomain cookie flow and admin provisioning require target verification. Mock-mailbox HTTP evidence does not establish live delivery. See [auth rollout](auth.md).
+- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 is planned as P1 and remains unimplemented.
+- Included in v0.4.0. Live Resend delivery/verified sender, real GitHub OAuth, trusted proxy headers, cross-subdomain cookie flow and admin provisioning need target evidence under P0. Mock-mailbox HTTP evidence does not establish live delivery. See [auth rollout](auth.md).
 
 ### R4 — Submit intake
 
@@ -178,7 +199,7 @@ See the roadmap for checked implementation items versus unverified acceptance.
 - Original submitters can edit only rejected intake name/repository/website in a prefilled private Edit & Resubmit modal and atomically return it to `draft`, clearing the current reason. Preserve project ID, slug, submission provenance, enriched copy/media/categories and previous audit events; the submitter transition event records previous feedback and intake changes.
 - Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
 - Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
-- Resubmission confers no ownership or permission to edit published content. Live OAuth/Redis, reject → correct → re-review and target keyboard/mobile acceptance still need recorded evidence; the overall v0.3.0 rollout has been operator-confirmed.
+- Resubmission confers no ownership or permission to edit published content. Live OAuth/Redis, reject → correct → re-review and target keyboard/mobile acceptance still need recorded evidence where absent; the overall v0.4.0 rollout has been operator-confirmed.
 - Actual Published/Rejected transitions enqueue email for the stored original submitter in the review transaction, keyed by the audit UUID. Repeated saves/content/feedback edits and records without a recipient generate no mail; later resubmission/review can notify again.
 - Published mail includes project name and public/private links. Rejected mail includes escaped actionable feedback and the existing private `/submission` → safe sign-in returnTo → Edit & Resubmit journey. It grants no ownership or public access to feedback.
 - All React Email templates/layout/primitives live under `packages/ui/src/emails`, isolated from interactive UI exports; rendering/delivery/configuration stay server-side. Magic Link retains HTML/text and its original expiry/one-use lifecycle.
@@ -202,7 +223,7 @@ service acceptance results are separate evidence.
 
 L1 and L2 are implemented and included in the released baseline. Unrecorded
 service checks remain in [operations evidence](roadmap.md#launch-acceptance-and-operations);
-they do not change the v0.3.0 rollout status. See [historical L1 verification](seo-og.md).
+they do not change the v0.4.0 rollout status. See [historical L1 verification](seo-og.md).
 
 - L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
 - L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
@@ -278,9 +299,13 @@ artwork. Feature-local test results and target domain/CDN acceptance are separat
 
 ### R6 — Ownership and maintainer editing (unimplemented)
 
-- Claim requires a documented policy verified through user-specific GitHub credentials.
-- Keep `ownerId` / `claimedAt` separate from `submitterId`; neither is implemented yet.
-- Verified owners can edit published copy/links/media/content/categories with server authorization.
+**P1, next feature candidate for v0.5.0.** Deliver R6a before R6b, using the
+[roadmap's slice checklists](roadmap.md#r6--own-and-edit-mvp).
+
+- **R6a — Claim / Verify:** define eligible personal/organization repository permissions, credential/linking requirements and revoked-access handling before implementation. Verify through user-specific GitHub credentials, never the shared service token, email verification or submitter identity. Keep nullable `ownerId` / `claimedAt` separate from `submitterId`; protect competing claims and provide actionable verification recovery.
+- **R6b — Maintainer editing:** verified owners can edit published copy/links/media/content/categories with server authorization, existing content/category validation, stale-write protection and audit. Decide and document immediate publication versus admin review before implementing owner writes. Extend media authorization for owners without granting admin-wide upload access.
+- Admin status changes, deletion, taxonomy/Featured/report management and repository ownership/identity changes remain governed by their explicit permissions. R6 does not implicitly grant these capabilities or introduce a new global account role.
+- Acceptance covers owner/non-owner/admin, email-only/unlinked accounts, denied/revoked GitHub access, concurrent claims and edits, media access and direct API bypass attempts. Both slices remain unimplemented.
 
 ### R7 — Featured Projects (revised and delivered)
 
@@ -342,12 +367,10 @@ Publication enriches the existing submitted project.
 After rollout, measure accurate catalogue coverage, successful browse/search/detail
 journeys, submission decisions within one business day, and authorization checks.
 
-The remaining primary product candidate is R6 ownership/maintainer editing.
-Submission-review notifications are implemented here with rollout tracked
-separately. Collections/compare, homepage editorial
-sections, guest project submission and expanded report workflows depend on
-observed demand. Existing Featured curation, report intake/admin decisions and
-Magic Link email are implemented; they do not imply these deferred workflows.
-Evaluate another search service only after measuring PostgreSQL.
-Webhooks/trending, rich galleries/video, scores, analytics, newsletter/RSS,
-profiles/reviews, SDKs and extensions remain later work.
+Follow the [ordered priorities](#ordered-priorities-after-v040): P0 release
+follow-through → P1 R6a claim/Verify → R6b maintainer editing → P2 collections
+then comparison → P3 report improvements → P4 homepage editorial → P5 backlog.
+P2–P5 remain conditional on observed needs, not committed releases. Existing
+review emails, Featured, report intake/admin decisions, Magic Link and Trending
+sort are delivered in the v0.4.0 baseline. Broader feeds, webhooks and social/media
+work do not follow automatically from those features.
