@@ -210,7 +210,7 @@ function searchSortOrder(now: Date) {
 	return {
 		recommended: [
 			desc(projectIsVerified),
-			desc(project.createdAt),
+			desc(githubRepository.stars),
 			desc(project.id),
 		],
 		newest: [desc(project.createdAt), desc(project.id)],

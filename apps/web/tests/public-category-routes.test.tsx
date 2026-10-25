@@ -862,6 +862,39 @@ describe('public category search, sorting and pagination', () => {
 			expect.anything()
 		)
 	})
+	it('selects Order by for the recommended homepage sort and restores it after changing sorts', async () => {
+		const router = await routerAt('/', true)
+		const sort = screen.getByRole('combobox', { name: 'Order by' })
+		expect(sort.textContent).toContain('Order by')
+		expect(
+			rpc.mock.calls.some(
+				([path, input]) =>
+					path.join('/') === 'project/search' &&
+					searchProjectsInputSchema.parse(input).query.sort === 'recommended'
+			)
+		).toBe(true)
+		fireEvent.click(sort)
+		expect(
+			await screen.findByRole('option', { name: 'Order by', selected: true })
+		).toBeTruthy()
+		expect(screen.queryByRole('option', { name: 'Verified first' })).toBeNull()
+		const mostStars = screen.getByRole('option', { name: 'Most stars' })
+		fireEvent.pointerDown(mostStars, { pointerType: 'mouse' })
+		fireEvent.click(mostStars)
+		await waitFor(() =>
+			expect(router.state.location.search.sort).toBe('most-stars')
+		)
+		expect(sort.textContent).toContain('Most stars')
+		fireEvent.click(sort)
+		const recommended = await screen.findByRole('option', { name: 'Order by' })
+		fireEvent.pointerDown(recommended, { pointerType: 'mouse' })
+		fireEvent.click(recommended)
+		await waitFor(() =>
+			expect(router.state.location.search.sort).toBe('recommended')
+		)
+		expect(sort.textContent).toContain('Order by')
+		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
+	})
 	it('retains homepage category/search/reset and home pagination URLs', async () => {
 		total = 36
 		const router = await routerAt(
@@ -888,6 +921,9 @@ describe('public category search, sorting and pagination', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
 		await waitFor(() => expect(router.state.location.search).toEqual({}))
 		expect(router.state.location.pathname).toBe('/')
+		expect(
+			screen.getByRole('combobox', { name: 'Order by' }).textContent
+		).toContain('Order by')
 	})
 	it('redirects historical paths with 308 before any listing and canonical navigation has no loop', async () => {
 		const original = rpc.getMockImplementation()!

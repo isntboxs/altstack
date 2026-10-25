@@ -888,6 +888,51 @@ describe('project claims and scoped Better Auth roles', () => {
 			screenshot: current.screenshot,
 		})
 	})
+	it('ranks recommended listings by verification, then stars instead of creation date, across pages', async () => {
+		const f = await fixture()
+		await db
+			.update(project)
+			.set({ createdAt: new Date('2020-01-01T00:00:00Z') })
+			.where(eq(project.id, f.second.id))
+		await db
+			.update(githubRepository)
+			.set({ stars: 100 })
+			.where(eq(githubRepository.projectId, f.second.id))
+
+		const query = { q: f.token, sort: 'recommended' as const }
+		const unverified = await f.anon.project.search({ query })
+		expect(unverified.projects.map((item) => item.id)).toEqual([
+			f.second.id,
+			f.params.id,
+		])
+
+		await approved(f)
+		const verifiedFirst = await f.anon.project.search({ query })
+		expect(verifiedFirst.projects.map((item) => item.id)).toEqual([
+			f.params.id,
+			f.second.id,
+		])
+
+		const secondClaim = await confirmed(f, f.bob, 'maintainer', f.second)
+		await f.admin.ownership.review({
+			params: { id: secondClaim.claim.id },
+			body: { decision: 'approve' },
+		})
+		const bothVerified = await f.anon.project.search({ query })
+		expect(bothVerified.projects.map((item) => item.id)).toEqual([
+			f.second.id,
+			f.params.id,
+		])
+
+		const firstPage = await f.anon.project.search({
+			query: { ...query, page: 1, limit: 1 },
+		})
+		const secondPage = await f.anon.project.search({
+			query: { ...query, page: 2, limit: 1 },
+		})
+		expect(firstPage.projects[0]!.id).toBe(f.second.id)
+		expect(secondPage.projects[0]!.id).toBe(f.params.id)
+	})
 	it('keeps public projections private, ranks verified listings first with stable ties, and hides unpublished/deleted projects', async () => {
 		const f = await fixture()
 		await approved(f)

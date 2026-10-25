@@ -49,29 +49,38 @@ export const selectSortItems: Array<{ label: string; value: SearchSortType }> =
 
 const SelectSortBar = ({
 	sort,
+	defaultSort,
+	defaultSortLabel,
 	onSortChange,
 }: {
 	sort?: SearchSortType
+	defaultSort: SearchSortType
+	defaultSortLabel?: string
 	onSortChange: (sort: SearchSortType | undefined) => void
 }) => {
+	const items = selectSortItems.map((item) =>
+		item.value === defaultSort && defaultSortLabel
+			? { ...item, label: defaultSortLabel }
+			: item
+	)
 	const handleSortChange = (value: SearchSortType | null) => {
 		if (value !== null) onSortChange(value)
 	}
 
 	return (
 		<Select
-			items={selectSortItems}
-			value={sort ?? 'newest'}
+			items={items}
+			value={sort ?? defaultSort}
 			onValueChange={handleSortChange}
 		>
 			<SelectTrigger aria-label="Order by" className="w-full md:max-w-48">
-				<SelectValue placeholder="Order By" />
+				<SelectValue placeholder="Order by" />
 			</SelectTrigger>
 
 			<SelectContent>
 				<SelectGroup>
-					<SelectLabel>Order By</SelectLabel>
-					{selectSortItems.map((item) => (
+					{!defaultSortLabel && <SelectLabel>Order By</SelectLabel>}
+					{items.map((item) => (
 						<SelectItem key={item.value} value={item.value}>
 							{item.label}
 						</SelectItem>
@@ -90,6 +99,7 @@ export const FilterSection = ({
 	categorySelector,
 	placeholder = 'Search...',
 	defaultSort = 'newest',
+	defaultSortLabel,
 	onQueryChange,
 	onSortChange,
 	onReset,
@@ -101,6 +111,7 @@ export const FilterSection = ({
 	categorySelector?: ReactNode
 	placeholder?: string
 	defaultSort?: SearchSortType
+	defaultSortLabel?: string
 	onQueryChange: (q: string | undefined) => void
 	onSortChange: (sort: SearchSortType | undefined) => void
 	onReset: () => void
@@ -187,7 +198,12 @@ export const FilterSection = ({
 					)}
 				</ButtonGroup>
 
-				<SelectSortBar sort={sort} onSortChange={onSortChange} />
+				<SelectSortBar
+					sort={sort}
+					defaultSort={defaultSort}
+					defaultSortLabel={defaultSortLabel}
+					onSortChange={onSortChange}
+				/>
 			</div>
 
 			{inputValue.trim() !== (q ?? '') && (
