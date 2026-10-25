@@ -58,19 +58,27 @@ const SelectSortBar = ({
 	defaultSortLabel?: string
 	onSortChange: (sort: SearchSortType | undefined) => void
 }) => {
-	const items = selectSortItems.map((item) =>
-		item.value === defaultSort && defaultSortLabel
-			? { ...item, label: defaultSortLabel }
-			: item
-	)
-	const handleSortChange = (value: SearchSortType | null) => {
-		if (value !== null) onSortChange(value)
+	const items = defaultSortLabel
+		? [
+				{ label: defaultSortLabel, value: 'default' as const },
+				...selectSortItems.filter((item) => item.value !== 'recommended'),
+			]
+		: selectSortItems
+	const value = defaultSortLabel
+		? sort === 'recommended'
+			? 'default'
+			: (sort ?? 'default')
+		: (sort ?? defaultSort)
+	const handleSortChange = (nextSort: SearchSortType | 'default' | null) => {
+		if (nextSort !== null) {
+			onSortChange(nextSort === 'default' ? undefined : nextSort)
+		}
 	}
 
 	return (
-		<Select
+		<Select<SearchSortType | 'default'>
 			items={items}
-			value={sort ?? defaultSort}
+			value={value}
 			onValueChange={handleSortChange}
 		>
 			<SelectTrigger aria-label="Order by" className="w-full md:max-w-48">

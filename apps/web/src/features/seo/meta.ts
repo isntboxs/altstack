@@ -107,12 +107,16 @@ export function cataloguePolicy(
 	search: { q?: string; category?: string; sort?: string; page?: number },
 	totalPages = Infinity
 ) {
+	const defaultSort =
+		path === '/'
+			? 'recommended'
+			: path.startsWith('/categories/')
+				? 'most-stars'
+				: 'newest'
 	const filtered = Boolean(
 		Boolean(search.q) ||
 		Boolean(search.category) ||
-		Boolean(
-			search.sort && search.sort !== (path === '/' ? 'recommended' : 'newest')
-		)
+		Boolean(search.sort && search.sort !== defaultSort)
 	)
 	const page = search.page ?? 1
 	return {

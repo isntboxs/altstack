@@ -31,6 +31,7 @@ import { categoryHead } from '#/features/category/meta'
 import { projectQueries } from '#/features/project/queries'
 import { emptyPublicContent } from '#/features/public-content/model'
 import { preparePublicContent } from '#/features/public-content/server-function'
+import { cataloguePolicy } from '#/features/seo/meta'
 import { getRouter } from '#/router'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import type { orpc } from '#/utils/orpc'
@@ -766,6 +767,59 @@ describe('public category routes and hierarchy UI', () => {
 })
 
 describe('public category search, sorting and pagination', () => {
+	it('uses most stars as the default category order for canonical pagination', () => {
+		expect(
+			cataloguePolicy('/categories/' + ai.path, {
+				sort: 'most-stars',
+				page: 2,
+			})
+		).toMatchObject({
+			path: '/categories/' + ai.path + '?page=2',
+			noindex: false,
+		})
+		expect(
+			cataloguePolicy('/categories/' + ai.path, { sort: 'newest' })
+		).toMatchObject({ noindex: true })
+	})
+	it('defaults categories to most stars with a separate checked Order by option', async () => {
+		const router = await routerAt('/categories/' + ai.path, true)
+		const sort = screen.getByRole('combobox', { name: 'Order by' })
+		expect(sort.textContent).toContain('Order by')
+		expect(rpc).toHaveBeenCalledWith(
+			['project', 'search'],
+			{
+				query: {
+					category: ai.slug,
+					sort: 'most-stars',
+					page: undefined,
+					q: undefined,
+				},
+			},
+			expect.anything()
+		)
+		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
+		fireEvent.click(sort)
+		expect(
+			await screen.findByRole('option', { name: 'Order by', selected: true })
+		).toBeTruthy()
+		expect(screen.queryByRole('option', { name: 'Verified first' })).toBeNull()
+		expect(screen.getAllByRole('option')).toHaveLength(11)
+		fireEvent.keyDown(screen.getByRole('option', { name: 'Most stars' }), {
+			key: 'Enter',
+		})
+		await waitFor(() =>
+			expect(router.state.location.search.sort).toBe('most-stars')
+		)
+		expect(sort.textContent).toContain('Most stars')
+		fireEvent.click(sort)
+		fireEvent.keyDown(await screen.findByRole('option', { name: 'Order by' }), {
+			key: 'Enter',
+		})
+		await waitFor(() =>
+			expect(router.state.location.search.sort).toBeUndefined()
+		)
+		expect(sort.textContent).toContain('Order by')
+	})
 	it('restores filters and listing dependencies from a reloaded category URL', async () => {
 		const url = '/categories/' + ai.path + '?q=Zed&sort=most-forks&page=2'
 		await routerAt(url, true)
@@ -819,6 +873,9 @@ describe('public category search, sorting and pagination', () => {
 		await waitFor(() => expect(router.state.location.search).toEqual({}))
 		expect(router.state.location.pathname).toBe('/categories/' + ai.path)
 		expect(input).toHaveProperty('value', '')
+		expect(
+			screen.getByRole('combobox', { name: 'Order by' }).textContent
+		).toContain('Order by')
 	})
 	it('sort changes reset page and category pagination hrefs retain q and sort', async () => {
 		total = 36
@@ -853,12 +910,14 @@ describe('public category search, sorting and pagination', () => {
 			'/categories/' + ai.path + '?sort=arbitrary&page=-2&q=42'
 		)
 		expect(router.state.matches.at(-1)?.search).toMatchObject({
-			sort: 'newest',
+			sort: undefined,
 			page: 1,
 		})
 		expect(rpc).toHaveBeenCalledWith(
 			['project', 'search'],
-			{ query: { category: ai.slug, sort: 'newest', page: 1, q: undefined } },
+			{
+				query: { category: ai.slug, sort: 'most-stars', page: 1, q: undefined },
+			},
 			expect.anything()
 		)
 	})
@@ -890,7 +949,7 @@ describe('public category search, sorting and pagination', () => {
 		fireEvent.pointerDown(recommended, { pointerType: 'mouse' })
 		fireEvent.click(recommended)
 		await waitFor(() =>
-			expect(router.state.location.search.sort).toBe('recommended')
+			expect(router.state.location.search.sort).toBeUndefined()
 		)
 		expect(sort.textContent).toContain('Order by')
 		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
