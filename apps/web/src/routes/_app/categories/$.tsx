@@ -18,12 +18,12 @@ import { categoryRedirectSearch } from '#/features/category/redirect-search'
 import { categoryRequestMiddleware } from '#/features/category/request'
 import { categoryProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
-import { projectFilterSearchSchema } from '#/features/project/search'
+import { catalogueProjectSearchSchema } from '#/features/project/search'
 import { unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/categories/$')({
 	server: { middleware: [categoryRequestMiddleware] },
-	validateSearch: projectFilterSearchSchema,
+	validateSearch: catalogueProjectSearchSchema,
 	loaderDeps: ({ search: { q, sort, page } }) => {
 		return { q, sort, page }
 	},
@@ -63,6 +63,7 @@ export const Route = createFileRoute('/_app/categories/$')({
 		const projects = await context.queryClient.query(
 			projectQueries.search({
 				...deps,
+				sort: deps.sort ?? 'most-stars',
 				category: detail.category.slug,
 			})
 		)
@@ -87,7 +88,8 @@ export const Route = createFileRoute('/_app/categories/$')({
 function CategoryDetail() {
 	const { category, projects } = Route.useLoaderData()
 	const { q, sort } = Route.useSearch()
-	const filtersActive = Boolean(q) || (sort !== undefined && sort !== 'newest')
+	const filtersActive =
+		Boolean(q) || (sort !== undefined && sort !== 'most-stars')
 	return (
 		<ProjectListSection
 			data={projects}

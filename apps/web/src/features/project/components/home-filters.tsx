@@ -67,8 +67,9 @@ export function HomeFilterSection() {
 	return (
 		<FilterSection
 			q={q}
-			sort={sort ?? 'recommended'}
+			sort={sort}
 			defaultSort="recommended"
+			defaultSortLabel="Order by"
 			page={page}
 			category={category}
 			categorySelector={

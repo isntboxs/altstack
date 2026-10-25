@@ -123,6 +123,8 @@ function CategoryControls() {
 				key={category.id}
 				q={q}
 				sort={sort}
+				defaultSort="most-stars"
+				defaultSortLabel="Order by"
 				page={page}
 				placeholder={`Search ${category.name}...`}
 				onQueryChange={(nextQ) =>

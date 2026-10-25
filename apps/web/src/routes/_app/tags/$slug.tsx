@@ -11,13 +11,13 @@ import { ProjectListSection } from '#/components/project-list-section'
 import { PublicPending } from '#/components/public-page-state'
 import { tagProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
-import { projectFilterSearchSchema } from '#/features/project/search'
+import { catalogueProjectSearchSchema } from '#/features/project/search'
 import { cataloguePolicy, seoHead, unavailableHead } from '#/features/seo/meta'
 import { TagNotFound, TagsError } from '#/features/tag/components/public-tag'
 import { tagQueries } from '#/features/tag/queries'
 
 export const Route = createFileRoute('/_app/tags/$slug')({
-	validateSearch: projectFilterSearchSchema,
+	validateSearch: catalogueProjectSearchSchema,
 	loaderDeps: ({ search: { q, sort, page } }) => {
 		return { q, sort, page }
 	},
@@ -47,7 +47,11 @@ export const Route = createFileRoute('/_app/tags/$slug')({
 				throw error
 			})
 		const projects = await context.queryClient.query(
-			projectQueries.search({ ...deps, tag: detail.tag.slug })
+			projectQueries.search({
+				...deps,
+				sort: deps.sort ?? 'most-stars',
+				tag: detail.tag.slug,
+			})
 		)
 		return { ...detail, projects }
 	},

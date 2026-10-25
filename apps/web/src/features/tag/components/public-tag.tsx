@@ -403,6 +403,8 @@ export function TagProjectControls() {
 			<FilterSection
 				q={q}
 				sort={sort}
+				defaultSort="most-stars"
+				defaultSortLabel="Order by"
 				page={page}
 				placeholder={`Search in "${data.tag.name}"...`}
 				onQueryChange={(nextQ) =>
