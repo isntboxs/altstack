@@ -18,12 +18,12 @@ import { categoryRedirectSearch } from '#/features/category/redirect-search'
 import { categoryRequestMiddleware } from '#/features/category/request'
 import { categoryProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
-import { categoryProjectSearchSchema } from '#/features/project/search'
+import { catalogueProjectSearchSchema } from '#/features/project/search'
 import { unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/categories/$')({
 	server: { middleware: [categoryRequestMiddleware] },
-	validateSearch: categoryProjectSearchSchema,
+	validateSearch: catalogueProjectSearchSchema,
 	loaderDeps: ({ search: { q, sort, page } }) => {
 		return { q, sort, page }
 	},

@@ -110,7 +110,9 @@ export function cataloguePolicy(
 	const defaultSort =
 		path === '/'
 			? 'recommended'
-			: path.startsWith('/categories/')
+			: ['/categories/', '/tags/', '/licenses/'].some((prefix) =>
+						path.startsWith(prefix)
+				  )
 				? 'most-stars'
 				: 'newest'
 	const filtered = Boolean(

@@ -767,59 +767,85 @@ describe('public category routes and hierarchy UI', () => {
 })
 
 describe('public category search, sorting and pagination', () => {
-	it('uses most stars as the default category order for canonical pagination', () => {
-		expect(
-			cataloguePolicy('/categories/' + ai.path, {
-				sort: 'most-stars',
-				page: 2,
-			})
-		).toMatchObject({
-			path: '/categories/' + ai.path + '?page=2',
-			noindex: false,
-		})
-		expect(
-			cataloguePolicy('/categories/' + ai.path, { sort: 'newest' })
-		).toMatchObject({ noindex: true })
-	})
-	it('defaults categories to most stars with a separate checked Order by option', async () => {
-		const router = await routerAt('/categories/' + ai.path, true)
-		const sort = screen.getByRole('combobox', { name: 'Order by' })
-		expect(sort.textContent).toContain('Order by')
-		expect(rpc).toHaveBeenCalledWith(
-			['project', 'search'],
-			{
-				query: {
-					category: ai.slug,
+	it.each(['/categories/' + ai.path, '/tags/typescript', '/licenses/mit'])(
+		'uses most stars as the default order for canonical pagination at %s',
+		(path) => {
+			expect(
+				cataloguePolicy(path, {
 					sort: 'most-stars',
-					page: undefined,
-					q: undefined,
+					page: 2,
+				})
+			).toMatchObject({
+				path: path + '?page=2',
+				noindex: false,
+			})
+			expect(cataloguePolicy(path, { sort: 'newest' })).toMatchObject({
+				noindex: true,
+			})
+		}
+	)
+	it.each([
+		{ path: '/categories/' + ai.path, filter: { category: ai.slug } },
+		{ path: '/tags/typescript', filter: { tag: 'typescript' } },
+		{ path: '/licenses/mit', filter: { license: 'mit' } },
+	])(
+		'defaults $path to most stars with a separate checked Order by option',
+		async ({ path, filter }) => {
+			const router = await routerAt(path, true)
+			const sort = screen.getByRole('combobox', { name: 'Order by' })
+			expect(sort.textContent).toContain('Order by')
+			expect(rpc).toHaveBeenCalledWith(
+				['project', 'search'],
+				{
+					query: {
+						...filter,
+						sort: 'most-stars',
+						page: undefined,
+						q: undefined,
+					},
 				},
-			},
-			expect.anything()
-		)
-		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
-		fireEvent.click(sort)
-		expect(
-			await screen.findByRole('option', { name: 'Order by', selected: true })
-		).toBeTruthy()
-		expect(screen.queryByRole('option', { name: 'Verified first' })).toBeNull()
-		expect(screen.getAllByRole('option')).toHaveLength(11)
-		fireEvent.keyDown(screen.getByRole('option', { name: 'Most stars' }), {
-			key: 'Enter',
-		})
-		await waitFor(() =>
-			expect(router.state.location.search.sort).toBe('most-stars')
-		)
-		expect(sort.textContent).toContain('Most stars')
-		fireEvent.click(sort)
-		fireEvent.keyDown(await screen.findByRole('option', { name: 'Order by' }), {
-			key: 'Enter',
-		})
-		await waitFor(() =>
-			expect(router.state.location.search.sort).toBeUndefined()
-		)
-		expect(sort.textContent).toContain('Order by')
-	})
+				expect.anything()
+			)
+			expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
+			fireEvent.click(sort)
+			expect(
+				await screen.findByRole('option', { name: 'Order by', selected: true })
+			).toBeTruthy()
+			expect(
+				screen.queryByRole('option', { name: 'Verified first' })
+			).toBeNull()
+			expect(screen.getAllByRole('option')).toHaveLength(11)
+			fireEvent.keyDown(screen.getByRole('option', { name: 'Most stars' }), {
+				key: 'Enter',
+			})
+			await waitFor(() =>
+				expect(router.state.location.search.sort).toBe('most-stars')
+			)
+			expect(sort.textContent).toContain('Most stars')
+			fireEvent.click(sort)
+			fireEvent.keyDown(
+				await screen.findByRole('option', { name: 'Order by' }),
+				{
+					key: 'Enter',
+				}
+			)
+			await waitFor(() =>
+				expect(router.state.location.search.sort).toBeUndefined()
+			)
+			expect(sort.textContent).toContain('Order by')
+			fireEvent.click(sort)
+			fireEvent.keyDown(await screen.findByRole('option', { name: 'Oldest' }), {
+				key: 'Enter',
+			})
+			await waitFor(() =>
+				expect(router.state.location.search.sort).toBe('oldest')
+			)
+			fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+			await waitFor(() => expect(router.state.location.search).toEqual({}))
+			expect(sort.textContent).toContain('Order by')
+			expect(router.state.location.pathname).toBe(path)
+		}
+	)
 	it('restores filters and listing dependencies from a reloaded category URL', async () => {
 		const url = '/categories/' + ai.path + '?q=Zed&sort=most-forks&page=2'
 		await routerAt(url, true)
@@ -1507,7 +1533,7 @@ describe('public tags', () => {
 				query: {
 					tag: 'typescript',
 					q: undefined,
-					sort: undefined,
+					sort: 'most-stars',
 					page: undefined,
 				},
 			},
@@ -1741,7 +1767,7 @@ describe('public license routes', () => {
 	})
 	it('validates direct search state and provides out-of-range recovery', async () => {
 		const router = await routerAt('/licenses/mit?sort=invalid&page=-1', true)
-		expect(router.state.location.search.sort).toBe('newest')
+		expect(router.state.location.search.sort).toBeUndefined()
 		expect(router.state.location.search.page).toBe(1)
 		await act(() =>
 			router.navigate({
