@@ -5,6 +5,7 @@ import {
 	IconInbox,
 	IconBookmark,
 	IconStar,
+	IconUsers,
 } from '@tabler/icons-react'
 import {
 	Link,
@@ -36,8 +37,14 @@ const navLinks = linkOptions([
 	},
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
 	{ to: '/admin/tags', icon: IconTags, label: 'Tags' },
+	{ to: '/admin/users', icon: IconUsers, label: 'Users' },
 	{ to: '/admin/reports', icon: IconInbox, label: 'Reports' },
-	{ to: '/admin/featured', icon: IconStar, label: 'Featured Projects' },
+	{
+		to: '/admin/featured',
+		icon: IconStar,
+		IconUsers,
+		label: 'Featured Projects',
+	},
 ])
 
 const userNavLinks = linkOptions([

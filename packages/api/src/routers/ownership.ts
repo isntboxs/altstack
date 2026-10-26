@@ -8,6 +8,7 @@ import {
 	desc,
 	eq,
 	getTableColumns,
+	inArray,
 	ne,
 	or,
 	sql,
@@ -28,6 +29,10 @@ import {
 	matchesClaimCode,
 } from '@altstack/api/ownership-otp'
 import { protectedProcedure } from '@altstack/api/procedures'
+import {
+	activeAccount,
+	requireActiveAccount,
+} from '@altstack/api/queries/account-access'
 import { listAdminCategories } from '@altstack/api/queries/category'
 import {
 	lockCategoryIntegrity,
@@ -38,6 +43,10 @@ import {
 	projectIsVerified,
 	requireProjectMember,
 } from '@altstack/api/queries/ownership'
+import {
+	changeProjectMembership,
+	memberRevision,
+} from '@altstack/api/queries/project-members'
 import { s3, S3_BUCKET } from '@altstack/api/s3'
 import {
 	deleteFinalKeysBestEffort,
@@ -74,6 +83,10 @@ const procedure = protectedProcedure.use(async ({ context, next, errors }) => {
 	) {
 		throw errors.FORBIDDEN()
 	}
+	const account = await requireActiveAccount(context.db, context.auth.user.id)
+	if (context.auth.user.role === 'admin' && account.role !== 'admin') {
+		throw errors.UNAUTHORIZED()
+	}
 	return next()
 })
 const pageInfo = (page: number, limit: number, totalItems: number) => {
@@ -105,6 +118,102 @@ const invalidCode = () =>
 	})
 
 export const ownershipRouter = {
+	members: procedure.ownership.members.handler(
+		async ({
+			context: { db, auth },
+			input: {
+				params,
+				query: { page, limit },
+			},
+			errors,
+		}) =>
+			db.transaction(
+				async (tx) => {
+					const [target] = await tx
+						.select({
+							id: project.id,
+							name: project.name,
+							status: project.status,
+						})
+						.from(project)
+						.where(eq(project.id, params.id))
+					if (!target) throw errors.NOT_FOUND()
+					const columns = {
+						userId: projectMember.userId,
+						name: user.name,
+						role: projectMember.role,
+						createdAt: projectMember.createdAt,
+						revision: memberRevision,
+						active: activeAccount,
+					}
+					const [self] = await tx
+						.select(columns)
+						.from(projectMember)
+						.innerJoin(user, eq(user.id, projectMember.userId))
+						.where(
+							and(
+								eq(projectMember.projectId, params.id),
+								eq(projectMember.userId, auth.user.id)
+							)
+						)
+					if (!self && auth.user.role !== 'admin') throw errors.NOT_FOUND()
+					const members = await tx
+						.select(columns)
+						.from(projectMember)
+						.innerJoin(user, eq(user.id, projectMember.userId))
+						.where(eq(projectMember.projectId, params.id))
+						.orderBy(asc(projectMember.createdAt), asc(projectMember.userId))
+						.limit(limit)
+						.offset((page - 1) * limit)
+					const [total] = await tx
+						.select({ count: count() })
+						.from(projectMember)
+						.where(eq(projectMember.projectId, params.id))
+					return {
+						project: target,
+						canManage: auth.user.role === 'admin',
+						self: self ?? null,
+						members,
+						pagination: pageInfo(page, limit, total?.count ?? 0),
+					}
+				},
+				{ isolationLevel: 'repeatable read', accessMode: 'read only' }
+			)
+	),
+	changeMemberRole: procedure.ownership.changeMemberRole.handler(
+		({ context: { db, auth }, input: { params, body } }) =>
+			changeProjectMembership(
+				db,
+				auth.user.id,
+				params.id,
+				params.userId,
+				body.revision,
+				'role',
+				body.role
+			)
+	),
+	revokeMember: procedure.ownership.revokeMember.handler(
+		({ context: { db, auth }, input: { params, body } }) =>
+			changeProjectMembership(
+				db,
+				auth.user.id,
+				params.id,
+				params.userId,
+				body.revision,
+				'revoke'
+			)
+	),
+	leave: procedure.ownership.leave.handler(
+		({ context: { db, auth }, input: { params, body } }) =>
+			changeProjectMembership(
+				db,
+				auth.user.id,
+				params.id,
+				auth.user.id,
+				body.revision,
+				'leave'
+			)
+	),
 	github: procedure.ownership.github.handler(
 		async ({ context: { db, auth, requestHeaders }, input: { params } }) => {
 			await enforceClaimQuota(db, `github-account:${auth.user.id}`, 20)
@@ -147,6 +256,7 @@ export const ownershipRouter = {
 					)
 					.for('update')
 				if (!target) throw errors.NOT_FOUND()
+				await requireActiveAccount(tx, auth.user.id, true)
 				await lockClaimGithubAccount(
 					tx,
 					auth.user.id,
@@ -360,10 +470,7 @@ export const ownershipRouter = {
 				query: { page, limit },
 			},
 		}) => {
-			const where = and(
-				memberOfProject(auth.user.id),
-				eq(project.status, 'published')
-			)
+			const where = memberOfProject(auth.user.id)
 			return db.transaction(
 				async (tx) => {
 					const projects = await tx
@@ -372,6 +479,7 @@ export const ownershipRouter = {
 							name: project.name,
 							slug: project.slug,
 							role: projectMember.role,
+							status: project.status,
 						})
 						.from(project)
 						.innerJoin(
@@ -408,6 +516,7 @@ export const ownershipRouter = {
 			const where = and(
 				eq(project.status, 'published'),
 				eq(projectClaim.status, 'pending'),
+				sql`exists (select 1 from ${user} where ${user.id} = ${projectClaim.userId} and ${activeAccount})`,
 				ne(projectClaim.userId, auth.user.id),
 				or(
 					memberOfProject(auth.user.id),
@@ -513,17 +622,35 @@ export const ownershipRouter = {
 					)
 					.for('update')
 				if (!visible) throw errors.NOT_FOUND()
+				await tx
+					.select({ id: user.id })
+					.from(user)
+					.where(inArray(user.id, [auth.user.id, target.userId]))
+					.orderBy(asc(user.id))
+					.for('update')
+				const reviewer = await requireActiveAccount(tx, auth.user.id)
+				const [claimant] = await tx
+					.select({ id: user.id })
+					.from(user)
+					.where(and(eq(user.id, target.userId), activeAccount))
+				if (!claimant) {
+					throw errors.CONFLICT({
+						message: 'The claimant account is unavailable. Refresh the inbox.',
+					})
+				}
 				const members = await tx
-					.select()
+					.select({ member: projectMember })
 					.from(projectMember)
-					.where(eq(projectMember.projectId, visible.id))
+					.innerJoin(user, eq(user.id, projectMember.userId))
+					.where(and(eq(projectMember.projectId, visible.id), activeAccount))
+					.then((rows) => rows.map((row) => row.member))
 				const member = members.find((item) => item.userId === auth.user.id)
 				if (
 					!(
 						member &&
 						roles[member.role].authorize({ project: ['review-claim'] }).success
 					) &&
-					!(members.length === 0 && auth.user.role === 'admin')
+					!(members.length === 0 && reviewer.role === 'admin')
 				) {
 					throw errors.NOT_FOUND()
 				}
@@ -748,6 +875,7 @@ export const ownershipRouter = {
 						)
 						.for('update')
 					if (!locked) throw errors.NOT_FOUND()
+					await requireActiveAccount(tx, auth.user.id, true)
 					await requireProjectMember(tx, params.id, auth.user.id)
 					const currentAssignments = await tx
 						.select({ slug: category.slug })
@@ -826,6 +954,7 @@ export const ownershipRouter = {
 					)
 					.for('share')
 				if (!visible) throw errors.NOT_FOUND()
+				await requireActiveAccount(tx, auth.user.id, true)
 				await requireProjectMember(tx, params.id, auth.user.id)
 				const ext = {
 					'image/png': 'png',
@@ -862,6 +991,7 @@ export const ownershipRouter = {
 					)
 					.for('share')
 				if (!visible) throw errors.NOT_FOUND()
+				await requireActiveAccount(tx, auth.user.id, true)
 				await requireProjectMember(tx, params.id, auth.user.id)
 				const [upload] = await tx
 					.select()

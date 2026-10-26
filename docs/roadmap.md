@@ -520,7 +520,7 @@ release baseline above supersedes them for merge and operator rollout status.
 - [x] User-approved GitHub evidence follow-up: claimant account linking, permissions before code issuance and fresh approval checks; read-only denial, independent notes for write/unavailable evidence, private proof migration and no extra repository write scope.
 - [x] Additive claim/membership/upload tables, separate from `submitterId`; bound hashed short-lived single-use codes, persistent quotas and serialized claim decisions.
 - [x] Better Auth owner/maintainer roles with identical capabilities restricted to approved memberships; admin role preserved.
-- [x] Public verified badge, hidden Verify after approval, Request access for additional representatives, default home verified-first then `createdAt`/ID; explicit alternative sorts preserved. No billing scope.
+- [x] Public verified badge, hidden Verify after approval, Request access for additional representatives, default home verified-first then GitHub stars/ID (category default: most-stars); explicit alternative sorts preserved. No billing scope.
 - [ ] Apply migration and matching API/Web revisions on the intended target; validate controlled-inbox delivery and real reviewer workflow.
 
 ### R6b — Maintainer editing
@@ -529,6 +529,16 @@ release baseline above supersedes them for merge and operator rollout status.
 - [x] Direct API membership checks, publication validation, stale-write protection, audit and account/project-bound temporary uploads.
 - [x] Preserve admin moderation/deletion, repository identity, taxonomy, Featured and report permissions. Changing to a different repository identity clears memberships and pending claims.
 - [ ] Complete target acceptance after rollout; local validation is recorded in [feature notes](project-ownership.md).
+
+### Member and admin user management follow-up — 2026-10-26
+
+- [x] Member lists linked from My projects and the project editor, including self-service leave for hidden listings; admin-only project role changes and revocation of another account.
+- [x] Equal owner/maintainer edit/review permissions retained; self-escalation and unrelated-project access rejected; returning after revocation requires fresh proof and independent approval.
+- [x] Revision checks and project/account locks cover competing membership changes, fresh-evidence approval and media promotion; the last active representative's departure removes verification and returns claims to admin review.
+- [x] Protected `/admin/users` search/filter/pagination and user detail with safe account/provider/session summaries, membership navigation, role assignment, ban/unban and revoke-all-sessions through Better Auth.
+- [x] Last-active-admin protection, concurrent actor rechecks, self-ban denial, atomic audit/session changes and blocked native HTTP bypasses. Destructive account deletion/impersonation and credential/email changes are excluded.
+- [x] Additive audit-only migration; no ownership or account-data backfill. See [member policy](project-ownership.md#member-management-follow-up--2026-10-26) and [auth](auth.md#admin-user-management--2026-10-26).
+- [ ] Apply the migration and matching app revisions on the intended target; complete live provider/mail/storage acceptance. No production rollout is claimed.
 
 ## R7 — Featured Projects on detail pages
 

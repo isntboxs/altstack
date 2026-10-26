@@ -7,14 +7,97 @@ import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vite-plus/test'
 
 import {
+	auditLog,
 	project,
 	projectClaim,
 	projectMember,
 	projectUpload,
+	session,
 	user,
 } from '@altstack/db/schemas'
 
+import { AUDIT_ACTIONS } from '@altstack/shared/constants'
+
 import { connectTestPostgres } from './helpers/postgres'
+
+it('expands management audit actions additively while preserving accounts, sessions and approved memberships', async () => {
+	const postgres = await connectTestPostgres(),
+		scope = await postgres.createSchema()
+	const baseline = await mkdtemp(
+		join(tmpdir(), 'altstack-member-audit-migration-')
+	)
+	try {
+		const folder = fileURLToPath(new URL('../src/migrations', import.meta.url))
+		for (const name of (await readdir(folder)).filter(
+			(entry) => entry < '20261026115414_member-user-management'
+		)) {
+			await cp(join(folder, name), join(baseline, name), { recursive: true })
+		}
+		const options = {
+			migrationsFolder: folder,
+			migrationsSchema: scope.migrationsSchema,
+		}
+		await migrate(scope.db, { ...options, migrationsFolder: baseline })
+		const [person] = await scope.db
+			.insert(user)
+			.values({
+				name: 'Existing',
+				email: 'existing@example.test',
+				role: 'admin',
+			})
+			.returning()
+		const [listing] = await scope.db
+			.insert(project)
+			.values({
+				name: 'Existing',
+				slug: 'existing',
+				repositoryUrl: 'https://github.com/test/existing',
+				status: 'published',
+			})
+			.returning()
+		const [member] = await scope.db
+			.insert(projectMember)
+			.values({ projectId: listing!.id, userId: person!.id, role: 'owner' })
+			.returning()
+		const [login] = await scope.db
+			.insert(session)
+			.values({
+				userId: person!.id,
+				token: 'synthetic-preserved-session',
+				updatedAt: new Date(),
+				expiresAt: new Date(Date.now() + 60000),
+			})
+			.returning()
+		const [event] = await scope.db
+			.insert(auditLog)
+			.values({
+				actorId: person!.id,
+				projectId: listing!.id,
+				action: 'project_claim_approved',
+			})
+			.returning()
+		await migrate(scope.db, options)
+		await migrate(scope.db, options)
+		expect(await scope.db.select().from(user)).toEqual([person])
+		expect(await scope.db.select().from(session)).toEqual([login])
+		expect(await scope.db.select().from(projectMember)).toEqual([member])
+		expect(await scope.db.select().from(auditLog)).toEqual([event])
+		await scope.db.insert(auditLog).values(
+			AUDIT_ACTIONS.map((action) => {
+				return { actorId: person!.id, projectId: listing!.id, action }
+			})
+		)
+		await expect(
+			scope.pool.query('INSERT INTO audit_log (action) VALUES ($1)', [
+				'unsupported_action',
+			])
+		).rejects.toMatchObject({ code: '23514' })
+	} finally {
+		await scope.close()
+		await postgres.close()
+		await rm(baseline, { recursive: true, force: true })
+	}
+}, 60000)
 
 it('migrates existing listings additively without assigning owners and enforces scoped membership, valid roles and cascade cleanup', async () => {
 	const postgres = await connectTestPostgres(),
@@ -103,7 +186,7 @@ it('adds nullable GitHub proof without inventing evidence or changing existing c
 	try {
 		const folder = fileURLToPath(new URL('../src/migrations', import.meta.url))
 		for (const name of (await readdir(folder)).filter(
-			(entry) => !entry.endsWith('_claim-github-evidence')
+			(entry) => entry < '20261024125455_claim-github-evidence'
 		)) {
 			await cp(join(folder, name), join(baseline, name), { recursive: true })
 		}

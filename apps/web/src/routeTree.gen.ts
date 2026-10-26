@@ -43,6 +43,9 @@ import { Route as OgProjectIdRouteImport } from './routes/og.project.$id'
 import { Route as SitemapsProjectsPageRouteImport } from './routes/sitemaps.projects.$page'
 import { Route as MainAdminCategoriesIndexRouteImport } from './routes/_main/admin.categories/index'
 import { Route as MainAdminCategoriesCreateRouteImport } from './routes/_main/admin.categories/create'
+import { Route as MainAdminUsersIndexRouteImport } from './routes/_main/admin.users/index'
+import { Route as MainAdminUsersIdRouteImport } from './routes/_main/admin.users/$id'
+import { Route as MainManagedIdMembersRouteImport } from './routes/_main/managed/$id_.members'
 import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
 import { Route as MainAdminCategoriesIdEditRouteImport } from './routes/_main/admin.categories/$id.edit'
 
@@ -216,6 +219,21 @@ const MainAdminCategoriesCreateRoute =
     path: '/create',
     getParentRoute: () => MainAdminCategoriesRoute,
   } as any)
+const MainAdminUsersIndexRoute = MainAdminUsersIndexRouteImport.update({
+  id: '/admin/users/',
+  path: '/admin/users/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainAdminUsersIdRoute = MainAdminUsersIdRouteImport.update({
+  id: '/admin/users/$id',
+  path: '/admin/users/$id',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainManagedIdMembersRoute = MainManagedIdMembersRouteImport.update({
+  id: '/managed/$id_/members',
+  path: '/managed/$id/members',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainProjectsIdEditRoute = MainProjectsIdEditRouteImport.update({
   id: '/$id/edit',
   path: '/$id/edit',
@@ -260,8 +278,11 @@ export interface FileRoutesByFullPath {
   '/managed/': typeof MainManagedIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/admin/users/': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -294,8 +315,11 @@ export interface FileRoutesByTo {
   '/managed': typeof MainManagedIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories': typeof MainAdminCategoriesIndexRoute
+  '/admin/users': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesById {
@@ -333,8 +357,11 @@ export interface FileRoutesById {
   '/_main/managed/': typeof MainManagedIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/_main/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/_main/managed/$id_/members': typeof MainManagedIdMembersRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/_main/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/_main/admin/users/': typeof MainAdminUsersIndexRoute
   '/_main/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRouteTypes {
@@ -371,8 +398,11 @@ export interface FileRouteTypes {
     | '/managed/'
     | '/projects/'
     | '/admin/categories/create'
+    | '/admin/users/$id'
+    | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories/'
+    | '/admin/users/'
     | '/admin/categories/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -405,8 +435,11 @@ export interface FileRouteTypes {
     | '/managed'
     | '/projects'
     | '/admin/categories/create'
+    | '/admin/users/$id'
+    | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories'
+    | '/admin/users'
     | '/admin/categories/$id/edit'
   id:
     | '__root__'
@@ -443,8 +476,11 @@ export interface FileRouteTypes {
     | '/_main/managed/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
+    | '/_main/admin/users/$id'
+    | '/_main/managed/$id_/members'
     | '/_main/projects/$id/edit'
     | '/_main/admin/categories/'
+    | '/_main/admin/users/'
     | '/_main/admin/categories/$id/edit'
   fileRoutesById: FileRoutesById
 }
@@ -701,6 +737,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminCategoriesCreateRouteImport
       parentRoute: typeof MainAdminCategoriesRoute
     }
+    '/_main/admin/users/': {
+      id: '/_main/admin/users/'
+      path: '/admin/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof MainAdminUsersIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/admin/users/$id': {
+      id: '/_main/admin/users/$id'
+      path: '/admin/users/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof MainAdminUsersIdRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/managed/$id_/members': {
+      id: '/_main/managed/$id_/members'
+      path: '/managed/$id/members'
+      fullPath: '/managed/$id/members'
+      preLoaderRoute: typeof MainManagedIdMembersRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/projects/$id/edit': {
       id: '/_main/projects/$id/edit'
       path: '/$id/edit'
@@ -789,6 +846,9 @@ interface MainRouteRouteChildren {
   MainAdminTagsRoute: typeof MainAdminTagsRoute
   MainManagedIdRoute: typeof MainManagedIdRoute
   MainManagedIndexRoute: typeof MainManagedIndexRoute
+  MainAdminUsersIdRoute: typeof MainAdminUsersIdRoute
+  MainManagedIdMembersRoute: typeof MainManagedIdMembersRoute
+  MainAdminUsersIndexRoute: typeof MainAdminUsersIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -801,6 +861,9 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAdminTagsRoute: MainAdminTagsRoute,
   MainManagedIdRoute: MainManagedIdRoute,
   MainManagedIndexRoute: MainManagedIndexRoute,
+  MainAdminUsersIdRoute: MainAdminUsersIdRoute,
+  MainManagedIdMembersRoute: MainManagedIdMembersRoute,
+  MainAdminUsersIndexRoute: MainAdminUsersIndexRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

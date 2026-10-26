@@ -242,6 +242,383 @@ async function mediaUploads(f: Fixture) {
 }
 
 describe('project claims and scoped Better Auth roles', () => {
+	it('returns the caller membership even when it is outside the requested member page', async () => {
+		const f = await fixture()
+		await approved(f)
+		await db.insert(projectMember).values({
+			projectId: f.params.id,
+			userId: f.users[2]!.id,
+			role: 'maintainer',
+			createdAt: new Date(Date.now() + 60000),
+		})
+		const result = await f.alice.ownership.members({
+			params: f.params,
+			query: { page: 2, limit: 1 },
+		})
+		expect(result.members.map((row) => row.userId)).toEqual([f.users[2]!.id])
+		expect(result.self!.userId).toBe(f.users[1]!.id)
+		expect(result.pagination).toMatchObject({ totalItems: 2, totalPages: 2 })
+	})
+	it('hides banned claimants from review and refuses their approval without signing out the reviewer', async () => {
+		const f = await fixture()
+		const { claim } = await confirmed(f)
+		await db.update(user).set({ banned: true }).where(eq(user.id, claim.userId))
+		expect((await f.admin.ownership.inbox({ query: {} })).claims).toEqual([])
+		await expect(
+			f.admin.ownership.review({
+				params: { id: claim.id },
+				body: { decision: 'approve' },
+			})
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		expect(
+			(
+				await db
+					.select()
+					.from(projectClaim)
+					.where(eq(projectClaim.id, claim.id))
+			)[0]!.status
+		).toBe('pending')
+	})
+	it('allows only another admin to change a project role without altering the account role', async () => {
+		const f = await fixture()
+		await approved(f)
+		const member = (
+			await f.admin.ownership.members({ params: f.params, query: {} })
+		).members[0]!
+		await f.admin.ownership.changeMemberRole({
+			params: { ...f.params, userId: member.userId },
+			body: { revision: member.revision, role: 'maintainer' },
+		})
+		expect(
+			(await f.alice.ownership.members({ params: f.params, query: {} })).self!
+				.role
+		).toBe('maintainer')
+		expect(
+			(await db.select().from(user).where(eq(user.id, member.userId)))[0]!.role
+		).toBe('owner')
+		await expect(
+			f.alice.ownership.update({
+				params: f.params,
+				body: {
+					revision: (await f.alice.ownership.get({ params: f.params }))
+						.revision,
+					name: 'Maintainer edit',
+				},
+			})
+		).resolves.toEqual({ success: true })
+		await db
+			.insert(projectMember)
+			.values({ projectId: f.params.id, userId: f.users[0]!.id, role: 'owner' })
+		const self = (
+			await f.admin.ownership.members({ params: f.params, query: {} })
+		).self!
+		await expect(
+			f.admin.ownership.changeMemberRole({
+				params: { ...f.params, userId: self.userId },
+				body: { revision: self.revision, role: 'maintainer' },
+			})
+		).rejects.toMatchObject({ code: 'FORBIDDEN' })
+	})
+	it('rechecks reviewer membership after the fresh GitHub call when an admin revokes access concurrently', async () => {
+		const f = await fixture()
+		await approved(f)
+		const { claim } = await confirmed(f, f.bob)
+		const member = (
+			await f.admin.ownership.members({ params: f.params, query: {} })
+		).members[0]!
+		let revoked = false
+		githubResponses(async (url) => {
+			if (!revoked) {
+				revoked = true
+				await f.admin.ownership.revokeMember({
+					params: { ...f.params, userId: member.userId },
+					body: { revision: member.revision },
+				})
+			}
+			return Response.json(
+				url.pathname === '/user'
+					? { id: 123, login: 'representative' }
+					: {
+							id: 456,
+							private: false,
+							permissions: {
+								admin: false,
+								maintain: true,
+								push: true,
+								pull: true,
+							},
+						}
+			)
+		})
+		await expect(
+			f.alice.ownership.review({
+				params: { id: claim.id },
+				body: { decision: 'approve' },
+			})
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		expect(
+			(
+				await db
+					.select()
+					.from(projectClaim)
+					.where(eq(projectClaim.id, claim.id))
+			)[0]!.status
+		).toBe('pending')
+	})
+	it('rejects an in-flight image edit after admin revocation and cleans promoted copies', async () => {
+		const f = await fixture()
+		await approved(f)
+		const current = await f.alice.ownership.get({ params: f.params })
+		const keys = await mediaUploads(f)
+		const member = (
+			await f.admin.ownership.members({ params: f.params, query: {} })
+		).members[0]!
+		const final = `projects/${current.slug}/logo-${randomUUID()}.png`
+		vi.spyOn(storage, 'promoteTempImageToProject').mockImplementation(
+			async () => {
+				await f.admin.ownership.revokeMember({
+					params: { ...f.params, userId: member.userId },
+					body: { revision: member.revision },
+				})
+				return final
+			}
+		)
+		const cleanup = vi
+			.spyOn(storage, 'deleteFinalKeysBestEffort')
+			.mockResolvedValue()
+		await expect(
+			f.alice.ownership.update({
+				params: f.params,
+				body: { revision: current.revision, logo: keys.logo },
+			})
+		).rejects.toMatchObject({ code: 'UPLOAD_CONSUMED' })
+		expect(cleanup).toHaveBeenCalledExactlyOnceWith([final])
+		expect(
+			(await db.select().from(project).where(eq(project.id, f.params.id)))[0]!
+				.logo
+		).toBe(current.logo)
+	})
+	it('lists safe members for representatives/admins, denies unrelated users and prevents self-escalation', async () => {
+		const f = await fixture()
+		await approved(f)
+		const members = await f.alice.ownership.members({
+			params: f.params,
+			query: {},
+		})
+		expect(members).toMatchObject({
+			canManage: false,
+			self: { userId: f.users[1]!.id, role: 'owner' },
+		})
+		expect(members.members).toHaveLength(1)
+		expect(JSON.stringify(members)).not.toMatch(
+			/email|codeHash|githubEvidence|approvedBy/
+		)
+		await expect(
+			f.bob.ownership.members({ params: f.params, query: {} })
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		await expect(
+			f.alice.ownership.members({ params: f.second, query: {} })
+		).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		const params = { ...f.params, userId: f.users[1]!.id },
+			body = { revision: members.self!.revision }
+		await expect(
+			f.alice.ownership.changeMemberRole({
+				params,
+				body: { ...body, role: 'maintainer' },
+			})
+		).rejects.toMatchObject({ code: 'FORBIDDEN' })
+		await expect(
+			f.alice.ownership.revokeMember({ params, body })
+		).rejects.toMatchObject({ code: 'FORBIDDEN' })
+		await expect(
+			f.bob.ownership.leave({ params: f.params, body })
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		await expect(
+			f.alice.ownership.leave({
+				params: f.params,
+				body: { ...body, userId: f.users[2]!.id },
+			} as never)
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+	})
+	it('changes project labels only as admin, preserves global roles and rejects competing membership revisions', async () => {
+		const f = await fixture()
+		await approved(f)
+		const members = await f.admin.ownership.members({
+			params: f.params,
+			query: {},
+		})
+		const params = { ...f.params, userId: f.users[1]!.id },
+			body = { revision: members.members[0]!.revision }
+		const results = await Promise.allSettled([
+			f.admin.ownership.changeMemberRole({
+				params,
+				body: { ...body, role: 'maintainer' },
+			}),
+			f.admin.ownership.revokeMember({ params, body }),
+		])
+		expect(
+			results.filter((result) => result.status === 'fulfilled')
+		).toHaveLength(1)
+		expect(
+			results.find((result) => result.status === 'rejected')
+		).toMatchObject({ reason: { code: 'CONFLICT' } })
+		expect(
+			(await db.select().from(user).where(eq(user.id, f.users[1]!.id)))[0]!.role
+		).toBe('owner')
+	})
+	it('revokes all direct project capabilities and old proof/uploads, while remaining members keep verification', async () => {
+		const f = await fixture()
+		await approved(f)
+		await db.insert(projectMember).values({
+			projectId: f.params.id,
+			userId: f.users[2]!.id,
+			role: 'maintainer',
+		})
+		const current = await f.alice.ownership.get({ params: f.params })
+		const keys = await mediaUploads(f)
+		const { claim } = await confirmed(f, f.other)
+		const member = (
+			await f.admin.ownership.members({ params: f.params, query: {} })
+		).members.find((row) => row.userId === f.users[1]!.id)!
+		await f.admin.ownership.revokeMember({
+			params: { ...f.params, userId: member.userId },
+			body: { revision: member.revision },
+		})
+		for (const action of [
+			() => f.alice.ownership.get({ params: f.params }),
+			() =>
+				f.alice.ownership.update({
+					params: f.params,
+					body: { revision: current.revision, name: 'Revoked write' },
+				}),
+			() =>
+				f.alice.ownership.update({
+					params: f.params,
+					body: { revision: current.revision, logo: keys.logo },
+				}),
+			() =>
+				f.alice.ownership.upload({
+					params: f.params,
+					body: {
+						kind: 'logo',
+						filename: 'x.png',
+						contentType: 'image/png',
+						size: 1,
+					},
+				}),
+			() =>
+				f.alice.ownership.removeUpload({
+					params: f.params,
+					body: { key: keys.logo },
+				}),
+			() =>
+				f.alice.ownership.review({
+					params: { id: claim.id },
+					body: { decision: 'approve' },
+				}),
+		]) {
+			await expect(action()).rejects.toMatchObject({ code: 'NOT_FOUND' })
+		}
+		expect(await f.alice.ownership.state({ params: f.params })).toEqual({
+			membership: null,
+			claim: null,
+		})
+		expect(
+			await db
+				.select()
+				.from(projectUpload)
+				.where(
+					and(
+						eq(projectUpload.projectId, f.params.id),
+						eq(projectUpload.userId, member.userId)
+					)
+				)
+		).toEqual([])
+		expect((await f.bob.ownership.get({ params: f.params })).verified).toBe(
+			true
+		)
+	})
+	it('lets the last representative leave hidden projects and requires a new independently approved claim to return', async () => {
+		const f = await fixture()
+		await approved(f)
+		await db
+			.update(project)
+			.set({ status: 'draft' })
+			.where(eq(project.id, f.params.id))
+		expect((await f.alice.ownership.list({ query: {} })).projects).toEqual([
+			expect.objectContaining({ id: f.params.id, status: 'draft' }),
+		])
+		const member = (
+			await f.alice.ownership.members({ params: f.params, query: {} })
+		).self!
+		await f.alice.ownership.leave({
+			params: f.params,
+			body: { revision: member.revision },
+		})
+		expect((await f.alice.ownership.list({ query: {} })).projects).toEqual([])
+		expect(
+			await db
+				.select()
+				.from(projectMember)
+				.where(eq(projectMember.projectId, f.params.id))
+		).toEqual([])
+		await db
+			.update(project)
+			.set({ status: 'published' })
+			.where(eq(project.id, f.params.id))
+		const { projectIsVerified } =
+			await import('@altstack/api/queries/ownership')
+		expect(
+			(
+				await db
+					.select({ verified: projectIsVerified })
+					.from(project)
+					.where(eq(project.id, f.params.id))
+			)[0]!.verified
+		).toBe(false)
+		const fresh = await confirmed(f)
+		await f.admin.ownership.review({
+			params: { id: fresh.claim.id },
+			body: { decision: 'approve' },
+		})
+		expect((await f.alice.ownership.get({ params: f.params })).verified).toBe(
+			true
+		)
+	})
+	it('serializes simultaneous leaves and prevents old revisions from revoking a reapproved membership', async () => {
+		const f = await fixture()
+		await approved(f)
+		const member = (
+			await f.alice.ownership.members({ params: f.params, query: {} })
+		).self!
+		const results = await Promise.allSettled([
+			f.alice.ownership.leave({
+				params: f.params,
+				body: { revision: member.revision },
+			}),
+			f.admin.ownership.revokeMember({
+				params: { ...f.params, userId: member.userId },
+				body: { revision: member.revision },
+			}),
+		])
+		expect(
+			results.filter((result) => result.status === 'fulfilled')
+		).toHaveLength(1)
+		const fresh = await confirmed(f)
+		await f.admin.ownership.review({
+			params: { id: fresh.claim.id },
+			body: { decision: 'approve' },
+		})
+		await expect(
+			f.admin.ownership.revokeMember({
+				params: { ...f.params, userId: member.userId },
+				body: { revision: member.revision },
+			})
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		expect((await f.alice.ownership.get({ params: f.params })).verified).toBe(
+			true
+		)
+	})
 	it('blocks self-approval even for the first admin claimant and removes verification when the last member is deleted', async () => {
 		const f = await fixture()
 		const own = await confirmed(f, f.admin)
@@ -1004,7 +1381,9 @@ describe('project claims and scoped Better Auth roles', () => {
 				},
 			})
 		).rejects.toMatchObject({ code: 'NOT_FOUND' })
-		expect((await f.alice.ownership.list({ query: {} })).projects).toEqual([])
+		expect((await f.alice.ownership.list({ query: {} })).projects).toEqual([
+			expect.objectContaining({ id: f.params.id, status: 'removed' }),
+		])
 		expect(
 			(
 				await f.anon.project.search({

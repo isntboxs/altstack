@@ -42,6 +42,13 @@ function RouteComponent() {
 				</div>
 			</div>
 
+			<Link
+				to="/managed/$id/members"
+				params={{ id: project.id }}
+				className="text-sm underline underline-offset-4"
+			>
+				Manage members
+			</Link>
 			<EditProjectForm key={project.id} project={project} />
 			<ProjectReviewHistory
 				key={`history-${project.id}`}
