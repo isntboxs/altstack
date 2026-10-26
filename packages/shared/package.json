@@ -18,6 +18,7 @@
 		"./lib/spdx-license-ids": "./src/lib/spdx-license-ids.ts",
 		"./schemas": "./src/schemas/index.ts",
 		"./schemas/admin-category": "./src/schemas/admin-category.ts",
+		"./schemas/admin-dashboard": "./src/schemas/admin-dashboard.ts",
 		"./schemas/admin-project": "./src/schemas/admin-project.ts",
 		"./schemas/admin-report": "./src/schemas/admin-report.ts",
 		"./schemas/admin-user": "./src/schemas/admin-user.ts",
@@ -34,8 +35,7 @@
 		"./schemas/submission": "./src/schemas/submission.ts",
 		"./schemas/tag": "./src/schemas/tag.ts",
 		"./schemas/upload": "./src/schemas/upload.ts",
-		"./package.json": "./package.json",
-		"./schemas/admin-dashboard": "./src/schemas/admin-dashboard.ts"
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
@@ -50,6 +50,7 @@
 			"./lib/spdx-license-ids": "./dist/lib/spdx-license-ids.mjs",
 			"./schemas": "./dist/schemas/index.mjs",
 			"./schemas/admin-category": "./dist/schemas/admin-category.mjs",
+			"./schemas/admin-dashboard": "./dist/schemas/admin-dashboard.mjs",
 			"./schemas/admin-project": "./dist/schemas/admin-project.mjs",
 			"./schemas/admin-report": "./dist/schemas/admin-report.mjs",
 			"./schemas/admin-user": "./dist/schemas/admin-user.mjs",
@@ -66,8 +67,7 @@
 			"./schemas/submission": "./dist/schemas/submission.mjs",
 			"./schemas/tag": "./dist/schemas/tag.mjs",
 			"./schemas/upload": "./dist/schemas/upload.mjs",
-			"./package.json": "./package.json",
-			"./schemas/admin-dashboard": "./dist/schemas/admin-dashboard.mjs"
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {

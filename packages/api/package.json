@@ -12,6 +12,7 @@
 		"./context": "./src/context.ts",
 		"./contracts": "./src/contracts/index.ts",
 		"./contracts/admin-category": "./src/contracts/admin-category.ts",
+		"./contracts/admin-dashboard": "./src/contracts/admin-dashboard.ts",
 		"./contracts/admin-featured": "./src/contracts/admin-featured.ts",
 		"./contracts/admin-project": "./src/contracts/admin-project.ts",
 		"./contracts/admin-report": "./src/contracts/admin-report.ts",
@@ -51,6 +52,7 @@
 		"./review-notification-outbox": "./src/review-notification-outbox.ts",
 		"./routers": "./src/routers/index.ts",
 		"./routers/admin-category": "./src/routers/admin-category.ts",
+		"./routers/admin-dashboard": "./src/routers/admin-dashboard.ts",
 		"./routers/admin-featured": "./src/routers/admin-featured.ts",
 		"./routers/admin-project": "./src/routers/admin-project.ts",
 		"./routers/admin-report": "./src/routers/admin-report.ts",
@@ -70,9 +72,7 @@
 		"./storage": "./src/storage.ts",
 		"./submission-capacity": "./src/submission-capacity.ts",
 		"./submission-rate-limit": "./src/submission-rate-limit.ts",
-		"./package.json": "./package.json",
-		"./contracts/admin-dashboard": "./src/contracts/admin-dashboard.ts",
-		"./routers/admin-dashboard": "./src/routers/admin-dashboard.ts"
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
@@ -81,6 +81,7 @@
 			"./context": "./dist/context.mjs",
 			"./contracts": "./dist/contracts/index.mjs",
 			"./contracts/admin-category": "./dist/contracts/admin-category.mjs",
+			"./contracts/admin-dashboard": "./dist/contracts/admin-dashboard.mjs",
 			"./contracts/admin-featured": "./dist/contracts/admin-featured.mjs",
 			"./contracts/admin-project": "./dist/contracts/admin-project.mjs",
 			"./contracts/admin-report": "./dist/contracts/admin-report.mjs",
@@ -120,6 +121,7 @@
 			"./review-notification-outbox": "./dist/review-notification-outbox.mjs",
 			"./routers": "./dist/routers/index.mjs",
 			"./routers/admin-category": "./dist/routers/admin-category.mjs",
+			"./routers/admin-dashboard": "./dist/routers/admin-dashboard.mjs",
 			"./routers/admin-featured": "./dist/routers/admin-featured.mjs",
 			"./routers/admin-project": "./dist/routers/admin-project.mjs",
 			"./routers/admin-report": "./dist/routers/admin-report.mjs",
@@ -139,9 +141,7 @@
 			"./storage": "./dist/storage.mjs",
 			"./submission-capacity": "./dist/submission-capacity.mjs",
 			"./submission-rate-limit": "./dist/submission-rate-limit.mjs",
-			"./package.json": "./package.json",
-			"./contracts/admin-dashboard": "./dist/contracts/admin-dashboard.mjs",
-			"./routers/admin-dashboard": "./dist/routers/admin-dashboard.mjs"
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {
