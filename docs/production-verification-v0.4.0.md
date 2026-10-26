@@ -12,6 +12,13 @@ open:** no database backup/restore exists, as confirmed by the operator. Storage
 lifecycle inspection and the deliberately unexercised integrations below are not
 claimed as passed.
 
+**Follow-up — 2026-10-27 WIB:** private R2 backups are now configured daily at
+03:00 WIB with 30-object retention. An actual off-host backup restored into an
+isolated PostgreSQL instance with matching schema/data and passing integrity
+checks; scheduler execution and pruning were also exercised. See the
+[recovery runbook and remaining monitoring/hardening gaps](postgres-backup-restore.md).
+The inspection findings below remain the historical 2026-10-24 record.
+
 ## Deployment and migrations
 
 Both running containers report OCI version `v0.4.0` and revision
@@ -167,6 +174,10 @@ listing's canonical source, category, media result and observed-date count.
 It contains no auth, contact or provider secrets and is not an import template.
 
 ## Open outcomes, owners and recovery
+
+Follow-up policy and execution status are tracked in the
+[PostgreSQL backup/restore runbook](postgres-backup-restore.md). The findings
+below describe the 2026-10-24 inspection, not a new live verification.
 
 - **Backup/restore — open, owner: deployment operator (mrboxs).** Dokploy's
   production PostgreSQL service has no backup configuration. The operator

@@ -214,6 +214,9 @@ vp run --filter @altstack/db test:scoped
 
 ## Deploy image dengan GitHub Actions
 
+Untuk kebijakan backup PostgreSQL production, status verifikasi, dan prosedur
+restore terisolasi, lihat [runbook recovery](docs/postgres-backup-restore.md).
+
 Saat ada push tag yang diawali `v` (misalnya `v1.0.0`), workflow `Publish Docker
 images` membangun dua image dengan `ghcr.io/voidzero-dev/vite-plus:latest`
 sebagai builder lalu mendorongnya ke Docker Hub.
