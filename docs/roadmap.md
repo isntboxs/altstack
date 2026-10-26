@@ -10,6 +10,9 @@ The operator confirmed v0.4.0 production rollout in the project conversation on
 instructions; their pending-deployment statements are historical, superseded by
 this baseline. Individual live-service outcomes are recorded separately in the
 [2026-10-24 production verification](production-verification-v0.4.0.md).
+The **2026-10-27 WIB recovery follow-up** configured private off-host backups,
+proved an isolated restore, and exercised actual count pruning; see the
+[recovery runbook](postgres-backup-restore.md).
 
 ## Release baseline and evidence
 
@@ -52,8 +55,9 @@ owned follow-ups, not unimplemented product features or passing acceptance.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, observed star history with 90-date retention, and file seeding.
 - **R6:** implemented locally with email OTP + independent approval, project-scoped owner/maintainer editing and verified-first default home ranking. Login and submission provenance confer no ownership. See [rollout](project-ownership.md).
 
-P0 core production verification is complete. **P1 R6a claim/Verify + R6b maintainer editing** are now implemented locally together; target rollout remains pending. Private backup/restore and storage
-lifecycle remain owned operational follow-ups. R6 is the next feature candidate
+P0 core production verification is complete. **P1 R6a claim/Verify + R6b maintainer editing** are now implemented locally together; target rollout remains pending. Private backup and isolated restore are now verified;
+backup monitoring, storage credential scope and asset lifecycle remain owned
+operational follow-ups. R6 is the next feature candidate
 for v0.5.0, not a committed release.
 P2–P5 are conditional candidates in the execution order below.
 
@@ -66,14 +70,15 @@ Reuse recorded checks rather than rerunning historical acceptance by default.
 
 ### P0 — Close out v0.4.0 operations and catalogue quality
 
-**Status: core production verification completed on 2026-10-24; recovery
-follow-up open.** Working jobs, metadata, inbox delivery and the focused product
+**Status: core production verification completed on 2026-10-24; backup and
+isolated restore verified on 2026-10-27 WIB, with monitoring/hardening follow-ups.**
+Working jobs, metadata, inbox delivery and the focused product
 journey have recorded evidence. P1 is now the next product work; do not queue
 these completed checks again without a relevant change or failure.
 
 **2026-10-24 outcome:** focused production checks passed. The missing email
 schedule was enabled, GitHub backfill completed, and the catalogue grew from
-7 to 20 verified listings. **Backup/restore remains open**; lifecycle inspection
+7 to 20 verified listings. Backup/restore was open at that inspection; lifecycle inspection
 and unexercised integrations are explicitly scoped in the
 [production record](production-verification-v0.4.0.md).
 
@@ -86,7 +91,13 @@ Source: [Verifikasi Operasional Production Altstack](t3-thread://v1/456a157b-30f
 - [x] Record focused live GitHub/Magic Link sign-in, submit → reject → email/private correction → resubmit → publish → email/public detail, and license/tag discovery. Bookmark/report smoke, CORS, anonymous 401 and explicit skipped integrations are in the [production record](production-verification-v0.4.0.md).
 - [x] Verify **20 accurate published listings**, 20 logos + 7 screenshots, working official links and seven leaf categories. Record 119 public tags and honest GitHub license/empty-topic cases in the [catalogue snapshot](production-catalogue-v0.4.0.json).
 - [x] Give confirmed failures outcomes, owners and next actions: email scheduling/backfill/content gaps fixed; recovery and lifecycle gaps assigned to the deployment/storage operator.
-- [ ] Configure private off-host PostgreSQL backups and prove an isolated restore. The operator confirmed no backup/restore exists; a private destination is still needed. Storage lifecycle inspection remains unverified with application-level R2 access (403).
+- [x] Configure private off-host PostgreSQL backups and prove an isolated restore. On 2026-10-27 WIB, enabled daily 03:00 WIB Dokploy backups to private R2 with 30-object retention. An off-host backup restored with 22/22 matching tables, 571 rows, 27 migration entries and passing integrity checks. Separate scheduled execution and real count pruning passed; see the [runbook and remaining operational gaps](postgres-backup-restore.md).
+
+The first ordinary daily execution, backup failure/freshness alerting and
+narrowing the existing application storage credential remain follow-ups.
+The asset bucket's temporary-object lifecycle inspection from the earlier
+403 remains separate and unverified; the new backup bucket's private access
+and seven-day incomplete-multipart abort rule were verified live.
 
 **Done when:** the focused release/service/content results and any follow-ups have
 recorded outcomes/owners. Historical unchecked items alone do not block R6 or
