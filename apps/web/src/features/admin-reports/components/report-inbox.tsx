@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import type { z } from 'zod'
 
 import { adminListReportsQuerySchema } from '@altstack/shared/schemas/admin-report'
 import { reportStatuses } from '@altstack/shared/schemas/report'
@@ -20,18 +20,29 @@ import {
 } from '@altstack/ui/components/select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
 
+import type { adminReportSearchSchema } from '#/features/admin-dashboard/search'
 import { ReportDataTable } from '#/features/admin-reports/components/report-data-table'
 import { useAdminReportList } from '#/features/admin-reports/queries'
 import { adminORPC } from '#/utils/orpc'
 
 const statusItems = [...reportStatuses, { value: 'all', label: 'All statuses' }]
 
-export function ReportInbox() {
+export function ReportInbox({
+	search,
+	onSearchChange,
+}: {
+	search: z.infer<typeof adminReportSearchSchema>
+	onSearchChange: (search: z.infer<typeof adminReportSearchSchema>) => void
+}) {
 	const queryClient = useQueryClient()
-	const [status, setStatus] = useState('open')
-	const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
+	const status = search.status ?? 'open'
+	const trail = search.trail ?? []
 	const query = useAdminReportList(
-		adminListReportsQuerySchema.parse({ status, cursor: cursors.at(-1) })
+		adminListReportsQuerySchema.parse({
+			status,
+			cursor: search.cursor,
+			reportId: search.reportId,
+		})
 	)
 	return (
 		<div className="mx-auto flex w-full min-w-0 flex-col gap-5 px-4 py-6">
@@ -48,8 +59,9 @@ export function ReportInbox() {
 					value={status}
 					onValueChange={(value) => {
 						if (!value) return
-						setStatus(value)
-						setCursors([undefined])
+						onSearchChange({
+							status: adminListReportsQuerySchema.shape.status.parse(value),
+						})
 					}}
 				>
 					<SelectTrigger aria-label="Filter report status" className="w-40">
@@ -75,13 +87,21 @@ export function ReportInbox() {
 							queryKey: adminORPC.report.list.key(),
 							refetchType: 'none',
 						})
-						setCursors([undefined])
-						if (cursors.length === 1) void query.refetch()
+						onSearchChange({ ...search, cursor: undefined, trail: undefined })
+						if (!search.cursor) void query.refetch()
 					}}
 				>
 					Refresh inbox
 				</Button>
 			</div>
+			{search.reportId && (
+				<Button
+					variant="outline"
+					onClick={() => onSearchChange({ status: 'open' })}
+				>
+					View all open reports
+				</Button>
+			)}
 			{query.isPending ? (
 				<ReportsPending />
 			) : query.isError ? (
@@ -106,13 +126,20 @@ export function ReportInbox() {
 			)}
 			<div className="flex flex-wrap items-center justify-end gap-3">
 				<p className="mr-auto text-sm text-muted-foreground">
-					Newest first · Page {cursors.length}
+					Newest first · Page {trail.length + 1}
+					{search.reportId ? ' · Selected report' : ''}
 				</p>
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={cursors.length === 1 || query.isFetching}
-					onClick={() => setCursors((previous) => previous.slice(0, -1))}
+					disabled={!search.cursor || query.isFetching}
+					onClick={() =>
+						onSearchChange({
+							...search,
+							cursor: trail.at(-1) ?? undefined,
+							trail: trail.slice(0, -1),
+						})
+					}
 				>
 					Previous
 				</Button>
@@ -124,7 +151,13 @@ export function ReportInbox() {
 					}
 					onClick={() => {
 						const cursor = query.data?.nextCursor
-						if (cursor) setCursors((previous) => [...previous, cursor])
+						if (cursor) {
+							onSearchChange({
+								...search,
+								cursor,
+								trail: [...trail, search.cursor ?? null],
+							})
+						}
 					}}
 				>
 					Next

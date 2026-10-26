@@ -8,6 +8,7 @@ import { adminORPC, categoryORPC, orpc, projectORPC } from '#/utils/orpc'
 export async function invalidateCatalog(queryClient: QueryClient) {
 	await Promise.all(
 		[
+			['admin-dashboard'],
 			publicContentQueryKey,
 			adminORPC.category.key(),
 			categoryORPC.key(),

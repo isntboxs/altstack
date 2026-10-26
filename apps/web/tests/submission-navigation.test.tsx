@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen } from '@testing-library/react'
 // @vitest-environment jsdom
 import type { ComponentProps } from 'react'
@@ -7,6 +8,22 @@ import { SidebarProvider } from '@altstack/ui/components/sidebar'
 
 import { MainSidebarContent } from '#/components/main-sidebar-content'
 import { submissionSearchSchema } from '#/features/submissions/search'
+
+vi.mock('#/features/admin-dashboard/queries', () => {
+	return {
+		dashboardQueries: {
+			overview: () => {
+				return {
+					queryKey: ['test-admin-overview'],
+					queryFn: () =>
+						Promise.resolve({
+							counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
+						}),
+				}
+			},
+		},
+	}
+})
 
 const auth = vi.hoisted(() => {
 	return { role: 'user' }
@@ -55,9 +72,11 @@ describe('role-specific navigation', () => {
 	it('shows Submission for regular users and full moderation navigation for admins', () => {
 		auth.role = 'user'
 		const view = render(
-			<SidebarProvider>
-				<MainSidebarContent />
-			</SidebarProvider>
+			<QueryClientProvider client={new QueryClient()}>
+				<SidebarProvider>
+					<MainSidebarContent />
+				</SidebarProvider>
+			</QueryClientProvider>
 		)
 		expect(
 			screen.getByText('Submission').closest('a')?.getAttribute('href')
@@ -68,9 +87,11 @@ describe('role-specific navigation', () => {
 		).toBe('/bookmarks')
 		auth.role = 'admin'
 		view.rerender(
-			<SidebarProvider>
-				<MainSidebarContent />
-			</SidebarProvider>
+			<QueryClientProvider client={new QueryClient()}>
+				<SidebarProvider>
+					<MainSidebarContent />
+				</SidebarProvider>
+			</QueryClientProvider>
 		)
 		expect(
 			screen.getByText('Projects').closest('a')?.getAttribute('href')
@@ -81,6 +102,27 @@ describe('role-specific navigation', () => {
 			screen.getByRole('link', { name: 'Bookmarks' }).getAttribute('href')
 		).toBe('/bookmarks')
 	})
+	it.each(['owner', 'maintainer'])(
+		'preserves personal workspace access for %s',
+		(role) => {
+			auth.role = role
+			render(
+				<QueryClientProvider client={new QueryClient()}>
+					<SidebarProvider>
+						<MainSidebarContent />
+					</SidebarProvider>
+				</QueryClientProvider>
+			)
+			expect(
+				screen.getByRole('link', { name: 'My projects' }).getAttribute('href')
+			).toBe('/managed')
+			expect(
+				screen.getByRole('link', { name: 'Submission' }).getAttribute('href')
+			).toBe('/submission')
+			expect(screen.queryByRole('link', { name: 'Overview' })).toBeNull()
+			expect(screen.queryByText('Administration')).toBeNull()
+		}
+	)
 	it('preserves entered search text and normalizes malformed pagination', () => {
 		expect(
 			submissionSearchSchema.parse({ q: '  project  ', page: -1, limit: 999 })

@@ -237,10 +237,10 @@ const UserButton = ({
 				<DropdownMenuGroup>
 					<DropdownMenuItem
 						render={
-							<Link to={user.role === 'admin' ? '/projects' : '/submission'} />
+							<Link to={user.role === 'admin' ? '/admin' : '/submission'} />
 						}
 					>
-						{user.role === 'admin' ? 'Projects' : 'Submission'}
+						{user.role === 'admin' ? 'Admin overview' : 'Submission'}
 					</DropdownMenuItem>
 					<DropdownMenuItem render={<Link to="/managed" />}>
 						My projects

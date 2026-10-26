@@ -34,7 +34,8 @@
 		"./schemas/submission": "./src/schemas/submission.ts",
 		"./schemas/tag": "./src/schemas/tag.ts",
 		"./schemas/upload": "./src/schemas/upload.ts",
-		"./package.json": "./package.json"
+		"./package.json": "./package.json",
+		"./schemas/admin-dashboard": "./src/schemas/admin-dashboard.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -65,7 +66,8 @@
 			"./schemas/submission": "./dist/schemas/submission.mjs",
 			"./schemas/tag": "./dist/schemas/tag.mjs",
 			"./schemas/upload": "./dist/schemas/upload.mjs",
-			"./package.json": "./package.json"
+			"./package.json": "./package.json",
+			"./schemas/admin-dashboard": "./dist/schemas/admin-dashboard.mjs"
 		}
 	},
 	"scripts": {

@@ -39,6 +39,9 @@ export const adminReportRouter = {
 				.leftJoin(project, eq(project.id, projectReport.projectId))
 				.where(
 					and(
+						input.query.reportId
+							? eq(projectReport.id, input.query.reportId)
+							: undefined,
 						status === 'all' ? undefined : eq(projectReport.status, status),
 						cursor
 							? sql`(${projectReport.createdAt}, ${projectReport.id}) < (

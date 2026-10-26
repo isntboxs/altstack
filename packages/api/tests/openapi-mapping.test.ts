@@ -1031,6 +1031,23 @@ describe('generated OpenAPI compatibility', () => {
 				},
 			},
 		})
+		expect(paths['/admin/projects']?.query?.responses?.['200']).toMatchObject({
+			content: {
+				'application/json': {
+					schema: {
+						properties: {
+							projects: {
+								items: {
+									properties: {
+										github: { anyOf: [{ type: 'object' }, { type: 'null' }] },
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		})
 		const operations = Object.keys(paths)
 			.filter((path): path is `/${string}` => path.startsWith('/'))
 			.flatMap((path) =>
@@ -1041,7 +1058,13 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(67)
+		expect(operations).toHaveLength(70)
+		for (const contract of Object.values(contracts.admin.dashboard)) {
+			const metadata = getOpenAPIMeta(contract)!
+			expect(paths[metadata.path!]?.query).toMatchObject({
+				operationId: metadata.operationId,
+			})
+		}
 		for (const contract of Object.values(contracts.ownership)) {
 			const metadata = getOpenAPIMeta(contract)!
 			const operation = operations.find(
@@ -1146,7 +1169,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			33
+			36
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1193,6 +1216,37 @@ describe('generated OpenAPI compatibility', () => {
 				])
 			)
 			const comparableResponses = structuredClone(actual?.operation.responses)
+			if (operationId === 'listAdminProjects') {
+				const response = comparableResponses?.['200']
+				const media =
+					response && 'content' in response
+						? response.content?.['application/json']
+						: undefined
+				const schema = media && 'schema' in media ? media.schema : undefined
+				const projects =
+					schema && typeof schema !== 'boolean'
+						? schema.properties?.projects
+						: undefined
+				const item =
+					projects && typeof projects !== 'boolean' ? projects.items : undefined
+				const fields =
+					item && typeof item !== 'boolean' && !Array.isArray(item)
+						? item.properties
+						: undefined
+				const github = fields?.github
+
+				if (
+					!fields ||
+					!github ||
+					typeof github === 'boolean' ||
+					!github.anyOf?.[0]
+				) {
+					throw new Error('Missing nullable admin GitHub snapshot schema')
+				}
+				// The admin list now retains projects missing snapshots. Verify the
+				// intentional null case above, then compare every existing field.
+				fields.github = github.anyOf[0]
+			}
 			if (operationId === 'getProjectBySlug') {
 				const response = comparableResponses?.['200']
 				const media =
@@ -1272,6 +1326,7 @@ describe('generated OpenAPI compatibility', () => {
 			contracts.submission.resubmit,
 			...Object.values(contracts.admin.category),
 			...Object.values(contracts.admin.project),
+			...Object.values(contracts.admin.dashboard),
 			...Object.values(contracts.admin.report),
 			...Object.values(contracts.admin.user),
 			...Object.values(contracts.admin.upload.logo),
@@ -1280,9 +1335,9 @@ describe('generated OpenAPI compatibility', () => {
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(55)
+		expect(mapped).toHaveLength(58)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(27)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(30)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(

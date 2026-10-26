@@ -9,7 +9,6 @@ import {
 	eq,
 	getTableColumns,
 	inArray,
-	ne,
 	or,
 	sql,
 } from 'drizzle-orm'
@@ -42,6 +41,7 @@ import {
 	memberOfProject,
 	projectIsVerified,
 	requireProjectMember,
+	reviewableClaims,
 } from '@altstack/api/queries/ownership'
 import {
 	changeProjectMembership,
@@ -510,20 +510,12 @@ export const ownershipRouter = {
 		async ({
 			context: { db, auth },
 			input: {
-				query: { page, limit },
+				query: { page, limit, claimId },
 			},
 		}) => {
 			const where = and(
-				eq(project.status, 'published'),
-				eq(projectClaim.status, 'pending'),
-				sql`exists (select 1 from ${user} where ${user.id} = ${projectClaim.userId} and ${activeAccount})`,
-				ne(projectClaim.userId, auth.user.id),
-				or(
-					memberOfProject(auth.user.id),
-					auth.user.role === 'admin'
-						? sql`not (${projectIsVerified})`
-						: undefined
-				)
+				reviewableClaims(auth.user.id, auth.user.role === 'admin'),
+				claimId ? eq(projectClaim.id, claimId) : undefined
 			)
 			return db.transaction(
 				async (tx) => {

@@ -619,7 +619,7 @@ describe('project Verify URL and claim flow', () => {
 			}
 			return original(path, input)
 		})
-		await routerAt('/managed')
+		await routerAt('/admin/ownership')
 		await screen.findByText(/representative has write access/)
 		const manualEvidence =
 			'Confirmed representation through the established project contact in a separate channel.'
@@ -630,6 +630,11 @@ describe('project Verify URL and claim flow', () => {
 			{ target: { value: manualEvidence } }
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+		await screen.findByRole('dialog', { name: 'Approve project access?' })
+		expect(
+			rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/review')
+		).toBe(false)
+		fireEvent.click(screen.getByRole('button', { name: 'Confirm decision' }))
 		await waitFor(() =>
 			expect(
 				rpc.mock.calls.find(
@@ -640,7 +645,7 @@ describe('project Verify URL and claim flow', () => {
 				body: { decision: 'approve', manualEvidence },
 			})
 		)
-		await screen.findByText('No requests awaiting your review.')
+		await screen.findByText('No requests awaiting your review')
 	})
 	it('sends the selected email and role, confirms a six-digit code, and shows pending approval without a badge', async () => {
 		getAuthFn.mockResolvedValue({

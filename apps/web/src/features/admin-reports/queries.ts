@@ -4,6 +4,7 @@ import type { ORPCRouterInputs } from '@altstack/api/routers'
 
 import { toast } from '@altstack/ui/components/toast'
 
+import { adminDashboardKey } from '#/features/admin-dashboard/queries'
 import { adminORPC } from '#/utils/orpc'
 
 export const adminReportQueries = {
@@ -39,6 +40,7 @@ export function useAdminReportModerate() {
 		},
 		// Also refresh on conflict or a lost response: the decision may have committed.
 		onSettled: async () => {
+			await queryClient.invalidateQueries({ queryKey: adminDashboardKey })
 			await queryClient.invalidateQueries({
 				queryKey: adminORPC.report.list.key(),
 			})

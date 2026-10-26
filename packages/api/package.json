@@ -70,7 +70,9 @@
 		"./storage": "./src/storage.ts",
 		"./submission-capacity": "./src/submission-capacity.ts",
 		"./submission-rate-limit": "./src/submission-rate-limit.ts",
-		"./package.json": "./package.json"
+		"./package.json": "./package.json",
+		"./contracts/admin-dashboard": "./src/contracts/admin-dashboard.ts",
+		"./routers/admin-dashboard": "./src/routers/admin-dashboard.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -137,7 +139,9 @@
 			"./storage": "./dist/storage.mjs",
 			"./submission-capacity": "./dist/submission-capacity.mjs",
 			"./submission-rate-limit": "./dist/submission-rate-limit.mjs",
-			"./package.json": "./package.json"
+			"./package.json": "./package.json",
+			"./contracts/admin-dashboard": "./dist/contracts/admin-dashboard.mjs",
+			"./routers/admin-dashboard": "./dist/routers/admin-dashboard.mjs"
 		}
 	},
 	"scripts": {

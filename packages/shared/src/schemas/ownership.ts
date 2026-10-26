@@ -128,6 +128,12 @@ export const ownershipListOutputSchema = z.object({
 	),
 	pagination: paginationSchema,
 })
+export const claimInboxInputSchema = ownershipListInputSchema.extend({
+	query: ownershipListInputSchema.shape.query.extend({
+		claimId: z.uuid().optional(),
+	}),
+})
+
 export const claimInboxOutputSchema = z.object({
 	claims: z.array(
 		z.object({
