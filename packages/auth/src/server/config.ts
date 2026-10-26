@@ -1,6 +1,7 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { BetterAuthOptions } from 'better-auth'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { deleteSessionCookie } from 'better-auth/cookies'
 import {
 	admin as adminPlugin,
 	multiSession as multiSessionPlugin,
@@ -24,7 +25,11 @@ import {
 	MAGIC_LINK_RATE_LIMIT,
 } from './magic-link-rate-limit'
 
-export function createAuthConfig(database = db) {
+export type AuthDatabase =
+	| typeof db
+	| Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+export function createAuthConfig(database: AuthDatabase = db) {
 	const enforceRecipientLimit = createMagicLinkRecipientLimiter(
 		database,
 		env.BETTER_AUTH_SECRET
@@ -64,7 +69,37 @@ export function createAuthConfig(database = db) {
 			enabled: false,
 		},
 		hooks: {
+			after: createAuthMiddleware(async (ctx) => {
+				if (ctx.path !== '/get-session' || !ctx.context.session) return
+				const account = z
+					.object({
+						banned: z.boolean().nullish(),
+						banExpires: z.coerce.date().nullish(),
+					})
+					.parse(ctx.context.session.user)
+				// The Admin plugin blocks session creation and deletes existing sessions
+				// on ban. Also reject a session inserted by an overlapping sign-in.
+				if (
+					account.banned &&
+					(!account.banExpires || account.banExpires.getTime() > Date.now())
+				) {
+					await ctx.context.internalAdapter.deleteSession(
+						ctx.context.session.session.token
+					)
+					deleteSessionCookie(ctx)
+					ctx.context.session = null
+					return ctx.json(null)
+				}
+			}),
 			before: createAuthMiddleware(async (ctx) => {
+				// Account administration goes through the application's transactional
+				// policy. Native HTTP endpoints must not bypass it (including reads
+				// that expose session tokens). Server API calls remain available.
+				if (ctx.path.startsWith('/admin/') && ctx.request) {
+					throw new APIError('FORBIDDEN', {
+						message: 'Use AltStack user management.',
+					})
+				}
 				if (ctx.path !== '/sign-in/magic-link') return
 				const parsed = await z
 					.looseObject({ email: z.email().max(254) })

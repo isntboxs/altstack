@@ -30,8 +30,8 @@ claims or edits; pending requests are hidden from the review inbox while hidden.
 `projects.submitter_id` remains submission provenance and grants no edit rights.
 Existing projects/users gain no membership during migration. Account/project
 deletion cascades memberships, claims and temporary-upload records. Verification
-is derived from membership existence, so deleting the last representative removes
-the badge/ranking benefit. When an admin changes a listing to a different GitHub
+is derived from active membership existence, so deleting the last representative
+removes the badge/ranking benefit. When an admin changes a listing to a different GitHub
 repository identity, membership, outstanding claims and upload grants are cleared;
 same-identity repository renames retain them. Global role labels alone never
 grant project rights, including after such cleanup.
@@ -130,13 +130,122 @@ after approval. Approved members see Manage project; other visitors can Request
 access for an additional representative. Direct Verify URLs remain valid for
 checking a request or requesting access.
 
-Default home requests use `recommended`: verified first, then `createdAt`
-descending, then UUID descending for deterministic pagination. There is no
-`publishedAt` column; `createdAt` retains existing listing-date semantics.
+Default home requests use `recommended`: verified first, then GitHub stars
+descending (missing stars count as zero), then UUID descending for deterministic
+pagination. Category listings default to `most-stars`.
 Explicit Latest (`newest`) stays purely chronological, and every alternative
 sort keeps its existing semantics. Public status predicates/counts remain
 published-only. “Upgrade/exposure” is this ranking benefit, with no billing,
 payments, plans or separate paid Featured privilege.
+
+## Member management follow-up — 2026-10-26
+
+`/managed` now lists all of the account's approved memberships, including hidden
+listings, so an account can leave a project even while editing is unavailable.
+Published listings retain their editor; **Members** opens
+`/managed/$id/members`. The page identifies the project and shows representative
+names, project roles and account availability, without login/contact emails or
+GitHub proof. Admins reach the same page from the project editor or user detail.
+Lists use bounded pagination; the caller's own membership is always returned for
+self-service, even when it is on another page.
+
+Owner and Maintainer remain equal for editing and reviewing claims. Neither can
+change their own label or remove/change another representative. Only a current
+AltStack admin can change another account's project role or revoke its membership.
+An admin's own membership uses the same rules: another admin changes their project
+label; **Leave project** removes their own access. Account administration and
+project representation are separate. No direct add/invite bypasses OTP, fresh
+GitHub evidence or independent approval. Existing global owner/maintainer labels
+remain informational; a project role change or removal does not rewrite them.
+
+Any representative may explicitly leave, including the last representative.
+Admins may also revoke the last membership. This catalogue verification does not
+assert legal ownership and must not trap someone in an unwanted affiliation.
+The last active representative's departure removes the public verified badge and
+ranking advantage. Pending claims remain pending, but with no active members a
+different admin must review them again under the bootstrap policy. Returning after
+leave/revocation requires a fresh email challenge and independent approval; the
+previous approved claim and unused upload grants are removed atomically. Audit
+history remains. Bans retain membership records but exclude the account from
+active representation, editing and review; unban restores those retained rights.
+
+Every mutation compares the membership's PostgreSQL row revision, including
+removal and reapproval races. The project row lock serializes role changes,
+revocation, leaving, approvals, uploads and final edits. Reviewers and claimants
+are rechecked after GitHub network work; edits recheck membership after media
+promotion and clean up failed promoted copies. Account row locks coordinate bans
+and account-role changes with project writes. Revocation removes membership-based
+edit/upload/delete-upload/review rights;
+another project's membership grants no rights. Separate global admin moderation
+and bootstrap permissions still follow their existing policies. Already issued S3
+URLs expire after ten minutes; they can only write an
+orphan temporary object after revocation because the deleted grant prevents
+promotion or consumption. Existing temporary-object lifecycle cleanup applies.
+
+Membership screens confirm destructive actions and explain last-representative
+behavior. Successful changes invalidate private membership/inbox and public
+catalogue queries; leaving discards cached editor data and returns to My projects.
+Stale changes show a conflict and require refreshing. Private RPC/REST and HTML
+responses remain private/no-store and private pages remain noindex.
+
+The additive migration `20261026115414_member-user-management` only expands the
+audit action constraint. It retains all existing account, project, membership,
+claim and session data. The expanded check is added `NOT VALID` to avoid scanning
+the audit table while holding the migration's exclusive lock. New writes are
+still checked immediately. Once `vp run db:migrate` has returned and committed,
+run `vp run --filter @altstack/db db:validate-audit-actions` against the same
+configured database before deploying matching application revisions. This
+idempotent follow-up validates existing rows with `SHARE UPDATE EXCLUSIVE`,
+allowing ordinary reads and writes. It is deliberately outside the migration
+directory: this Drizzle version wraps all pending migration files in one
+transaction, so another migration file would retain the earlier exclusive lock.
+See [PostgreSQL constraint validation](https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-NOTES).
+This implementation does not imply deployment.
+
+### Local follow-up validation
+
+Focused validation passed; the full repository test suite was not run:
+
+- API: five files / 157 tests (`admin-user`, `ownership`, `openapi-mapping`,
+  `bookmark`, `category-public`). Coverage includes real Better Auth sessions,
+  REST/RPC contracts, self-escalation and cross-project denial, stale revisions,
+  reciprocal admin demotions/bans, transactional audit rollback, reapproval,
+  reviewer revocation during GitHub checks and edit revocation during promotion.
+  The public-mention test's stale expected payload was updated to include the
+  already-supported `verified` field.
+- Auth: three files / 43 tests (`cookies`, `magic-link-postgres`,
+  `github-access-token`), including rejection and cookie expiry for a surviving
+  banned session. Provider and email transports use synthetic fixtures.
+- Web: four files / 39 distinct tests over focused runs (`member-admin-users-route`,
+  `project-report-route`, `admin-reports-route`, `auth-middleware`). New journeys
+  cover route guards, URL search/filter state, account confirmations, ban reason,
+  error recovery, member role/revoke and self-leave navigation.
+- Server: eight CORS/cache tests. Database: three migration tests, including
+  preserving existing accounts/sessions/memberships/audits and accepting all new
+  audit actions while rejecting unknown actions. PostgreSQL uses disposable
+  `altstack_test_*` schemas; development/production data is not reset.
+- Changed-file formatting and lint passed. Type checks passed for API, Auth,
+  DB, Shared, Server and Web. Direct Vite+ package builds passed for Shared,
+  Auth, API and Server, and the Web production build passed. Dependency bundler
+  warnings about module-level directives remain; no production rollout or live
+  provider/storage acceptance is claimed.
+
+### PR review corrections — 2026-10-26
+
+The sidebar's extra `IconUsers` property was removed from the Featured link.
+Account activity now compares the stored UTC ban timestamp with
+`now() at time zone 'UTC'`, keeping expiry, project authorization, verification
+and active-admin counts consistent across PostgreSQL session timezones.
+The audit check is added `NOT VALID`; its idempotent validation command runs
+after migration commit rather than retaining the migration batch's exclusive lock.
+
+Focused correction checks passed: 61 API tests across account-access,
+admin-user and ownership; three migration tests, including validation in a
+separate process while an audit writer remains open; and two sidebar/navigation
+tests. Changed-file formatting/lint and API/DB/Web type checks passed.
+The expiry regression covers UTC, Asia/Jakarta and America/Los_Angeles with
+unbanned, legacy-null, permanent, future-expiry and expired accounts.
+The full suite and production rollout were not run.
 
 ## OTP security and privacy
 

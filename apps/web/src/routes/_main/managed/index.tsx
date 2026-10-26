@@ -113,15 +113,29 @@ function ManagedProjects() {
 							<div className="flex flex-col gap-1">
 								<h2 className="flex items-center gap-2 font-semibold">
 									{item.name}
-									<VerifiedBadge />
+									{item.status === 'published' && <VerifiedBadge />}
 								</h2>
-								<p className="text-sm text-muted-foreground">{item.role}</p>
+								<p className="text-sm text-muted-foreground">
+									{item.role} · {item.status}
+								</p>
 							</div>
-							<Button
-								render={<Link to="/managed/$id" params={{ id: item.id }} />}
-							>
-								Manage project
-							</Button>
+							<div className="flex flex-wrap gap-2">
+								<Button
+									variant="outline"
+									render={
+										<Link to="/managed/$id/members" params={{ id: item.id }} />
+									}
+								>
+									Members
+								</Button>
+								{item.status === 'published' && (
+									<Button
+										render={<Link to="/managed/$id" params={{ id: item.id }} />}
+									>
+										Manage project
+									</Button>
+								)}
+							</div>
 						</CardContent>
 					</Card>
 				))}

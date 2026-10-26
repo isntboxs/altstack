@@ -54,6 +54,13 @@ function ManagedProject() {
 					View public listing
 				</Link>
 			</header>
+			<Link
+				to="/managed/$id/members"
+				params={{ id }}
+				className="text-sm underline underline-offset-4"
+			>
+				Manage members
+			</Link>
 			<MemberProjectEditor
 				key={`${data.id}:${data.revision}`}
 				project={data}

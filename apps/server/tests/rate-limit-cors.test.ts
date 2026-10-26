@@ -47,6 +47,20 @@ vi.mock('@altstack/api/handler', () => {
 })
 
 describe('submission rate-limit CORS headers', () => {
+	it.each([
+		'/api/rpc/admin/user/list',
+		'/api/rpc/admin/user/action',
+		'/api/reference/admin/users',
+		'/api/reference/admin/users/id/actions',
+		'/api/rpc/ownership/members',
+		'/api/reference/managed-projects/id/members',
+	])('keeps private management responses out of caches on %s', async (path) => {
+		const response = await server.fetch(
+			new Request(`http://localhost:3009${path}`, { method: 'POST' })
+		)
+		expect(response.headers.get('cache-control')).toBe('private, no-store')
+	})
+
 	it.each(['/api/rpc/submission/create', '/api/reference/submissions'])(
 		'exposes all limiter headers to the web origin on %s',
 		async (path) => {

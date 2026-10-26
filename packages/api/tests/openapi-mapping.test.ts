@@ -1041,7 +1041,7 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(60)
+		expect(operations).toHaveLength(67)
 		for (const contract of Object.values(contracts.ownership)) {
 			const metadata = getOpenAPIMeta(contract)!
 			const operation = operations.find(
@@ -1146,7 +1146,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			30
+			33
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1273,15 +1273,16 @@ describe('generated OpenAPI compatibility', () => {
 			...Object.values(contracts.admin.category),
 			...Object.values(contracts.admin.project),
 			...Object.values(contracts.admin.report),
+			...Object.values(contracts.admin.user),
 			...Object.values(contracts.admin.upload.logo),
 			...Object.values(contracts.admin.upload.screenshot),
 		]
 		const mapped = procedures
 			.map((procedure) => getOpenAPIMeta(procedure))
 			.filter((meta) => meta?.path !== undefined)
-		expect(mapped).toHaveLength(48)
+		expect(mapped).toHaveLength(55)
 		expect(mapped.filter((meta) => meta?.method === 'GET')).toEqual([])
-		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(24)
+		expect(mapped.filter((meta) => meta?.method === 'QUERY')).toHaveLength(27)
 		for (const meta of mapped) {
 			expect(meta?.inputStructure).toBe(
 				['githubMetadataAdminProject', 'githubReadmeAdminProject'].includes(
@@ -1291,11 +1292,13 @@ describe('generated OpenAPI compatibility', () => {
 					: 'detailed'
 			)
 			expect(meta?.outputStructure).toBe('compact')
-			const paramsStyles = meta?.path?.includes('{id}')
-				? { id: 'primitive' }
-				: meta?.path?.includes('{slug}')
-					? { slug: 'primitive' }
-					: undefined
+			const paramsStyles = meta?.path?.includes('{userId}')
+				? { id: 'primitive', userId: 'primitive' }
+				: meta?.path?.includes('{id}')
+					? { id: 'primitive' }
+					: meta?.path?.includes('{slug}')
+						? { slug: 'primitive' }
+						: undefined
 			expect(meta?.paramsStyles).toEqual(paramsStyles)
 		}
 		expect(getOpenAPIMeta(contracts.project.search)?.queryStyles).toEqual({

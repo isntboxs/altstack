@@ -106,6 +106,31 @@ async function signIn() {
 	expect((await test.requestLink()).status).toBe(200)
 	return test.verify()
 }
+
+it('rejects a session that survives a ban race and clears its cookies on session reads', async () => {
+	const test = createTestAuth()
+	await test.requestLink()
+	const signedIn = await test.verify()
+	const cookie = signedIn.headers
+		.getSetCookie()
+		.map((value) => value.split(';')[0])
+		.join('; ')
+	test.store.user[0]!.banned = true
+	test.store.user[0]!.banExpires = null
+	const response = await test.auth.handler(
+		new Request(`${env.BETTER_AUTH_URL}/api/auth/get-session`, {
+			headers: { cookie },
+		})
+	)
+	expect(response.status).toBe(200)
+	expect(await response.json()).toBeNull()
+	expect(test.store.session).toHaveLength(0)
+	expect(
+		response.headers
+			.getSetCookie()
+			.some((value) => value.includes('session_token=;'))
+	).toBe(true)
+})
 function sessionCookie(response: Response) {
 	return response.headers
 		.getSetCookie()

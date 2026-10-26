@@ -249,6 +249,7 @@ describe('public category hierarchy', () => {
 					tagline: 'A code editor for people and AI.',
 					stars: 123,
 					forks: 12,
+					verified: false,
 				},
 			])
 		}
