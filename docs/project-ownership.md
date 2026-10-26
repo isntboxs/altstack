@@ -190,8 +190,17 @@ responses remain private/no-store and private pages remain noindex.
 
 The additive migration `20261026115414_member-user-management` only expands the
 audit action constraint. It retains all existing account, project, membership,
-claim and session data. Apply it before matching application revisions on an
-intended target; this implementation does not imply deployment.
+claim and session data. The expanded check is added `NOT VALID` to avoid scanning
+the audit table while holding the migration's exclusive lock. New writes are
+still checked immediately. Once `vp run db:migrate` has returned and committed,
+run `vp run --filter @altstack/db db:validate-audit-actions` against the same
+configured database before deploying matching application revisions. This
+idempotent follow-up validates existing rows with `SHARE UPDATE EXCLUSIVE`,
+allowing ordinary reads and writes. It is deliberately outside the migration
+directory: this Drizzle version wraps all pending migration files in one
+transaction, so another migration file would retain the earlier exclusive lock.
+See [PostgreSQL constraint validation](https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-NOTES).
+This implementation does not imply deployment.
 
 ### Local follow-up validation
 
@@ -220,6 +229,23 @@ Focused validation passed; the full repository test suite was not run:
   Auth, API and Server, and the Web production build passed. Dependency bundler
   warnings about module-level directives remain; no production rollout or live
   provider/storage acceptance is claimed.
+
+### PR review corrections — 2026-10-26
+
+The sidebar's extra `IconUsers` property was removed from the Featured link.
+Account activity now compares the stored UTC ban timestamp with
+`now() at time zone 'UTC'`, keeping expiry, project authorization, verification
+and active-admin counts consistent across PostgreSQL session timezones.
+The audit check is added `NOT VALID`; its idempotent validation command runs
+after migration commit rather than retaining the migration batch's exclusive lock.
+
+Focused correction checks passed: 61 API tests across account-access,
+admin-user and ownership; three migration tests, including validation in a
+separate process while an audit writer remains open; and two sidebar/navigation
+tests. Changed-file formatting/lint and API/DB/Web type checks passed.
+The expiry regression covers UTC, Asia/Jakarta and America/Los_Angeles with
+unbanned, legacy-null, permanent, future-expiry and expired accounts.
+The full suite and production rollout were not run.
 
 ## OTP security and privacy
 

@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
+import { execFile } from 'node:child_process'
 import { cp, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 import { expect, it } from 'vite-plus/test'
 
 import {
@@ -92,6 +94,48 @@ it('expands management audit actions additively while preserving accounts, sessi
 				'unsupported_action',
 			])
 		).rejects.toMatchObject({ code: '23514' })
+		const constraintState = () =>
+			scope.pool.query<{ convalidated: boolean }>(
+				"SELECT convalidated FROM pg_constraint WHERE conrelid = 'audit_log'::regclass AND conname = 'audit_log_action_check'"
+			)
+		expect((await constraintState()).rows).toEqual([{ convalidated: false }])
+		const validationUrl = new URL(scope.url)
+		validationUrl.searchParams.set(
+			'options',
+			`${validationUrl.searchParams.get('options')} -c lock_timeout=1000`
+		)
+		const validate = () =>
+			promisify(execFile)(
+				'vp',
+				['run', '--filter', '@altstack/db', 'db:validate-audit-actions'],
+				{
+					cwd: fileURLToPath(new URL('../../../', import.meta.url)),
+					env: { ...process.env, DATABASE_URL: validationUrl.toString() },
+					timeout: 15000,
+				}
+			)
+		const writer = await scope.pool.connect()
+		try {
+			await writer.query('BEGIN')
+			await writer.query('INSERT INTO audit_log (action) VALUES ($1)', [
+				'project_updated',
+			])
+			// A separate backend must validate while a writer holds ROW EXCLUSIVE.
+			// Reacquiring the migration's ACCESS EXCLUSIVE lock would time out.
+			expect((await validate()).stdout).toContain(
+				'Audit action constraint validated.'
+			)
+			expect((await constraintState()).rows).toEqual([{ convalidated: true }])
+			expect((await validate()).stdout).toContain(
+				'Audit action constraint validated.'
+			)
+		} finally {
+			try {
+				await writer.query('ROLLBACK')
+			} finally {
+				writer.release()
+			}
+		}
 	} finally {
 		await scope.close()
 		await postgres.close()

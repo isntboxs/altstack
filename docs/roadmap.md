@@ -538,7 +538,7 @@ release baseline above supersedes them for merge and operator rollout status.
 - [x] Protected `/admin/users` search/filter/pagination and user detail with safe account/provider/session summaries, membership navigation, role assignment, ban/unban and revoke-all-sessions through Better Auth.
 - [x] Last-active-admin protection, concurrent actor rechecks, self-ban denial, atomic audit/session changes and blocked native HTTP bypasses. Destructive account deletion/impersonation and credential/email changes are excluded.
 - [x] Additive audit-only migration; no ownership or account-data backfill. See [member policy](project-ownership.md#member-management-follow-up--2026-10-26) and [auth](auth.md#admin-user-management--2026-10-26).
-- [ ] Apply the migration and matching app revisions on the intended target; complete live provider/mail/storage acceptance. No production rollout is claimed.
+- [ ] Apply the migration, run deferred audit constraint validation after commit, and deploy matching app revisions on the intended target; complete live provider/mail/storage acceptance. No production rollout is claimed.
 
 ## R7 — Featured Projects on detail pages
 

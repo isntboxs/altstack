@@ -348,5 +348,11 @@ and verified same-email linking stay in place. Foreign browser origins/cross-sit
 requests are rejected independently at the management API boundary.
 
 Migration `20261026115414_member-user-management` only expands allowed audit
-actions; the existing Admin plugin columns need no new migration. Target migration,
-deployment and live provider/storage acceptance remain operational follow-up.
+actions; the existing Admin plugin columns need no new migration. After the
+migration transaction commits, run
+`vp run --filter @altstack/db db:validate-audit-actions` against the same database
+to validate existing audit rows without retaining the migration's exclusive lock.
+Ban expiry comparisons use UTC explicitly so account access, verification and
+last-admin counts agree with Better Auth even when PostgreSQL uses another
+session timezone. Target migration, deployment and live provider/storage
+acceptance remain operational follow-up.

@@ -42,7 +42,6 @@ const navLinks = linkOptions([
 	{
 		to: '/admin/featured',
 		icon: IconStar,
-		IconUsers,
 		label: 'Featured Projects',
 	},
 ])
