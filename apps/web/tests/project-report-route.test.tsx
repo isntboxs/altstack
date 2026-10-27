@@ -566,87 +566,124 @@ describe('project Verify URL and claim flow', () => {
 		).toHaveProperty('disabled', false)
 		expect(screen.queryByText('Verified project')).toBeNull()
 	})
-	it('shows private GitHub evidence in the reviewer inbox and submits independent verification notes', async () => {
-		getAuthFn.mockResolvedValue({
-			user: { id: 'reviewer-a', role: 'admin' },
-			session: {},
-		})
-		const original = rpc.getMockImplementation()!
-		const pagination = {
-			page: 1,
-			limit: 25,
-			totalItems: 1,
-			totalPages: 1,
-			hasNextPage: false,
-			hasPreviousPage: false,
-		}
-		let reviewed = false
-		rpc.mockImplementation((path, input) => {
-			if (path.join('/') === 'ownership/list') {
-				return Promise.resolve({ projects: [], pagination })
-			}
-			if (path.join('/') === 'ownership/inbox') {
-				return Promise.resolve({
-					claims: reviewed
-						? []
-						: [
-								{
-									id: project.id,
-									projectId: project.id,
-									projectName: 'Example',
-									projectSlug: 'example',
-									name: 'Representative',
-									email: 'contact@example.test',
-									role: 'maintainer',
-									requestedAt: new Date(),
-									githubEvidence: {
-										status: 'limited',
-										permission: 'write',
-										reason: null,
-										githubUserId: '123',
-										login: 'representative',
-										repositoryId: '456',
-										checkedAt: new Date().toISOString(),
-									},
-								},
-							],
-					pagination,
-				})
-			}
-			if (path.join('/') === 'ownership/review') {
-				reviewed = true
-				return Promise.resolve({ success: true })
-			}
-			return original(path, input)
-		})
-		await routerAt('/admin/ownership')
-		await screen.findByText(/representative has write access/)
-		const manualEvidence =
-			'Confirmed representation through the established project contact in a separate channel.'
-		fireEvent.change(
-			screen.getByRole('textbox', {
-				name: 'Independent verification notes for Example',
-			}),
-			{ target: { value: manualEvidence } }
-		)
-		fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
-		await screen.findByRole('dialog', { name: 'Approve project access?' })
-		expect(
-			rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/review')
-		).toBe(false)
-		fireEvent.click(screen.getByRole('button', { name: 'Confirm decision' }))
-		await waitFor(() =>
-			expect(
-				rpc.mock.calls.find(
-					([path]) => path.join('/') === 'ownership/review'
-				)?.[1]
-			).toEqual({
-				params: { id: project.id },
-				body: { decision: 'approve', manualEvidence },
+	it.each([
+		{ evidenceStatus: 'limited', permission: 'write' },
+		{ evidenceStatus: 'verified', permission: 'maintain' },
+	] as const)(
+		'validates notes and confirms approvals for $evidenceStatus GitHub proof',
+		async ({ evidenceStatus, permission }) => {
+			getAuthFn.mockResolvedValue({
+				user: { id: 'reviewer-a', role: 'admin' },
+				session: {},
 			})
-		)
-		await screen.findByText('No requests awaiting your review')
-	})
+			const original = rpc.getMockImplementation()!
+			const pagination = {
+				page: 1,
+				limit: 25,
+				totalItems: 1,
+				totalPages: 1,
+				hasNextPage: false,
+				hasPreviousPage: false,
+			}
+			let reviewed = false
+			rpc.mockImplementation((path, input) => {
+				if (path.join('/') === 'ownership/list') {
+					return Promise.resolve({ projects: [], pagination })
+				}
+				if (path.join('/') === 'ownership/inbox') {
+					return Promise.resolve({
+						claims: reviewed
+							? []
+							: [
+									{
+										id: project.id,
+										projectId: project.id,
+										projectName: 'Example',
+										projectSlug: 'example',
+										name: 'Representative',
+										email: 'contact@example.test',
+										role: 'maintainer',
+										requestedAt: new Date(),
+										githubEvidence: {
+											status: evidenceStatus,
+											permission,
+											reason: null,
+											githubUserId: '123',
+											login: 'representative',
+											repositoryId: '456',
+											checkedAt: new Date().toISOString(),
+										},
+									},
+								],
+						pagination,
+					})
+				}
+				if (path.join('/') === 'ownership/review') {
+					reviewed = true
+					return Promise.resolve({ success: true })
+				}
+				return original(path, input)
+			})
+			await routerAt('/admin/ownership')
+			await screen.findByText(
+				new RegExp(`representative has ${permission} access`)
+			)
+			fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+			await screen.findByRole('dialog', { name: 'Approve project access?' })
+			expect(
+				screen.getByRole('button', { name: 'Confirm decision' })
+			).toHaveProperty('disabled', evidenceStatus !== 'verified')
+			fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+			fireEvent.change(
+				screen.getByRole('textbox', {
+					name: 'Independent verification notes for Example',
+				}),
+				{ target: { value: '  Too short  ' } }
+			)
+			expect(
+				screen
+					.getByRole('textbox', {
+						name: 'Independent verification notes for Example',
+					})
+					.getAttribute('aria-invalid')
+			).toBe('true')
+			expect(screen.getByText(/Enter at least 20 characters/)).toBeTruthy()
+			fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+			await screen.findByRole('dialog', { name: 'Approve project access?' })
+			expect(
+				screen.getByRole('button', { name: 'Confirm decision' })
+			).toHaveProperty('disabled', true)
+			fireEvent.click(screen.getByRole('button', { name: 'Confirm decision' }))
+			expect(
+				rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/review')
+			).toBe(false)
+			fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+			const manualEvidence = 'Confirmed maintainer'
+			fireEvent.change(
+				screen.getByRole('textbox', {
+					name: 'Independent verification notes for Example',
+				}),
+				{ target: { value: `  ${manualEvidence}  ` } }
+			)
+			fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+			await screen.findByRole('dialog', { name: 'Approve project access?' })
+			expect(
+				rpc.mock.calls.some(([path]) => path.join('/') === 'ownership/review')
+			).toBe(false)
+			fireEvent.click(screen.getByRole('button', { name: 'Confirm decision' }))
+			await waitFor(() =>
+				expect(
+					rpc.mock.calls.find(
+						([path]) => path.join('/') === 'ownership/review'
+					)?.[1]
+				).toEqual({
+					params: { id: project.id },
+					body: { decision: 'approve', manualEvidence },
+				})
+			)
+			await screen.findByText('No requests awaiting your review')
+		}
+	)
 	it('sends the selected email and role, confirms a six-digit code, and shows pending approval without a badge', async () => {
 		getAuthFn.mockResolvedValue({
 			user: { id: 'account-a', role: 'user' },

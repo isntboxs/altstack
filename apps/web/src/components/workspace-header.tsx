@@ -41,11 +41,13 @@ export function WorkspaceHeader() {
 		labels[path] ??
 		(path.startsWith('/admin/users/')
 			? 'User details'
-			: path.endsWith('/members')
-				? 'Project members'
-				: path.endsWith('/edit')
-					? 'Edit project'
-					: 'Manage project')
+			: path.startsWith('/admin/categories/') && path.endsWith('/edit')
+				? 'Edit category'
+				: path.endsWith('/members')
+					? 'Project members'
+					: path.endsWith('/edit')
+						? 'Edit project'
+						: 'Manage project')
 	return (
 		<header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b bg-sidebar/95 px-4 backdrop-blur">
 			<div className="flex min-w-0 items-center gap-3">

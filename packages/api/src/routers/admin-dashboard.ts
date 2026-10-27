@@ -206,11 +206,11 @@ export const adminDashboardRouter = {
 						.select({
 							total: count(),
 							fresh:
-								sql<number>`count(*) filter (where ${githubRepository.fetchedAt} >= ${cutoff})`.mapWith(
+								sql<number>`count(*) filter (where ${githubRepository.fetchedAt} >= ${sql.param(cutoff, githubRepository.fetchedAt)})`.mapWith(
 									Number
 								),
 							stale:
-								sql<number>`count(*) filter (where ${githubRepository.fetchedAt} < ${cutoff})`.mapWith(
+								sql<number>`count(*) filter (where ${githubRepository.fetchedAt} < ${sql.param(cutoff, githubRepository.fetchedAt)})`.mapWith(
 									Number
 								),
 							missing:

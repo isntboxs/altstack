@@ -22,6 +22,7 @@ import {
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 } from '@altstack/ui/components/field'
@@ -40,6 +41,11 @@ import { ClaimGithubEvidenceView } from '#/features/project/components/claim-git
 import { ownershipKey, ownershipQueries } from '#/features/project/ownership'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
 import { client } from '#/utils/orpc'
+
+function hasShortNote(note: string | undefined) {
+	const length = note?.trim().length ?? 0
+	return length > 0 && length < 20
+}
 
 export function ClaimInbox({
 	page,
@@ -62,6 +68,7 @@ export function ClaimInbox({
 		decision: 'approve' | 'reject'
 	} | null>(null)
 	const selected = query.data?.claims.find((claim) => claim.id === decision?.id)
+	const noteLength = selected ? (notes[selected.id]?.trim().length ?? 0) : 0
 	const review = useMutation({
 		mutationFn: (input: {
 			id: string
@@ -142,13 +149,14 @@ export function ClaimInbox({
 								<p className="text-sm wrap-anywhere">{claim.email}</p>
 								<ClaimGithubEvidenceView evidence={claim.githubEvidence} />
 								<FieldGroup>
-									<Field>
+									<Field data-invalid={hasShortNote(notes[claim.id])}>
 										<FieldLabel htmlFor={`evidence-${claim.id}`}>
 											Independent verification notes for {claim.projectName}
 										</FieldLabel>
 										<Textarea
 											id={`evidence-${claim.id}`}
 											value={notes[claim.id] ?? ''}
+											aria-invalid={hasShortNote(notes[claim.id])}
 											onChange={(event) =>
 												setNotes((previous) => {
 													return {
@@ -166,6 +174,12 @@ export function ClaimInbox({
 											characters). GitHub evidence is checked again on approval.
 											Notes remain private.
 										</FieldDescription>
+										{hasShortNote(notes[claim.id]) && (
+											<FieldError>
+												Enter at least 20 characters or clear this optional note
+												when GitHub access is verified.
+											</FieldError>
+										)}
 									</Field>
 								</FieldGroup>
 								<div className="flex flex-wrap justify-end gap-2">
@@ -278,8 +292,9 @@ export function ClaimInbox({
 								!selected ||
 								review.isPending ||
 								(decision?.decision === 'approve' &&
-									selected.githubEvidence?.status !== 'verified' &&
-									(notes[selected.id]?.trim().length ?? 0) < 20)
+									(selected.githubEvidence?.status !== 'verified' ||
+										noteLength > 0) &&
+									noteLength < 20)
 							}
 							onClick={() => {
 								if (!decision) return

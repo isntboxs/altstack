@@ -611,8 +611,8 @@ Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 ## Admin workspace — local implementation
 
 The admin overview, grouped workspace navigation, submission/ownership queues,
-recorded activity feed, and operational observations are implemented locally on
-this branch. See [admin workspace](admin-dashboard.md) for routes, privacy,
+recorded activity feed, and operational observations are implemented. See
+[admin workspace](admin-dashboard.md) for routes, privacy,
 validation, and telemetry limits. Production rollout is not claimed; analytics
 and historical trend dashboards remain separate backlog items.
 

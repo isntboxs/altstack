@@ -1,6 +1,6 @@
 # Admin workspace
 
-Implemented locally on this branch. This document does not claim a production
+The admin workspace is implemented. This document does not claim a production
 deployment. No database migration or additional scheduler is required.
 
 ## Navigation and work queues

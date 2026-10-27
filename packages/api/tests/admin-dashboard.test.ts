@@ -10,6 +10,7 @@ import {
 	describe,
 	expect,
 	it,
+	vi,
 } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
@@ -397,6 +398,31 @@ describe('admin dashboard', () => {
 			/private|payload|recipient|rejection/
 		)
 	})
+	it.each(['UTC', 'Asia/Jakarta', 'America/New_York'])(
+		'uses the exact 48-hour freshness boundary in %s',
+		async (timezone) => {
+			const previousTimezone = process.env.TZ
+			process.env.TZ = timezone
+			vi.useFakeTimers({ toFake: ['Date'] })
+			vi.setSystemTime(new Date('2026-10-26T08:00:00Z'))
+			try {
+				await addProject({}, new Date('2026-10-24T07:59:59.999Z'))
+				await addProject({}, new Date('2026-10-24T08:00:00Z'))
+				await addProject({}, new Date('2026-10-24T08:00:00.001Z'))
+				const ops = await client().operations({})
+				expect(ops.github).toMatchObject({
+					total: 3,
+					fresh: 2,
+					stale: 1,
+					missing: 0,
+				})
+			} finally {
+				vi.useRealTimers()
+				if (previousTimezone === undefined) delete process.env.TZ
+				else process.env.TZ = previousTimezone
+			}
+		}
+	)
 	it('bounds inputs, validates UTC ranges, and resolves exact report deep links', async () => {
 		await expect(
 			client().activity({ query: { limit: 51 } })

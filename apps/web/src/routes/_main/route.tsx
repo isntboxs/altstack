@@ -62,7 +62,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
 		>
 			<a
 				href="#workspace-content"
-				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-16 focus:rounded-md focus:bg-background focus:p-2"
+				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-16 focus:z-30 focus:rounded-md focus:bg-background focus:p-2"
 			>
 				Skip to content
 			</a>
