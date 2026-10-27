@@ -33,10 +33,11 @@ export const ownershipQueries = {
 			queryKey: [...ownershipKey, 'list', userId, page],
 			queryFn: () => client.ownership.list({ query: { page, limit: 25 } }),
 		}),
-	inbox: (userId: string, page = 1) =>
+	inbox: (userId: string, page = 1, claimId?: string) =>
 		queryOptions({
-			queryKey: [...ownershipKey, 'inbox', userId, page],
-			queryFn: () => client.ownership.inbox({ query: { page, limit: 25 } }),
+			queryKey: [...ownershipKey, 'inbox', userId, page, claimId],
+			queryFn: () =>
+				client.ownership.inbox({ query: { page, limit: 25, claimId } }),
 		}),
 	project: (userId: string, id: string) =>
 		queryOptions({

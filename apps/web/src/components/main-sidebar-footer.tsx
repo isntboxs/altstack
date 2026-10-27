@@ -43,9 +43,10 @@ export const MainSidebarFooter: FC<MainSidebarFooterProps> = ({ ...props }) => (
 	<SidebarFooter {...props}>
 		<SidebarGroup>
 			<SidebarGroupContent>
-				<SidebarMenu className="space-y-2">
+				<SidebarMenu className="gap-2">
 					<SidebarMenuItem>
 						<SidebarMenuButton
+							tooltip="Visit site"
 							render={
 								<Link to="/" target="_blank">
 									<IconBrowserPlus /> Visit Site

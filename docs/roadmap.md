@@ -608,6 +608,14 @@ included in the operator-confirmed v0.4.0 rollout.
 Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 `packages/api/src/routers/tag.ts`, `packages/api/tests/tags.test.ts` and web tag routes.
 
+## Admin workspace — local implementation
+
+The admin overview, grouped workspace navigation, submission/ownership queues,
+recorded activity feed, and operational observations are implemented. See
+[admin workspace](admin-dashboard.md) for routes, privacy,
+validation, and telemetry limits. Production rollout is not claimed; analytics
+and historical trend dashboards remain separate backlog items.
+
 ## Later, only when justified
 
 Use the [ordered priorities](#ordered-priorities-after-v040) rather than treating

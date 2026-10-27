@@ -1,4 +1,5 @@
 import { adminCategoryContract } from '@altstack/api/contracts/admin-category'
+import { adminDashboardContract } from '@altstack/api/contracts/admin-dashboard'
 import { adminFeaturedContract } from '@altstack/api/contracts/admin-featured'
 import { adminProjectContract } from '@altstack/api/contracts/admin-project'
 import { adminReportContract } from '@altstack/api/contracts/admin-report'
@@ -22,6 +23,7 @@ export const contracts = {
 	tag: tagContract,
 	bookmark: bookmarkContract,
 	admin: {
+		dashboard: adminDashboardContract,
 		user: adminUserContract,
 		tag: adminTagContract,
 		featured: adminFeaturedContract,

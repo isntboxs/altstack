@@ -15,6 +15,7 @@ import {
 	ownershipListInputSchema,
 	ownershipListOutputSchema,
 	claimInboxOutputSchema,
+	claimInboxInputSchema,
 	claimReviewInputSchema,
 	memberCategoriesOutputSchema,
 	memberUploadInputSchema,
@@ -110,7 +111,7 @@ export const ownershipContract = {
 		.input(ownershipListInputSchema)
 		.output(ownershipListOutputSchema),
 	inbox: endpoint('/project-claims', 'QUERY', 'listReviewableClaims')
-		.input(ownershipListInputSchema)
+		.input(claimInboxInputSchema)
 		.output(claimInboxOutputSchema),
 	review: endpoint('/project-claims/{id}', 'POST', 'reviewProjectClaim')
 		.input(claimReviewInputSchema)

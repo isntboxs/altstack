@@ -18,12 +18,14 @@ import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuTrigger,
 } from '@altstack/ui/components/dropdown-menu'
 import { Input } from '@altstack/ui/components/input'
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
@@ -41,6 +43,7 @@ import { features } from '#/utils/data-table-features'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 
 interface DataTableProps<TData extends RowData & { id: string }> {
+	hideStatusFilter?: boolean
 	columns: Array<ColumnDef<DataTableFeatures, TData>>
 	data: Array<TData>
 	rowCount: number
@@ -73,6 +76,7 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 	onSortingChange,
 	columnFilters,
 	onColumnFiltersChange,
+	hideStatusFilter = false,
 }: DataTableProps<TData>) => {
 	const [columnVisibility, setColumnVisibility] =
 		useState<ColumnVisibilityState>({})
@@ -115,33 +119,38 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 		<>
 			<div className="flex flex-wrap items-center gap-2 py-4">
 				<Input
+					aria-label="Search project names"
 					placeholder="Filter names..."
 					value={typeof nameFilter === 'string' ? nameFilter : ''}
 					onChange={(event) => nameColumn?.setFilterValue(event.target.value)}
 					className="max-w-sm"
 				/>
 
-				<Select
-					items={statusItems}
-					value={statusFilter?.value ?? 'all'}
-					onValueChange={(value) => {
-						onColumnFiltersChange((previous) => [
-							...previous.filter((filter) => filter.id !== 'status'),
-							...(value && value !== 'all' ? [{ id: 'status', value }] : []),
-						])
-					}}
-				>
-					<SelectTrigger aria-label="Filter status" className="w-36">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{statusItems.map((item) => (
-							<SelectItem key={item.value} value={item.value}>
-								{item.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				{!hideStatusFilter && (
+					<Select
+						items={statusItems}
+						value={statusFilter?.value ?? 'all'}
+						onValueChange={(value) => {
+							onColumnFiltersChange((previous) => [
+								...previous.filter((filter) => filter.id !== 'status'),
+								...(value && value !== 'all' ? [{ id: 'status', value }] : []),
+							])
+						}}
+					>
+						<SelectTrigger aria-label="Filter status" className="w-36">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectGroup>
+								{statusItems.map((item) => (
+									<SelectItem key={item.value} value={item.value}>
+										{item.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				)}
 
 				<DropdownMenu>
 					<DropdownMenuTrigger
@@ -151,19 +160,23 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 					</DropdownMenuTrigger>
 
 					<DropdownMenuContent align="end" className="w-36">
-						{table
-							.getAllColumns()
-							.filter((column) => column.getCanHide())
-							.map((column) => (
-								<DropdownMenuCheckboxItem
-									key={column.id}
-									className="capitalize"
-									checked={column.getIsVisible()}
-									onCheckedChange={(value) => column.toggleVisibility(!!value)}
-								>
-									{column.id}
-								</DropdownMenuCheckboxItem>
-							))}
+						<DropdownMenuGroup>
+							{table
+								.getAllColumns()
+								.filter((column) => column.getCanHide())
+								.map((column) => (
+									<DropdownMenuCheckboxItem
+										key={column.id}
+										className="capitalize"
+										checked={column.getIsVisible()}
+										onCheckedChange={(value) =>
+											column.toggleVisibility(!!value)
+										}
+									>
+										{column.id}
+									</DropdownMenuCheckboxItem>
+								))}
+						</DropdownMenuGroup>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
@@ -212,14 +225,15 @@ export const AdminProjectDataTable = <TData extends RowData & { id: string }>({
 				</Table>
 			</div>
 
-			<div className="flex items-center justify-end space-x-2 py-4">
+			<div className="flex flex-wrap items-center justify-end gap-2 py-4">
 				<div className="flex-1 text-sm text-muted-foreground">
 					{Object.values(rowSelection).filter(Boolean).length} row(s) selected.{' '}
 					{table.getRowCount()} row(s) match current filters.
 				</div>
 
 				<div className="text-sm text-muted-foreground">
-					Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
+					Page {table.state.pagination.pageIndex + 1} of{' '}
+					{Math.max(1, table.getPageCount())}
 				</div>
 
 				<Button

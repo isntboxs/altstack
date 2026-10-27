@@ -133,13 +133,15 @@ export const adminListProjectInputSchema = z.object({
 export const adminListProjectOutputSchema = z.object({
 	projects: z.array(
 		adminProjectSchema.extend({
-			github: z.object({
-				owner: z.string(),
-				repo: z.string(),
-				stars: z.number().int().nonnegative(),
-				forks: z.number().int().nonnegative(),
-				fetchedAt: z.coerce.date(),
-			}),
+			github: z
+				.object({
+					owner: z.string(),
+					repo: z.string(),
+					stars: z.number().int().nonnegative(),
+					forks: z.number().int().nonnegative(),
+					fetchedAt: z.coerce.date(),
+				})
+				.nullable(),
 		})
 	),
 	pagination: paginationSchema,

@@ -1,9 +1,5 @@
-import {
-	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarRightCollapse,
-} from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
-import type { ComponentProps, FC } from 'react'
+import { IconPlus } from '@tabler/icons-react'
+import { Link, useRouteContext } from '@tanstack/react-router'
 
 import { env } from '@altstack/env/web'
 
@@ -12,49 +8,60 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarSeparator,
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
 import { BrandMark } from '#/components/brand-mark'
 
-type MainSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
-
-export const MainSidebarHeader: FC<MainSidebarHeaderProps> = ({ ...props }) => {
-	const { isMobile, openMobile, state, toggleSidebar } = useSidebar()
-	const isExpanded = isMobile ? openMobile : state === 'expanded'
-
+export function MainSidebarHeader() {
+	const { auth } = useRouteContext({ from: '/_main' })
+	const { isMobile, setOpenMobile } = useSidebar()
+	const isAdmin = auth.user.role === 'admin'
+	const close = () => {
+		if (isMobile) setOpenMobile(false)
+	}
 	return (
-		<SidebarHeader {...props}>
-			<SidebarMenu className="flex-row justify-between">
-				<SidebarMenuItem>
-					<SidebarMenuButton
-						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
-						render={
-							<Link to="." className="flex items-center gap-2" viewTransition>
-								<BrandMark className="size-5!" />
-
-								<h1 className="text-xl font-bold lowercase">
+		<>
+			<SidebarHeader>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							size="lg"
+							tooltip="AltStack workspace"
+							render={
+								<Link to={isAdmin ? '/admin' : '/managed'} onClick={close} />
+							}
+						>
+							<BrandMark />
+							<div className="flex flex-col">
+								<span className="font-semibold lowercase">
 									{env.VITE_APP_NAME}
-								</h1>
-							</Link>
-						}
-					/>
-				</SidebarMenuItem>
-
-				<SidebarMenuItem>
-					<SidebarMenuButton
-						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
-						aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-						onClick={toggleSidebar}
-					>
-						{isExpanded ? (
-							<IconLayoutSidebarLeftCollapse />
-						) : (
-							<IconLayoutSidebarRightCollapse />
-						)}
-					</SidebarMenuButton>
-				</SidebarMenuItem>
-			</SidebarMenu>
-		</SidebarHeader>
+								</span>
+								<span className="text-xs text-muted-foreground">
+									{isAdmin ? 'Admin workspace' : 'Your workspace'}
+								</span>
+							</div>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							variant="outline"
+							tooltip={isAdmin ? 'Create project' : 'Submit a project'}
+							render={
+								<Link
+									to={isAdmin ? '/projects/create' : '/submit'}
+									onClick={close}
+								/>
+							}
+						>
+							<IconPlus />
+							<span>{isAdmin ? 'Create project' : 'Submit a project'}</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarHeader>
+			<SidebarSeparator />
+		</>
 	)
 }

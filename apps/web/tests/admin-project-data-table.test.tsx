@@ -7,10 +7,13 @@ import {
 	screen,
 	waitFor,
 } from '@testing-library/react'
+import { useState } from 'react'
+import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { AdminProjectDataTable } from '#/features/admin-projects/components/admin-project-data-table'
-import { Route } from '#/routes/_main/projects/index'
+import { ProjectListPage } from '#/features/admin-projects/components/project-list-page'
+import type { AdminProjectSearch } from '#/features/admin-projects/search'
 import type { DataTableFeatures } from '#/utils/data-table-features'
 
 const { queryInput } = vi.hoisted(() => {
@@ -62,6 +65,28 @@ vi.mock(
 		}
 	}
 )
+
+vi.mock('@tanstack/react-router', () => {
+	return {
+		Link: ({
+			to,
+			children,
+		}: {
+			to: string
+			children?: ComponentProps<'a'>['children']
+		}) => <a href={to}>{children}</a>,
+	}
+})
+function ProjectHarness() {
+	const [search, setSearch] = useState<AdminProjectSearch>({
+		sort: 'name',
+		order: 'asc',
+	})
+	return <ProjectListPage search={search} onSearchChange={setSearch} />
+}
+function renderProjects() {
+	return render(<ProjectHarness />)
+}
 
 afterEach(cleanup)
 beforeEach(() => queryInput.mockClear())
@@ -196,9 +221,7 @@ describe('admin project data table', () => {
 	})
 
 	it('sends the active controls to the API and resets pagination on changes', () => {
-		const Component = Route.options.component
-		if (!Component) throw new Error('Missing projects route component')
-		render(<Component />)
+		renderProjects()
 		expect(queryInput).toHaveBeenLastCalledWith({
 			page: 1,
 			limit: 12,
@@ -227,9 +250,7 @@ describe('admin project data table', () => {
 		)
 	})
 	it('selects Needs review without a status, then clears it when switching filters and resets the page', async () => {
-		const Component = Route.options.component
-		if (!Component) throw new Error('Missing projects route component')
-		render(<Component />)
+		renderProjects()
 		fireEvent.change(screen.getByPlaceholderText('Filter names...'), {
 			target: { value: 'Review' },
 		})
@@ -272,9 +293,7 @@ describe('admin project data table', () => {
 		}
 	})
 	it('filters statuses on the server, combines the name filter and resets pagination', async () => {
-		const Component = Route.options.component
-		if (!Component) throw new Error('Missing projects route component')
-		render(<Component />)
+		renderProjects()
 		fireEvent.change(screen.getByPlaceholderText('Filter names...'), {
 			target: { value: 'Review' },
 		})

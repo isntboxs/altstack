@@ -1,11 +1,6 @@
-import {
-	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarRightCollapse,
-} from '@tabler/icons-react'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { cn } from 'cn'
 
-import { Button } from '@altstack/ui/components/button'
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -13,6 +8,7 @@ import {
 } from '@altstack/ui/components/sidebar'
 
 import { MainSidebar } from '#/components/main-sidebar'
+import { WorkspaceHeader } from '#/components/workspace-header'
 import { seoHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_main')({
@@ -52,7 +48,7 @@ function RouteComponent() {
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => {
-	const { state, isMobile, toggleSidebar } = useSidebar()
+	const { state, isMobile } = useSidebar()
 
 	return (
 		<div
@@ -64,28 +60,17 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
 				isMobile && 'm-0 rounded-none'
 			)}
 		>
-			<div className="sticky top-0 z-50 h-12 w-full bg-sidebar/90 backdrop-blur supports-backdrop-filter:bg-sidebar/60">
-				<div className="flex h-full items-center justify-between px-4 py-2">
-					<Button
-						variant="outline"
-						size="icon-sm"
-						aria-label={
-							state === 'collapsed' || isMobile
-								? 'Expand sidebar'
-								: 'Collapse sidebar'
-						}
-						onClick={toggleSidebar}
-					>
-						{state === 'collapsed' || isMobile ? (
-							<IconLayoutSidebarRightCollapse />
-						) : (
-							<IconLayoutSidebarLeftCollapse />
-						)}
-					</Button>
-				</div>
-			</div>
+			<a
+				href="#workspace-content"
+				className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-16 focus:z-30 focus:rounded-md focus:bg-background focus:p-2"
+			>
+				Skip to content
+			</a>
+			<WorkspaceHeader />
 
-			{children}
+			<div id="workspace-content" tabIndex={-1}>
+				{children}
+			</div>
 		</div>
 	)
 }
