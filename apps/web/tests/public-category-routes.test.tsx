@@ -1213,10 +1213,10 @@ describe('L2 public affordances and recovery', () => {
 				{ key: 'ArrowDown' }
 			)
 			const destination = await screen.findByRole('menuitem', {
-				name: role === 'admin' ? 'Projects' : 'Submission',
+				name: role === 'admin' ? 'Admin overview' : 'Submission',
 			})
 			expect(destination.getAttribute('href')).toBe(
-				role === 'admin' ? '/projects' : '/submission'
+				role === 'admin' ? '/admin' : '/submission'
 			)
 			const bookmarks = screen.getByRole('menuitem', {
 				name: 'Bookmarks',
