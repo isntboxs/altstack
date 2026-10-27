@@ -87,7 +87,7 @@ export function WorkspaceHeader() {
 					<ThemeSwitcher />
 				</div>
 			</div>
-			<Separator />
+			<Separator className="h-px" />
 		</header>
 	)
 }
