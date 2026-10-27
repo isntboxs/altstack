@@ -26,8 +26,6 @@ import {
 } from '@altstack/ui/components/dropdown-menu'
 import {
 	SidebarFooter,
-	SidebarGroup,
-	SidebarGroupContent,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
@@ -39,31 +37,31 @@ import { UserAvatar } from '#/components/user-avatar'
 
 type MainSidebarFooterProps = ComponentProps<typeof SidebarFooter>
 
+/** Keeps public-site navigation and session actions reachable in every sidebar layout. */
 export const MainSidebarFooter: FC<MainSidebarFooterProps> = ({ ...props }) => (
 	<SidebarFooter {...props}>
-		<SidebarGroup>
-			<SidebarGroupContent>
-				<SidebarMenu className="gap-2">
-					<SidebarMenuItem>
-						<SidebarMenuButton
-							tooltip="Visit site"
-							render={
-								<Link to="/" target="_blank">
-									<IconBrowserPlus /> Visit Site
-								</Link>
-							}
-						/>
-					</SidebarMenuItem>
+		<SidebarMenu className="gap-2">
+			<SidebarMenuItem>
+				<SidebarMenuButton
+					aria-label="Visit site"
+					tooltip="Visit site"
+					render={<Link to="/" target="_blank" />}
+				>
+					<IconBrowserPlus />
+					<span className="group-data-[collapsible=icon]:hidden">
+						Visit Site
+					</span>
+				</SidebarMenuButton>
+			</SidebarMenuItem>
 
-					<SidebarMenuItem>
-						<UserButton />
-					</SidebarMenuItem>
-				</SidebarMenu>
-			</SidebarGroupContent>
-		</SidebarGroup>
+			<SidebarMenuItem>
+				<UserButton />
+			</SidebarMenuItem>
+		</SidebarMenu>
 	</SidebarFooter>
 )
 
+/** Uses a drawer on mobile and an anchored dropdown on desktop for account actions. */
 const UserButton = () => {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const router = useRouter()
@@ -94,9 +92,14 @@ const UserButton = () => {
 					render={
 						<SidebarMenuButton
 							size="lg"
+							aria-label={`Open account menu for ${auth.user.name}`}
 							className="cursor-pointer data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<UserAvatar image={auth.user.image} name={auth.user.name} />
+							<UserAvatar
+								image={auth.user.image}
+								name={auth.user.name}
+								size="default"
+							/>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-semibold">{auth.user.name}</span>
 								<span className="truncate text-xs">{auth.user.email}</span>
@@ -146,16 +149,22 @@ const UserButton = () => {
 				render={
 					<SidebarMenuButton
 						size="lg"
-						className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						aria-label={`Open account menu for ${auth.user.name}`}
+						tooltip={auth.user.name}
+						className="group-data-[collapsible=icon]:justify-center data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 					>
-						<UserAvatar image={auth.user.image} name={auth.user.name} />
-						<div className="grid flex-1 text-left text-sm leading-tight">
+						<UserAvatar
+							image={auth.user.image}
+							name={auth.user.name}
+							size="default"
+						/>
+						<div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
 							<span className="truncate font-medium">{auth.user.name}</span>
 							<span className="truncate text-xs text-muted-foreground">
 								{auth.user.email}
 							</span>
 						</div>
-						<IconDots className="ml-auto size-4" />
+						<IconDots className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
 					</SidebarMenuButton>
 				}
 			/>

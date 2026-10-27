@@ -64,6 +64,7 @@ const actionItems = [
 	}),
 ]
 
+/** Renders recorded audit events with filters and pagination stored in the URL. */
 function Activity() {
 	const { auth } = Route.useRouteContext()
 	const search = Route.useSearch()
@@ -141,7 +142,7 @@ function Activity() {
 							})
 						}}
 					>
-						<FieldGroup className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+						<FieldGroup className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							<Field>
 								<FieldLabel htmlFor="audit-actor">Actor ID</FieldLabel>
 								<Input
@@ -181,7 +182,10 @@ function Activity() {
 									min={search.from}
 								/>
 							</Field>
-							<Field className="flex-row items-end">
+							<Field
+								orientation="horizontal"
+								className="flex-wrap justify-end sm:col-span-2 xl:col-span-4"
+							>
 								<Button type="submit">Apply</Button>
 								<Button
 									type="button"

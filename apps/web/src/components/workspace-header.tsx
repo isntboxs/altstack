@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
 	'/submission': 'Submission',
 	'/bookmarks': 'Bookmarks',
 }
+/** Provides sticky workspace navigation, role context, and theme controls. */
 export function WorkspaceHeader() {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const path = useLocation({
@@ -49,38 +50,44 @@ export function WorkspaceHeader() {
 						? 'Edit project'
 						: 'Manage project')
 	return (
-		<header className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b bg-sidebar/95 px-4 backdrop-blur">
-			<div className="flex min-w-0 items-center gap-3">
-				<SidebarTrigger />
-				<Separator orientation="vertical" className="h-4" />
-				<Breadcrumb>
-					<BreadcrumbList>
-						<BreadcrumbItem className="hidden sm:inline-flex">
-							<BreadcrumbLink
-								render={
-									<Link
-										to={auth.user.role === 'admin' ? '/admin' : '/managed'}
-									/>
-								}
-							>
-								{auth.user.role === 'admin' ? 'Admin' : 'Workspace'}
-							</BreadcrumbLink>
-						</BreadcrumbItem>
-						<BreadcrumbSeparator className="hidden sm:block" />
-						<BreadcrumbItem>
-							<BreadcrumbPage>{title}</BreadcrumbPage>
-						</BreadcrumbItem>
-					</BreadcrumbList>
-				</Breadcrumb>
+		<header className="sticky top-0 z-20 bg-sidebar/95 px-4 backdrop-blur">
+			<div className="flex min-h-14 items-center justify-between gap-3">
+				<div className="flex min-w-0 items-center gap-3">
+					<SidebarTrigger />
+					<Separator
+						orientation="vertical"
+						className="h-4 data-vertical:self-center"
+					/>
+					<Breadcrumb>
+						<BreadcrumbList>
+							<BreadcrumbItem className="hidden sm:inline-flex">
+								<BreadcrumbLink
+									render={
+										<Link
+											to={auth.user.role === 'admin' ? '/admin' : '/managed'}
+										/>
+									}
+								>
+									{auth.user.role === 'admin' ? 'Admin' : 'Workspace'}
+								</BreadcrumbLink>
+							</BreadcrumbItem>
+							<BreadcrumbSeparator className="hidden sm:block" />
+							<BreadcrumbItem>
+								<BreadcrumbPage>{title}</BreadcrumbPage>
+							</BreadcrumbItem>
+						</BreadcrumbList>
+					</Breadcrumb>
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
+					{auth.user.role === 'admin' && (
+						<Badge variant="outline" className="hidden sm:inline-flex">
+							Admin
+						</Badge>
+					)}
+					<ThemeSwitcher />
+				</div>
 			</div>
-			<div className="flex shrink-0 items-center gap-2">
-				{auth.user.role === 'admin' && (
-					<Badge variant="outline" className="hidden sm:inline-flex">
-						Admin
-					</Badge>
-				)}
-				<ThemeSwitcher />
-			</div>
+			<Separator className="h-px" />
 		</header>
 	)
 }

@@ -14,32 +14,37 @@ import {
 
 import { BrandMark } from '#/components/brand-mark'
 
+/** Keeps visible workspace branding and accessible names consistent in every sidebar mode. */
 export function MainSidebarHeader() {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const { isMobile, setOpenMobile } = useSidebar()
 	const isAdmin = auth.user.role === 'admin'
+	const workspaceLabel = isAdmin ? 'Admin workspace' : 'Your workspace'
+	const workspaceName = `${env.VITE_APP_NAME} ${workspaceLabel}`
 	const close = () => {
 		if (isMobile) setOpenMobile(false)
 	}
 	return (
 		<>
 			<SidebarHeader>
-				<SidebarMenu>
+				<SidebarMenu className="gap-2">
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							size="lg"
-							tooltip="AltStack workspace"
+							className="group-data-[collapsible=icon]:justify-center"
+							aria-label={workspaceName}
+							tooltip={workspaceName}
 							render={
 								<Link to={isAdmin ? '/admin' : '/managed'} onClick={close} />
 							}
 						>
-							<BrandMark />
-							<div className="flex flex-col">
+							<BrandMark className="size-6!" />
+							<div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
 								<span className="font-semibold lowercase">
 									{env.VITE_APP_NAME}
 								</span>
 								<span className="text-xs text-muted-foreground">
-									{isAdmin ? 'Admin workspace' : 'Your workspace'}
+									{workspaceLabel}
 								</span>
 							</div>
 						</SidebarMenuButton>
@@ -47,6 +52,7 @@ export function MainSidebarHeader() {
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							variant="outline"
+							aria-label={isAdmin ? 'Create project' : 'Submit a project'}
 							tooltip={isAdmin ? 'Create project' : 'Submit a project'}
 							render={
 								<Link
@@ -56,7 +62,9 @@ export function MainSidebarHeader() {
 							}
 						>
 							<IconPlus />
-							<span>{isAdmin ? 'Create project' : 'Submit a project'}</span>
+							<span className="group-data-[collapsible=icon]:hidden">
+								{isAdmin ? 'Create project' : 'Submit a project'}
+							</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>
