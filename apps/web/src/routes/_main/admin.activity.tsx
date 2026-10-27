@@ -64,6 +64,7 @@ const actionItems = [
 	}),
 ]
 
+/** Renders recorded audit events with filters and pagination stored in the URL. */
 function Activity() {
 	const { auth } = Route.useRouteContext()
 	const search = Route.useSearch()

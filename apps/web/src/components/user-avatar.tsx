@@ -6,6 +6,7 @@ import {
 	AvatarImage,
 } from '@altstack/ui/components/avatar'
 
+/** Shows an account image at the requested size, with initials as a fallback. */
 export const UserAvatar = ({
 	image,
 	name,

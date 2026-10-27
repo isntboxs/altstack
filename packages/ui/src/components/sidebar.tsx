@@ -362,6 +362,7 @@ function SidebarFooter({ className, ...props }: React.ComponentProps<'div'>) {
 	)
 }
 
+/** Separates sidebar sections with equal horizontal insets, including in icon mode. */
 function SidebarSeparator({
 	className,
 	...props

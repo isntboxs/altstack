@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
 	'/submission': 'Submission',
 	'/bookmarks': 'Bookmarks',
 }
+/** Provides sticky workspace navigation, role context, and theme controls. */
 export function WorkspaceHeader() {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const path = useLocation({

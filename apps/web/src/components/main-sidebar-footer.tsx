@@ -37,6 +37,7 @@ import { UserAvatar } from '#/components/user-avatar'
 
 type MainSidebarFooterProps = ComponentProps<typeof SidebarFooter>
 
+/** Keeps public-site navigation and session actions reachable in every sidebar layout. */
 export const MainSidebarFooter: FC<MainSidebarFooterProps> = ({ ...props }) => (
 	<SidebarFooter {...props}>
 		<SidebarMenu className="gap-2">
@@ -60,6 +61,7 @@ export const MainSidebarFooter: FC<MainSidebarFooterProps> = ({ ...props }) => (
 	</SidebarFooter>
 )
 
+/** Uses a drawer on mobile and an anchored dropdown on desktop for account actions. */
 const UserButton = () => {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const router = useRouter()

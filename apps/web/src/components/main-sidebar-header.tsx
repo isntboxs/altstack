@@ -14,10 +14,13 @@ import {
 
 import { BrandMark } from '#/components/brand-mark'
 
+/** Keeps visible workspace branding and accessible names consistent in every sidebar mode. */
 export function MainSidebarHeader() {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const { isMobile, setOpenMobile } = useSidebar()
 	const isAdmin = auth.user.role === 'admin'
+	const workspaceLabel = isAdmin ? 'Admin workspace' : 'Your workspace'
+	const workspaceName = `${env.VITE_APP_NAME} ${workspaceLabel}`
 	const close = () => {
 		if (isMobile) setOpenMobile(false)
 	}
@@ -29,8 +32,8 @@ export function MainSidebarHeader() {
 						<SidebarMenuButton
 							size="lg"
 							className="group-data-[collapsible=icon]:justify-center"
-							aria-label="AltStack workspace"
-							tooltip="AltStack workspace"
+							aria-label={workspaceName}
+							tooltip={workspaceName}
 							render={
 								<Link to={isAdmin ? '/admin' : '/managed'} onClick={close} />
 							}
@@ -41,7 +44,7 @@ export function MainSidebarHeader() {
 									{env.VITE_APP_NAME}
 								</span>
 								<span className="text-xs text-muted-foreground">
-									{isAdmin ? 'Admin workspace' : 'Your workspace'}
+									{workspaceLabel}
 								</span>
 							</div>
 						</SidebarMenuButton>
