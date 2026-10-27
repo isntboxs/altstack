@@ -53,7 +53,10 @@ export function WorkspaceHeader() {
 			<div className="flex min-h-14 items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-3">
 					<SidebarTrigger />
-					<Separator orientation="vertical" className="h-4" />
+					<Separator
+						orientation="vertical"
+						className="h-4 data-vertical:self-center"
+					/>
 					<Breadcrumb>
 						<BreadcrumbList>
 							<BreadcrumbItem className="hidden sm:inline-flex">
