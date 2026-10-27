@@ -88,7 +88,17 @@ vp run --filter server build
 Validation completed: 160 API tests and 47 UI tests passed, along with web/API
 typechecks, changed-file formatting and lint, web/server builds, and
 `git diff --check`. UI tests were split into bounded worker runs after concurrent
-checks encountered SIGKILLs. Visual browser smoke testing was not performed.
+checks encountered SIGKILLs.
+
+A follow-up layout fix passed 22 targeted UI tests (dashboard routes, workspace
+breadcrumbs, and role navigation), the web typecheck, changed-file formatting
+and lint, and `git diff --check`. A T3 browser audit used a local admin session at
+320, 390, 1024, and 1280 CSS pixels in light and dark themes. It checked balanced
+sidebar/header dividers, expanded and collapsed branding/footer alignment, the
+mobile sheet and account menu, and visible Activity Apply/Clear actions. Applying
+and reloading an actor filter preserved its URL value; keyboard Tab/Enter reached
+Clear and reset it. The local queues and activity feed were empty, so this visual
+audit did not exercise populated records or moderation decisions.
 
 Format and lint the changed files with `vp fmt <files> --check` and
 `vp lint <files>`. No production rollout is part of this implementation.

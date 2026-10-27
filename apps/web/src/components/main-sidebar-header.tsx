@@ -24,17 +24,19 @@ export function MainSidebarHeader() {
 	return (
 		<>
 			<SidebarHeader>
-				<SidebarMenu>
+				<SidebarMenu className="gap-2">
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							size="lg"
+							className="group-data-[collapsible=icon]:justify-center"
+							aria-label="AltStack workspace"
 							tooltip="AltStack workspace"
 							render={
 								<Link to={isAdmin ? '/admin' : '/managed'} onClick={close} />
 							}
 						>
-							<BrandMark />
-							<div className="flex flex-col">
+							<BrandMark className="size-6!" />
+							<div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
 								<span className="font-semibold lowercase">
 									{env.VITE_APP_NAME}
 								</span>
@@ -47,6 +49,7 @@ export function MainSidebarHeader() {
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							variant="outline"
+							aria-label={isAdmin ? 'Create project' : 'Submit a project'}
 							tooltip={isAdmin ? 'Create project' : 'Submit a project'}
 							render={
 								<Link
@@ -56,7 +59,9 @@ export function MainSidebarHeader() {
 							}
 						>
 							<IconPlus />
-							<span>{isAdmin ? 'Create project' : 'Submit a project'}</span>
+							<span className="group-data-[collapsible=icon]:hidden">
+								{isAdmin ? 'Create project' : 'Submit a project'}
+							</span>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>
