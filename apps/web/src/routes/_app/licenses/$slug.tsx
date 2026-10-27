@@ -16,11 +16,11 @@ import {
 import { licenseQueries } from '#/features/license/queries'
 import { licenseProjectPageLink } from '#/features/project/page-links'
 import { projectQueries } from '#/features/project/queries'
-import { projectFilterSearchSchema } from '#/features/project/search'
+import { catalogueProjectSearchSchema } from '#/features/project/search'
 import { cataloguePolicy, seoHead, unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/licenses/$slug')({
-	validateSearch: projectFilterSearchSchema,
+	validateSearch: catalogueProjectSearchSchema,
 	loaderDeps: ({ search: { q, sort, page } }) => {
 		return { q, sort, page }
 	},
@@ -50,7 +50,11 @@ export const Route = createFileRoute('/_app/licenses/$slug')({
 				throw error
 			})
 		const projects = await context.queryClient.query(
-			projectQueries.search({ ...deps, license: detail.license.slug })
+			projectQueries.search({
+				...deps,
+				sort: deps.sort ?? 'most-stars',
+				license: detail.license.slug,
+			})
 		)
 		return { ...detail, projects }
 	},

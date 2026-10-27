@@ -89,6 +89,8 @@ export function LicenseProjectControls() {
 				key={slug}
 				q={q}
 				sort={sort}
+				defaultSort="most-stars"
+				defaultSortLabel="Order by"
 				page={page}
 				placeholder={`Search in "${license.identifier}"...`}
 				onQueryChange={(nextQ) =>

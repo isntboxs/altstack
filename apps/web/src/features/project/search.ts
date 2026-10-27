@@ -18,7 +18,7 @@ export const homeProjectSearchSchema = projectFilterSearchSchema.extend({
 	category: searchProjectsQuerySchema.shape.category.catch(undefined),
 })
 
-export const categoryProjectSearchSchema = projectFilterSearchSchema.extend({
+export const catalogueProjectSearchSchema = projectFilterSearchSchema.extend({
 	sort: searchSortSchema
 		.refine((sort): boolean => sort !== 'recommended')
 		.optional()
