@@ -1,20 +1,25 @@
+import type { ComponentProps } from 'react'
+
 import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
 } from '@altstack/ui/components/avatar'
 
+/** Shows an account image at the requested size, with initials as a fallback. */
 export const UserAvatar = ({
 	image,
 	name,
+	size = 'sm',
 }: {
 	image?: string | null
 	name: string
+	size?: ComponentProps<typeof Avatar>['size']
 }) => {
 	if (!image) {
 		return (
 			<Avatar
-				size="sm"
+				size={size}
 				className="rounded-[min(var(--radius-md),12px)] after:rounded-[min(var(--radius-md),12px)]"
 			>
 				<AvatarFallback className="rounded-[min(var(--radius-md),12px)]">
@@ -26,7 +31,7 @@ export const UserAvatar = ({
 
 	return (
 		<Avatar
-			size="sm"
+			size={size}
 			className="rounded-[min(var(--radius-md),12px)] after:rounded-[min(var(--radius-md),12px)]"
 		>
 			<AvatarImage

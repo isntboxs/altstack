@@ -19,6 +19,7 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
 import { Route as AppSubmitRouteImport } from './routes/_app/submit'
+import { Route as MainAdminRouteImport } from './routes/_main/admin'
 import { Route as MainBookmarksRouteImport } from './routes/_main/bookmarks'
 import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
@@ -30,9 +31,14 @@ import { Route as AppLicensesIndexRouteImport } from './routes/_app/licenses/ind
 import { Route as AppLicensesSlugRouteImport } from './routes/_app/licenses/$slug'
 import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
 import { Route as AppTagsSlugRouteImport } from './routes/_app/tags/$slug'
+import { Route as MainAdminIndexRouteImport } from './routes/_main/admin.index'
+import { Route as MainAdminActivityRouteImport } from './routes/_main/admin.activity'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainAdminFeaturedRouteImport } from './routes/_main/admin.featured'
+import { Route as MainAdminOperationsRouteImport } from './routes/_main/admin.operations'
+import { Route as MainAdminOwnershipRouteImport } from './routes/_main/admin.ownership'
 import { Route as MainAdminReportsRouteImport } from './routes/_main/admin.reports'
+import { Route as MainAdminSubmissionsRouteImport } from './routes/_main/admin.submissions'
 import { Route as MainAdminTagsRouteImport } from './routes/_main/admin.tags'
 import { Route as MainManagedIndexRouteImport } from './routes/_main/managed/index'
 import { Route as MainManagedIdRouteImport } from './routes/_main/managed/$id'
@@ -43,6 +49,9 @@ import { Route as OgProjectIdRouteImport } from './routes/og.project.$id'
 import { Route as SitemapsProjectsPageRouteImport } from './routes/sitemaps.projects.$page'
 import { Route as MainAdminCategoriesIndexRouteImport } from './routes/_main/admin.categories/index'
 import { Route as MainAdminCategoriesCreateRouteImport } from './routes/_main/admin.categories/create'
+import { Route as MainAdminUsersIndexRouteImport } from './routes/_main/admin.users/index'
+import { Route as MainAdminUsersIdRouteImport } from './routes/_main/admin.users/$id'
+import { Route as MainManagedIdMembersRouteImport } from './routes/_main/managed/$id_.members'
 import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
 import { Route as MainAdminCategoriesIdEditRouteImport } from './routes/_main/admin.categories/$id.edit'
 
@@ -93,6 +102,11 @@ const AppSubmitRoute = AppSubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const MainAdminRoute = MainAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => MainRouteRoute,
 } as any)
 const MainBookmarksRoute = MainBookmarksRouteImport.update({
   id: '/bookmarks',
@@ -149,25 +163,50 @@ const AppTagsSlugRoute = AppTagsSlugRouteImport.update({
   path: '/tags/$slug',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const MainAdminIndexRoute = MainAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminActivityRoute = MainAdminActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => MainAdminRoute,
+} as any)
 const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
-  id: '/admin/categories',
-  path: '/admin/categories',
-  getParentRoute: () => MainRouteRoute,
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => MainAdminRoute,
 } as any)
 const MainAdminFeaturedRoute = MainAdminFeaturedRouteImport.update({
-  id: '/admin/featured',
-  path: '/admin/featured',
-  getParentRoute: () => MainRouteRoute,
+  id: '/featured',
+  path: '/featured',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminOperationsRoute = MainAdminOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminOwnershipRoute = MainAdminOwnershipRouteImport.update({
+  id: '/ownership',
+  path: '/ownership',
+  getParentRoute: () => MainAdminRoute,
 } as any)
 const MainAdminReportsRoute = MainAdminReportsRouteImport.update({
-  id: '/admin/reports',
-  path: '/admin/reports',
-  getParentRoute: () => MainRouteRoute,
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminSubmissionsRoute = MainAdminSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => MainAdminRoute,
 } as any)
 const MainAdminTagsRoute = MainAdminTagsRouteImport.update({
-  id: '/admin/tags',
-  path: '/admin/tags',
-  getParentRoute: () => MainRouteRoute,
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => MainAdminRoute,
 } as any)
 const MainManagedIndexRoute = MainManagedIndexRouteImport.update({
   id: '/managed/',
@@ -216,6 +255,21 @@ const MainAdminCategoriesCreateRoute =
     path: '/create',
     getParentRoute: () => MainAdminCategoriesRoute,
   } as any)
+const MainAdminUsersIndexRoute = MainAdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminUsersIdRoute = MainAdminUsersIdRouteImport.update({
+  id: '/users/$id',
+  path: '/users/$id',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainManagedIdMembersRoute = MainManagedIdMembersRouteImport.update({
+  id: '/managed/$id_/members',
+  path: '/managed/$id/members',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainProjectsIdEditRoute = MainProjectsIdEditRouteImport.update({
   id: '/$id/edit',
   path: '/$id/edit',
@@ -237,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
   '/submit': typeof AppSubmitRoute
+  '/admin': typeof MainAdminRouteWithChildren
   '/bookmarks': typeof MainBookmarksRoute
   '/projects': typeof MainProjectsRouteWithChildren
   '/submission': typeof MainSubmissionRoute
@@ -245,9 +300,13 @@ export interface FileRoutesByFullPath {
   '/categories/$': typeof AppCategoriesSplatRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
+  '/admin/activity': typeof MainAdminActivityRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/admin/featured': typeof MainAdminFeaturedRoute
+  '/admin/operations': typeof MainAdminOperationsRoute
+  '/admin/ownership': typeof MainAdminOwnershipRoute
   '/admin/reports': typeof MainAdminReportsRoute
+  '/admin/submissions': typeof MainAdminSubmissionsRoute
   '/admin/tags': typeof MainAdminTagsRoute
   '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
@@ -257,11 +316,15 @@ export interface FileRoutesByFullPath {
   '/categories/': typeof AppCategoriesIndexRoute
   '/licenses/': typeof AppLicensesIndexRoute
   '/tags/': typeof AppTagsIndexRoute
+  '/admin/': typeof MainAdminIndexRoute
   '/managed/': typeof MainManagedIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/admin/users/': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -280,8 +343,12 @@ export interface FileRoutesByTo {
   '/categories/$': typeof AppCategoriesSplatRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
+  '/admin/activity': typeof MainAdminActivityRoute
   '/admin/featured': typeof MainAdminFeaturedRoute
+  '/admin/operations': typeof MainAdminOperationsRoute
+  '/admin/ownership': typeof MainAdminOwnershipRoute
   '/admin/reports': typeof MainAdminReportsRoute
+  '/admin/submissions': typeof MainAdminSubmissionsRoute
   '/admin/tags': typeof MainAdminTagsRoute
   '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
@@ -291,11 +358,15 @@ export interface FileRoutesByTo {
   '/categories': typeof AppCategoriesIndexRoute
   '/licenses': typeof AppLicensesIndexRoute
   '/tags': typeof AppTagsIndexRoute
+  '/admin': typeof MainAdminIndexRoute
   '/managed': typeof MainManagedIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories': typeof MainAdminCategoriesIndexRoute
+  '/admin/users': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRoutesById {
@@ -309,6 +380,7 @@ export interface FileRoutesById {
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
   '/_app/submit': typeof AppSubmitRoute
+  '/_main/admin': typeof MainAdminRouteWithChildren
   '/_main/bookmarks': typeof MainBookmarksRoute
   '/_main/projects': typeof MainProjectsRouteWithChildren
   '/_main/submission': typeof MainSubmissionRoute
@@ -318,9 +390,13 @@ export interface FileRoutesById {
   '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_app/licenses/$slug': typeof AppLicensesSlugRoute
   '/_app/tags/$slug': typeof AppTagsSlugRoute
+  '/_main/admin/activity': typeof MainAdminActivityRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
+  '/_main/admin/operations': typeof MainAdminOperationsRoute
+  '/_main/admin/ownership': typeof MainAdminOwnershipRoute
   '/_main/admin/reports': typeof MainAdminReportsRoute
+  '/_main/admin/submissions': typeof MainAdminSubmissionsRoute
   '/_main/admin/tags': typeof MainAdminTagsRoute
   '/_main/managed/$id': typeof MainManagedIdRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
@@ -330,11 +406,15 @@ export interface FileRoutesById {
   '/_app/categories/': typeof AppCategoriesIndexRoute
   '/_app/licenses/': typeof AppLicensesIndexRoute
   '/_app/tags/': typeof AppTagsIndexRoute
+  '/_main/admin/': typeof MainAdminIndexRoute
   '/_main/managed/': typeof MainManagedIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/_main/admin/users/$id': typeof MainAdminUsersIdRoute
+  '/_main/managed/$id_/members': typeof MainManagedIdMembersRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/_main/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/_main/admin/users/': typeof MainAdminUsersIndexRoute
   '/_main/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
 }
 export interface FileRouteTypes {
@@ -348,6 +428,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/activity'
     | '/submit'
+    | '/admin'
     | '/bookmarks'
     | '/projects'
     | '/submission'
@@ -356,9 +437,13 @@ export interface FileRouteTypes {
     | '/categories/$'
     | '/licenses/$slug'
     | '/tags/$slug'
+    | '/admin/activity'
     | '/admin/categories'
     | '/admin/featured'
+    | '/admin/operations'
+    | '/admin/ownership'
     | '/admin/reports'
+    | '/admin/submissions'
     | '/admin/tags'
     | '/managed/$id'
     | '/projects/create'
@@ -368,11 +453,15 @@ export interface FileRouteTypes {
     | '/categories/'
     | '/licenses/'
     | '/tags/'
+    | '/admin/'
     | '/managed/'
     | '/projects/'
     | '/admin/categories/create'
+    | '/admin/users/$id'
+    | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories/'
+    | '/admin/users/'
     | '/admin/categories/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -391,8 +480,12 @@ export interface FileRouteTypes {
     | '/categories/$'
     | '/licenses/$slug'
     | '/tags/$slug'
+    | '/admin/activity'
     | '/admin/featured'
+    | '/admin/operations'
+    | '/admin/ownership'
     | '/admin/reports'
+    | '/admin/submissions'
     | '/admin/tags'
     | '/managed/$id'
     | '/projects/create'
@@ -402,11 +495,15 @@ export interface FileRouteTypes {
     | '/categories'
     | '/licenses'
     | '/tags'
+    | '/admin'
     | '/managed'
     | '/projects'
     | '/admin/categories/create'
+    | '/admin/users/$id'
+    | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories'
+    | '/admin/users'
     | '/admin/categories/$id/edit'
   id:
     | '__root__'
@@ -419,6 +516,7 @@ export interface FileRouteTypes {
     | '/_app/$slug'
     | '/_app/activity'
     | '/_app/submit'
+    | '/_main/admin'
     | '/_main/bookmarks'
     | '/_main/projects'
     | '/_main/submission'
@@ -428,9 +526,13 @@ export interface FileRouteTypes {
     | '/_app/categories/$'
     | '/_app/licenses/$slug'
     | '/_app/tags/$slug'
+    | '/_main/admin/activity'
     | '/_main/admin/categories'
     | '/_main/admin/featured'
+    | '/_main/admin/operations'
+    | '/_main/admin/ownership'
     | '/_main/admin/reports'
+    | '/_main/admin/submissions'
     | '/_main/admin/tags'
     | '/_main/managed/$id'
     | '/_main/projects/create'
@@ -440,11 +542,15 @@ export interface FileRouteTypes {
     | '/_app/categories/'
     | '/_app/licenses/'
     | '/_app/tags/'
+    | '/_main/admin/'
     | '/_main/managed/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
+    | '/_main/admin/users/$id'
+    | '/_main/managed/$id_/members'
     | '/_main/projects/$id/edit'
     | '/_main/admin/categories/'
+    | '/_main/admin/users/'
     | '/_main/admin/categories/$id/edit'
   fileRoutesById: FileRoutesById
 }
@@ -533,6 +639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSubmitRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_main/admin': {
+      id: '/_main/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof MainAdminRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/bookmarks': {
       id: '/_main/bookmarks'
       path: '/bookmarks'
@@ -610,33 +723,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTagsSlugRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_main/admin/': {
+      id: '/_main/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof MainAdminIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/activity': {
+      id: '/_main/admin/activity'
+      path: '/activity'
+      fullPath: '/admin/activity'
+      preLoaderRoute: typeof MainAdminActivityRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
     '/_main/admin/categories': {
       id: '/_main/admin/categories'
-      path: '/admin/categories'
+      path: '/categories'
       fullPath: '/admin/categories'
       preLoaderRoute: typeof MainAdminCategoriesRouteImport
-      parentRoute: typeof MainRouteRoute
+      parentRoute: typeof MainAdminRoute
     }
     '/_main/admin/featured': {
       id: '/_main/admin/featured'
-      path: '/admin/featured'
+      path: '/featured'
       fullPath: '/admin/featured'
       preLoaderRoute: typeof MainAdminFeaturedRouteImport
-      parentRoute: typeof MainRouteRoute
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/operations': {
+      id: '/_main/admin/operations'
+      path: '/operations'
+      fullPath: '/admin/operations'
+      preLoaderRoute: typeof MainAdminOperationsRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/ownership': {
+      id: '/_main/admin/ownership'
+      path: '/ownership'
+      fullPath: '/admin/ownership'
+      preLoaderRoute: typeof MainAdminOwnershipRouteImport
+      parentRoute: typeof MainAdminRoute
     }
     '/_main/admin/reports': {
       id: '/_main/admin/reports'
-      path: '/admin/reports'
+      path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof MainAdminReportsRouteImport
-      parentRoute: typeof MainRouteRoute
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/submissions': {
+      id: '/_main/admin/submissions'
+      path: '/submissions'
+      fullPath: '/admin/submissions'
+      preLoaderRoute: typeof MainAdminSubmissionsRouteImport
+      parentRoute: typeof MainAdminRoute
     }
     '/_main/admin/tags': {
       id: '/_main/admin/tags'
-      path: '/admin/tags'
+      path: '/tags'
       fullPath: '/admin/tags'
       preLoaderRoute: typeof MainAdminTagsRouteImport
-      parentRoute: typeof MainRouteRoute
+      parentRoute: typeof MainAdminRoute
     }
     '/_main/managed/': {
       id: '/_main/managed/'
@@ -701,6 +849,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminCategoriesCreateRouteImport
       parentRoute: typeof MainAdminCategoriesRoute
     }
+    '/_main/admin/users/': {
+      id: '/_main/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof MainAdminUsersIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/users/$id': {
+      id: '/_main/admin/users/$id'
+      path: '/users/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof MainAdminUsersIdRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/managed/$id_/members': {
+      id: '/_main/managed/$id_/members'
+      path: '/managed/$id/members'
+      fullPath: '/managed/$id/members'
+      preLoaderRoute: typeof MainManagedIdMembersRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/projects/$id/edit': {
       id: '/_main/projects/$id/edit'
       path: '/$id/edit'
@@ -748,6 +917,53 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
+interface MainAdminCategoriesRouteChildren {
+  MainAdminCategoriesCreateRoute: typeof MainAdminCategoriesCreateRoute
+  MainAdminCategoriesIndexRoute: typeof MainAdminCategoriesIndexRoute
+  MainAdminCategoriesIdEditRoute: typeof MainAdminCategoriesIdEditRoute
+}
+
+const MainAdminCategoriesRouteChildren: MainAdminCategoriesRouteChildren = {
+  MainAdminCategoriesCreateRoute: MainAdminCategoriesCreateRoute,
+  MainAdminCategoriesIndexRoute: MainAdminCategoriesIndexRoute,
+  MainAdminCategoriesIdEditRoute: MainAdminCategoriesIdEditRoute,
+}
+
+const MainAdminCategoriesRouteWithChildren =
+  MainAdminCategoriesRoute._addFileChildren(MainAdminCategoriesRouteChildren)
+
+interface MainAdminRouteChildren {
+  MainAdminActivityRoute: typeof MainAdminActivityRoute
+  MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
+  MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
+  MainAdminOperationsRoute: typeof MainAdminOperationsRoute
+  MainAdminOwnershipRoute: typeof MainAdminOwnershipRoute
+  MainAdminReportsRoute: typeof MainAdminReportsRoute
+  MainAdminSubmissionsRoute: typeof MainAdminSubmissionsRoute
+  MainAdminTagsRoute: typeof MainAdminTagsRoute
+  MainAdminIndexRoute: typeof MainAdminIndexRoute
+  MainAdminUsersIdRoute: typeof MainAdminUsersIdRoute
+  MainAdminUsersIndexRoute: typeof MainAdminUsersIndexRoute
+}
+
+const MainAdminRouteChildren: MainAdminRouteChildren = {
+  MainAdminActivityRoute: MainAdminActivityRoute,
+  MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
+  MainAdminFeaturedRoute: MainAdminFeaturedRoute,
+  MainAdminOperationsRoute: MainAdminOperationsRoute,
+  MainAdminOwnershipRoute: MainAdminOwnershipRoute,
+  MainAdminReportsRoute: MainAdminReportsRoute,
+  MainAdminSubmissionsRoute: MainAdminSubmissionsRoute,
+  MainAdminTagsRoute: MainAdminTagsRoute,
+  MainAdminIndexRoute: MainAdminIndexRoute,
+  MainAdminUsersIdRoute: MainAdminUsersIdRoute,
+  MainAdminUsersIndexRoute: MainAdminUsersIndexRoute,
+}
+
+const MainAdminRouteWithChildren = MainAdminRoute._addFileChildren(
+  MainAdminRouteChildren,
+)
+
 interface MainProjectsRouteChildren {
   MainProjectsCreateRoute: typeof MainProjectsCreateRoute
   MainProjectsIndexRoute: typeof MainProjectsIndexRoute
@@ -764,43 +980,24 @@ const MainProjectsRouteWithChildren = MainProjectsRoute._addFileChildren(
   MainProjectsRouteChildren,
 )
 
-interface MainAdminCategoriesRouteChildren {
-  MainAdminCategoriesCreateRoute: typeof MainAdminCategoriesCreateRoute
-  MainAdminCategoriesIndexRoute: typeof MainAdminCategoriesIndexRoute
-  MainAdminCategoriesIdEditRoute: typeof MainAdminCategoriesIdEditRoute
-}
-
-const MainAdminCategoriesRouteChildren: MainAdminCategoriesRouteChildren = {
-  MainAdminCategoriesCreateRoute: MainAdminCategoriesCreateRoute,
-  MainAdminCategoriesIndexRoute: MainAdminCategoriesIndexRoute,
-  MainAdminCategoriesIdEditRoute: MainAdminCategoriesIdEditRoute,
-}
-
-const MainAdminCategoriesRouteWithChildren =
-  MainAdminCategoriesRoute._addFileChildren(MainAdminCategoriesRouteChildren)
-
 interface MainRouteRouteChildren {
+  MainAdminRoute: typeof MainAdminRouteWithChildren
   MainBookmarksRoute: typeof MainBookmarksRoute
   MainProjectsRoute: typeof MainProjectsRouteWithChildren
   MainSubmissionRoute: typeof MainSubmissionRoute
-  MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
-  MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
-  MainAdminReportsRoute: typeof MainAdminReportsRoute
-  MainAdminTagsRoute: typeof MainAdminTagsRoute
   MainManagedIdRoute: typeof MainManagedIdRoute
   MainManagedIndexRoute: typeof MainManagedIndexRoute
+  MainManagedIdMembersRoute: typeof MainManagedIdMembersRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
+  MainAdminRoute: MainAdminRouteWithChildren,
   MainBookmarksRoute: MainBookmarksRoute,
   MainProjectsRoute: MainProjectsRouteWithChildren,
   MainSubmissionRoute: MainSubmissionRoute,
-  MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
-  MainAdminFeaturedRoute: MainAdminFeaturedRoute,
-  MainAdminReportsRoute: MainAdminReportsRoute,
-  MainAdminTagsRoute: MainAdminTagsRoute,
   MainManagedIdRoute: MainManagedIdRoute,
   MainManagedIndexRoute: MainManagedIndexRoute,
+  MainManagedIdMembersRoute: MainManagedIdMembersRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

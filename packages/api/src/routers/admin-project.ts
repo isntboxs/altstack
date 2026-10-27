@@ -810,7 +810,7 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 				.select()
 				.from(project)
 				.where(where)
-				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.leftJoin(githubRepository, eq(project.id, githubRepository.projectId))
 				.leftJoin(user, eq(project.submitterId, user.id))
 				.orderBy(order(sortColumn), order(project.id))
 				.limit(limit)
@@ -819,7 +819,7 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 			db
 				.select({ total: count() })
 				.from(project)
-				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
+				.leftJoin(githubRepository, eq(project.id, githubRepository.projectId))
 				.where(where),
 		])
 
@@ -867,13 +867,15 @@ const adminListProjectHandler = adminProcedure.admin.project.list.handler(
 						: null,
 					logo: rest.logo,
 					screenshot: rest.screenshot,
-					github: {
-						owner: row.github_repositories.owner,
-						repo: row.github_repositories.repo,
-						stars: row.github_repositories.stars,
-						forks: row.github_repositories.forks,
-						fetchedAt: row.github_repositories.fetchedAt,
-					},
+					github: row.github_repositories
+						? {
+								owner: row.github_repositories.owner,
+								repo: row.github_repositories.repo,
+								stars: row.github_repositories.stars,
+								forks: row.github_repositories.forks,
+								fetchedAt: row.github_repositories.fetchedAt,
+							}
+						: null,
 					categories: slugsByProject.get(row.projects.id) ?? [],
 				}
 			}),

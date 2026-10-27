@@ -1,7 +1,7 @@
 # AltStack Roadmap — Lean Releases
 
-> Execution companion to [the PRD](prd.md). Reconciled on **2026-10-24** against
-> **v0.4.0** (`b79593d`), whose source tree matches `dev` at **`08bb687`**.
+> Execution companion to [the PRD](prd.md). Reconciled on **2026-10-27** against
+> `dev` at **`b4fe7ff`** and `main` at **`c15fd5d`**.
 > Release contents, operator-reported rollout and recorded verification are
 > tracked separately; unchecked operational items mean evidence is still missing.
 
@@ -10,19 +10,24 @@ The operator confirmed v0.4.0 production rollout in the project conversation on
 instructions; their pending-deployment statements are historical, superseded by
 this baseline. Individual live-service outcomes are recorded separately in the
 [2026-10-24 production verification](production-verification-v0.4.0.md).
+The **2026-10-27 WIB recovery follow-up** configured private off-host backups,
+proved an isolated restore, and exercised actual count pruning; see the
+[recovery runbook](postgres-backup-restore.md).
 
 ## Release baseline and evidence
 
+- **Current source checkpoint — 2026-10-27:** R6 and catalogue default-sort fixes already reached `main` through #121–#122. `dev` adds member/admin user management (#123), backup/restore evidence (#124), the admin workspace (#125) and layout/accessibility fixes (#126). Main-to-dev sync `b4fe7ff` preserves #122's tag/license defaults before rollout. The [rollout checkpoint](rollout-2026-10-27.md) records the next `dev` → `main` scope, target migration, validation and live acceptance gaps. No new release tag or matching deployed application revision is established here.
 - **v0.2.0** (`0c75022`): project mentions/hover previews, sharing, footer and media fixes, on top of the existing catalogue, submission, SEO and Embed capabilities.
 - **v0.3.0** (`bb30efe`): includes Bookmarks (#105), report intake (#108), admin report inbox (#109), revised R7 Featured Projects (#110), and related UI fixes. The operator confirmed rollout on **2026-10-22** in the project conversation. Production was not independently inspected in this reconciliation.
 - **v0.4.0** (`b79593d`, release merge #119): includes the v0.3.0 baseline, Docker development/test databases (#112), GitHub Topics tags (#113), GitHub + Resend Magic Link and auth/rate-limit fixes (#115 and subsequent fixes), review-decision emails (#117), license discovery/archived metadata/ten sorts including observed seven-day Trending (#118), scoped-validation instructions and Vite+ 1.4.0. The operator confirmed production rollout on **2026-10-24**. Subsequent live inspection verified matching API/Web OCI revisions, 25 migrations, both jobs, delivery and 20 published listings; recovery gaps remain explicit in the [production record](production-verification-v0.4.0.md).
 
 Feature documents retain their original branch test/QA results. Those historical
-runs are not fresh checks of this baseline. The initial reconciliation changed
+runs are not fresh checks of this checkpoint. The initial reconciliation changed
 documents only; the linked production follow-up records authorized live changes.
 Historical targeted review-email checks are recorded under R5c. P0 core
-verification is complete; recovery and explicitly unexercised checks remain
-owned follow-ups, not unimplemented product features or passing acceptance.
+verification and the 2026-10-27 backup/restore drill are complete. Monitoring,
+hardening, asset lifecycle and explicitly unexercised checks remain owned
+follow-ups, not unimplemented product features or passing acceptance.
 
 ## Operating rules
 
@@ -42,7 +47,7 @@ owned follow-ups, not unimplemented product features or passing acceptance.
 - **R5 — Moderate + enrich:** admin review, publish validation, required rejection feedback, history, enrichment, and original-submitter resubmission implemented.
 - **R5c — Review emails:** Published/Rejected decision outbox, bounded Resend retry and shared React Email templates included in v0.4.0; migration, every-minute scheduler, both decision mails and inbox links verified in P0.
 - **L1 — SEO and link previews:** route metadata, structured data, indexing, sitemap, and static/dynamic social images implemented and merged.
-- **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are now functional; R6 now enables Verify locally; deployment remains separate.
+- **L2 — Public UI:** branding, honest media/copy, accessible navigation, loading/recovery and link cleanup implemented. Embed, Bookmark and Report are functional; R6 enables Verify in source already merged to `main`; live R6 acceptance remains separate.
 - **Project Embed:** public URL-controlled dialog and SVG badges implemented, including the designer-provided artwork; included in the released baseline, with domain/CDN acceptance evidence still separate.
 - **Public content/media polish:** SSR Markdown/GFM, Shiki code blocks, project mentions/hover previews, cached-image decoding and stored-public-content preparation implemented and included in released code.
 - **Private Bookmarks:** merged and included in v0.3.0 for all authenticated accounts, with published-only private storage and a three-column workspace table; see [rollout and validation](bookmarks.md).
@@ -50,11 +55,15 @@ owned follow-ups, not unimplemented product features or passing acceptance.
 - **R7 — Featured Projects:** revised detail-page curation implemented and included in v0.3.0; R7 does not affect homepage ordering; R6 subsequently adds verified-first default ranking.
 - **Development/test infrastructure:** separate local Docker PostgreSQL 18 databases, disposable test schemas, browser/HTTP acceptance tools and scoped validation policy implemented.
 - **Additional delivered scope:** uploads, metadata prefill, README import, submission rate limiting, daily/manual GitHub refresh, observed star history with 90-date retention, and file seeding.
-- **R6:** implemented locally with email OTP + independent approval, project-scoped owner/maintainer editing and verified-first default home ranking. Login and submission provenance confer no ownership. See [rollout](project-ownership.md).
+- **R6:** ownership/editing merged to `main` through #121; home ranking and category/tag/license defaults corrected in #122. Member management and protected admin user actions are merged to `dev` through #123. Login and submission provenance confer no ownership. See [ownership/member policy](project-ownership.md) and [account administration](auth.md#admin-user-management--2026-10-26).
+- **Admin workspace:** overview, grouped navigation, submission/ownership queues, recorded activity and GitHub/outbox observations merged to `dev` through #125; layout and accessibility fixes followed in #126. No historical analytics, job execution controls or extra scheduler. See [admin workspace](admin-dashboard.md).
+- **Recovery:** private daily R2 backups, isolated restore and actual count pruning verified on 2026-10-27 WIB; see [runbook](postgres-backup-restore.md). This does not establish application rollout or full incident-cutover readiness.
 
-P0 core production verification is complete. **P1 R6a claim/Verify + R6b maintainer editing** are now implemented locally together; target rollout remains pending. Private backup/restore and storage
-lifecycle remain owned operational follow-ups. R6 is the next feature candidate
-for v0.5.0, not a committed release.
+P0 core production verification and the backup/restore drill are complete.
+**P1 is rollout and live acceptance of the implemented ownership/admin work**,
+including the `dev` → `main` changes above. First ordinary daily-run evidence,
+backup monitoring, storage credential scope and asset lifecycle remain owned
+operational follow-ups. No release version is assigned by this checkpoint.
 P2–P5 are conditional candidates in the execution order below.
 
 ## Ordered priorities after v0.4.0
@@ -66,14 +75,15 @@ Reuse recorded checks rather than rerunning historical acceptance by default.
 
 ### P0 — Close out v0.4.0 operations and catalogue quality
 
-**Status: core production verification completed on 2026-10-24; recovery
-follow-up open.** Working jobs, metadata, inbox delivery and the focused product
-journey have recorded evidence. P1 is now the next product work; do not queue
+**Status: core production verification completed on 2026-10-24; backup and
+isolated restore verified on 2026-10-27 WIB, with monitoring/hardening follow-ups.**
+Working jobs, metadata, inbox delivery and the focused product
+journey have recorded evidence. P1 is rollout/acceptance; do not queue
 these completed checks again without a relevant change or failure.
 
 **2026-10-24 outcome:** focused production checks passed. The missing email
 schedule was enabled, GitHub backfill completed, and the catalogue grew from
-7 to 20 verified listings. **Backup/restore remains open**; lifecycle inspection
+7 to 20 verified listings. Backup/restore was open at that inspection; lifecycle inspection
 and unexercised integrations are explicitly scoped in the
 [production record](production-verification-v0.4.0.md).
 
@@ -86,7 +96,13 @@ Source: [Verifikasi Operasional Production Altstack](t3-thread://v1/456a157b-30f
 - [x] Record focused live GitHub/Magic Link sign-in, submit → reject → email/private correction → resubmit → publish → email/public detail, and license/tag discovery. Bookmark/report smoke, CORS, anonymous 401 and explicit skipped integrations are in the [production record](production-verification-v0.4.0.md).
 - [x] Verify **20 accurate published listings**, 20 logos + 7 screenshots, working official links and seven leaf categories. Record 119 public tags and honest GitHub license/empty-topic cases in the [catalogue snapshot](production-catalogue-v0.4.0.json).
 - [x] Give confirmed failures outcomes, owners and next actions: email scheduling/backfill/content gaps fixed; recovery and lifecycle gaps assigned to the deployment/storage operator.
-- [ ] Configure private off-host PostgreSQL backups and prove an isolated restore. The operator confirmed no backup/restore exists; a private destination is still needed. Storage lifecycle inspection remains unverified with application-level R2 access (403).
+- [x] Configure private off-host PostgreSQL backups and prove an isolated restore. On 2026-10-27 WIB, enabled daily 03:00 WIB Dokploy backups to private R2 with 30-object retention. An off-host backup restored with 22/22 matching tables, 571 rows, 27 migration entries and passing integrity checks. Separate scheduled execution and real count pruning passed; see the [runbook and remaining operational gaps](postgres-backup-restore.md).
+
+The first ordinary daily execution, backup failure/freshness alerting and
+narrowing the existing application storage credential remain follow-ups.
+The asset bucket's temporary-object lifecycle inspection from the earlier
+403 remains separate and unverified; the new backup bucket's private access
+and seven-day incomplete-multipart abort rule were verified live.
 
 **Done when:** the focused release/service/content results and any follow-ups have
 recorded outcomes/owners. Historical unchecked items alone do not block R6 or
@@ -98,17 +114,28 @@ reliability follow-ups. Select a focused slice if observed delivery failures or
 retention requirements justify it; neither is a prerequisite for shipped review
 mail, and neither introduces a new platform into P0.
 
-### P1 — R6 ownership and maintainer editing
+### P1 — Roll out ownership and admin workflows
 
-Implemented together locally under the 2026-10-24 user decision: project-contact
+R6 is implemented under the 2026-10-24 user decision: project-contact
 OTP plus independent approval, identical project-scoped Owner/Maintainer access,
 immediate publication and verified-first default home ordering. The first
 representative requires admin approval; subsequent claims require either existing
 project role. Submission provenance and admin-only powers remain separate.
 
-Local acceptance and target rollout are tracked in [R6](#r6--own-and-edit) and
-[feature notes](project-ownership.md). Production deployment is not included;
-**v0.5.0 remains a candidate**, not a release commitment.
+Ownership/editing and catalogue defaults are already in `main` (#121–#122).
+Member/admin user management, recovery evidence and the admin workspace with
+layout fixes are in `dev` (#123–#126), ready for the next main PR.
+
+- [x] Implement scoped membership leave/role/revocation and protected admin user actions, including concurrency, ban and last-admin protection.
+- [x] Implement admin overview, grouped workspace, submission/ownership queues, safe recorded activity and GitHub/outbox observations; preserve existing moderation and claim authorization.
+- [x] Record private backup/restore/pruning evidence and remaining operational owners.
+- [ ] Merge the current `dev` rollout to `main`; see the [checkpoint and acceptance plan](rollout-2026-10-27.md).
+- [ ] Run the additive audit migration and separate post-commit validation on the intended target, then deploy matching API/Web revisions and record live acceptance. Check existing target migration history first; do not replay applied migrations or backfill owners.
+
+Local feature evidence is tracked in [R6](#r6--own-and-edit),
+[ownership notes](project-ownership.md), [auth](auth.md) and
+[admin workspace](admin-dashboard.md). A source merge or PR does not establish
+a production release, deployed revision or live provider/storage acceptance.
 
 ### P2 — Collections, then comparison
 
@@ -142,7 +169,8 @@ demonstrate a useful discovery journey rather than duplicate existing sorting.
 ### P5 — Demand-driven backlog
 
 Guest submission, profiles/follows/reviews/ratings, galleries/video, newsletter/RSS,
-analytics dashboards, scores, SDKs and extensions have no scheduled release.
+historical/product analytics dashboards, scores, SDKs and extensions have no scheduled release.
+The implemented admin overview and operational snapshots are current scope.
 Meilisearch requires measured PostgreSQL search limitations. Select one observed
 problem and define acceptance before implementation. Confirmed production failures
 take precedence over this order; absent such evidence, do not promote deferred
@@ -265,7 +293,7 @@ and [admin category API notes](category-admin-api.md).
 - [x] Private layout and submit guards, sanitized local return URL, independent API checks, private `/submission`, and role-specific navigation.
 - [x] Verify real GitHub login/callback/return and Magic Link sign-in with authenticated requests and anonymous private-route redirect; see [production record](production-verification-v0.4.0.md).
 - [ ] Exercise forced session expiry/logout and Magic Link expiry/replay separately; these were not forced in P0.
-- [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; R6 ownership/claims are implemented locally, with deployment and live acceptance pending.
+- [x] Support intake for GitHub and verified email Magic Link users under the authorized auth policy; R6 ownership/claims are merged to `main`, with live target acceptance still unverified here.
 - [x] Verify live Resend/Magic Link delivery, successful sign-in and cross-subdomain authenticated requests; operator inbox confirmation is in the [production record](production-verification-v0.4.0.md).
 - [x] Verify the existing GitHub OAuth callback and return to `/submission` in production.
 - [ ] Verify initial admin provisioning separately; an existing admin account was used in P0.
@@ -406,7 +434,7 @@ with a pinned Node-compatible `@vercel/og`; no hosted image service is required.
 
 ### L2 — Finish public UI affordances
 
-- [x] Original L2 scope retained disabled Verify/Bookmark/Report/Embed and account Bookmarks with accessible “Coming soon” labels. Subsequent slices enabled Embed, Bookmark and Report; R6 now enables Verify locally.
+- [x] Original L2 scope retained disabled Verify/Bookmark/Report/Embed and account Bookmarks with accessible “Coming soon” labels. Subsequent slices enabled Embed, Bookmark and Report; R6 enables Verify in source already merged to `main`.
 - [x] AltStack branding, icons and manifest copy replace starter identity.
 - [x] Replace generic screenshot placeholders with honest empty states.
 - [x] Give the hero's Explore Projects a working catalogue destination, make the Introducing badge noninteractive, and remove unsupported compare/trending copy.
@@ -434,7 +462,7 @@ Release/staging acceptance remains a separate gate.
 `apps/web/public/badge.svg`, bundled by the generator with dark/light variants
 and proportional custom sizing.
 
-- [x] Original Embed slice enabled Embed on desktop and More; subsequent slices also enabled Bookmark and Report, R6 subsequently enables Verify locally.
+- [x] Original Embed slice enabled Embed on desktop and More; subsequent slices also enabled Bookmark and Report, R6 subsequently enables Verify in source already merged to `main`.
 - [x] URL-controlled accessible dialog, dark 200 × 50 defaults, bounded editable
       dimensions, actual SVG preview and escaped HTML with honest clipboard feedback.
 - [x] Public SVG generator with approved AltStack signature, live published-only
@@ -489,17 +517,22 @@ not proof that migration, configuration or deployment has not happened.
 - [x] Record operator-confirmed v0.3.0 rollout on 2026-10-22; its tag contains Bookmarks, Reports/inbox and revised R7. This does not certify every service check below.
 - [x] Record operator-confirmed v0.4.0 production rollout on 2026-10-24 at `b79593d`; shipped scope is recorded in the release baseline.
 - [x] Resolve intake policy: authenticated GitHub and verified email Magic Link sessions are supported; password authentication is disabled. Magic Link is included in v0.4.0.
-- [ ] Record L1 release-domain/social-crawler and R5a/R5b live acceptance evidence.
+- [x] Record focused R5a/R5b reject → correct/resubmit → publish live acceptance with both decision mails in the [production record](production-verification-v0.4.0.md).
+- [ ] Complete L1 social-crawler cache acceptance; public metadata/OG/sitemap HTTP evidence already exists in the production record.
 - [x] Verify at least 20 accurate published listings and real media/links; [2026-10-24 production evidence](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
-- [ ] Attach revision-specific, affected-feature validation and justified integration/build evidence for the next release; explicitly record skipped integrations. Do not require a full suite for every task.
+- [x] Attach affected-feature validation for the current source rollout: 368 scoped tests across 20 files, typechecks, scoped lint/format, API/Server/Web builds and documentation checks. The [checkpoint](rollout-2026-10-27.md#checkpoint-validation) records revisions, the corrected stale navigation expectation, interrupted worker attempts and unrun live acceptance; no full suite is claimed.
 - [x] Record focused production browse/search/categories/tags/licenses/Trending, GitHub/Magic Link, submit → reject → email/correct/resubmit → publish → email/public detail, bookmark and report → dismiss smoke; existing Featured selections were served. See [production record](production-verification-v0.4.0.md).
 - [ ] Exercise Featured selection editing separately; serving the existing selection does not establish that its admin editor was retested live.
-- [ ] Verify direct API `401`/`403`, hidden draft/rejected/removed detail, quotas/capacity, and expired sessions.
+- [x] Record anonymous private API `401`, draft/rejected public `404`, real CORS and authenticated cross-subdomain requests in the production record.
+- [ ] Exercise non-admin `403`, removed detail, quota/capacity exhaustion and forced session expiry on the target; do not infer these from the narrower live checks.
 - [x] Document Docker dev/test separation and current auth/Resend/proxy/cookie configuration in the root README and [auth guide](auth.md).
-- [ ] Verify real OAuth callback/admin bootstrap/CORS, storage public URL/lifecycle and Redis configuration without recording secret values.
-- [ ] Record migration execution, matching API/web image tags, rollback/forward-fix procedure and backup/restore readiness for the deployment target.
+- [x] Record real OAuth callback/CORS, media public URL reads/uploads and configured Upstash use in the production record without credentials.
+- [ ] Verify initial admin bootstrap and inspect the asset temporary-object lifecycle with suitable operator access.
+- [x] Record v0.4.0 migration execution and matching API/Web revision, rollback/forward-fix notes, and the later private backup/restore proof. See the [production record](production-verification-v0.4.0.md) and [recovery runbook](postgres-backup-restore.md).
+- [ ] Record migration/constraint validation and matching API/Web revisions for the [current rollout](rollout-2026-10-27.md); historical v0.4.0 evidence does not establish this revision.
 - [x] Record v0.4.0 tags migration `20261022111024_github-topic-tags`, topics backfill and existing daily sync evidence; [production record](production-verification-v0.4.0.md#github-schedule-and-backfill). No second GitHub scheduler was added.
-- [ ] Record v0.4.0 auth migrations (including `20261022142815_organic_silver_samurai` and rate-limit retention), server-only Resend sender/key and trusted proxy configuration evidence; verify live delivery, one-use/expiry, GitHub and cross-subdomain sessions. See [auth](auth.md).
+- [x] Record v0.4.0 auth migrations, server-only email configuration and focused delivery/GitHub/cross-subdomain session evidence in the production record. See [auth](auth.md).
+- [ ] Exercise Magic Link replay/expiry and verify deployed proxy header handling separately; configured values and successful sign-in do not establish those cases.
 - [x] Record v0.4.0 review-email migration `20261023074640_submission-review-notifications`, `EMAIL_APP_URL`, every-minute job and live mail evidence; [production record](production-verification-v0.4.0.md#review-emails-repaired-and-exercised).
 - [x] Record v0.4.0 license/archived migration `20261023175513_github-license-archived`, existing-job backfill and daily sync evidence; [production record](production-verification-v0.4.0.md#github-schedule-and-backfill).
 - [x] Inspect statistics CLI, real history points, daily schedule, and failure logs; backfill 7/7 and final catalogue refresh 20/20 passed. A full 30-day history is not a launch blocker.
@@ -510,7 +543,9 @@ release baseline above supersedes them for merge and operator rollout status.
 
 ## R6 — Own and edit
 
-**P1 implemented locally together; deployment and live acceptance pending.** The
+**R6a/R6b merged to `main` through #121; catalogue defaults corrected in #122.
+Member management is merged to `dev` through #123. Live rollout acceptance remains
+unverified by this checkpoint.** The
 2026-10-24 user decision replaces the previous GitHub-only claim policy.
 
 ### R6a — Claim / Verify
@@ -520,7 +555,7 @@ release baseline above supersedes them for merge and operator rollout status.
 - [x] User-approved GitHub evidence follow-up: claimant account linking, permissions before code issuance and fresh approval checks; read-only denial, independent notes for write/unavailable evidence, private proof migration and no extra repository write scope.
 - [x] Additive claim/membership/upload tables, separate from `submitterId`; bound hashed short-lived single-use codes, persistent quotas and serialized claim decisions.
 - [x] Better Auth owner/maintainer roles with identical capabilities restricted to approved memberships; admin role preserved.
-- [x] Public verified badge, hidden Verify after approval, Request access for additional representatives, default home verified-first then `createdAt`/ID; explicit alternative sorts preserved. No billing scope.
+- [x] Public verified badge from active representatives, hidden Verify after approval, Request access for additional representatives, default home verified-first then GitHub stars/ID; category/tag/license default: Most stars. Explicit alternative sorts preserved. No billing scope.
 - [ ] Apply migration and matching API/Web revisions on the intended target; validate controlled-inbox delivery and real reviewer workflow.
 
 ### R6b — Maintainer editing
@@ -529,6 +564,16 @@ release baseline above supersedes them for merge and operator rollout status.
 - [x] Direct API membership checks, publication validation, stale-write protection, audit and account/project-bound temporary uploads.
 - [x] Preserve admin moderation/deletion, repository identity, taxonomy, Featured and report permissions. Changing to a different repository identity clears memberships and pending claims.
 - [ ] Complete target acceptance after rollout; local validation is recorded in [feature notes](project-ownership.md).
+
+### Member and admin user management follow-up — 2026-10-26
+
+- [x] Member lists linked from My projects and the project editor, including self-service leave for hidden listings; admin-only project role changes and revocation of another account.
+- [x] Equal owner/maintainer edit/review permissions retained; self-escalation and unrelated-project access rejected; returning after revocation requires fresh proof and independent approval.
+- [x] Revision checks and project/account locks cover competing membership changes, fresh-evidence approval and media promotion; the last active representative's departure removes verification and returns claims to admin review.
+- [x] Protected `/admin/users` search/filter/pagination and user detail with safe account/provider/session summaries, membership navigation, role assignment, ban/unban and revoke-all-sessions through Better Auth.
+- [x] Last-active-admin protection, concurrent actor rechecks, self-ban denial, atomic audit/session changes and blocked native HTTP bypasses. Destructive account deletion/impersonation and credential/email changes are excluded.
+- [x] Additive audit-only migration; no ownership or account-data backfill. See [member policy](project-ownership.md#member-management-follow-up--2026-10-26) and [auth](auth.md#admin-user-management--2026-10-26).
+- [ ] Apply the migration, run deferred audit constraint validation after commit, and deploy matching app revisions on the intended target; complete live provider/mail/storage acceptance. No production rollout is claimed.
 
 ## R7 — Featured Projects on detail pages
 
@@ -586,6 +631,18 @@ included in the operator-confirmed v0.4.0 rollout.
 
 Evidence: [tags behavior/rollout](tags.md), `packages/db/src/tags.ts`,
 `packages/api/src/routers/tag.ts`, `packages/api/tests/tags.test.ts` and web tag routes.
+
+## Admin workspace — merged to dev on 2026-10-27
+
+The admin overview, grouped workspace navigation, submission/ownership queues,
+recorded activity feed, and operational observations are implemented through
+#125, with layout/accessibility fixes in #126. Current snapshots and the safe
+audit feed use admin-only API reads; no additional migration or scheduler is
+needed for this slice. See
+[admin workspace](admin-dashboard.md) for routes, privacy,
+validation, and telemetry limits. Production rollout is not claimed; analytics
+and historical trend dashboards remain separate backlog items. The next main
+PR and target acceptance are tracked in the [rollout checkpoint](rollout-2026-10-27.md).
 
 ## Later, only when justified
 

@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 
+import { adminDashboardKey } from '#/features/admin-dashboard/queries'
 import { publicContentQueryKey } from '#/features/public-content/model'
 import { adminORPC, categoryORPC, orpc, projectORPC } from '#/utils/orpc'
 
@@ -8,6 +9,7 @@ import { adminORPC, categoryORPC, orpc, projectORPC } from '#/utils/orpc'
 export async function invalidateCatalog(queryClient: QueryClient) {
 	await Promise.all(
 		[
+			adminDashboardKey,
 			publicContentQueryKey,
 			adminORPC.category.key(),
 			categoryORPC.key(),

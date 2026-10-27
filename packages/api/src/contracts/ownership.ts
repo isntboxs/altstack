@@ -15,10 +15,16 @@ import {
 	ownershipListInputSchema,
 	ownershipListOutputSchema,
 	claimInboxOutputSchema,
+	claimInboxInputSchema,
 	claimReviewInputSchema,
 	memberCategoriesOutputSchema,
 	memberUploadInputSchema,
 	memberUploadRemoveInputSchema,
+	projectMembersInputSchema,
+	projectMembersOutputSchema,
+	memberChangeInputSchema,
+	memberRoleChangeInputSchema,
+	memberLeaveInputSchema,
 } from '@altstack/shared/schemas/ownership'
 
 const endpoint = (
@@ -41,9 +47,15 @@ const endpoint = (
 				tags: ['ProjectOwnership'],
 				inputStructure: 'detailed',
 				outputStructure: 'compact',
-				paramsStyles: path.includes('{id}') ? { id: 'primitive' } : undefined,
+				paramsStyles: path.includes('{userId}')
+					? { id: 'primitive', userId: 'primitive' }
+					: path.includes('{id}')
+						? { id: 'primitive' }
+						: undefined,
 				queryStyles:
-					path === '/managed-projects' || path === '/project-claims'
+					path === '/managed-projects' ||
+					path === '/project-claims' ||
+					path.endsWith('/members')
 						? { page: 'primitive', limit: 'primitive' }
 						: undefined,
 			})
@@ -51,6 +63,30 @@ const endpoint = (
 const params = z.object({ params: managedProjectParamsSchema })
 const success = z.object({ success: z.literal(true) })
 export const ownershipContract = {
+	members: endpoint(
+		'/managed-projects/{id}/members',
+		'QUERY',
+		'listProjectMembers'
+	)
+		.input(projectMembersInputSchema)
+		.output(projectMembersOutputSchema),
+	changeMemberRole: endpoint(
+		'/managed-projects/{id}/members/{userId}',
+		'PATCH',
+		'changeProjectMemberRole'
+	)
+		.input(memberRoleChangeInputSchema)
+		.output(success),
+	revokeMember: endpoint(
+		'/managed-projects/{id}/members/{userId}',
+		'DELETE',
+		'revokeProjectMember'
+	)
+		.input(memberChangeInputSchema)
+		.output(success),
+	leave: endpoint('/managed-projects/{id}/membership', 'DELETE', 'leaveProject')
+		.input(memberLeaveInputSchema)
+		.output(success),
 	github: endpoint(
 		'/projects/{id}/claim/github-check',
 		'POST',
@@ -75,7 +111,7 @@ export const ownershipContract = {
 		.input(ownershipListInputSchema)
 		.output(ownershipListOutputSchema),
 	inbox: endpoint('/project-claims', 'QUERY', 'listReviewableClaims')
-		.input(ownershipListInputSchema)
+		.input(claimInboxInputSchema)
 		.output(claimInboxOutputSchema),
 	review: endpoint('/project-claims/{id}', 'POST', 'reviewProjectClaim')
 		.input(claimReviewInputSchema)

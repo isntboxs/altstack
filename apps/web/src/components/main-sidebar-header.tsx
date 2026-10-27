@@ -1,9 +1,5 @@
-import {
-	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarRightCollapse,
-} from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
-import type { ComponentProps, FC } from 'react'
+import { IconPlus } from '@tabler/icons-react'
+import { Link, useRouteContext } from '@tanstack/react-router'
 
 import { env } from '@altstack/env/web'
 
@@ -12,49 +8,68 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarSeparator,
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
 import { BrandMark } from '#/components/brand-mark'
 
-type MainSidebarHeaderProps = ComponentProps<typeof SidebarHeader>
-
-export const MainSidebarHeader: FC<MainSidebarHeaderProps> = ({ ...props }) => {
-	const { isMobile, openMobile, state, toggleSidebar } = useSidebar()
-	const isExpanded = isMobile ? openMobile : state === 'expanded'
-
+/** Keeps visible workspace branding and accessible names consistent in every sidebar mode. */
+export function MainSidebarHeader() {
+	const { auth } = useRouteContext({ from: '/_main' })
+	const { isMobile, setOpenMobile } = useSidebar()
+	const isAdmin = auth.user.role === 'admin'
+	const workspaceLabel = isAdmin ? 'Admin workspace' : 'Your workspace'
+	const workspaceName = `${env.VITE_APP_NAME} ${workspaceLabel}`
+	const close = () => {
+		if (isMobile) setOpenMobile(false)
+	}
 	return (
-		<SidebarHeader {...props}>
-			<SidebarMenu className="flex-row justify-between">
-				<SidebarMenuItem>
-					<SidebarMenuButton
-						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
-						render={
-							<Link to="." className="flex items-center gap-2" viewTransition>
-								<BrandMark className="size-5!" />
-
-								<h1 className="text-xl font-bold lowercase">
+		<>
+			<SidebarHeader>
+				<SidebarMenu className="gap-2">
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							size="lg"
+							className="group-data-[collapsible=icon]:justify-center"
+							aria-label={workspaceName}
+							tooltip={workspaceName}
+							render={
+								<Link to={isAdmin ? '/admin' : '/managed'} onClick={close} />
+							}
+						>
+							<BrandMark className="size-6!" />
+							<div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+								<span className="font-semibold lowercase">
 									{env.VITE_APP_NAME}
-								</h1>
-							</Link>
-						}
-					/>
-				</SidebarMenuItem>
-
-				<SidebarMenuItem>
-					<SidebarMenuButton
-						className="mx-auto w-fit data-[slot=sidebar-menu-button]:p-2!"
-						aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-						onClick={toggleSidebar}
-					>
-						{isExpanded ? (
-							<IconLayoutSidebarLeftCollapse />
-						) : (
-							<IconLayoutSidebarRightCollapse />
-						)}
-					</SidebarMenuButton>
-				</SidebarMenuItem>
-			</SidebarMenu>
-		</SidebarHeader>
+								</span>
+								<span className="text-xs text-muted-foreground">
+									{workspaceLabel}
+								</span>
+							</div>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							variant="outline"
+							aria-label={isAdmin ? 'Create project' : 'Submit a project'}
+							tooltip={isAdmin ? 'Create project' : 'Submit a project'}
+							render={
+								<Link
+									to={isAdmin ? '/projects/create' : '/submit'}
+									onClick={close}
+								/>
+							}
+						>
+							<IconPlus />
+							<span className="group-data-[collapsible=icon]:hidden">
+								{isAdmin ? 'Create project' : 'Submit a project'}
+							</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarHeader>
+			<SidebarSeparator />
+		</>
 	)
 }

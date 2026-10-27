@@ -5,6 +5,16 @@ import { client } from '#/utils/orpc'
 
 export const ownershipKey = ['ownership'] as const
 export const ownershipQueries = {
+	members: (userId: string, id: string, page = 1) =>
+		queryOptions({
+			queryKey: [...ownershipKey, 'members', userId, id, page],
+			queryFn: () =>
+				client.ownership.members({
+					params: { id },
+					query: { page, limit: 25 },
+				}),
+			retry: false,
+		}),
 	github: (userId: string, id: string) =>
 		queryOptions({
 			queryKey: [...ownershipKey, 'github', id, userId],
@@ -23,10 +33,11 @@ export const ownershipQueries = {
 			queryKey: [...ownershipKey, 'list', userId, page],
 			queryFn: () => client.ownership.list({ query: { page, limit: 25 } }),
 		}),
-	inbox: (userId: string, page = 1) =>
+	inbox: (userId: string, page = 1, claimId?: string) =>
 		queryOptions({
-			queryKey: [...ownershipKey, 'inbox', userId, page],
-			queryFn: () => client.ownership.inbox({ query: { page, limit: 25 } }),
+			queryKey: [...ownershipKey, 'inbox', userId, page, claimId],
+			queryFn: () =>
+				client.ownership.inbox({ query: { page, limit: 25, claimId } }),
 		}),
 	project: (userId: string, id: string) =>
 		queryOptions({

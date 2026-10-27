@@ -62,6 +62,7 @@
 		"db:push": "drizzle-kit push",
 		"db:seed": "bun run ./src/seed-file-cli.ts",
 		"db:studio": "drizzle-kit studio",
+		"db:validate-audit-actions": "vpx ./scripts/validate-audit-actions.ts",
 		"dev": "vp pack --watch",
 		"test": "vp test",
 		"test:isolated": "bun run ./tests/run-isolated.ts",

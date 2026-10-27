@@ -28,7 +28,7 @@ export async function pruneExpiredAuthRateLimits(
 }
 
 export function createMagicLinkRecipientLimiter(
-	database: typeof db,
+	database: Pick<typeof db, 'insert'>,
 	secret: string
 ) {
 	return async (email: string) => {

@@ -17,6 +17,13 @@ export const AUDIT_ACTIONS = [
 	'project_claim_approved',
 	'project_claim_rejected',
 	'project_member_updated',
+	'project_member_role_changed',
+	'project_member_revoked',
+	'project_member_left',
+	'user_role_changed',
+	'user_banned',
+	'user_unbanned',
+	'user_sessions_revoked',
 ] as const
 
 export type ProjectStatus = (typeof PROJECT_STATUS)[number]

@@ -13,6 +13,7 @@ export const adminListReportsQuerySchema = z
 		// The immutable report ID anchors the exact database timestamp, including
 		// sub-millisecond precision. Moderating the anchor does not invalidate it.
 		cursor: z.uuid().optional(),
+		reportId: z.uuid().optional(),
 	})
 	.strict()
 

@@ -34,6 +34,27 @@ paths are retained. A path owned by another category aborts the whole transactio
 Cycle detection only prevents the seed path walk from looping; API hierarchy
 validation and advisory locking belong to PR3.
 
+## Deferred audit constraint validation
+
+Migration `20261026115414_member-user-management` expands the audit action check
+with `NOT VALID`. Existing rows satisfy the former, narrower check, and all new
+inserts/updates must satisfy the expanded check immediately. Run these commands
+in sequence against the same configured `DATABASE_URL` before the matching app
+rollout:
+
+```sh
+vp run db:migrate
+vp run --filter @altstack/db db:validate-audit-actions
+```
+
+The second command runs in a separate connection after migration commit and is
+safe to repeat. Validation acquires `SHARE UPDATE EXCLUSIVE`, allowing ordinary
+reads and writes. Keep it outside the migration batch: Drizzle wraps all pending
+migration files in one transaction, so splitting validation into another numbered
+file would retain the exclusive lock from the constraint replacement. No data or
+allowed action is removed. The migration regression test runs this follow-up
+with a concurrent audit writer and verifies both enforcement and validation.
+
 ## Disposable-schema verification
 
 Root [README](../../README.md#development) is the verification source of truth.

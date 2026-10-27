@@ -62,7 +62,7 @@ app.all('/api/auth/*', async (c) => {
 // Private bookmark state and report contacts must never enter shared caches.
 app.use('/api/*', async (c, next) => {
 	if (
-		/^\/api\/(?:rpc\/(?:bookmark|ownership|admin\/report)(?:\/|$)|reference\/(?:bookmarks|managed-projects|project-claims|projects\/[^/]+\/claim|admin\/reports)(?:\/|$))/.test(
+		/^\/api\/(?:rpc\/(?:bookmark|ownership|admin\/(?:report|user))(?:\/|$)|reference\/(?:bookmarks|managed-projects|project-claims|projects\/[^/]+\/claim|admin\/(?:reports|users))(?:\/|$))/.test(
 			c.req.path
 		)
 	) {

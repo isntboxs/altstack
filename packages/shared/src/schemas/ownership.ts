@@ -123,10 +123,17 @@ export const ownershipListOutputSchema = z.object({
 			name: z.string(),
 			slug: z.string(),
 			role: projectMemberRoleSchema,
+			status: z.enum(['draft', 'published', 'rejected', 'removed']),
 		})
 	),
 	pagination: paginationSchema,
 })
+export const claimInboxInputSchema = ownershipListInputSchema.extend({
+	query: ownershipListInputSchema.shape.query.extend({
+		claimId: z.uuid().optional(),
+	}),
+})
+
 export const claimInboxOutputSchema = z.object({
 	claims: z.array(
 		z.object({
@@ -165,4 +172,39 @@ export const memberUploadInputSchema = z.object({
 export const memberUploadRemoveInputSchema = z.object({
 	params: managedProjectParamsSchema,
 	body: z.strictObject({ key: z.union([logoKeySchema, screenshotKeySchema]) }),
+})
+
+export const membershipRevisionSchema = z.string().min(1).max(30)
+export const projectMembersInputSchema = ownershipListInputSchema.extend({
+	params: managedProjectParamsSchema,
+})
+export const projectMemberSchema = z.object({
+	userId: z.uuid(),
+	name: z.string(),
+	role: projectMemberRoleSchema,
+	createdAt: z.coerce.date(),
+	revision: membershipRevisionSchema,
+	active: z.boolean(),
+})
+export const projectMembersOutputSchema = z.object({
+	project: z.object({ id: z.uuid(), name: z.string(), status: z.string() }),
+	canManage: z.boolean(),
+	members: z.array(projectMemberSchema),
+	// Always present for a representative, including when their row is on
+	// another page. Self-service never accepts a caller-supplied user ID.
+	self: projectMemberSchema.nullable(),
+	pagination: paginationSchema,
+})
+export const memberChangeInputSchema = z.object({
+	params: z.strictObject({ id: z.uuid(), userId: z.uuid() }),
+	body: z.strictObject({ revision: membershipRevisionSchema }),
+})
+export const memberRoleChangeInputSchema = memberChangeInputSchema.extend({
+	body: memberChangeInputSchema.shape.body
+		.extend({ role: projectMemberRoleSchema })
+		.strict(),
+})
+export const memberLeaveInputSchema = z.object({
+	params: managedProjectParamsSchema,
+	body: z.strictObject({ revision: membershipRevisionSchema }),
 })

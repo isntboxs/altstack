@@ -290,9 +290,69 @@ verification. See [GitHub evidence policy](project-ownership.md#github-evidence-
 Better Auth 1.7.12 registers `owner` and `maintainer` with the same project update
 and claim-review permissions. These global labels confer no global project or
 admin rights: API checks load the approved per-project membership and authorize
-its role. Admin bootstrap approval is limited to projects without members and
+its role. Admin bootstrap approval is limited to projects without active members and
 cannot approve the admin's own claim. Claims preserve existing admin roles.
 Project OTP is a purpose-specific workflow, not Better Auth sign-in or account
 email verification: the built-in email OTP plugin only covers account purposes
 and cannot by itself bind an approval to a project and requested role. See the
 [claim lifecycle and rollout](project-ownership.md) for that binding and quotas.
+
+## Admin user management — 2026-10-26
+
+`/admin/users` provides protected name/email search, account-role and active/ban
+filters, and pages of 25 users. User detail shows email verification, provider
+names, an active-session count and approved project memberships, including hidden
+projects. Session tokens, IP/user-agent data, OAuth credentials and contact-email
+claim proof are excluded. Project member links lead to the separate scoped member
+page. These routes are noindex, and their RPC/REST/HTML responses are private/no-store.
+
+The existing Better Auth 1.7.12 Admin plugin and schema already support the
+required capabilities. AltStack calls its server APIs `setRole`, `banUser`,
+`unbanUser` and `revokeUserSessions` with the acting admin's real session and a
+Drizzle adapter bound to the application's transaction. See [Better Auth Admin](https://better-auth.com/docs/plugins/admin).
+No organization plugin or replacement authentication system is introduced:
+organizations would duplicate the existing project-specific approval model.
+
+- Global role assignment is limited to `admin` and `user`. Legacy global
+  owner/maintainer labels remain readable and never substitute for membership.
+  Setting either global role leaves project memberships intact and revokes all
+  existing sessions for the target, requiring a fresh sign-in.
+- Banning requires a nonblank reason, prevents sign-in and revokes existing
+  sessions. Session reads also discard a surviving session from an overlapping
+  sign-in and expire its cookies. This UI creates indefinite bans until an explicit unban; it correctly
+  reads pre-existing expiry dates. Membership records remain, but banned accounts
+  cannot act or count toward public project verification. Unban allows new sign-in
+  and restores retained memberships without restoring revoked sessions.
+- Revoke all sessions signs the target out without changing roles or memberships;
+  sign-in remains possible. Admins may revoke their own sessions.
+- Self-ban is prohibited. Self-demotion is allowed only if another active admin
+  remains; the UI clears private caches and reloads after self-demotion/revocation.
+  Banned admins do not satisfy the remaining-admin requirement. A transaction-wide
+  advisory lock and ordered user-row locks serialize simultaneous role/ban changes,
+  and the acting admin is rechecked after waiting. Old role/session data cannot
+  authorize a second reciprocal demotion or ban.
+
+Every account action requires the current user revision. A competing action or
+profile change returns a conflict; the admin refreshes before deciding again.
+Auth mutations, session deletion and audit insertion commit or roll back together.
+Audits record actor/target IDs, role transitions or the supplied ban reason,
+without tokens, claim contact data or request payloads.
+
+Native `/api/auth/admin/*` HTTP endpoints are blocked by the auth before-hook,
+including session-token reads, so they cannot bypass AltStack's last-admin,
+revision and action policies. Server APIs remain available to trusted application
+code. The application exposes no account deletion, impersonation, account
+creation, password reset/assignment, arbitrary profile/email edits or manual email
+verification in this management slice. Existing GitHub and Magic Link sign-in
+and verified same-email linking stay in place. Foreign browser origins/cross-site
+requests are rejected independently at the management API boundary.
+
+Migration `20261026115414_member-user-management` only expands allowed audit
+actions; the existing Admin plugin columns need no new migration. After the
+migration transaction commits, run
+`vp run --filter @altstack/db db:validate-audit-actions` against the same database
+to validate existing audit rows without retaining the migration's exclusive lock.
+Ban expiry comparisons use UTC explicitly so account access, verification and
+last-admin counts agree with Better Auth even when PostgreSQL uses another
+session timezone. Target migration, deployment and live provider/storage
+acceptance remain operational follow-up.
