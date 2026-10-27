@@ -6,7 +6,7 @@
 #   Build Context: / (repo root — required so `workspace:*` deps resolve)
 #   Dockerfile:    apps/server/Dockerfile
 #   Port:          3009
-#   Domain:        https://api.domain.com
+#   Domain:        https://api.example.com
 #
 # Runtime env (set in Dokploy, NOT baked into the image):
 #   NODE_ENV, PORT, DATABASE_URL, APP_NAME, BETTER_AUTH_URL,

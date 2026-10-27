@@ -1,32 +1,22 @@
-# Elysia with Bun runtime
+# API server
 
-## Getting Started
+Hono on Bun serves Better Auth, typed oRPC, and the OpenAPI reference. Start from
+the [root setup](../../README.md#run-locally), then run from the repository root:
 
-Install the workspace dependencies:
-
-```bash
-vp install
-```
-
-Start the server in development mode from the repository root:
-
-```bash
+```sh
 vp run dev:server
 ```
 
-## Development
-
-The server runs with watch mode and restarts on file changes.
-
-Open http://localhost:<port>/ with your browser to see the result. The port comes from the `PORT` environment variable (see `.env.example`) and can be overridden.
-
-## Review notification worker
-
-The build includes `dist/jobs/review-notifications.mjs`. Run it every minute in
-the server container from `/app`, separately from the daily GitHub job:
+The local API uses port 3009 from `PORT`. Routes are mounted in
+[src/index.ts](src/index.ts); read operations use HTTP `QUERY`.
 
 ```sh
-bun run apps/server/dist/jobs/review-notifications.mjs
+curl --request QUERY http://localhost:3009/api/reference/health
+vp run --filter 'server...' build
 ```
 
-See [migration, server-only config, retry limits and operator recovery](../../docs/review-notifications.md).
+The build emits `dist/index.mjs` and the GitHub refresh/review notification job
+entrypoints. Jobs need separate schedules and server runtime configuration.
+See [architecture](../../docs/architecture.md),
+[configuration](../../docs/development.md#configuration), and
+[deployment/workers](../../docs/deployment.md#scheduled-workers).

@@ -59,7 +59,7 @@ for (const [name, template] of templates) {
 		await render(template, { plainText: true })
 	)
 }
-// Keep checked-in review artifacts reproducible under the workspace formatter.
+// Keep generated review artifacts reproducible under the workspace formatter.
 execFileSync(
 	'vp',
 	[
