@@ -1,422 +1,272 @@
----
-title: AltStack Product Requirements
-version: 2.12
-status: 2026-10-27 code checkpoint — member/user management and admin workspace ready for main PR; deployment unverified
-last_updated: 2026-10-27
----
+# Product requirements
 
-# AltStack
+AltStack helps developers answer: **Which open-source tool should I try for this
+job?** It is a curated catalogue with useful technical context, accountable
+editing, and a small set of private workflows.
 
-## Product summary
+This document defines product scope, requirements, and current feature behavior.
+The [roadmap](roadmap.md) tracks future priorities and the
+[changelog](../CHANGELOG.md) records notable release changes. Source behavior does
+not certify a particular deployment; use [deployment acceptance](deployment.md#migration-and-rollout)
+for instance-specific checks. Exact payloads live in [API contracts](../packages/api/src/contracts)
+and [shared schemas](../packages/shared/src/schemas).
 
-AltStack is a curated directory for open-source software. It helps developers
-answer: **“What open-source tool should I try for this job?”**
+- [Users and problems](#users-and-problems)
+- [Access and authorization](#access-and-authorization)
+- [Functional requirements](#functional-requirements)
+- [Quality and operational requirements](#quality-and-operational-requirements)
+- [Scope boundaries](#scope-boundaries) and [success signals](#success-signals)
 
-The product is a small, trustworthy catalogue. [The roadmap](roadmap.md) records
-implementation status, ordered priorities and operational evidence. This PRD is
-reconciled on **2026-10-27** against `dev` at **`b4fe7ff`** and `main` at
-**`c15fd5d`**. R6 ownership/editing and catalogue sorting already reached `main`
-through #121–#122. Member/admin user management, recovery evidence, the admin
-workspace and layout fixes are merged into `dev` through #123–#126 and form the
-next PR to `main`. See the [rollout checkpoint](rollout-2026-10-27.md) for scope,
-migration order and acceptance. The source checkpoint includes the main-to-dev
-sync preserving #122's tag/license defaults. Merge status does not establish deployment.
+## Users and problems
 
-The operator confirmed **v0.4.0 production rollout** in the project conversation
-on 2026-10-24. It includes the v0.3.0 Bookmarks, Reports/admin inbox and detail-page
-Featured baseline, plus GitHub Topics tags, GitHub + Resend Magic Link and auth
-fixes, review-decision emails, license discovery, archived metadata and ten
-catalogue sorts including observed seven-day Trending. Docker dev/test isolation
-and Vite+ 1.4.0 are also included in the release source.
-The [2026-10-24 production record](production-verification-v0.4.0.md) verifies
-matching release revisions, 25 migrations, both scheduled jobs, actual email
-delivery, the focused auth/review journey and 20 accurate published listings.
-P0 core verification is complete. The separate **2026-10-27 WIB** recovery record
-also proves private off-host backups, an isolated restore and retention pruning;
-see the [recovery runbook](postgres-backup-restore.md). First ordinary daily-run
-evidence, backup alerting, application storage credential scope, asset lifecycle
-inspection and explicitly unexercised integrations remain follow-ups. The latest
-matching API/Web revision evidence remains the dated v0.4.0 record; the recovery
-inspection does not establish the running application revision.
-
-## Problem and target users
-
-Discovery is fragmented across GitHub, posts, launch sites, and old awesome lists.
-Maintainers need a focused place to present their projects.
-
-- **Explorer:** browses and narrows a set of open-source tools.
-- **Maintainer/submitter:** suggests a repository and follows its review.
-- **Admin:** reviews, enriches, and maintains accurate catalogue entries.
-
-The product has `user`, `admin`, `owner` and `maintainer` account roles. Owner and maintainer have identical permissions scoped to approved project memberships, separate from submission provenance.
+| User                       | Need                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| Developer evaluating tools | Find a relevant project and assess its purpose, license, activity, and setup |
+| Returning visitor          | Save a private shortlist and revisit projects                                |
+| Project contributor        | Submit a project and understand a moderation decision                        |
+| Project representative     | Establish authority and keep a listing accurate                              |
+| Catalogue administrator    | Review intake, maintain taxonomy, handle reports, and protect access         |
 
 ## Product principles
 
-1. Finish one useful user journey at a time.
-2. Reuse existing infrastructure; introduce dependencies for observed needs.
-3. Use truthful labels: Most popular explicitly means total stars; Trending means observed seven-day star growth, with insufficient observations ranked last. Neither implies a broader popularity signal.
-4. Enforce authorization in server/API procedures independently from UI guards.
-5. Measure PostgreSQL search on representative data before adding another search service.
-6. Distinguish implemented features, automated checks, and operator rollout.
+- Prefer a smaller accurate catalogue to inflated counts or fabricated metadata.
+- Keep discovery usable without an account; require sign-in for durable private
+  state and accountable project workflows.
+- Distinguish repository observations, editorial curation, and representative
+  verification. A badge does not assert legal ownership or software quality.
+- Keep public content separate from contacts, feedback, claim evidence, and auth.
+- Make permissions and state changes explicit, recoverable, and auditable where
+  supported. Never infer project rights from submission or login alone.
 
-## Core catalogue journey
+## Core journey
 
-The original launch journey remains the core acceptance baseline:
+Browse/search → narrow by category, topic, or license → open project details →
+inspect documentation and repository observations → visit upstream or bookmark.
+Visitors may report incorrect information. Signed-in contributors submit intake,
+receive a decision, and correct rejected intake. Approved representatives keep
+published project content current within their scoped permissions.
 
-1. Browse at least 20 accurate published projects and open working repository/website links.
-2. Search, filter by category, sort, paginate, and share the result URL.
-3. Open canonical public pages with correct titles and link-preview metadata.
-4. Sign in with GitHub or a verified email Magic Link, suggest a repository, and privately track review status.
-5. Have an admin enrich/publish or reject with actionable feedback.
-6. Correct a rejected submission and return it to review without creating another listing.
+## Access and authorization
 
-The supporting workflows and 20-listing catalogue have focused production
-evidence in the linked record. Recovery readiness and additional unexercised
-checks remain separate follow-ups. Repository ownership and maintainer editing
-are implemented and merged to `main`; member/user administration and the admin
-workspace are implemented on `dev` for the next rollout. Bookmarks, guest/session-aware Reports, the admin report inbox and
-detail-page Featured Projects are current capabilities, not launch blockers or
-feature-branch proposals.
+| Actor                                | Access                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Guest                                | Browse published projects, use share/embed, submit a private report with contact email                                               |
+| Signed-in account                    | Guest actions, private bookmarks, submit/track/correct its own intake, request project access                                        |
+| Approved project Owner or Maintainer | Edit the approved published project, review additional access requests, view members, leave membership                               |
+| Admin                                | Catalogue moderation, taxonomy/featured/report management, eligible first-claim review, protected membership and user administration |
 
-## Ordered priorities after v0.4.0
-
-This is the execution order, shared with the [roadmap](roadmap.md#ordered-priorities-after-v040).
-P0 core production verification and the backup/restore drill are complete; P1 is
-rollout and acceptance of the implemented ownership/admin work.
-Operational follow-ups retain explicit owners, and unexercised
-checks are not counted as passing.
-
-1. **P0 — Close out v0.4.0 operations and catalogue quality.** Core verification completed on 2026-10-24: release revisions/migrations, both jobs, decision-email inbox delivery, GitHub/Magic Link auth, review/resubmission, discovery and 20 listings passed in the [production record](production-verification-v0.4.0.md). Private off-host backups, isolated restore and retention pruning passed on 2026-10-27 WIB. The deployment/storage operator (mrboxs) owns first ordinary daily-run evidence, failure/freshness alerting, credential narrowing and asset lifecycle inspection in the [recovery runbook](postgres-backup-restore.md). Additional unexercised integrations remain explicitly unverified. Completed checks are not queued again without relevant changes.
-2. **P1 — Roll out ownership and admin workflows.** R6 contact-email OTP plus independent approval, equal project-scoped owner/maintainer editing and verified-first home ranking are implemented and merged to `main`. Member management, protected admin user actions, grouped admin navigation, overview/queues, recorded activity and operational observations are merged to `dev`. Complete the [main rollout checklist](rollout-2026-10-27.md), including the additive audit migration, post-commit constraint validation, matching API/Web revisions and live acceptance. A release version and production deployment are not established by this checkpoint.
-3. **P2 — Collections, then comparison.** Build on private Bookmarks when returning users need organized shortlists. Start with private named collections; define comparison fields and build comparison only after evaluation needs are confirmed. Public sharing and social features are separate decisions. Neither slice is implemented or assigned a release.
-4. **P3 — Report workflow improvements.** Address observed admin bottlenecks with the smallest needed slice, such as reopen or follow-up, before assignment/comments/email or automated corrections. Existing intake and Open → Resolved/Dismissed decisions already work. No expansion is scheduled without report-volume or operator evidence.
-5. **P4 — Homepage editorial discovery.** Consider curated homepage sections after catalogue coverage and browse feedback justify them. Existing detail Featured and Trending sort are delivered; a dedicated Trending/personalized feed is separate deferred scope. Editorial sections remain deferred; R6 separately changes default catalogue ranking to verified first.
-6. **P5 — Demand-driven backlog.** Guest submission, profiles/follows/reviews/ratings, galleries/video, newsletter/RSS, historical/product analytics dashboards, scores, SDKs and extensions stay deferred. Add Meilisearch only for measured PostgreSQL search limitations. Choose each slice from an observed problem rather than a target release number.
-
-Email delivery/bounce webhooks and automatic outbox retention are unimplemented
-reliability follow-ups, not prerequisites for the existing mail feature. Promote
-a focused fix if delivery failures or retention requirements establish a need;
-do not expand P0 into a new worker/webhook platform.
-
-## Deferred product scope
-
-- Collections, comparisons, reviews, ratings, follows, and profiles.
-- Quality scores, hidden-gem/fast-growing rankings, personalized/trending feeds.
-- Guest project submission. Anonymous reports already work; Magic Link auth already uses persistent IP and recipient limits.
-- Queues/webhooks/workers beyond the daily GitHub CLI and focused review-email outbox CLI.
-- Rich media galleries/video, historical/product analytics dashboards, newsletters, extensions, SDKs. The current admin overview and operations snapshots are implemented.
-- A separate moderator/curator role or multi-role moderation product.
-
-Current capabilities also include category/tag management, S3-compatible media,
-README import, Upstash submission/report limits, GitHub refresh, observed star
-history, transactional Magic Link email and review-decision email. These
-supersede initial lean-scope exclusions. Review email migration/configuration,
-scheduler and live inbox evidence are recorded in the completed P0 core
-verification; remaining recovery/integration follow-ups are tracked separately.
-
-## Release scope
-
-- **R0 — Catalogue data:** migrations and repeatable CSV/JSON import; 20 real published listings verified in production.
-- **R1 — Browse:** published-only list/detail and public links.
-- **R2 — Find:** PostgreSQL search, shared URL filters, hierarchical categories, GitHub Topics tags, license browsing, archived metadata, ten catalogue sorts and admin taxonomy/tag management.
-- **R3 — Sign in:** GitHub OAuth + email Magic Link through Resend, private routes, session-aware navigation, API checks.
-- **R4 — Submit intake:** minimal authenticated draft creation and private status tracking.
-- **R5 — Moderate + enrich:** admin listing enrichment/review/history, required feedback, original-submitter rejected-intake resubmission and R5c decision emails.
-- **L1/L2 — Public release completion:** catalogue SEO/link previews and honest UI affordances.
-- **R6 — Own & edit:** email OTP + independent project approval, scoped owner/maintainer edits and verified-first default homepage are merged to `main`; member management is merged to `dev`. Live acceptance remains unverified.
-- **Admin workspace and user management:** merged to `dev`; grouped navigation, overview, submission/ownership queues, recorded audit activity, GitHub/outbox observations and protected user administration. Included in the next main PR, with deployment acceptance separate.
-- **R7 — Curate:** admin-managed Featured Projects on public detail pages; homepage unchanged under the revised 2026-10-22 scope. See [feature behavior and rollout](featured-projects.md).
-- **Private Bookmarks:** per-account saved published projects and protected three-column table; included in v0.3.0.
-- **Reports:** guest/session-aware private intake and admin-only inbox/moderation; included in v0.3.0.
-
-See the roadmap for checked implementation items versus unverified acceptance.
+Owner and Maintainer have equal project permissions. Roles are scoped to a
+membership, not inferred from sign-in, a global label, or submission history.
+Admins cannot approve their own claims or bypass another submitter's correction
+authorization.
 
 ## Functional requirements
 
-### R0 — Catalogue data
+### Catalogue and discovery
 
-- Import curated projects/categories from CSV or JSON without resetting application data.
-- Validate publishable copy/media/category fields; use canonical repository uniqueness.
-- Repeat imports skip existing records without overwriting user submissions.
-- GitHub enrichment is opt-in; templates are examples, not verified repositories.
-- Verify and record at least 20 accurate published listings in P0 post-rollout acceptance; [completed in production on 2026-10-24](production-verification-v0.4.0.md#catalogue-7--20-published-listings).
+The catalogue has search, URL-persisted filters/pagination, categories, GitHub
+topic tags, and license pages. Public counts and results include only published
+projects with the repository data required by the catalogue.
 
-### R1 — Browse
+- Categories have at most three levels. Projects receive 1–3 distinct direct
+  **leaf** categories; ancestors aggregate distinct published projects. A category
+  with assignments cannot gain children. Only empty leaves can be deleted.
+  Renames/moves retain historical paths and redirect to the current path.
+- GitHub topics synchronize tag assignments on successful metadata writes.
+  Admins may edit display copy and hide tags without losing curation during sync.
+  Tag slugs are stable; only unassigned tags can be deleted. Hidden/empty tags
+  are excluded from public discovery.
+- Recognized SPDX metadata links to license discovery and a license document.
+  Missing/custom/unrecognized metadata stays `unknown`. The unknown filter is
+  noindex; it is not a license assertion. Archived is based on GitHub's flag;
+  it does not automatically unpublish a listing.
+- Home defaults to verified-first recommendation, then stars and deterministic
+  ID ordering. Category/tag/license catalogues default to Most stars. Explicit
+  Latest sorts by listing creation time. Most popular currently means total
+  GitHub stars, like Most stars; other options include name, forks, last commit,
+  repository age, Oldest, and Trending.
+- Trending compares the earliest/latest observed totals within a seven-day
+  interval using Asia/Jakarta dates. It requires two different observation dates;
+  missing history ranks last, and negative changes remain valid.
 
-- `project.list` and `project.getBySlug` return published projects only; missing/nonpublic detail returns generic `404`.
-- REST read mappings currently use `QUERY /projects` and `QUERY /projects/{slug}`; the public web detail route is `/$slug`.
-- Detail shows copy, repository/optional website, Markdown content, categories, optional screenshot, and stored GitHub statistics.
-- Public documentation uses SSR `react-markdown`/GFM with raw HTML omitted, server-prepared Shiki light/dark code blocks, Copy feedback and published-project link mentions. Admin editing/import preview retains BlockNote.
-- Content preparation accepts only a validated slug and loads stored published content with the same required repository row as public detail. Enhancement failure retains readable Markdown; missing/nonpublic content supplies no prepared data.
-- Cached logo/screenshot completion uses image decoding results, with honest local missing/failure states and reset on source changes.
-- Private submitter identity/rejection notes are excluded from public responses.
+### GitHub metadata and content
 
-### R2 — Find and categories
+Public page reads use stored snapshots rather than live GitHub API calls. Refresh
+is available to admins and through the daily worker. Successful complete refresh
+stores stars, forks, repository identity/creation, the default branch's last-commit
+timestamp (`lastCommitAt`), latest release, topics, license, archived state, and an
+observation timestamp.
+Provider failures retain the previous snapshot.
 
-- Text, one category subtree, sorting, and pagination work together.
-- Sorts in display order: Oldest, Latest, Most popular, Name (A to Z), Name (Z to A), Most stars, Trending, Most forks, Last commit, Repository age. See [License browsing and archived repositories](#license-browsing-and-archived-repositories) for ranking definitions.
-- Homepage validates `q`, `category`, `sort`, `page`; changes preserve other filters and reset the page.
-- PostgreSQL full-text search indexes name/tagline/description.
-- Category hierarchy has at most three levels; published projects need 1–3 direct leaf assignments.
-- Public category pages have canonical paths, historical redirects, published-only counts, and basic metadata.
-- Admins manage taxonomy with server-side hierarchy/path/assignment integrity.
+Star history records actual totals by Asia/Jakarta date, one point per date.
+The detail chart uses a 30-day interval with up to 31 points including a baseline;
+there is no synthetic historical backfill or interpolation. A single point shows
+collection in progress; stale snapshots are labeled. Retention is 90 date buckets,
+pruned by the scheduled job. Same-ID repository renames preserve history;
+identity changes clear unrelated history.
 
-### License browsing and archived repositories
+Admins can import a GitHub README into the content editor. Relative links/images
+are resolved against the source repository/revision; unsupported markup and
+unsafe URLs are removed. A missing or oversized README produces a recoverable
+error. Public content supports Markdown/GFM, highlighted code, and catalogue
+project mentions; imported content still needs editorial review.
 
-- Included in the operator-confirmed v0.4.0 rollout. The [license guide](licenses.md) preserves feature-branch validation and deployment instructions; its historical pending-rollout statements are superseded by this release baseline.
-- Persist GitHub license key/name/SPDX identity, canonical lowercase route slug, human document URL, and factual archived state. Full upstream SPDX identifier data avoids a small hardcoded license list; custom/nonstandard/undetected values display exactly `unknown` without an invented document link.
-- Reuse existing GitHub initial/manual/daily/import pathways. Failed fetches preserve prior snapshots; successful snapshots can remove/change license and archival. Repository-ID replacements clear unrelated metadata/history; archived alone does not unpublish a project.
-- `/licenses` and `/licenses/$slug` expose only published visible projects, scoped search/sort/pagination, stable URL history, accurate counts and category/tag-consistent SEO. The unknown bucket is discoverable but noindex; private-only/missing licenses return 404.
-- Public catalogue cards show Stars → Last commit → License plus Archived where reported. Detail statistics place License immediately above Repository, retain Forks, and provide separate discovery/document links. Public navigation/footer expose Licenses.
-- Ten catalogue sorts match the requested menu order. Existing query sort values remain compatible. The user selected Most popular = total stars and Trending = first-to-last observed star delta in the trailing seven-day WIB window, requiring two dates and placing missing observations last. Last commit uses newest first; Repository age uses oldest first; nulls last and project-ID ties are stable.
-- P0 recorded target migration/matching API-web revisions, backfill and daily synchronization evidence in the [production record](production-verification-v0.4.0.md#github-schedule-and-backfill). The feature requires no new admin CRUD or scheduler and includes no R6, collections or comparison scope.
+### Sign-in and account access
 
-### GitHub Topics tags
+GitHub OAuth and email Magic Link are the public sign-in methods. Password-based
+sign-in/signup are disabled. Magic Links expire after ten minutes and are
+single-use; requesting one does not create a session. Matching verified email
+is required for GitHub account linking. A separate claim contact address does not
+change or merge login accounts.
 
-- Tags are repository `topics`, separate from release/version tags. `tags.slug` is the immutable lowercase identity; `project_tags` stores assignments.
-- Sync topics transactionally during GitHub-backed submission/resubmission, admin create/publish/repository changes, manual/daily refresh and file import with `--github`. A failed fetch preserves stored tags; a successful empty topics snapshot removes assignments.
-- `/tags` supports `q`, popular/name sorting, alphabetical/non-A–Z filtering and page-based directory browsing (60 per page). Popularity is published-project count, not stars.
-- `/tags/$slug` uses existing project search/sort/pagination with a server-scoped tag filter. Hidden, unknown and zero-public-project tags return 404; the directory excludes them. Project detail shows visible tag links below categories. Homepage search values remain `q`, `category`, `sort`, `page`.
-- `/admin/tags` permits create/edit/hide/unhide/delete with admin API checks. Display name/description/hidden curation survives sync; assigned tags cannot be deleted. Hidden tags are excluded from public displays and tag-filtered results. Deleting an unused tag does not prevent a future sync recreating it.
-- Included in v0.4.0. Migration, topic backfill and daily refresh were verified in P0 using the existing GitHub job. See [production evidence](production-verification-v0.4.0.md#github-schedule-and-backfill) and [tags](tags.md).
+Auth uses persistent PostgreSQL rate limits; submission/report quotas use Redis.
+Magic Link delivery requires configured email credentials. Errors avoid exposing
+whether an email address already has an account. Session-aware SSR/private routes
+require correct [origin and cookie configuration](development.md#origins-and-cookies).
 
-### R3 — Sign in
+New sign-ins receive the default account role. There is no public admin signup
+or first-admin provisioning CLI; initial administration requires a controlled
+operator procedure on the operator's own instance.
 
-- GitHub OAuth and email Magic Link through Resend are the two supported sign-in paths. Password authentication is disabled on the server. See [auth behavior and rollout](auth.md).
-- Private pages use UX guards; private/admin API procedures enforce session/role independently.
-- Return URLs must be sanitized local paths.
-- Both auth dialog and `/auth/sign-in` reuse `SignInForm`: email request/check-inbox/resend/recovery plus GitHub. No Google or password sign-in is offered.
-- Magic Link verification proves inbox ownership, signs in or creates a verified user, and preserves verified existing user identities, roles and GitHub associations. User-specific repository permissions are not inferred from email verification. Unverified legacy account cleanup follows Better Auth's documented protections; do not bulk-mark old accounts verified.
-- Tokens are hashed, expire in ten minutes and are consumed once. PostgreSQL `rate_limit` persists five email requests per IP and five send attempts per normalized recipient across IPs per ten minutes, plus twenty verification requests per minute. The recipient key is HMAC-derived, and storage/delivery failures do not silently bypass quotas. The UI offers a sixty-second resend cooldown and honors server retry timing.
-- Server-only Resend sender/key, React Email HTML/text, configured-origin callbacks, private/no-store auth responses and existing SSR cookie propagation are part of the implementation. Better Auth and its Drizzle adapter are aligned at 1.7.12 with PostgreSQL contention coverage.
-- Intake accepts authenticated GitHub and verified email Magic Link users. A session does not prove GitHub repository ownership; R6 uses separate project approval and contact-email proof; sign-in does not grant membership.
-- Included in v0.4.0. P0 verified live Resend/Magic Link delivery and sign-in, GitHub callback/return and authenticated cross-subdomain requests. Initial admin bootstrap, expiry/replay and forced logout/session expiry were not exercised; preserve those gaps in the [production record](production-verification-v0.4.0.md#open-outcomes-owners-and-recovery). See [auth rollout](auth.md).
+### Submission and moderation
 
-### R4 — Submit intake
+Signed-in accounts submit a name, public GitHub repository, and optional website.
+New intake is a private draft. Create/resubmit share five validated attempts per
+ten minutes per account, including admins, and a cap of ten open drafts. Quota is
+consumed before downstream duplicate, capacity, GitHub, state, or revision checks;
+invalid/unauthenticated input does not consume it. Redis failure stops intake.
 
-- Collect name, public GitHub repository URL, and optional HTTP(S) website.
-- Verify public repository existence/identity and canonicalize aliases; duplicates return `409`.
-- Atomically create one `draft` project with submitter ID, basic repository metadata, and submission audit. It remains private; the UI calls it Awaiting review.
-- Assign a slug, suffixing collisions numerically.
-- Limit validated create/resubmit attempts together to five per ten minutes/account via the existing Upstash counter, and open drafts to ten/account under a shared transaction lock. Invalid/unauthenticated inputs and private reads consume no quota; accepted attempts count even if later checks fail. Redis failure stops work; typed quota `429` data/headers drive an editable countdown with no automatic retry.
-- Do not create partial records after GitHub, Redis, or transaction failure.
-- Private submission tracking exposes only the current user's records and feedback.
+| State       | Visibility and workflow                                      |
+| ----------- | ------------------------------------------------------------ |
+| `draft`     | Private, waiting for review or admin enrichment              |
+| `published` | Public and eligible for discovery                            |
+| `rejected`  | Private, with required decision feedback for submitter/admin |
+| `removed`   | Hidden from the public catalogue                             |
 
-### R5 — Moderate + enrich
+Admins enrich copy, content, media, and categories before publishing. Publication
+requires the shared publish schema: valid identity/repository, logo, tagline,
+description, and 1–3 leaf categories. Review history records decisions.
 
-- Admins list/filter review candidates and create/edit projects at `/projects`.
-- Publish requires complete name/slug/repository/tagline/description/logo and 1–3 existing leaf categories.
-- Verify fresh basic GitHub data before publication/repository changes; update the existing record transactionally with categories and audit.
-- Current UI supports save draft, publish, reject, restore, unpublish, and delete.
-- Audit records update/status changes; review history is paginated. One mutation can legitimately write both update and status-change events.
-- Rejection requires actionable nonblank feedback after trimming, with a 1000-character maximum, in admin create/update APIs and the review UI. Updates may retain a valid existing reason; legacy rejected records remain readable and restorable. Inline validation blocks empty Reject without preventing switching to draft/restore, and audit history retains feedback.
-- Original submitters can edit only rejected intake name/repository/website in a prefilled private Edit & Resubmit modal and atomically return it to `draft`, clearing the current reason. Preserve project ID, slug, submission provenance, enriched copy/media/categories and previous audit events; the submitter transition event records previous feedback and intake changes.
-- Protected private read/resubmit procedures derive the submitter from the session, including for admins. Foreign/missing records return `404`, unauthenticated `401`, non-rejected or stale `409`. Recheck owner/status/client revision/capacity/conflicts transactionally after GitHub verification outside the transaction. Intake writes serialize by GitHub repository ID to protect rename races; canonical aliases and resolved identity cannot duplicate a listing.
-- Preserve stored statistics/metadata/history across matching GitHub repository IDs; clear unrelated metadata/history for different or unknown prior identities and store fresh basic metadata. No synthetic star-history backfill. Failed validation/fetch/conflict/rate limit keeps corrections and feedback; success invalidates the private list/route and returns to Awaiting review in place. See [implementation policy](submission-resubmit.md).
-- Resubmission confers no ownership or permission to edit published content. P0 exercised live OAuth/Upstash and submit → reject → correct/resubmit → publish with both decision emails. Desktop/mobile discovery was checked; additional accessibility and integration scenarios are not implied by this focused [production evidence](production-verification-v0.4.0.md#live-product-and-service-checks).
-- Actual Published/Rejected transitions enqueue email for the stored original submitter in the review transaction, keyed by the audit UUID. Repeated saves/content/feedback edits and records without a recipient generate no mail; later resubmission/review can notify again.
-- Published mail includes project name and public/private links. Rejected mail includes escaped actionable feedback and the existing private `/submission` → safe sign-in returnTo → Edit & Resubmit journey. It grants no ownership or public access to feedback.
-- All React Email templates/layout/primitives live under `packages/ui/src/emails`, isolated from interactive UI exports; rendering/delivery/configuration stay server-side. Magic Link retains HTML/text and its original expiry/one-use lifecycle.
-- A scheduled private CLI sends only committed outbox rows, freezes payloads, fences concurrent workers and retries with the same Resend key up to eight attempts within 23 hours. This is bounded provider deduplication, not exactly-once/inbox delivery. Missing configuration retains pending work; terminal/uncertain failures require operator reconciliation. See [rollout, scheduling, limits and fresh targeted verification](review-notifications.md).
+The original submitter can correct rejected intake from `/submission` using
+**Edit & Resubmit**. Stale/non-rejected records conflict. Resubmission keeps the
+project ID, slug, original submitter/date, and enriched content/media, clears the
+current rejection reason, and returns the listing to draft. It grants no rights
+to edit the published listing.
 
-Feature documents preserve historical verification. Record checks scoped to the
-affected behavior and release revision under current AGENTS.md policy; do not
-require a full suite for every change. Operator-confirmed rollout and individual
-service acceptance results are separate evidence.
+Actual Published/Rejected transitions queue email for the original submitter.
+Admin-created projects without a submitter do not notify anyone. A separate
+worker sends immutable decision snapshots with bounded retries; links lead to
+current public/private state. Provider acceptance does not guarantee inbox
+delivery. See [worker behavior](deployment.md#scheduled-workers).
 
-### Delivered enrichment and infrastructure
+### Project access and editing
 
-- Admin logo/screenshot uploads use S3-compatible storage and temporary-to-final promotion.
-- GitHub description/website prefill and pinned sanitized README import preview changes locally; Save persists them.
-- Manual/admin and daily CLI refresh update repository statistics/metadata; public pages read DB snapshots.
-- Public `/activity` displays recent AltStack repository commits.
-- Star history records actual daily WIB observations, with cold-start/gap/staleness handling and 90-date retention. No synthetic 30-day backfill. Trending uses these observations for an observed seven-day star delta.
-- Operator migration/backfill/schedule remains separate from implementation. See [statistics rollout](github-statistics-refresh.md) and [README import](github-readme-import.md).
+Use `/<slug>?dialog=verify` to connect GitHub, check repository access, choose an
+Owner/Maintainer label, and confirm a project contact email with an expiring code.
+Email confirmation creates a pending request; independent approval is required.
+An admin reviews the first representative; existing active representatives review
+later requests. Self-approval is prohibited.
 
-### L1 / L2 — Public release completion
+GitHub admin/maintain access is strong evidence. Write access and unverified
+provider results require independent reviewer evidence. Confirmed read/triage/no
+access or identity mismatch is denied; notes cannot override it. Approval obtains
+fresh evidence. The catalogue metadata token never authorizes a claim.
 
-L1 and L2 are implemented and included in the released baseline. Unrecorded
-service checks remain in [operations evidence](roadmap.md#launch-acceptance-and-operations);
-they do not change the v0.4.0 rollout status. See [historical L1 verification](seo-og.md).
+Approved active members edit published project name, tagline, description,
+website, Markdown, logo/screenshot, and categories from `/managed`. Changes
+publish immediately after validation; stale saves conflict. They cannot change
+repository identity, slug, visibility, provenance, taxonomy, featured selection,
+or deletion. Upload grants are scoped to the account and project.
 
-- L1: AltStack defaults and distinct home/project/category metadata, committed static and dynamic 1200 × 630 social cards (project logo, stored GitHub stars/forks and snapshot date), published-only sitemap and robots discovery.
-- L1: Explicit indexing/canonical/cache policy, safely escaped truthful JSON-LD, crawlable SSR project documentation, generic nonpublic/error responses and Node/Nitro runtime verification.
-- L2 originally retained Verify/Bookmark/Report and account Bookmarks as disabled controls. The separately authorized [Private Bookmarks](bookmarks.md) implementation now enables Bookmark and the account menu across desktop/compact/mobile. The [Report / suggest correction](project-reports.md) intake now enables Report for guests, users and admins through `?dialog=report`; R6 now enables Verify through `?dialog=verify`.
-- Replace generic screenshot placeholders with honest empty states and verify mobile, keyboard, empty/error/not-found states. AltStack branding, icons and manifest copy are implemented.
-- Give hero controls real destinations or noninteractive semantics; remove unsupported compare/trending copy, recover from image failures, and complete accessible navigation and loader/error recovery. R6 now supplies ownership and member editing; private report intake, its admin inbox and bookmarks are tracked separately.
+Members may leave, including the last representative. Only another admin can
+change a member's label or revoke another account's membership. No direct
+add/invite bypasses verification. Losing the last active representative removes
+the verified badge and ranking benefit. Changing repository identity clears
+membership/claims/upload grants; same-identity renames retain them.
 
-### Private Bookmarks
+### Bookmarks, reports, and featured projects
 
-Merged and included in v0.3.0. All authenticated accounts, including admins, can
-save/remove a published project from desktop/compact/mobile detail actions and
-open protected `/bookmarks` through account/sidebar navigation. Guests use the
-existing sign-in handoff. The table contains only Name (logo/name link to the
-public project), Description (tagline) and one Remove action, with pagination.
+**Bookmarks:** `/bookmarks` is private to the signed-in account, including admins.
+Save/remove are idempotent and lists contain published projects only. Hidden
+projects retain private bookmarks and reappear if republished; project/account
+deletion cascades them. No public bookmark counts or shared collections exist.
 
-Session-derived account IDs, unique user/project pairs, private cache keys and
-server authorization protect ownership. List/state/save require current public
-visibility; unpublished projects disappear from lists without exposing their
-data, and deletion cascades bookmarks. Removing a bookmark never deletes the
-project. Pending/error/retry/empty-page behavior is implemented. See
-[Bookmarks behavior and verification](bookmarks.md).
+**Reports:** `/<slug>?dialog=report` accepts Broken link, Wrong category, Outdated,
+or Other. Guest contact is required but unverified; signed-in contact comes from
+the session. Messages allow up to 2,000 characters; Other requires a message.
+Limits are five validated attempts per ten minutes per account/guest email hash,
+plus a shared guest cap of fifty. Admins resolve or dismiss Open reports at
+`/admin/reports`; decisions do not change project data. No reopen, assignment,
+report email, or automatic correction exists. Contact/message data stays private.
 
-### Report / suggest correction
+**Featured:** `/admin/featured` manages an ordered selection of up to 21 eligible
+published projects. Save is explicit and detects concurrent changes. Public
+project details omit the current project and unavailable entries. This selection
+does not control homepage order.
 
-Merged and included in v0.3.0. `/<slug>?dialog=report` opens the accessible
-public form, mutually exclusive with Embed and synchronized with direct links,
-reload, history, closing and focus restoration without refetching project data.
-Guests provide a valid email; sessions use server-derived user ID/email without
-an email input. Type is required: Broken link, Wrong category, Outdated, Other.
-The trimmed message is at most 2,000 characters and required only for Other.
+### Sharing, indexing, and badges
 
-Reports persist privately only for currently published targets. Missing/nonpublic
-targets return the same 404 even for admins. Upstash allows five validated
-attempts per ten minutes per account or normalized guest-email hash, with an
-additional shared guest cap of fifty per ten minutes. Errors fail closed and
-the form preserves input; no automatic retry or external email is sent. These
-guest contact addresses are unverified. See [report intake](project-reports.md).
+Project pages provide share links and `?dialog=embed`. The image endpoint is:
 
-### Admin report inbox
+```text
+https://app.example.com/example-editor/badge.svg?theme=dark&width=200&height=50
+```
 
-Merged and included in v0.3.0. Admins use
-`/admin/reports` to read private project reports (project/logo, contact email,
-type, plain text message, date and status), defaulting to Open/newest first with
-bounded cursor pages and status filters. Open reports may become Resolved or
-Dismissed; concurrent decisions cannot overwrite each other. The existing
-project editor performs corrections separately. Unpublished targets remain
-editable, while deleted-project reports are retained without edit links.
-Route and API guards require admin role, private responses use no-store, and
-public data excludes all report details. Additive migration backfills Open and
-retains report history through future project deletions. See
-[report behavior, verification and rollout](project-reports.md).
+Theme is `dark` or `light`; width is an integer 160–1200 and height 40–400.
+Defaults are dark/200/50. Invalid dimensions return 400. Badge responses recheck
+publication on every request, including HEAD; hidden/missing projects return
+404 and service failure returns retryable 503. Images are self-contained SVG
+with no-store responses.
 
-### Public project Embed badges
+Canonical/OG URLs use configured `VITE_APP_URL`. Public pages have metadata,
+structured data, robots rules, and live sitemaps. Search/nondefault-sort variants
+are noindex; private routes and error pages are noindex. Dynamic social images
+recheck visibility; third-party crawler caches remain outside application control.
 
-Implemented and included in released code, including the designer-provided badge
-artwork. Feature-local test results and target domain/CDN acceptance are separate.
+### Admin workspace and limits
 
-- Desktop Embed and compact More → Embed open the accessible public dialog at
-  `/<slug>?dialog=embed`, synchronized with direct links, reload and browser history.
-- Default customization is dark, 200 × 50 regardless of the app theme. Live SVG
-  preview and escaped, read-only HTML share strict dimension validation. Copy
-  reports actual clipboard success or selects code for manual copying on failure.
-- Public `/<slug>/badge.svg` accepts dark/light, width 160–1200 and height 40–400
-  integer pixels. It uses the approved AltStack signature and truthful “Listed on”.
-- Every request checks current published visibility; hidden/missing/deleted listings
-  return generic 404, service failure 503. No-store responses prevent cached
-  variants or conditional requests from bypassing publication checks.
-- Snippets use the configured `VITE_APP_URL` origin, never request Host, with
-  `altstack / badge / embed / project-<slug>` UTM attribution. Badge endpoints are
-  noindex and excluded from sitemaps; dialog URLs retain clean detail metadata.
-- Implementation/local verification and deployment are separate. See
-  [Embed contract, cache and deployment notes](project-embed.md).
+`/admin` shows current counts and eligible submission/report/claim queues.
+`/admin/submissions`, `/admin/ownership`, `/projects`, and taxonomy/user pages
+provide the corresponding workflows. `/admin/activity` displays only recorded
+audit actions and safe metadata; it does not invent report/taxonomy events.
 
-### R6 — Ownership and maintainer editing
+`/admin/users` supports protected role changes, bans/unbans, session revocation,
+and membership navigation. Self-ban and changes that remove the last active admin
+are blocked. Role changes revoke target sessions. Bans prevent account access and
+exclude retained memberships from active verification; unban permits new sign-in.
+There is no account deletion, impersonation, or manual account/email creation UI.
 
-User-approved scope on **2026-10-24**, superseding the previous GitHub-only proof,
-no-new-global-role and unchanged-home-ranking decisions. Implemented and merged
-to `main` through #121; sorting corrections followed in #122. Production
-revision and live R6 acceptance remain unverified in this checkpoint.
+`/admin/operations` shows GitHub snapshot freshness and aggregate review-outbox
+state. These observations do not prove scheduler execution or inbox delivery.
+The dashboard has no job/retry execution controls or historical analytics.
 
-- `?dialog=verify` follows Report/Embed URL history, reload and close behavior. Sign-in retains the dialog URL. Two fields: project contact email and Owner/Maintainer role; send code, confirm code, then await approval.
-- OTP proves contact-email control. An independent admin approves the first representative when no members exist; an existing owner or maintainer approves additional representatives. A session, OTP or submission by itself grants no ownership. No domain or GitHub-only UX is imposed.
-- Better Auth registers `owner` and `maintainer` with identical project update/review permissions. `project_members` binds these capabilities to specific projects; `submitterId` retains provenance. A claim never downgrades an admin or grants admin tools.
-- User-approved follow-up: connect GitHub and check the claimant's repository permissions before code issuance and again on approval. Confirmed read-only/unrelated claims are denied. Write access or unavailable checks require recorded independent reviewer evidence. Proof stays private; the existing verified-email account-linking policy is preserved, with no extra repository write scope.
-- Approved representatives directly publish copy, website, content, media and 1–3 leaf-category edits through `/managed`, with API authorization, existing validation, upload binding, revision checks and audit. Repository identity, slug, status/deletion, taxonomy, Featured and reports remain admin-controlled.
-- Public cards/detail show a warm verified badge when an active membership exists and hide Verify. Banned accounts retain membership records but confer no active representation until unbanned. Request access remains available for additional representatives. Default home order (`recommended`) is verified first, then stored GitHub stars descending and project ID descending. Category/tag/license listings default to Most stars; explicit Latest remains chronological. This exposure benefit adds no payments or separate plan.
-- See [claim policy, security, acceptance and rollout](project-ownership.md). No legacy listing is assigned an owner or verified automatically.
+## Quality and operational requirements
 
-### Member and admin user management
+- Validate inputs and permissions on the server; conceal foreign private records
+  and avoid shared caching of authenticated/private responses.
+- Preserve user input on recoverable failures. Avoid automatic retries for writes
+  whose earlier response may have been lost; detect stale revisions.
+- Keep keyboard/mobile navigation, readable content, focus restoration, and
+  loading/error/retry states usable across the main journeys.
+- Use stored repository snapshots on public reads. Display missing/stale data
+  honestly and never synthesize historical observations.
+- Ship reviewed forward migrations and compatible API/web revisions. Verify
+  scheduler execution, backup restore, and provider acceptance per instance.
+- Keep public docs reproducible with synthetic examples. Production configuration,
+  evidence, identities, and secrets belong in private operator storage.
 
-Implemented on `dev` through #123; see [member policy](project-ownership.md#member-management-follow-up--2026-10-26)
-and [account administration](auth.md#admin-user-management--2026-10-26).
+## Scope boundaries
 
-- `/managed` includes hidden memberships for self-service leave. `/managed/$id/members` lists representatives with bounded pagination and no private contact/GitHub proof. Editing still requires a published project and active membership.
-- Owner and Maintainer retain equal edit/review rights. Any representative can leave; only another current admin can change a member's project role or revoke another account. No direct add/invite bypasses proof and independent approval. Removing the last active representative removes verification and returns pending claims to admin bootstrap review.
-- `/admin/users` supports search, account-role/status filters, pagination and private user detail with safe provider/session summaries and project membership links. Admin actions assign `user`/`admin`, ban with a reason, unban or revoke all sessions. Project roles are managed separately.
-- Revision checks, project/account locks, actor rechecks, self-ban denial, last-active-admin protection and transactional audit/session writes protect concurrent actions. Native Better Auth admin write bypasses are blocked. Account deletion, impersonation and credential/email editing are outside this slice.
-- Migration `20261026115414_member-user-management` expands allowed audit actions without backfilling accounts or memberships. Run `db:validate-audit-actions` after `db:migrate` commits, against the same target, before matching app deployment.
+The current product does not include paid exposure, public collections, ratings,
+reviews/follows, a personalized feed, report conversations, or historical product
+analytics. Additional search infrastructure, SDKs, newsletters, galleries, and
+extensions require a demonstrated user problem and a separately scoped outcome.
+See [conditional roadmap work](roadmap.md#conditional-product-work).
 
-### Admin workspace
+## Success signals
 
-Implemented on `dev` through #125–#126; see [admin workspace](admin-dashboard.md).
-
-- `/admin` shows current catalogue/work counts and the oldest eligible submission, report and ownership queues. `/admin/submissions` scopes review to drafts with a submitter; `/admin/ownership` reuses claim eligibility and independent review.
-- Grouped desktop/collapsed/mobile navigation and workspace breadcrumbs connect moderation, catalogue, account and personal work. Filters/pagination and report/claim links survive reload; failed reads show recovery states.
-- `/admin/activity` reads recorded audit events with action/actor/project/inclusive UTC date filters and an explicit status/role allowlist. Raw metadata, contact email, GitHub evidence and rejection/ban reasons are excluded. Missing report/taxonomy audit events are not invented.
-- `/admin/operations` reports GitHub snapshot freshness at a visible 48-hour threshold and review-outbox observations. Scheduler/GitHub failure telemetry is unavailable; outbox Sent means provider acceptance. These are current observations, not historical analytics or proof of inbox delivery/backup health.
-- API procedures independently enforce admin access and private/no-store responses. Dashboard reads use bounded projections and read-only repeatable-read transactions. No additional migration, scheduler or execution controls are introduced by the dashboard.
-
-### R7 — Featured Projects (revised and delivered)
-
-- Merged and included in v0.3.0. Admin `/admin/featured` selects/reorders/removes up to 21 projects, explicitly saves the global list and detects concurrent saves.
-- Public detail uses published projects with repository rows and valid HTTP(S) websites, excludes the current project and exposes only preview fields. Logos open external websites; hover previews link back to public AltStack detail.
-- Desktop/tablet places the panel below GitHub statistics; Featured sticks below the header while stats scroll away. Mobile puts the panel after Share buttons without sticky positioning. Empty selections hide the panel and preserve sticky statistics.
-- R7 itself adds no homepage sections or project `featured` boolean. R6 orders the default home catalogue by active verification, then GitHub stars/ID; explicit Latest remains chronological. Homepage editorial sections remain deferred. See [Featured Projects](featured-projects.md).
-
-## Project lifecycle
-
-Current storage uses a single project record:
-
-- `draft`: hidden, awaiting review or an incomplete admin draft.
-- `published`: publicly visible, editable by admins and approved active project representatives within their respective permissions.
-- `rejected`: hidden; required feedback is visible to submitter/admin. Historical records may have no note; keeping them rejected through an update requires valid feedback.
-- `removed`: supported hidden status.
-
-Admins can restore rejected records or unpublish to draft. Original submitters
-can correct and resubmit their rejected record to `draft`. All duplicate create
-attempts still conflict, regardless of status.
-
-Admin remove physically deletes the row and cascades repository/category/history,
-bookmark, Featured selection and tag-assignment rows. Audit and reports survive
-with nullable project references; reports lose edit links. Do not assume deleted
-projects remain available in submission tracking or that `removed` is terminal
-for admin updates.
-
-## Data model boundaries
-
-- `projects`: copy/media/links/status, nullable submitter FK and rejection reason, timestamps, generated search vector. Submission provenance is separate from membership.
-- `project_members`, `project_claims`, `project_uploads`: scoped representation, private contact/GitHub proof and independent decisions, and account/project-bound temporary-media grants. Public verification is derived from active membership, not a project boolean or global account role.
-- `github_repositories`: one per project, canonical owner/repo, GitHub repository ID, statistics/metadata/fetch timestamps.
-- `github_star_history`: daily project/date observations.
-- `categories`, `category_paths`, `project_categories`: taxonomy, historical path ownership, leaf assignments.
-- `tags`, `project_tags`: immutable GitHub topic identities, curated name/description/hidden state and project assignments.
-- `bookmarks`: unique user/project pairs and saved timestamps; private per-account storage with cascading user/project deletion.
-- `project_reports`: nullable project/user references, retained contact email/type/message/date and Open/Resolved/Dismissed status. No public read projection or separate moderation audit is implemented.
-- `featured_projects`: global project/unique-position selection (0–20); no per-project featured boolean.
-- Auth `user`, `session`, `account`, `verification` plus `rate_limit`: existing identities/roles, OAuth/session state, hashed Magic Link verification and persistent request/send quotas.
-- `audit_log`: project lifecycle, claim/review, membership and account-management events, actor, nullable project FK, reason/metadata/time. The admin activity feed exposes only its explicit safe projection.
-- `submission_review_notifications`: private decision snapshot keyed by audit UUID; original recipient FK, frozen payload, attempt/lease/deadline/delivery state. Additive with no historical backfill; never exposed in public projections.
-
-There is no active separate submission table. Canonical repository URL is unique
-on projects; repository metadata also has unique project and owner/repo identity.
-Publication enriches the existing submitted project.
-
-## Technology and operations
-
-- React, TanStack Start/Router/Query, Tailwind and shared UI; BlockNote for admin editing, react-markdown/GFM and server Shiki preparation for public documentation.
-- oRPC contracts and Drizzle/PostgreSQL full-text search.
-- Better Auth/GitHub OAuth + Resend/React Email Magic Link; PostgreSQL-persisted auth rate limits; Upstash for submission and report quotas.
-- S3-compatible storage for admin/member media with scoped temporary grants; CSV/JSON import for initial content.
-- Docker server/web images and operator-managed daily GitHub CLI schedule.
-- Private R2 PostgreSQL backups at 03:00 Asia/Jakarta with 30-object count retention; off-host isolated restore and pruning verified on 2026-10-27 WIB. Daily-run observation, alerting, credential scope and asset lifecycle retain explicit gaps in the [runbook](postgres-backup-restore.md).
-- Docker publication runs on `v*` tags or explicit workflow dispatch; a merge to `main` alone does not publish images. Record matching immutable API/Web revisions and target migration/constraint validation for the [current rollout](rollout-2026-10-27.md).
-- Local Docker PostgreSQL 18: development `altstack` on port 5432, separate tmpfs-backed `altstack_test` on port 5433, both loopback-only. Test target guards reject nonlocal/non-test databases and never fall back to the application URL.
-- Use disposable schemas for DB tests, selected by affected feature/callers under [AGENTS.md testing scope](../AGENTS.md#testing-scope). Documentation-only changes need diff/link/format checks. Full-suite runs require an explicit request or concrete broad impact/baseline need, with the reason stated beforehand.
-- Production rollout records migrations, runtime configuration and service acceptance separately from source/branch checks. Tags require GitHub refresh backfill; Magic Link requires the additive auth rate-limit table, server-only Resend sender/key and trusted reverse-proxy configuration. Docker dev/test changes do not replace production database configuration.
-
-## Success signals and later backlog
-
-After rollout, measure accurate catalogue coverage, successful browse/search/detail
-journeys, submission decisions within one business day, and authorization checks.
-
-Follow the [ordered priorities](#ordered-priorities-after-v040): P0 core
-verification and backup/restore drill complete → P1 rollout/acceptance of implemented R6 and admin workflows → P2 collections
-then comparison → P3 report improvements → P4 homepage editorial → P5 backlog.
-P2–P5 remain conditional on observed needs, not committed releases. Existing
-review emails, Featured, report intake/admin decisions, Magic Link and Trending
-sort are delivered in the v0.4.0 baseline. Broader feeds, webhooks and social/media
-work do not follow automatically from those features.
-Private backup/restore is verified. Backup monitoring/hardening, asset lifecycle
-and additional live acceptance remain owned operational follow-ups; none is
-implied by source merges or local tests.
+Evaluate whether people find relevant projects, use the upstream links, return to
+saved shortlists, and can correct inaccurate listings. Track catalogue accuracy,
+review/report backlog, metadata freshness, and successful representative edits
+using an explicitly chosen measurement process. No numerical growth targets or
+historical analytics are claimed by this document.

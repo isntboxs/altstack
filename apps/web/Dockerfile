@@ -6,7 +6,7 @@
 #   Build Context: / (repo root — required so `workspace:*` deps resolve)
 #   Dockerfile:    apps/web/Dockerfile
 #   Port:          3000 (Nitro default; honors the PORT env var)
-#   Domain:        https://app.domain.com
+#   Domain:        https://app.example.com
 #
 # VITE_* below are BUILD ARGS — they are baked into the client bundle at
 # build time. Changes in GitHub Actions or Dokploy require a rebuild;

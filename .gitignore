@@ -36,3 +36,6 @@ dist-ssr
 !.vscode/settings.json
 !.vscode/extensions.json
 .vitest/
+
+# Reproducible local email review artifacts
+/docs/email-previews/
