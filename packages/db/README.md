@@ -12,9 +12,10 @@ vp run --filter @altstack/db db:validate-audit-actions
 
 [src/schemas.ts](src/schemas.ts) exports the models,
 [src/relations.ts](src/relations.ts) defines relations, and
-[src/migrations](src/migrations) holds the migration chain. Schema changes need
-reviewed generated SQL; preserve existing data and migration history. The separate
-audit constraint validation runs after migration commit and is safe to repeat.
+[src/migrations](src/migrations) holds the migration chain. Schema changes require
+review of the generated SQL; preserve existing data and migration history. The
+separate audit constraint validation runs after migration commit and is safe to
+repeat.
 
 Development uses persistent local `altstack` on port 5432. Tests require separate
 local `altstack_test` on port 5433 and never fall back to the application URL.

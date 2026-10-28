@@ -252,7 +252,7 @@ vp run db:seed -- --categories ./data/categories.json --projects ./data/projects
 ```
 
 Without `--github`, no network requests occur: new repository rows contain basic
-identity, zero counters, and an epoch fetched timestamp marking an unfetched
+identity, zero counters, and an epoch timestamp marking an unfetched
 snapshot. No star history is invented. With `--github`, only new projects fetch
 public repository metadata and README before the write transaction. Optional
 `GITHUB_TOKEN` supplies quota; otherwise public unauthenticated quota applies.

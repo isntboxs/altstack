@@ -93,8 +93,9 @@ projects with the repository data required by the catalogue.
 
 Public page reads use stored snapshots rather than live GitHub API calls. Refresh
 is available to admins and through the daily worker. Successful complete refresh
-stores stars, forks, repository identity/creation, default-branch HEAD commit,
-latest release, topics, license, archived state, and an observation timestamp.
+stores stars, forks, repository identity/creation, the default branch's last-commit
+timestamp (`lastCommitAt`), latest release, topics, license, archived state, and an
+observation timestamp.
 Provider failures retain the previous snapshot.
 
 Star history records actual totals by Asia/Jakarta date, one point per date.
