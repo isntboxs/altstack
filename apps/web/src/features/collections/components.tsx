@@ -340,7 +340,7 @@ export function MemberNavigation({
 							<a
 								href={`#${memberAnchor(project.id)}`}
 								aria-current={active === project.id ? 'location' : undefined}
-								className="flex items-center gap-2 rounded-md px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring aria-current:bg-muted"
+								className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=location]:bg-muted aria-[current=location]:font-medium aria-[current=location]:text-foreground"
 								onClick={(event) => {
 									if (
 										event.button !== 0 ||

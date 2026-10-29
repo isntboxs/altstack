@@ -96,6 +96,18 @@ async function mount(data = collection) {
 }
 const section = (index: number) =>
 	document.getElementById(memberAnchor(projects[index].id))!
+function expectActiveProject(index: number) {
+	const active = document.querySelectorAll(
+		'nav[aria-label="Collection projects"] [aria-current="location"]'
+	)
+	expect(active).toHaveLength(1)
+	expect(active[0].getAttribute('href')).toBe(
+		`#${memberAnchor(projects[index].id)}`
+	)
+	expect(getComputedStyle(active[0]).backgroundColor).not.toBe(
+		'rgba(0, 0, 0, 0)'
+	)
+}
 describe('collection sticky article in Chromium', () => {
 	it('aligns navigation with the first member, sticks section headers without stacking, and stops nav/share before more collections', async () => {
 		await page.viewport(1440, 900)
@@ -147,19 +159,14 @@ describe('collection sticky article in Chromium', () => {
 	it('keeps an internally scrollable nav, follows deep active sections without moving the page, and aligns clicked anchors', async () => {
 		await page.viewport(1440, 700)
 		await mount()
+		expectActiveProject(0)
 		const list = document.querySelector(
 			'nav[aria-label="Collection projects"] ol'
 		)!
 		expect(list.scrollHeight).toBeGreaterThan(list.clientHeight)
 		const target = section(28).getBoundingClientRect().top + window.scrollY - 48
 		window.scrollTo(0, target)
-		await waitFor(() =>
-			expect(
-				document
-					.querySelector('nav [aria-current="location"]')
-					?.getAttribute('href')
-			).toBe(`#${memberAnchor(projects[28].id)}`)
-		)
+		await waitFor(() => expectActiveProject(28))
 		expect(Math.abs(window.scrollY - target)).toBeLessThan(2)
 		const active = document.querySelector('nav [aria-current="location"]')!
 		await waitFor(() => {
@@ -174,6 +181,7 @@ describe('collection sticky article in Chromium', () => {
 			`nav a[href="#${memberAnchor(projects[27].id)}"]`
 		)!
 		anchor.click()
+		await waitFor(() => expectActiveProject(27))
 		await waitFor(() =>
 			expect(
 				Math.abs(section(27).getBoundingClientRect().top - 48)
@@ -182,6 +190,11 @@ describe('collection sticky article in Chromium', () => {
 		expect(document.activeElement?.id).toBe(
 			`${memberAnchor(projects[27].id)}-title`
 		)
+		window.scrollTo(
+			0,
+			section(5).getBoundingClientRect().top + window.scrollY - 48
+		)
+		await waitFor(() => expectActiveProject(5))
 	})
 	it.each([390, 320])(
 		'hides target/navigation and keeps share and clipped previews inside the viewport at %ipx',
