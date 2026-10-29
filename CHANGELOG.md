@@ -34,5 +34,7 @@ been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-an
 
 - Prevent project slugs from shadowing site routes across admin writes,
   publication, imports, and generated submissions, without changing category slugs.
+  A read-only preflight blocks migration until legacy route collisions are resolved.
 - Refresh collection management after failed deletions and omit public links for
-  drafts. Keep collection detail pages available when supplemental discovery fails.
+  drafts. Keep collection detail pages available while supplemental discovery is
+  pending or fails, rendering discovery cards independently when they become available.

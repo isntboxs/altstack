@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import {
@@ -14,25 +15,17 @@ import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/collections/$slug')({
 	shouldReload: ({ cause }) => cause !== 'stay',
+	/** Awaits the article while discovery warms its own cache without blocking it. */
 	loader: async ({ context, params }) => {
+		void context.queryClient
+			.query({ ...collectionQueries.list(1, 4), retry: false })
+			.catch(() => undefined)
 		try {
-			const [collection, others] = await Promise.all([
-				context.queryClient.query({
-					...collectionQueries.bySlug(params.slug),
-					retry: false,
-				}),
-				context.queryClient
-					.query({ ...collectionQueries.list(1, 4), retry: false })
-					.catch(() => {
-						return { collections: [], total: 0 }
-					}),
-			])
-			return {
-				collection,
-				others: others.collections
-					.filter((item) => item.id !== collection.id)
-					.slice(0, 3),
-			}
+			const collection = await context.queryClient.query({
+				...collectionQueries.bySlug(params.slug),
+				retry: false,
+			})
+			return { collection }
 		} catch (error) {
 			if (
 				typeof error === 'object' &&
@@ -82,7 +75,16 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 })
 /** Presents the main article and any independently available discovery cards. */
 function Page() {
-	const { collection, others } = Route.useLoaderData()
+	const { collection } = Route.useLoaderData()
+	const discovery = useQuery({
+		...collectionQueries.list(1, 4),
+		retry: false,
+		retryOnMount: false,
+	})
+	const others =
+		discovery.data?.collections
+			.filter((item) => item.id !== collection.id)
+			.slice(0, 3) ?? []
 	return (
 		<>
 			<CollectionArticle key={collection.id} collection={collection} />

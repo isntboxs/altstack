@@ -268,11 +268,17 @@ submission workflow. Mobile omits the main-project card and side navigation whil
 retaining member headings, previews, and sharing.
 
 More collections are discovery links, not recommendations based on a score.
-They load alongside the main collection; a failed discovery query omits that
-section without preventing an available collection from loading.
+Their independent query starts alongside the main collection and never delays
+the article. Cards appear when discovery completes; a pending or failed request
+omits that section while the available collection remains readable.
 Canonical metadata and sitemap entries use the same live public eligibility
 rules. Changing a slug does not create a redirect for the old URL. Deployment
 acceptance is still required for each instance.
+
+Before rollout, a read-only check against the intended database detects existing
+project slugs that collide with site routes, including `collections`. It runs
+automatically before migration and blocks on any collision; operators must rename
+affected projects and recheck before deploying the matching API/web revisions.
 
 ### Sharing, indexing, and badges
 

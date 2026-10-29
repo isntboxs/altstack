@@ -8,6 +8,7 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
+		"./project-slug-preflight": "./src/project-slug-preflight.ts",
 		"./relations": "./src/relations.ts",
 		"./schemas": "./src/schemas.ts",
 		"./schemas/audit": "./src/schemas/audit.ts",
@@ -33,6 +34,7 @@
 	"publishConfig": {
 		"exports": {
 			".": "./dist/index.mjs",
+			"./project-slug-preflight": "./dist/project-slug-preflight.mjs",
 			"./relations": "./dist/relations.mjs",
 			"./schemas": "./dist/schemas.mjs",
 			"./schemas/audit": "./dist/schemas/audit.mjs",
@@ -59,8 +61,9 @@
 	"scripts": {
 		"build": "vp pack",
 		"check": "vp check",
+		"db:check-project-slugs": "vpx ./scripts/check-project-slugs.ts",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
+		"db:migrate": "vpx ./scripts/check-project-slugs.ts && drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"db:seed": "bun run ./src/seed-file-cli.ts",
 		"db:studio": "drizzle-kit studio",

@@ -31,7 +31,8 @@ passed acceptance. Use the [deployment guide](deployment.md) for an instance's
 migration, worker, provider, and recovery verification.
 
 Collections are implemented in source, rather than conditional future work.
-Their rollout requires the Collections migration and matching API/web revisions
+Their rollout requires a passing reserved-project-slug check on the target
+database, the Collections migration, and matching API/web revisions
 on the intended instance. Public visibility, author-avatar fallbacks, pagination,
 and sticky/mobile behavior remain part of that instance's release acceptance;
 local checks do not establish deployment acceptance.

@@ -46,6 +46,7 @@ export function projectSlugFromPath(path: string) {
 	return match && !RESERVED_PROJECT_SLUGS.has(match[1]) ? match[1] : undefined
 }
 
+/** Resolves safe web links and recognizes explicit project mentions on this origin. */
 export function contentLink(href: string, slug: string, appUrl: string) {
 	if (!href || href.startsWith('#')) return null
 	try {

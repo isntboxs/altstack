@@ -28,6 +28,7 @@ import {
 
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
+import { collectionQueries } from '#/features/collections/queries'
 import { projectQueries } from '#/features/project/queries'
 import { emptyPublicContent } from '#/features/public-content/model'
 import { preparePublicContent } from '#/features/public-content/server-function'
@@ -421,21 +422,87 @@ async function routerAt(url: string, show = false) {
 }
 
 describe('public collection discovery recovery', () => {
-	it('keeps a valid detail page when optional discovery fails', async () => {
+	it('keeps a rendered detail page when pending discovery later fails', async () => {
+		const discovery =
+			Promise.withResolvers<ORPCRouterOutputs['collection']['list']>()
 		rpc.mockImplementation((path) =>
 			path.join('/') === 'collection/getBySlug'
 				? Promise.resolve(editorialCollection)
-				: Promise.reject(new ORPCError('INTERNAL_SERVER_ERROR'))
+				: discovery.promise
+		)
+		const router = await routerAt('/collections/editorial-collection', true)
+		expect(
+			screen.getByRole('heading', { name: editorialCollection.name })
+		).toBeTruthy()
+		await act(async () => {
+			discovery.reject(new ORPCError('INTERNAL_SERVER_ERROR'))
+			await discovery.promise.catch(() => undefined)
+		})
+		await waitFor(() =>
+			expect(
+				router.options.context.queryClient.getQueryState(
+					collectionQueries.list(1, 4).queryKey
+				)?.status
+			).toBe('error')
+		)
+		expect(
+			screen.queryByRole('heading', { name: 'More collections' })
+		).toBeNull()
+		expect(
+			screen.queryByRole('heading', { name: 'Unable to load collection' })
+		).toBeNull()
+		expect(
+			screen.getByRole('heading', { name: editorialCollection.name })
+		).toBeTruthy()
+	})
+	it('renders the article before discovery settles, then adds up to three other collections', async () => {
+		const discovery =
+			Promise.withResolvers<ORPCRouterOutputs['collection']['list']>()
+		rpc.mockImplementation((path) =>
+			path.join('/') === 'collection/getBySlug'
+				? Promise.resolve(editorialCollection)
+				: discovery.promise
 		)
 		await routerAt('/collections/editorial-collection', true)
 		expect(
 			screen.getByRole('heading', { name: editorialCollection.name })
 		).toBeTruthy()
 		expect(
-			screen.queryByRole('heading', { name: 'More collections' })
+			within(
+				screen.getByRole('article', { name: 'Collection projects' })
+			).getByRole('heading', { level: 2 }).textContent
+		).toContain(zed.name)
+		expect(
+			screen.queryByRole('region', { name: 'More collections' })
+		).toBeNull()
+		await act(async () => {
+			discovery.resolve({
+				collections: [
+					{ ...editorialCollection, logo: null },
+					...Array.from({ length: 4 }, (_, index) => {
+						return {
+							...editorialCollection,
+							id: `other-${index}`,
+							slug: `other-${index}`,
+							name: `Other collection ${index}`,
+							logo: null,
+						}
+					}),
+				],
+				total: 5,
+			})
+			await discovery.promise
+		})
+		const more = await screen.findByRole('region', { name: 'More collections' })
+		expect(within(more).getAllByRole('link')).toHaveLength(3)
+		expect(
+			within(more).getByRole('link', { name: 'Other collection 0' })
+		).toBeTruthy()
+		expect(
+			within(more).queryByRole('link', { name: editorialCollection.name })
 		).toBeNull()
 		expect(
-			screen.queryByRole('heading', { name: 'Unable to load collection' })
+			within(more).queryByRole('link', { name: 'Other collection 3' })
 		).toBeNull()
 	})
 	it('starts discovery while the main collection is still loading', async () => {
@@ -458,16 +525,19 @@ describe('public collection discovery recovery', () => {
 		).toBeTruthy()
 	})
 	it('still renders not-found when the primary collection is unavailable', async () => {
+		const discovery =
+			Promise.withResolvers<ORPCRouterOutputs['collection']['list']>()
 		rpc.mockImplementation((path) =>
 			path.join('/') === 'collection/getBySlug'
 				? Promise.reject(new ORPCError('NOT_FOUND'))
-				: Promise.resolve({ collections: [], total: 0 })
+				: discovery.promise
 		)
 		const router = await routerAt('/collections/missing', true)
 		expect(
 			screen.getByRole('heading', { name: 'Collection not found' })
 		).toBeTruthy()
 		expect(router.state.matches.at(-1)?.status).toBe('notFound')
+		discovery.resolve({ collections: [], total: 0 })
 	})
 })
 
