@@ -306,6 +306,60 @@ describe('public curated collections', () => {
 		).toBeNull()
 		expect((await publicClient().list(listing)).collections).toEqual([])
 	})
+	it('serializes live main-project logos and source-owner avatars for public collection cards', async () => {
+		const target = await fixture('target'),
+			member = await fixture('member')
+		const alternatives = await admin().create({
+			body: body([member.id], {
+				slug: 'target-alternatives',
+				kind: 'alternatives',
+				mainProjectId: target.id,
+				sourceRepositoryUrl: null,
+			}),
+		})
+		const repository = await admin().create({ body: body([member.id]) })
+		const handler = new RPCHandler({ collection: collectionRouter })
+		const result = await handler.handle(
+			new Request('http://localhost/rpc/collection/list', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ json: listing }),
+			}),
+			{ prefix: '/rpc', context: context() }
+		)
+		expect(result.response?.status).toBe(200)
+		expect(await result.response?.json()).toHaveProperty(
+			'json.collections',
+			expect.arrayContaining([
+				expect.objectContaining({
+					slug: alternatives.slug,
+					logo: target.logo,
+				}),
+				expect.objectContaining({
+					slug: repository.slug,
+					logo: 'https://github.com/fixtures.png?size=256',
+				}),
+			])
+		)
+		await scope.db
+			.update(project)
+			.set({ logo: 'projects/target/new-logo.png' })
+			.where(eq(project.id, target.id))
+		expect(
+			(await publicClient().list(listing)).collections.find(
+				(entry) => entry.id === alternatives.id
+			)?.logo
+		).toBe('projects/target/new-logo.png')
+		await scope.db
+			.update(project)
+			.set({ logo: null })
+			.where(eq(project.id, target.id))
+		expect(
+			(await publicClient().list(listing)).collections.find(
+				(entry) => entry.id === alternatives.id
+			)?.logo
+		).toBeNull()
+	})
 	it('keeps repository lists target-free, cascades deleted members, and hides empty lists', async () => {
 		const a = await fixture('alpha'),
 			b = await fixture('beta')

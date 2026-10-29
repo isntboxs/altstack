@@ -77,9 +77,15 @@ export function CollectionCards({
 					data-slot="collection-card"
 					className="group relative min-w-0 rounded-xl p-0.5 ring-1 ring-border transition-colors hover:ring-primary/50"
 				>
-					<Card className="relative size-full overflow-hidden ring-0">
+					<Card className="relative isolate size-full overflow-hidden ring-0">
+						<CollectionCardBackground logo={item.logo} name={item.name} />
 						<CardHeader className="gap-4">
-							<CardTitle>
+							<CardTitle className="flex min-w-0 items-start gap-2">
+								<ProjectLogo
+									src={item.logo}
+									name={item.name}
+									className="size-7"
+								/>
 								<h2 className="min-w-0 text-xl font-semibold wrap-anywhere">
 									<Link
 										to="/collections/$slug"
@@ -91,10 +97,10 @@ export function CollectionCards({
 								</h2>
 							</CardTitle>
 						</CardHeader>
-						<CardContent className="flex-1">
+						<CardContent className="relative flex-1">
 							<CardDescription>{item.description}</CardDescription>
 						</CardContent>
-						<CardFooter className="flex flex-wrap gap-2">
+						<CardFooter className="relative flex flex-wrap gap-2">
 							<Badge variant="secondary">
 								{collectionKindLabels[item.kind]}
 							</Badge>
@@ -106,6 +112,24 @@ export function CollectionCards({
 					</Card>
 				</article>
 			))}
+		</div>
+	)
+}
+
+function CollectionCardBackground({
+	logo,
+	name,
+}: {
+	logo: string | null
+	name: string
+}) {
+	if (!logo) return null
+	return (
+		<div
+			aria-hidden="true"
+			className="pointer-events-none absolute -top-10 -right-10 -z-10 rotate-12 mask-[linear-gradient(to_bottom,black_45%,transparent)] opacity-15 blur-xs"
+		>
+			<ProjectLogo src={logo} name={name} className="size-48" />
 		</div>
 	)
 }
@@ -123,18 +147,7 @@ function MainProjectCard({
 			data-testid="collection-target"
 			className="relative isolate hidden self-start lg:flex"
 		>
-			{project.logo && (
-				<div
-					aria-hidden="true"
-					className="pointer-events-none absolute -top-10 -right-10 rotate-12 mask-[linear-gradient(to_bottom,black_45%,transparent)] opacity-15 blur-xs"
-				>
-					<ProjectLogo
-						src={project.logo}
-						name={project.name}
-						className="size-48"
-					/>
-				</div>
-			)}
+			<CollectionCardBackground logo={project.logo} name={project.name} />
 			<CardHeader className="relative">
 				<CardTitle className="flex items-center gap-3">
 					<ProjectLogo

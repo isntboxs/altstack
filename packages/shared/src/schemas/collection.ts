@@ -110,18 +110,21 @@ export const collectionCardSchema = z.object({
 	slug: z.string(),
 	description: z.string(),
 	kind: z.enum(collectionKinds),
+	logo: z.string().nullable(),
 	updatedAt: z.coerce.date(),
 	memberCount: z.number().int().nonnegative(),
 })
-export const collectionDetailSchema = collectionCardSchema.extend({
-	content: z.string(),
-	sourceRepositoryUrl: z.string().nullable(),
-	authorName: z.string(),
-	mainProject: collectionProjectSchema.nullable(),
-	projects: z.array(collectionProjectSchema),
-})
+export const collectionDetailSchema = collectionCardSchema
+	.omit({ logo: true })
+	.extend({
+		content: z.string(),
+		sourceRepositoryUrl: z.string().nullable(),
+		authorName: z.string(),
+		mainProject: collectionProjectSchema.nullable(),
+		projects: z.array(collectionProjectSchema),
+	})
 export const adminCollectionSchema = collectionCardSchema
-	.omit({ memberCount: true })
+	.omit({ memberCount: true, logo: true })
 	.extend({
 		content: z.string(),
 		sourceRepositoryUrl: z.string().nullable(),

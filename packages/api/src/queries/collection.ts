@@ -8,6 +8,8 @@ import {
 	project,
 } from '@altstack/db/schemas'
 
+import { sourceRepositorySchema } from '@altstack/shared/schemas/collection'
+
 export type CollectionDatabase = Pick<typeof db, 'select'>
 // One shared live policy for public list, detail, and sitemap. No draft or
 // unavailable target can leak through a different discovery surface.
@@ -40,6 +42,12 @@ const cardFields = {
 	// which would otherwise bind id to a project inside the correlated query.
 	memberCount: sql<number>`(SELECT count(*)::integer FROM collection_members cm JOIN projects member ON member.id = cm.project_id JOIN github_repositories repo ON repo.project_id = member.id WHERE cm.collection_id = "collections"."id" AND member.status = 'published')`,
 }
+function repositoryAvatar(source: string | null) {
+	const parsed = sourceRepositorySchema.safeParse(source)
+	if (!parsed.success) return null
+	const owner = new URL(parsed.data).pathname.split('/')[1]
+	return owner ? `https://github.com/${owner}.png?size=256` : null
+}
 export async function listPublicCollections(
 	database: CollectionDatabase,
 	page = 1,
@@ -47,8 +55,19 @@ export async function listPublicCollections(
 ) {
 	const [collections, totals] = await Promise.all([
 		database
-			.select(cardFields)
+			.select({
+				...cardFields,
+				mainProjectLogo: project.logo,
+				sourceRepositoryUrl: collection.sourceRepositoryUrl,
+			})
 			.from(collection)
+			.leftJoin(
+				project,
+				and(
+					eq(project.id, collection.mainProjectId),
+					eq(project.status, 'published')
+				)
+			)
 			.where(visibleCollection)
 			.orderBy(desc(collection.updatedAt), asc(collection.id))
 			.limit(limit)
@@ -58,7 +77,20 @@ export async function listPublicCollections(
 			.from(collection)
 			.where(visibleCollection),
 	])
-	return { collections, total: totals[0]?.total ?? 0 }
+	return {
+		collections: collections.map(
+			({ mainProjectLogo, sourceRepositoryUrl, ...entry }) => {
+				return {
+					...entry,
+					logo:
+						entry.kind === 'repository'
+							? repositoryAvatar(sourceRepositoryUrl)
+							: mainProjectLogo,
+				}
+			}
+		),
+		total: totals[0]?.total ?? 0,
+	}
 }
 export async function getPublicCollection(
 	database: CollectionDatabase,
