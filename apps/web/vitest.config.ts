@@ -18,8 +18,10 @@ export default defineConfig({
 			{ test: { name: 'unit' } },
 			{
 				plugins: [tailwindcss(), react()],
+				server: { preTransformRequests: false },
 				optimizeDeps: {
 					include: ['reicon-react', '@altstack/ui > @base-ui/react/avatar'],
+					exclude: ['@tanstack/react-start/server'],
 				},
 				test: {
 					name: 'browser',

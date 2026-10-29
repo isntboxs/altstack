@@ -39,10 +39,10 @@ vi.mock('#/utils/orpc', () => {
 vi.mock('#/features/admin-projects/queries', () => {
 	return {
 		adminProjectQueries: {
-			list: () => {
+			list: (input: unknown) => {
 				return {
-					queryKey: ['candidates'],
-					queryFn: () => rpc(['candidates'], {}),
+					queryKey: ['candidates', input],
+					queryFn: () => rpc(['candidates'], input),
 				}
 			},
 		},
@@ -226,7 +226,6 @@ describe('collection admin list recovery', () => {
 		expect(links[0].getAttribute('href')).toBe('/collections/published-list')
 	})
 	async function failInitialDelete(code: 'CONFLICT' | 'NOT_FOUND') {
-		vi.spyOn(window, 'confirm').mockReturnValue(true)
 		let rows = [initial]
 		let attempts = 0
 		rpc.mockImplementation((path) =>
@@ -252,8 +251,13 @@ describe('collection admin list recovery', () => {
 			})
 		)
 		await mountList()
-		fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
-		await screen.findByText('The collection changed elsewhere.')
+		fireEvent.click(
+			screen.getByRole('button', { name: `Delete ${initial.name}` })
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Delete collection' })
+		)
+		await screen.findByText(/The collection changed elsewhere\./)
 		await waitFor(() =>
 			expect(
 				rpc.mock.calls.filter(
@@ -266,11 +270,17 @@ describe('collection admin list recovery', () => {
 		await failInitialDelete('CONFLICT')
 		await waitFor(() =>
 			expect(
-				screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' })
-					.disabled
+				screen.getByRole<HTMLButtonElement>('button', {
+					name: `Delete ${initial.name}`,
+				}).disabled
 			).toBe(false)
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+		fireEvent.click(
+			screen.getByRole('button', { name: `Delete ${initial.name}` })
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Delete collection' })
+		)
 		await waitFor(() =>
 			expect(
 				rpc.mock.calls.filter(
@@ -287,11 +297,159 @@ describe('collection admin list recovery', () => {
 		await screen.findByText(
 			'No collections. Create the first collection to begin curating.'
 		)
-		expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull()
+		expect(
+			screen.queryByRole('button', { name: `Delete ${initial.name}` })
+		).toBeNull()
 	})
 })
 
 describe('collection admin editor', () => {
+	it('searches without submitting the collection and recovers from failed and empty searches', async () => {
+		await mount(initial)
+		rpc.mockRejectedValueOnce(new Error('Search unavailable'))
+		fireEvent.change(screen.getByLabelText('Search published projects'), {
+			target: { value: 'missing project' },
+		})
+		fireEvent.keyDown(screen.getByLabelText('Search published projects'), {
+			key: 'Enter',
+		})
+		fireEvent.click(await screen.findByRole('button', { name: 'Retry search' }))
+		await screen.findByRole('button', { name: 'Add member' })
+		expect(
+			rpc.mock.calls.some(
+				([path]) => path.join('/') === 'admin/collection/update'
+			)
+		).toBe(false)
+		expect(
+			rpc.mock.calls.find(
+				([path, input]) =>
+					path.join('/') === 'candidates' &&
+					typeof input === 'object' &&
+					input !== null &&
+					'name' in input &&
+					input.name === 'missing project'
+			)
+		).toBeTruthy()
+		rpc.mockResolvedValueOnce({
+			projects: [],
+			pagination: { hasPreviousPage: false, hasNextPage: false },
+		})
+		fireEvent.change(screen.getByLabelText('Search published projects'), {
+			target: { value: 'another search' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: /^Search$/ }))
+		await screen.findByText('No matching projects')
+		fireEvent.click(screen.getAllByRole('button', { name: 'Clear search' })[0])
+		await screen.findByRole('button', { name: 'Add member' })
+		expect(
+			screen.getByLabelText<HTMLInputElement>('Search published projects').value
+		).toBe('')
+	})
+	it('suggests a slug until it is customized and preserves existing URLs on edits', async () => {
+		await mount()
+		fireEvent.change(screen.getByLabelText('Title'), {
+			target: { value: 'Community tools' },
+		})
+		expect(screen.getByLabelText<HTMLInputElement>('Slug').value).toBe(
+			'community-tools'
+		)
+		fireEvent.change(screen.getByLabelText('Slug'), {
+			target: { value: 'custom-tools' },
+		})
+		fireEvent.change(screen.getByLabelText('Title'), {
+			target: { value: 'Updated tools' },
+		})
+		expect(screen.getByLabelText<HTMLInputElement>('Slug').value).toBe(
+			'custom-tools'
+		)
+		cleanup()
+		await mount(initial)
+		fireEvent.change(screen.getByLabelText('Title'), {
+			target: { value: 'Updated title' },
+		})
+		expect(screen.getByLabelText<HTMLInputElement>('Slug').value).toBe(
+			initial.slug
+		)
+	})
+	it('keeps unsaved changes until leaving is confirmed', async () => {
+		await mount(initial)
+		fireEvent.change(screen.getByLabelText('Title'), {
+			target: { value: 'Unsaved title' },
+		})
+		fireEvent.click(screen.getByRole('link', { name: 'Cancel' }))
+		await screen.findByRole('alertdialog', { name: 'Leave without saving?' })
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+		await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+		expect(screen.getByLabelText<HTMLInputElement>('Title').value).toBe(
+			'Unsaved title'
+		)
+		fireEvent.click(screen.getByRole('link', { name: 'Back to collections' }))
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Discard changes' })
+		)
+		await screen.findByText('Collection directory')
+	})
+	it('previews the latest content and explains an empty preview', async () => {
+		await mount()
+		fireEvent.click(screen.getByRole('button', { name: 'Show public preview' }))
+		await screen.findByText(
+			'Write some content above to see how it will look to readers.'
+		)
+		fireEvent.change(screen.getByLabelText('Markdown editor'), {
+			target: { value: 'New editorial text' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Hide public preview' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Show public preview' }))
+		expect(
+			within(
+				screen.getByRole('region', { name: 'Public content preview' })
+			).getByText('New editorial text')
+		).toBeTruthy()
+	})
+	it('shows field errors and blocks publishing without members while retaining edits', async () => {
+		await mount(initial)
+		fireEvent.change(screen.getByLabelText('Source repository URL'), {
+			target: { value: 'https://example.com/invalid' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save collection' }))
+		await waitFor(() =>
+			expect(
+				screen
+					.getByLabelText('Source repository URL')
+					.getAttribute('aria-invalid')
+			).toBe('true')
+		)
+		expect(
+			rpc.mock.calls.some(
+				([path]) => path.join('/') === 'admin/collection/update'
+			)
+		).toBe(false)
+		fireEvent.change(screen.getByLabelText('Source repository URL'), {
+			target: { value: initial.sourceRepositoryUrl },
+		})
+		fireEvent.click(
+			screen.getByRole('button', { name: `Remove ${first.name}` })
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: `Remove ${second.name}` })
+		)
+		fireEvent.change(screen.getByLabelText('Publication'), {
+			target: { value: 'published' },
+		})
+		expect(
+			screen.getByText('Complete the checklist before publishing.')
+		).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'Save collection' }))
+		await screen.findByText('Published collections need at least one member.')
+		expect(screen.getByLabelText<HTMLInputElement>('Title').value).toBe(
+			initial.name
+		)
+		expect(
+			rpc.mock.calls.some(
+				([path]) => path.join('/') === 'admin/collection/update'
+			)
+		).toBe(false)
+	})
 	it('creates with explicit editorial fields, canonical source, selected order and flushed Markdown', async () => {
 		await mount()
 		for (const [label, text] of [
