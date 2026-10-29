@@ -14,6 +14,17 @@ const projects = (value: unknown) =>
 	parseSeedFiles({ file: 'projects.json', text: JSON.stringify(value) })
 
 describe('CSV/JSON seed parser and validation', () => {
+	it('rejects reserved project slugs while allowing the same category slug', () => {
+		expect(() => projects([{ ...project, slug: 'Collections' }])).toThrow(
+			/reserved/
+		)
+		expect(
+			parseSeedFiles(undefined, {
+				file: 'categories.json',
+				text: JSON.stringify([{ ...category, slug: 'collections' }]),
+			}).categories[0]?.value.slug
+		).toBe('collections')
+	})
 	it('normalizes shared slugs and GitHub URLs, defaulting to draft and no assignments', () => {
 		expect(
 			projects([

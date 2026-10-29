@@ -7,6 +7,7 @@ import {
 	canonicalizeGithubUrl,
 	INVALID_REPOSITORY_URL_MESSAGE,
 } from '@altstack/shared/lib'
+import { isReservedProjectSlug } from '@altstack/shared/lib/slug'
 
 export const slugSchema = z
 	.string()
@@ -16,6 +17,14 @@ export const slugSchema = z
 	.refine((value) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value), {
 		message: 'Invalid slug format',
 	})
+
+export const projectSlugSchema = slugSchema.refine(
+	(value) => !isReservedProjectSlug(value),
+	{
+		message:
+			'This slug is reserved for a site route. Choose another project slug.',
+	}
+)
 
 export const projectSchema = z.object({
 	id: z.uuid(),

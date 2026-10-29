@@ -9,6 +9,7 @@
 	],
 	"type": "module",
 	"scripts": {
+		"db:check-project-slugs": "vp run --filter @altstack/db db:check-project-slugs",
 		"db:down": "docker compose down postgres",
 		"db:generate": "vp run --filter @altstack/db db:generate",
 		"db:migrate": "vp run --filter @altstack/db db:migrate",

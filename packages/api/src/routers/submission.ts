@@ -23,7 +23,7 @@ import { canonicalRepositoryKey } from '@altstack/db/schemas/project'
 import { syncProjectTags } from '@altstack/db/tags'
 
 import { canonicalizeGithubUrl } from '@altstack/shared/lib/github'
-import { slugify } from '@altstack/shared/lib/slug'
+import { isReservedProjectSlug, slugify } from '@altstack/shared/lib/slug'
 
 const intakeColumns = {
 	id: project.id,
@@ -388,8 +388,11 @@ export const submissionRouter = {
 				}
 			}
 			await requireAvailableIdentity(db)
-			const baseSlug =
+			const normalizedSlug =
 				slugify(input.name).slice(0, 90).replace(/-+$/, '') || 'project'
+			const baseSlug = isReservedProjectSlug(normalizedSlug)
+				? `${normalizedSlug}-project`
+				: normalizedSlug
 			try {
 				return await db.transaction(async (tx) => {
 					// Serialize capacity checks per user, after the GitHub request, so

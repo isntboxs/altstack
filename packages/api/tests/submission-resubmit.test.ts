@@ -214,6 +214,20 @@ afterAll(async () => {
 }, 60_000)
 
 describe('private rejected intake', () => {
+	it.each(['collections', 'Collections', 'tags', 'bookmarks'])(
+		'creates a reachable generated slug for a submission named %s',
+		async (name) => {
+			const result = await client().submission.create({
+				name,
+				repositoryUrl: 'https://github.com/example/new-tool',
+			})
+			const [created] = await scope.db
+				.select()
+				.from(project)
+				.where(eq(project.id, result.id))
+			expect(created?.slug).toBe(`${name.toLowerCase()}-project`)
+		}
+	)
 	it('returns only intake, feedback and a revision, with no quota charge', async () => {
 		const row = await fixture()
 		expect(

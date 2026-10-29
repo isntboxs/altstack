@@ -22,6 +22,7 @@ import { submissionRouter } from '@altstack/api/routers/submission'
 import { tagRouter, adminTagRouter } from '@altstack/api/routers/tag'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
+import { collectionRouter, adminCollectionRouter } from './collection'
 import { ownershipRouter } from './ownership'
 
 export const routers = o.router({
@@ -29,7 +30,9 @@ export const routers = o.router({
 	license: licenseRouter,
 	tag: tagRouter,
 	bookmark: bookmarkRouter,
+	collection: collectionRouter,
 	admin: {
+		collection: adminCollectionRouter,
 		dashboard: adminDashboardRouter,
 		user: adminUserRouter,
 		tag: adminTagRouter,

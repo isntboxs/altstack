@@ -19,6 +19,8 @@ export async function invalidateCatalog(queryClient: QueryClient) {
 			orpc.category.key(),
 			orpc.admin.project.key(),
 			orpc.project.key(),
+			orpc.collection.key(),
+			orpc.admin.collection.key(),
 			orpc.submission.key(),
 			orpc.bookmark.key(),
 			orpc.tag.key(),

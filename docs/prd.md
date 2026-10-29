@@ -42,18 +42,20 @@ and [shared schemas](../packages/shared/src/schemas).
 
 Browse/search → narrow by category, topic, or license → open project details →
 inspect documentation and repository observations → visit upstream or bookmark.
+Public collections offer another discovery path through alternatives, ecosystems,
+and repository-based curation, with links back to the same project catalogue.
 Visitors may report incorrect information. Signed-in contributors submit intake,
 receive a decision, and correct rejected intake. Approved representatives keep
 published project content current within their scoped permissions.
 
 ## Access and authorization
 
-| Actor                                | Access                                                                                                                               |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Guest                                | Browse published projects, use share/embed, submit a private report with contact email                                               |
-| Signed-in account                    | Guest actions, private bookmarks, submit/track/correct its own intake, request project access                                        |
-| Approved project Owner or Maintainer | Edit the approved published project, review additional access requests, view members, leave membership                               |
-| Admin                                | Catalogue moderation, taxonomy/featured/report management, eligible first-claim review, protected membership and user administration |
+| Actor                                | Access                                                                                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guest                                | Browse published projects and collections, use share/embed, submit a private report with contact email                                          |
+| Signed-in account                    | Guest actions, private bookmarks, submit/track/correct its own intake, request project access                                                   |
+| Approved project Owner or Maintainer | Edit the approved published project, review additional access requests, view members, leave membership                                          |
+| Admin                                | Catalogue moderation, taxonomy/featured/collection/report management, eligible first-claim review, protected membership and user administration |
 
 Owner and Maintainer have equal project permissions. Roles are scoped to a
 membership, not inferred from sign-in, a global label, or submission history.
@@ -67,6 +69,11 @@ authorization.
 The catalogue has search, URL-persisted filters/pagination, categories, GitHub
 topic tags, and license pages. Public counts and results include only published
 projects with the repository data required by the catalogue.
+
+Project slugs cannot use reserved site-route names such as `collections`, `tags`,
+or `bookmarks`. Admin writes, publication, and file imports enforce the shared
+reservation policy. Submission-generated slugs append `-project` when their base
+would be reserved. Category slugs retain their existing validation.
 
 - Categories have at most three levels. Projects receive 1–3 distinct direct
   **leaf** categories; ancestors aggregate distinct published projects. A category
@@ -189,7 +196,9 @@ membership/claims/upload grants; same-identity renames retain them.
 **Bookmarks:** `/bookmarks` is private to the signed-in account, including admins.
 Save/remove are idempotent and lists contain published projects only. Hidden
 projects retain private bookmarks and reappear if republished; project/account
-deletion cascades them. No public bookmark counts or shared collections exist.
+deletion cascades them. No public bookmark counts or shared bookmarks exist.
+Private named bookmark lists remain unscheduled. Public editorial collections are
+separate.
 
 **Reports:** `/<slug>?dialog=report` accepts Broken link, Wrong category, Outdated,
 or Other. Guest contact is required but unverified; signed-in contact comes from
@@ -203,6 +212,73 @@ report email, or automatic correction exists. Contact/message data stays private
 published projects. Save is explicit and detects concurrent changes. Public
 project details omit the current project and unavailable entries. This selection
 does not control homepage order.
+
+### Public Collections
+
+`/collections` and `/collections/<slug>` are public curated discovery pages,
+separate from private bookmarks. Types are alternatives to a listed project,
+ecosystems/toolchains around a listed project, and curated lists referencing a
+GitHub source repository. The source list itself does not need a catalogue entry.
+There is no synchronization: admins maintain membership and presentation order;
+sequence numbers do not imply ranking or “best” claims.
+
+Admins create, edit, delete, and publish at `/admin/collections`, with title,
+description, slug, Markdown, and up to 100 distinct listed/published members.
+Alternatives/ecosystems require a listed/published main project, which cannot also
+be a member. Repository lists require an HTTPS GitHub repository URL and have no
+main project. Missing projects use the existing submission workflow. Slugs are
+unique; changing a slug changes the public URL. Publishing requires a member.
+The title, description, and Markdown introduction are editorial fields, with no
+generated title or introduction templates. Authorship is taken from the creating
+admin's account; later editors cannot replace it or supply another author.
+The written-by name is retained after edits and account deletion. The byline shows
+the original writer's current account avatar and the collection's updated date;
+missing or failed images fall back to initials. Account deletion removes the live
+avatar association without removing the saved name. Revision checks prevent stale
+saves/deletes from overwriting newer edits.
+The management list refreshes after failed deletions so retries use the latest
+revision or remove a record deleted elsewhere. Drafts have no public-page link.
+
+The directory shows 12 collections per page, with breadcrumbs and responsive
+Prev/Next, numbered-page, and ellipsis navigation when more than one page exists.
+The first-page URL is `/collections`; `?page=1` normalizes to that clean URL.
+Later pages use `?page=N`. Cards show the collection title, description, type,
+and available-project count. Their logo and faded, rotated background artwork use
+the main project's live logo, or the source repository owner's avatar for
+repository lists. The same card design is used for the more-collections section.
+
+Public membership, media, descriptions, and documentation come directly from the
+catalogue. Hidden/deleted members are omitted; collections with no available
+members or an unavailable main project disappear from public pages and sitemaps.
+Republishing a hidden project restores eligibility; deleted memberships cascade.
+Drafts stay private. The public renderer handles Markdown with raw HTML disabled.
+Each member displays its catalogue logo, name, description, available screenshot, and a
+clipped documentation preview with a bottom fade and a Read more link to the full
+project page.
+
+Detail breadcrumbs lead through Home and Collections to the collection title.
+Desktop alternatives/ecosystem pages show a main-project card with the same
+rotated, blurred logo background; repository lists omit this card. Member side
+navigation begins alongside the first project, highlights the active project on
+scroll or click, and keeps that item visible within its own scrollable list.
+Section headings stick beneath global navigation until the next project replaces
+them. Navigation and the copy/share bar stop at the article boundary before more
+collections and the footer. The missing-project action links to the existing
+submission workflow. Mobile omits the main-project card and side navigation while
+retaining member headings, previews, and sharing.
+
+More collections are discovery links, not recommendations based on a score.
+Their independent query starts alongside the main collection and never delays
+the article. Cards appear when discovery completes; a pending or failed request
+omits that section while the available collection remains readable.
+Canonical metadata and sitemap entries use the same live public eligibility
+rules. Changing a slug does not create a redirect for the old URL. Deployment
+acceptance is still required for each instance.
+
+Before rollout, a read-only check against the intended database detects existing
+project slugs that collide with site routes, including `collections`. It runs
+automatically before migration and blocks on any collision; operators must rename
+affected projects and recheck before deploying the matching API/web revisions.
 
 ### Sharing, indexing, and badges
 
@@ -257,10 +333,10 @@ The dashboard has no job/retry execution controls or historical analytics.
 
 ## Scope boundaries
 
-The current product does not include paid exposure, public collections, ratings,
-reviews/follows, a personalized feed, report conversations, or historical product
-analytics. Additional search infrastructure, SDKs, newsletters, galleries, and
-extensions require a demonstrated user problem and a separately scoped outcome.
+The current product does not include paid exposure, private named bookmark lists,
+ratings, reviews/follows, a personalized feed, report conversations, or historical
+product analytics. Additional search infrastructure, SDKs, newsletters, galleries,
+and extensions require a demonstrated user problem and a separately scoped outcome.
 See [conditional roadmap work](roadmap.md#conditional-product-work).
 
 ## Success signals

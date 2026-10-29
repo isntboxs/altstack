@@ -6,6 +6,7 @@ Run these commands from the repository root:
 
 ```sh
 vp run db:start
+vp run db:check-project-slugs
 vp run db:migrate
 vp run --filter @altstack/db db:validate-audit-actions
 ```
@@ -16,6 +17,11 @@ vp run --filter @altstack/db db:validate-audit-actions
 review of the generated SQL; preserve existing data and migration history. The
 separate audit constraint validation runs after migration commit and is safe to
 repeat.
+
+The read-only project-slug check also runs before `db:migrate`. Existing projects
+using reserved routes such as `collections` must be renamed before rollout; a
+collision blocks migration without changing the project. See the
+[remediation procedure](../../docs/deployment.md#reserved-project-slugs).
 
 Development uses persistent local `altstack` on port 5432. Tests require separate
 local `altstack_test` on port 5433 and never fall back to the application URL.

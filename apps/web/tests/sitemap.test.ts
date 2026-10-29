@@ -1,15 +1,29 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 import {
+	sitemapPages,
 	sitemapProjectPage,
 	sitemapUnavailable,
 } from '#/features/seo/sitemap.server'
+
+vi.mock('@altstack/env/web', () => {
+	return {
+		env: { VITE_APP_URL: 'https://altstack.test' },
+	}
+})
 
 vi.mock('@altstack/api/queries/seo', () => {
 	return {
 		sitemapPageSize: 1000,
 		sitemapProjectCount: vi.fn(),
-		sitemapCategories: vi.fn(),
+		sitemapCategories: vi.fn().mockResolvedValue([]),
+		sitemapLicenses: vi.fn().mockResolvedValue([]),
+		sitemapCollections: vi.fn().mockResolvedValue([
+			{
+				slug: 'editorial-tools',
+				updatedAt: new Date('2026-10-29T00:00:00Z'),
+			},
+		]),
 		sitemapProjects: vi
 			.fn()
 			.mockResolvedValue([
@@ -19,6 +33,13 @@ vi.mock('@altstack/api/queries/seo', () => {
 })
 
 describe('sitemap serialization', () => {
+	it('includes collection discovery and eligible collection revisions', async () => {
+		const xml = await (await sitemapPages()).text()
+		expect(xml).toContain('/collections</loc>')
+		expect(xml).toContain(
+			'/collections/editorial-tools</loc><lastmod>2026-10-29T00:00:00.000Z</lastmod>'
+		)
+	})
 	it('encodes public paths, escapes XML and emits a real UTC modification date', async () => {
 		const response = await sitemapProjectPage('1')
 		const xml = await response.text()

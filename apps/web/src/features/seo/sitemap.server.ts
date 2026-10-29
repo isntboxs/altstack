@@ -1,4 +1,5 @@
 import {
+	sitemapCollections,
 	sitemapCategories,
 	sitemapLicenses,
 	sitemapPageSize,
@@ -42,6 +43,7 @@ function xml(body: string) {
 		},
 	})
 }
+/** Encodes canonical URL entries and includes only valid modification timestamps. */
 function urls(entries: Array<{ path: string; modified?: Date }>) {
 	return xml(
 		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.map(({ path, modified }) => `<url><loc>${xmlText(publicUrl(path))}</loc>${modified && Number.isFinite(modified.getTime()) ? `<lastmod>${modified.toISOString()}</lastmod>` : ''}</url>`).join('')}</urlset>`
@@ -53,14 +55,23 @@ export async function sitemapIndex() {
 		`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/sitemaps/pages.xml', ...Array.from({ length: pages }, (_, i) => `/sitemaps/projects/${i + 1}`)].map((path) => `<sitemap><loc>${xmlText(publicUrl(path))}</loc></sitemap>`).join('')}</sitemapindex>`
 	)
 }
+/** Combines static routes with live eligible categories, licenses, and collections. */
 export async function sitemapPages() {
-	const [categories, licenses] = await Promise.all([
+	const [categories, licenses, collections] = await Promise.all([
 		sitemapCategories(),
 		sitemapLicenses(),
+		sitemapCollections(),
 	])
 	return urls([
 		{ path: '/' },
 		{ path: '/categories' },
+		{ path: '/collections' },
+		...collections.map((item) => {
+			return {
+				path: `/collections/${item.slug}`,
+				modified: item.updatedAt,
+			}
+		}),
 		{ path: '/licenses' },
 		...licenses
 			.filter((license) => license.slug !== 'unknown')

@@ -18,7 +18,9 @@ export default defineConfig({
 			{ test: { name: 'unit' } },
 			{
 				plugins: [tailwindcss(), react()],
-				optimizeDeps: { include: ['reicon-react'] },
+				optimizeDeps: {
+					include: ['reicon-react', '@altstack/ui > @base-ui/react/avatar'],
+				},
 				test: {
 					name: 'browser',
 					// Keep browser-only files outside the default Node test glob.

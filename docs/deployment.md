@@ -41,14 +41,18 @@ them; the workflow does not configure your running services or database.
 1. Select matching API/web revisions and review pending migrations/configuration.
    Verify a recent recoverable backup before a shared database change.
 2. From the matching checkout or a migration environment with Vite+ tooling and
-   your privately configured `DATABASE_URL`, run:
+   your privately configured `DATABASE_URL`, check [reserved project slugs](#reserved-project-slugs)
+   on that target before migrating:
 
    ```sh
+   vp run db:check-project-slugs
    vp run db:migrate
    vp run --filter @altstack/db db:validate-audit-actions
    ```
 
-   The second command validates the expanded audit-action constraint after the
+   The slug check is read-only and also runs automatically before `db:migrate`;
+   a collision stops migration with a nonzero exit code. The final command
+   validates the expanded audit-action constraint after the
    migration transaction commits, avoiding a prolonged exclusive lock. It is safe
    to repeat. Do not replace migrations with `db:push`, reset the journal, or
    backfill project membership from submission history.
@@ -69,6 +73,25 @@ privately. A successful build or source merge alone does not establish deploymen
 or live provider acceptance. For application rollback, use the previous matching
 image pair after checking schema compatibility; keep additive migrations unless
 a separate recovery procedure requires otherwise.
+
+### Reserved project slugs
+
+The static `/collections` route takes precedence over a legacy project at
+`/collections`. New-write validation does not repair existing project rows. Run
+`vp run db:check-project-slugs` with the intended instance's `DATABASE_URL`; a
+local result does not certify another environment. It checks every project
+status against the shared reserved-route list, including `collections`, without
+changing records. It also permits a fresh database before its first migration.
+
+If the check reports collisions, keep the current release running and rename
+each affected project through admin project editing to an unused, non-reserved
+slug, such as `collections-project` if available. Preserve project IDs, statuses,
+and memberships. Record the old/new URLs privately and update links you control;
+slug changes do not create redirects, and `/collections` belongs to the directory.
+Re-run the check and proceed only when it passes. Pause project writers during
+the final check and rollout so an older API cannot introduce another collision.
+After deploying the matching revisions, confirm the renamed project URL and
+project sitemap use the new slug, and `/collections` opens the directory.
 
 ## Scheduled workers
 

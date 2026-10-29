@@ -15,6 +15,12 @@ publish a live-instance inventory.
 - Markdown/media content, README import, metadata refresh, file imports,
   canonical metadata/sitemaps, social images, and SVG embed badges.
 - Private bookmarks, report intake/admin triage, and detail-page featured curation.
+- Public curated Collections: alternatives, repository lists, and ecosystems,
+  with manual admin CRUD, draft/publication controls, revision checks, and ordered
+  catalogue membership without ranking. Discovery includes clean first-page URLs,
+  responsive numbered pagination, breadcrumbs, catalogue/source artwork, writer
+  avatars, and bounded sticky project navigation and sharing. Canonical metadata
+  and sitemaps share the live publication policy.
 - Representative verification/editing, member leave/administration, protected user
   actions, admin work queues, recorded activity, and operational observations.
 - Local development/test PostgreSQL separation, disposable schemas, and targeted
@@ -23,6 +29,13 @@ publish a live-instance inventory.
 These items are not promises that every integration or deployed revision has
 passed acceptance. Use the [deployment guide](deployment.md) for an instance's
 migration, worker, provider, and recovery verification.
+
+Collections are implemented in source, rather than conditional future work.
+Their rollout requires a passing reserved-project-slug check on the target
+database, the Collections migration, and matching API/web revisions
+on the intended instance. Public visibility, author-avatar fallbacks, pagination,
+and sticky/mobile behavior remain part of that instance's release acceptance;
+local checks do not establish deployment acceptance.
 
 ## Near-term priorities
 
@@ -49,12 +62,12 @@ feedback or observed usage justifies it; none has a scheduled release.
 
 | Order | Candidate                    | Trigger and acceptance                                                                                                         |
 | ----- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 1     | Private named collections    | Returning users need organized bookmarks; preserve account privacy and hidden/deleted-project behavior                         |
+| 1     | Private named bookmark lists | Returning users need organized bookmarks; preserve account privacy and hidden/deleted-project behavior                         |
 | 2     | Focused project comparison   | Validate useful comparison fields with real evaluations; let a user assess a shortlist with honest missing data                |
 | 3     | Report workflow improvements | Observed report volume identifies a bottleneck; solve one need such as reopen/follow-up with authorized private changes        |
 | 4     | Homepage editorial sections  | Catalogue coverage and feedback justify another discovery path; demonstrate value beyond current sorting/featured detail links |
 
-Public collection sharing, assignment/comments/report email, and a dedicated
+Private bookmark sharing, assignment/comments/report email, and a dedicated
 personalized/trending feed are separate decisions rather than implied additions.
 
 ## Deferred until justified

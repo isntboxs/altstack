@@ -73,36 +73,44 @@ export const Header = ({
 								}
 							/>
 							<DropdownMenuContent align="start">
-								<DropdownMenuItem
-									onClick={() => setOpenNavigation(false)}
-									render={
-										<Link
-											to="/categories"
-											activeOptions={{ includeSearch: false }}
-											activeProps={{ className: 'font-semibold' }}
-										/>
-									}
-								>
-									Categories
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => setOpenNavigation(false)}
-									render={<Link to="/tags" />}
-								>
-									Tags
-								</DropdownMenuItem>{' '}
-								<DropdownMenuItem
-									onClick={() => setOpenNavigation(false)}
-									render={<Link to="/licenses" />}
-								>
-									Licenses
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => setOpenNavigation(false)}
-									render={<Link to="/activity" />}
-								>
-									Activity
-								</DropdownMenuItem>
+								<DropdownMenuGroup>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/collections" />}
+									>
+										Collections
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={
+											<Link
+												to="/categories"
+												activeOptions={{ includeSearch: false }}
+												activeProps={{ className: 'font-semibold' }}
+											/>
+										}
+									>
+										Categories
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/tags" />}
+									>
+										Tags
+									</DropdownMenuItem>{' '}
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/licenses" />}
+									>
+										Licenses
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/activity" />}
+									>
+										Activity
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>
 
@@ -120,6 +128,16 @@ export const Header = ({
 
 						<NavigationMenu className="max-lg:hidden">
 							<NavigationMenuList>
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={<Link to="/collections" />}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit p-1',
+										})}
+									>
+										Collections
+									</NavigationMenuLink>
+								</NavigationMenuItem>
 								<NavigationMenuItem>
 									<NavigationMenuLink
 										render={
