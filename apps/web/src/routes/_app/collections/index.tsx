@@ -1,7 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute } from '@tanstack/react-router'
 
-import { buttonVariants } from '@altstack/ui/components/button'
 import {
 	Empty,
 	EmptyDescription,
@@ -14,18 +12,24 @@ import {
 	CollectionBreadcrumb,
 	CollectionCards,
 } from '#/features/collections/components'
+import { CollectionPagination } from '#/features/collections/pagination'
 import { collectionQueries } from '#/features/collections/queries'
+import {
+	collectionSearchMiddlewares,
+	collectionSearchSchema,
+} from '#/features/collections/search'
 import { seoHead } from '#/features/seo/meta'
 
+const pageSize = 12
+
 export const Route = createFileRoute('/_app/collections/')({
-	validateSearch: z.object({
-		page: z.coerce.number().int().min(1).max(100000).catch(1).default(1),
-	}),
+	validateSearch: collectionSearchSchema,
+	search: { middlewares: collectionSearchMiddlewares },
 	loaderDeps: ({ search }) => {
 		return { page: search.page }
 	},
 	loader: ({ context, deps }) =>
-		context.queryClient.query(collectionQueries.list(deps.page)),
+		context.queryClient.query(collectionQueries.list(deps.page, pageSize)),
 	head: ({ loaderData, match }) =>
 		seoHead({
 			title: 'Collections | AltStack',
@@ -71,26 +75,10 @@ function Page() {
 					</EmptyHeader>
 				</Empty>
 			)}
-			<nav aria-label="Collection pages" className="flex gap-3">
-				{page > 1 && (
-					<Link
-						to="/collections"
-						search={{ page: page - 1 }}
-						className={buttonVariants({ variant: 'outline' })}
-					>
-						Previous
-					</Link>
-				)}
-				{page * 12 < data.total && (
-					<Link
-						to="/collections"
-						search={{ page: page + 1 }}
-						className={buttonVariants({ variant: 'outline' })}
-					>
-						Next
-					</Link>
-				)}
-			</nav>
+			<CollectionPagination
+				page={page}
+				totalPages={Math.ceil(data.total / pageSize)}
+			/>
 		</div>
 	)
 }
