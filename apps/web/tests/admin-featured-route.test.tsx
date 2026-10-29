@@ -190,6 +190,47 @@ async function routerAt(show = true) {
 	return router
 }
 describe('admin featured selection route', () => {
+	it('enforces the 24-slot limit and frees a slot when a project is removed', async () => {
+		selection = Array.from({ length: 23 }, (_, index) => {
+			return {
+				...first,
+				id: `550e8400-e29b-41d4-a717-${String(index).padStart(12, '0')}`,
+				name: `Selected ${index + 1}`,
+			}
+		})
+		await routerAt()
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Add First Tool to featured' })
+		)
+		expect(
+			screen.getByRole<HTMLButtonElement>('button', {
+				name: 'Add Second Tool to featured',
+			}).disabled
+		).toBe(true)
+		expect(screen.getByText('All 24 slots are filled')).toBeTruthy()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Remove First Tool from featured' })
+		)
+		expect(
+			screen.getByRole<HTMLButtonElement>('button', {
+				name: 'Add Second Tool to featured',
+			}).disabled
+		).toBe(false)
+	})
+	it('keeps unsaved choices when navigation is cancelled', async () => {
+		const router = await routerAt()
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Add Second Tool to featured' })
+		)
+		void router.navigate({ to: '/' })
+		await screen.findByRole('alertdialog', { name: 'Leave without saving?' })
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+		await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+		expect(router.state.location.pathname).toBe('/admin/featured')
+		expect(
+			screen.getByRole('button', { name: 'Remove Second Tool from featured' })
+		).toBeTruthy()
+	})
 	it('keeps the selected list when candidate loading fails and retries in place', async () => {
 		const normal = rpc.getMockImplementation()!
 		let fail = true
@@ -213,7 +254,7 @@ describe('admin featured selection route', () => {
 	})
 	it('adds/reorders/removes with explicit Save and links to the existing project editor', async () => {
 		await routerAt()
-		await screen.findByRole('table', { name: 'Featured selection' })
+		await screen.findByRole('list', { name: 'Featured selection' })
 		expect(
 			screen.getByRole('link', { name: 'First Tool' }).getAttribute('href')
 		).toBe('/projects/' + first.id + '/edit')
@@ -292,6 +333,9 @@ describe('admin featured selection route', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Discard changes and reload' })
 		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Discard and reload' })
+		)
 		await screen.findByText(
 			'Unable to reload selection',
 			{},
@@ -309,6 +353,9 @@ describe('admin featured selection route', () => {
 		failReload = false
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Discard changes and reload' })
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Discard and reload' })
 		)
 		await waitFor(() =>
 			expect(

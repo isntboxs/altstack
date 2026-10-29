@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 
-export const MAX_FEATURED_PROJECTS = 21
+export const MAX_FEATURED_PROJECTS = 24
 
 export function featuredWebsiteUrl(value: string | null | undefined) {
 	if (!value) return null

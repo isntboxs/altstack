@@ -1,0 +1,1 @@
+ALTER TABLE "featured_projects" DROP CONSTRAINT "featured_projects_position_check", ADD CONSTRAINT "featured_projects_position_check" CHECK ("position" >= 0 AND "position" < 24);

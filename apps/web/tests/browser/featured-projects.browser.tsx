@@ -23,7 +23,7 @@ afterEach(() => {
 })
 
 const projects: FeaturedProjectsData = Array.from(
-	{ length: 21 },
+	{ length: 24 },
 	(_, index) => {
 		return {
 			id: `featured-${index}`,
@@ -106,6 +106,32 @@ async function mount(selection = projects) {
 }
 
 describe('featured project layout and interaction in Chromium', () => {
+	it('lays out 24 icons in six equal columns and four rows inside a 320px panel', async () => {
+		await page.viewport(1440, 900)
+		await mount()
+		const card = document.querySelector<HTMLElement>(
+			'[aria-label="Featured projects"]'
+		)!
+		card.style.width = '320px'
+		const grid = document.querySelector<HTMLElement>(
+			'[aria-label="Featured project websites"]'
+		)!
+		expect(grid.querySelectorAll('a')).toHaveLength(24)
+		expect(getComputedStyle(grid).gridTemplateColumns.split(' ')).toHaveLength(
+			6
+		)
+		const bounds = Array.from(grid.querySelectorAll('a')).map((a) =>
+			a.getBoundingClientRect()
+		)
+		expect(new Set(bounds.map((rect) => Math.round(rect.top))).size).toBe(4)
+		expect(
+			Math.max(...bounds.map((rect) => rect.width)) -
+				Math.min(...bounds.map((rect) => rect.width))
+		).toBeLessThan(1)
+		expect(bounds.at(-1)!.right).toBeLessThanOrEqual(
+			card.getBoundingClientRect().right - 15
+		)
+	})
 	it.each([1440, 768])(
 		'scrolls stats away before featured sticks, and stops before the footer at %ipx',
 		async (width) => {

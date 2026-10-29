@@ -39,7 +39,10 @@ import {
 	githubStarsWindow,
 } from '@altstack/shared/lib/github-stars'
 import { projectSchema } from '@altstack/shared/schemas/common'
-import { featuredWebsiteUrl } from '@altstack/shared/schemas/featured'
+import {
+	featuredWebsiteUrl,
+	MAX_FEATURED_PROJECTS,
+} from '@altstack/shared/schemas/featured'
 
 const publicFields = projectSchema.omit({ categories: true })
 
@@ -96,7 +99,7 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 						)
 					)
 					.orderBy(asc(featuredProject.position))
-					.limit(21)
+					.limit(MAX_FEATURED_PROJECTS)
 				const featuredProjects = featuredRows.flatMap((item) => {
 					const websiteUrl = featuredWebsiteUrl(item.websiteUrl)
 					return websiteUrl ? [{ ...item, websiteUrl }] : []
