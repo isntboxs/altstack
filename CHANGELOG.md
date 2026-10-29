@@ -11,7 +11,9 @@ been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-an
 
 - Public Collections directory and detail pages for admin-curated alternatives,
   repository lists, and ecosystems, separate from private bookmarks. Includes
-  Markdown, catalogue-backed members, bounded sticky navigation/sharing, mobile
+  Markdown, catalogue-backed members, breadcrumbs, responsive numbered pagination
+  with clean first-page URLs, catalogue/source logo artwork, writer avatars,
+  bounded sticky navigation/sharing with active-project highlighting, mobile
   layouts, canonical metadata, and sitemap discovery.
 - Admin Collections CRUD, publication, project selection and ordering, explicit
   account authorship, and revision checks. Hidden/deleted projects are filtered
