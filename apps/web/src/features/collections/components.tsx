@@ -154,10 +154,10 @@ function MainProjectCard({
 }
 export function CollectionArticle({ collection }: { collection: Collection }) {
 	return (
-		<div className="collection-page container mx-auto w-full max-w-6xl px-4 pt-24 pb-12 lg:px-16">
+		<div className="collection-page container mx-auto w-full max-w-6xl px-4 pt-28 pb-10 lg:px-16">
 			<CollectionBreadcrumb name={collection.name} />
-			<div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]">
-				<header className="flex min-w-0 flex-col gap-5">
+			<div className="mt-4 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]">
+				<header className="flex min-w-0 flex-col gap-4">
 					<Badge variant="secondary">
 						{collectionKindLabels[collection.kind]}
 					</Badge>
@@ -203,7 +203,7 @@ export function CollectionArticle({ collection }: { collection: Collection }) {
 			</div>
 			<div
 				data-testid="collection-article-region"
-				className="mt-12 grid min-w-0 items-stretch gap-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]"
+				className="mt-10 grid min-w-0 items-stretch gap-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]"
 			>
 				<article aria-label="Collection projects" className="min-w-0">
 					{collection.projects.map((project, index) => (

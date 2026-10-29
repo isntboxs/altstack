@@ -49,11 +49,13 @@ function Page() {
 	const data = Route.useLoaderData(),
 		{ page } = Route.useSearch()
 	return (
-		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-12 lg:px-16">
-			<header className="flex flex-col gap-3">
+		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16">
+			<header className="flex flex-col gap-4">
 				<CollectionBreadcrumb />
-				<h1 className="text-4xl font-semibold">Collections</h1>
-				<p className="text-muted-foreground">
+				<h1 className="text-3xl font-medium tracking-tight wrap-anywhere sm:text-4xl">
+					Collections
+				</h1>
+				<p className="max-w-3xl text-lg leading-7 text-muted-foreground">
 					Admin-curated collections of listed open-source projects.
 				</p>
 			</header>
