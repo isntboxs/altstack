@@ -80,3 +80,8 @@ export async function sitemapCategories() {
 export async function sitemapLicenses() {
 	return listPublicLicenses(db)
 }
+
+export async function sitemapCollections() {
+	const { sitemapCollections: list } = await import('./collection')
+	return list(db)
+}

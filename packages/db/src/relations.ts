@@ -4,6 +4,27 @@ import * as schemas from '@altstack/db/schemas'
 
 export const relations = defineRelations(schemas, (r) => {
 	return {
+		collection: {
+			author: r.one.user({ from: r.collection.authorId, to: r.user.id }),
+			mainProject: r.one.project({
+				from: r.collection.mainProjectId,
+				to: r.project.id,
+			}),
+			members: r.many.collectionMember({
+				from: r.collection.id,
+				to: r.collectionMember.collectionId,
+			}),
+		},
+		collectionMember: {
+			collection: r.one.collection({
+				from: r.collectionMember.collectionId,
+				to: r.collection.id,
+			}),
+			project: r.one.project({
+				from: r.collectionMember.projectId,
+				to: r.project.id,
+			}),
+		},
 		user: {
 			bookmarks: r.many.bookmark({ from: r.user.id, to: r.bookmark.userId }),
 			sessions: r.many.session({

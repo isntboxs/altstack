@@ -9,6 +9,14 @@ been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-an
 
 ### Added
 
+- Public Collections directory and detail pages for admin-curated alternatives,
+  repository lists, and ecosystems, separate from private bookmarks. Includes
+  Markdown, catalogue-backed members, bounded sticky navigation/sharing, mobile
+  layouts, canonical metadata, and sitemap discovery.
+- Admin Collections CRUD, publication, project selection and ordering, explicit
+  account authorship, and revision checks. Hidden/deleted projects are filtered
+  from public collection surfaces. Apply the new Collections database migration
+  before deploying matching API/web changes; deployment acceptance remains pending.
 - Contributor and security reporting guides.
 - Development, architecture, and deployment guides.
 

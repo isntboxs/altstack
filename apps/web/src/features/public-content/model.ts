@@ -40,6 +40,7 @@ export function emptyPublicContent(): PreparedPublicContent {
 
 // These paths resolve to static/layout routes rather than /$slug.
 const reservedPaths = new Set([
+	'collections',
 	'activity',
 	'managed',
 	'submit',

@@ -27,6 +27,8 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
 import { Route as AppCategoriesSplatRouteImport } from './routes/_app/categories/$'
+import { Route as AppCollectionsIndexRouteImport } from './routes/_app/collections/index'
+import { Route as AppCollectionsSlugRouteImport } from './routes/_app/collections/$slug'
 import { Route as AppLicensesIndexRouteImport } from './routes/_app/licenses/index'
 import { Route as AppLicensesSlugRouteImport } from './routes/_app/licenses/$slug'
 import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
@@ -49,11 +51,14 @@ import { Route as OgProjectIdRouteImport } from './routes/og.project.$id'
 import { Route as SitemapsProjectsPageRouteImport } from './routes/sitemaps.projects.$page'
 import { Route as MainAdminCategoriesIndexRouteImport } from './routes/_main/admin.categories/index'
 import { Route as MainAdminCategoriesCreateRouteImport } from './routes/_main/admin.categories/create'
+import { Route as MainAdminCollectionsIndexRouteImport } from './routes/_main/admin.collections/index'
+import { Route as MainAdminCollectionsCreateRouteImport } from './routes/_main/admin.collections/create'
 import { Route as MainAdminUsersIndexRouteImport } from './routes/_main/admin.users/index'
 import { Route as MainAdminUsersIdRouteImport } from './routes/_main/admin.users/$id'
 import { Route as MainManagedIdMembersRouteImport } from './routes/_main/managed/$id_.members'
 import { Route as MainProjectsIdEditRouteImport } from './routes/_main/projects/$id.edit'
 import { Route as MainAdminCategoriesIdEditRouteImport } from './routes/_main/admin.categories/$id.edit'
+import { Route as MainAdminCollectionsIdEditRouteImport } from './routes/_main/admin.collections/$id.edit'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -141,6 +146,16 @@ const AppCategoriesIndexRoute = AppCategoriesIndexRouteImport.update({
 const AppCategoriesSplatRoute = AppCategoriesSplatRouteImport.update({
   id: '/categories/$',
   path: '/categories/$',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppCollectionsIndexRoute = AppCollectionsIndexRouteImport.update({
+  id: '/collections/',
+  path: '/collections/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppCollectionsSlugRoute = AppCollectionsSlugRouteImport.update({
+  id: '/collections/$slug',
+  path: '/collections/$slug',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppLicensesIndexRoute = AppLicensesIndexRouteImport.update({
@@ -255,6 +270,18 @@ const MainAdminCategoriesCreateRoute =
     path: '/create',
     getParentRoute: () => MainAdminCategoriesRoute,
   } as any)
+const MainAdminCollectionsIndexRoute =
+  MainAdminCollectionsIndexRouteImport.update({
+    id: '/collections/',
+    path: '/collections/',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminCollectionsCreateRoute =
+  MainAdminCollectionsCreateRouteImport.update({
+    id: '/collections/create',
+    path: '/collections/create',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
 const MainAdminUsersIndexRoute = MainAdminUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -281,6 +308,12 @@ const MainAdminCategoriesIdEditRoute =
     path: '/$id/edit',
     getParentRoute: () => MainAdminCategoriesRoute,
   } as any)
+const MainAdminCollectionsIdEditRoute =
+  MainAdminCollectionsIdEditRouteImport.update({
+    id: '/collections/$id/edit',
+    path: '/collections/$id/edit',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -298,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/collections/$slug': typeof AppCollectionsSlugRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
@@ -314,18 +348,22 @@ export interface FileRoutesByFullPath {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories/': typeof AppCategoriesIndexRoute
+  '/collections/': typeof AppCollectionsIndexRoute
   '/licenses/': typeof AppLicensesIndexRoute
   '/tags/': typeof AppTagsIndexRoute
   '/admin/': typeof MainAdminIndexRoute
   '/managed/': typeof MainManagedIndexRoute
   '/projects/': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/collections/create': typeof MainAdminCollectionsCreateRoute
   '/admin/users/$id': typeof MainAdminUsersIdRoute
   '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/admin/collections/': typeof MainAdminCollectionsIndexRoute
   '/admin/users/': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
+  '/admin/collections/$id/edit': typeof MainAdminCollectionsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -341,6 +379,7 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/categories/$': typeof AppCategoriesSplatRoute
+  '/collections/$slug': typeof AppCollectionsSlugRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
@@ -356,18 +395,22 @@ export interface FileRoutesByTo {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/categories': typeof AppCategoriesIndexRoute
+  '/collections': typeof AppCollectionsIndexRoute
   '/licenses': typeof AppLicensesIndexRoute
   '/tags': typeof AppTagsIndexRoute
   '/admin': typeof MainAdminIndexRoute
   '/managed': typeof MainManagedIndexRoute
   '/projects': typeof MainProjectsIndexRoute
   '/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/admin/collections/create': typeof MainAdminCollectionsCreateRoute
   '/admin/users/$id': typeof MainAdminUsersIdRoute
   '/managed/$id/members': typeof MainManagedIdMembersRoute
   '/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/admin/categories': typeof MainAdminCategoriesIndexRoute
+  '/admin/collections': typeof MainAdminCollectionsIndexRoute
   '/admin/users': typeof MainAdminUsersIndexRoute
   '/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
+  '/admin/collections/$id/edit': typeof MainAdminCollectionsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -388,6 +431,7 @@ export interface FileRoutesById {
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
+  '/_app/collections/$slug': typeof AppCollectionsSlugRoute
   '/_app/licenses/$slug': typeof AppLicensesSlugRoute
   '/_app/tags/$slug': typeof AppTagsSlugRoute
   '/_main/admin/activity': typeof MainAdminActivityRoute
@@ -404,18 +448,22 @@ export interface FileRoutesById {
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
   '/_app/categories/': typeof AppCategoriesIndexRoute
+  '/_app/collections/': typeof AppCollectionsIndexRoute
   '/_app/licenses/': typeof AppLicensesIndexRoute
   '/_app/tags/': typeof AppTagsIndexRoute
   '/_main/admin/': typeof MainAdminIndexRoute
   '/_main/managed/': typeof MainManagedIndexRoute
   '/_main/projects/': typeof MainProjectsIndexRoute
   '/_main/admin/categories/create': typeof MainAdminCategoriesCreateRoute
+  '/_main/admin/collections/create': typeof MainAdminCollectionsCreateRoute
   '/_main/admin/users/$id': typeof MainAdminUsersIdRoute
   '/_main/managed/$id_/members': typeof MainManagedIdMembersRoute
   '/_main/projects/$id/edit': typeof MainProjectsIdEditRoute
   '/_main/admin/categories/': typeof MainAdminCategoriesIndexRoute
+  '/_main/admin/collections/': typeof MainAdminCollectionsIndexRoute
   '/_main/admin/users/': typeof MainAdminUsersIndexRoute
   '/_main/admin/categories/$id/edit': typeof MainAdminCategoriesIdEditRoute
+  '/_main/admin/collections/$id/edit': typeof MainAdminCollectionsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -435,6 +483,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/collections/$slug'
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
@@ -451,18 +500,22 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories/'
+    | '/collections/'
     | '/licenses/'
     | '/tags/'
     | '/admin/'
     | '/managed/'
     | '/projects/'
     | '/admin/categories/create'
+    | '/admin/collections/create'
     | '/admin/users/$id'
     | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories/'
+    | '/admin/collections/'
     | '/admin/users/'
     | '/admin/categories/$id/edit'
+    | '/admin/collections/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -478,6 +531,7 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/categories/$'
+    | '/collections/$slug'
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
@@ -493,18 +547,22 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/categories'
+    | '/collections'
     | '/licenses'
     | '/tags'
     | '/admin'
     | '/managed'
     | '/projects'
     | '/admin/categories/create'
+    | '/admin/collections/create'
     | '/admin/users/$id'
     | '/managed/$id/members'
     | '/projects/$id/edit'
     | '/admin/categories'
+    | '/admin/collections'
     | '/admin/users'
     | '/admin/categories/$id/edit'
+    | '/admin/collections/$id/edit'
   id:
     | '__root__'
     | '/_app'
@@ -524,6 +582,7 @@ export interface FileRouteTypes {
     | '/sitemaps/pages.xml'
     | '/_app/'
     | '/_app/categories/$'
+    | '/_app/collections/$slug'
     | '/_app/licenses/$slug'
     | '/_app/tags/$slug'
     | '/_main/admin/activity'
@@ -540,18 +599,22 @@ export interface FileRouteTypes {
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
     | '/_app/categories/'
+    | '/_app/collections/'
     | '/_app/licenses/'
     | '/_app/tags/'
     | '/_main/admin/'
     | '/_main/managed/'
     | '/_main/projects/'
     | '/_main/admin/categories/create'
+    | '/_main/admin/collections/create'
     | '/_main/admin/users/$id'
     | '/_main/managed/$id_/members'
     | '/_main/projects/$id/edit'
     | '/_main/admin/categories/'
+    | '/_main/admin/collections/'
     | '/_main/admin/users/'
     | '/_main/admin/categories/$id/edit'
+    | '/_main/admin/collections/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -693,6 +756,20 @@ declare module '@tanstack/react-router' {
       path: '/categories/$'
       fullPath: '/categories/$'
       preLoaderRoute: typeof AppCategoriesSplatRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/collections/': {
+      id: '/_app/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof AppCollectionsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/collections/$slug': {
+      id: '/_app/collections/$slug'
+      path: '/collections/$slug'
+      fullPath: '/collections/$slug'
+      preLoaderRoute: typeof AppCollectionsSlugRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/licenses/': {
@@ -849,6 +926,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminCategoriesCreateRouteImport
       parentRoute: typeof MainAdminCategoriesRoute
     }
+    '/_main/admin/collections/': {
+      id: '/_main/admin/collections/'
+      path: '/collections'
+      fullPath: '/admin/collections/'
+      preLoaderRoute: typeof MainAdminCollectionsIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/collections/create': {
+      id: '/_main/admin/collections/create'
+      path: '/collections/create'
+      fullPath: '/admin/collections/create'
+      preLoaderRoute: typeof MainAdminCollectionsCreateRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
     '/_main/admin/users/': {
       id: '/_main/admin/users/'
       path: '/users'
@@ -884,6 +975,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAdminCategoriesIdEditRouteImport
       parentRoute: typeof MainAdminCategoriesRoute
     }
+    '/_main/admin/collections/$id/edit': {
+      id: '/_main/admin/collections/$id/edit'
+      path: '/collections/$id/edit'
+      fullPath: '/admin/collections/$id/edit'
+      preLoaderRoute: typeof MainAdminCollectionsIdEditRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
   }
 }
 
@@ -893,9 +991,11 @@ interface AppRouteRouteChildren {
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
+  AppCollectionsSlugRoute: typeof AppCollectionsSlugRoute
   AppLicensesSlugRoute: typeof AppLicensesSlugRoute
   AppTagsSlugRoute: typeof AppTagsSlugRoute
   AppCategoriesIndexRoute: typeof AppCategoriesIndexRoute
+  AppCollectionsIndexRoute: typeof AppCollectionsIndexRoute
   AppLicensesIndexRoute: typeof AppLicensesIndexRoute
   AppTagsIndexRoute: typeof AppTagsIndexRoute
 }
@@ -906,9 +1006,11 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
+  AppCollectionsSlugRoute: AppCollectionsSlugRoute,
   AppLicensesSlugRoute: AppLicensesSlugRoute,
   AppTagsSlugRoute: AppTagsSlugRoute,
   AppCategoriesIndexRoute: AppCategoriesIndexRoute,
+  AppCollectionsIndexRoute: AppCollectionsIndexRoute,
   AppLicensesIndexRoute: AppLicensesIndexRoute,
   AppTagsIndexRoute: AppTagsIndexRoute,
 }
@@ -942,8 +1044,11 @@ interface MainAdminRouteChildren {
   MainAdminSubmissionsRoute: typeof MainAdminSubmissionsRoute
   MainAdminTagsRoute: typeof MainAdminTagsRoute
   MainAdminIndexRoute: typeof MainAdminIndexRoute
+  MainAdminCollectionsCreateRoute: typeof MainAdminCollectionsCreateRoute
   MainAdminUsersIdRoute: typeof MainAdminUsersIdRoute
+  MainAdminCollectionsIndexRoute: typeof MainAdminCollectionsIndexRoute
   MainAdminUsersIndexRoute: typeof MainAdminUsersIndexRoute
+  MainAdminCollectionsIdEditRoute: typeof MainAdminCollectionsIdEditRoute
 }
 
 const MainAdminRouteChildren: MainAdminRouteChildren = {
@@ -956,8 +1061,11 @@ const MainAdminRouteChildren: MainAdminRouteChildren = {
   MainAdminSubmissionsRoute: MainAdminSubmissionsRoute,
   MainAdminTagsRoute: MainAdminTagsRoute,
   MainAdminIndexRoute: MainAdminIndexRoute,
+  MainAdminCollectionsCreateRoute: MainAdminCollectionsCreateRoute,
   MainAdminUsersIdRoute: MainAdminUsersIdRoute,
+  MainAdminCollectionsIndexRoute: MainAdminCollectionsIndexRoute,
   MainAdminUsersIndexRoute: MainAdminUsersIndexRoute,
+  MainAdminCollectionsIdEditRoute: MainAdminCollectionsIdEditRoute,
 }
 
 const MainAdminRouteWithChildren = MainAdminRoute._addFileChildren(

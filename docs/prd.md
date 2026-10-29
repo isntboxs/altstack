@@ -189,7 +189,7 @@ membership/claims/upload grants; same-identity renames retain them.
 **Bookmarks:** `/bookmarks` is private to the signed-in account, including admins.
 Save/remove are idempotent and lists contain published projects only. Hidden
 projects retain private bookmarks and reappear if republished; project/account
-deletion cascades them. No public bookmark counts or shared collections exist.
+deletion cascades them. No public bookmark counts or shared bookmarks exist. Private named bookmark lists remain unscheduled. Public editorial collections are separate.
 
 **Reports:** `/<slug>?dialog=report` accepts Broken link, Wrong category, Outdated,
 or Other. Guest contact is required but unverified; signed-in contact comes from
@@ -203,6 +203,36 @@ report email, or automatic correction exists. Contact/message data stays private
 published projects. Save is explicit and detects concurrent changes. Public
 project details omit the current project and unavailable entries. This selection
 does not control homepage order.
+
+### Public Collections
+
+`/collections` and `/collections/<slug>` are public admin-curated discovery pages,
+separate from private bookmarks. Types are alternatives to a listed project,
+ecosystems/toolchains around a listed project, and curated lists referencing a
+GitHub source repository. The source list itself does not need a catalogue entry.
+There is no synchronization: admins maintain membership and presentation order;
+sequence numbers do not imply ranking or “best” claims.
+
+Admins create, edit, delete, and publish at `/admin/collections`, with title,
+description, slug, Markdown, and up to 100 distinct listed/published members.
+Alternatives/ecosystems require a listed/published main project, which cannot also
+be a member. Repository lists require an HTTPS GitHub repository URL and have no
+main project. Missing projects use the existing submission workflow. Slugs are
+unique; changing a slug changes the public URL. Publishing requires a member.
+Authorship is taken from the creating admin's account and preserved through later
+edits and account deletion; clients cannot supply another author. Revision checks
+prevent stale saves/deletes from overwriting newer edits.
+
+Public membership, media, descriptions, and documentation come directly from the
+catalogue. Hidden/deleted members are omitted; collections with no available
+members or an unavailable main project disappear from public pages and sitemaps.
+Republishing a hidden project restores eligibility; deleted memberships cascade.
+Drafts stay private. The public renderer handles Markdown with raw HTML disabled.
+Desktop member navigation and section headings stick beneath global navigation;
+navigation and sharing stop at the article boundary. Mobile omits the main-project
+card and side navigation. More collections are discovery links, not recommendations
+based on a score. Canonical metadata and sitemap entries use the same live public
+eligibility rules. Deployment acceptance is still required for each instance.
 
 ### Sharing, indexing, and badges
 
@@ -257,7 +287,7 @@ The dashboard has no job/retry execution controls or historical analytics.
 
 ## Scope boundaries
 
-The current product does not include paid exposure, public collections, ratings,
+The current product does not include paid exposure, private named bookmark lists, ratings,
 reviews/follows, a personalized feed, report conversations, or historical product
 analytics. Additional search infrastructure, SDKs, newsletters, galleries, and
 extensions require a demonstrated user problem and a separately scoped outcome.

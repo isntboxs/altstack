@@ -76,6 +76,7 @@ const catalog = linkOptions([
 	{ to: '/projects', icon: IconPackage, label: 'Projects' },
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
 	{ to: '/admin/tags', icon: IconTags, label: 'Tags' },
+	{ to: '/admin/collections', icon: IconPackage, label: 'Collections' },
 	{ to: '/admin/featured', icon: IconStar, label: 'Featured projects' },
 ])
 const administration = linkOptions([
