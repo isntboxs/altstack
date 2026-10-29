@@ -119,8 +119,23 @@ function MainProjectCard({
 		featuredWebsiteUrl(project.websiteUrl) ??
 		featuredWebsiteUrl(project.repositoryUrl)
 	return (
-		<Card data-testid="collection-target" className="hidden self-start lg:flex">
-			<CardHeader>
+		<Card
+			data-testid="collection-target"
+			className="relative isolate hidden self-start lg:flex"
+		>
+			{project.logo && (
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -top-10 -right-10 rotate-12 mask-[linear-gradient(to_bottom,black_45%,transparent)] opacity-15 blur-xs"
+				>
+					<ProjectLogo
+						src={project.logo}
+						name={project.name}
+						className="size-48"
+					/>
+				</div>
+			)}
+			<CardHeader className="relative">
 				<CardTitle className="flex items-center gap-3">
 					<ProjectLogo
 						src={project.logo}
@@ -134,7 +149,7 @@ function MainProjectCard({
 				<CardDescription>{project.description}</CardDescription>
 			</CardHeader>
 			{url && (
-				<CardFooter>
+				<CardFooter className="relative">
 					<a
 						href={url}
 						target="_blank"
