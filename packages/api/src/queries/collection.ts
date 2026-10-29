@@ -6,6 +6,7 @@ import {
 	collectionMember,
 	githubRepository,
 	project,
+	user,
 } from '@altstack/db/schemas'
 
 import { sourceRepositorySchema } from '@altstack/shared/schemas/collection'
@@ -103,8 +104,10 @@ export async function getPublicCollection(
 			sourceRepositoryUrl: collection.sourceRepositoryUrl,
 			mainProjectId: collection.mainProjectId,
 			authorName: collection.authorName,
+			authorImage: user.image,
 		})
 		.from(collection)
+		.leftJoin(user, eq(user.id, collection.authorId))
 		.where(and(visibleCollection, eq(collection.slug, slug)))
 		.limit(1)
 	if (!row) return undefined

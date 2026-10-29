@@ -28,6 +28,7 @@ import {
 import { ProjectLogo, ProjectScreenshot } from '#/components/project-media'
 import { PublicContent } from '#/components/public-content'
 import { ShareButtons } from '#/components/share-buttons'
+import { UserAvatar } from '#/components/user-avatar'
 
 type Collection = ORPCRouterOutputs['collection']['getBySlug']
 type CollectionCardData =
@@ -212,17 +213,24 @@ export function CollectionArticle({ collection }: { collection: Collection }) {
 							<span className="sr-only"> (opens in a new tab)</span>
 						</a>
 					)}
-					<div className="flex flex-col gap-1 text-sm text-muted-foreground">
-						<span>Written by {collection.authorName}</span>
-						<span>
-							Updated{' '}
-							<time dateTime={collection.updatedAt.toISOString()}>
-								{new Intl.DateTimeFormat('en', {
-									dateStyle: 'long',
-									timeZone: 'UTC',
-								}).format(collection.updatedAt)}
-							</time>
-						</span>
+					<div className="flex items-center gap-3">
+						<UserAvatar
+							image={collection.authorImage}
+							name={collection.authorName}
+							size="lg"
+						/>
+						<div className="flex flex-col gap-1 text-sm text-muted-foreground">
+							<span>Written by {collection.authorName}</span>
+							<span>
+								Updated{' '}
+								<time dateTime={collection.updatedAt.toISOString()}>
+									{new Intl.DateTimeFormat('en', {
+										dateStyle: 'long',
+										timeZone: 'UTC',
+									}).format(collection.updatedAt)}
+								</time>
+							</span>
+						</div>
 					</div>
 				</header>
 				{collection.mainProject && (

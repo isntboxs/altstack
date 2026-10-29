@@ -114,6 +114,7 @@ beforeEach(async () => {
 	await scope.db.insert(user).values({
 		id: authorId,
 		name: 'Collection writer',
+		image: 'https://avatars.test/writer.png',
 		email: 'writer@example.test',
 		role: 'admin',
 	})
@@ -197,13 +198,16 @@ describe('public curated collections', () => {
 		})
 		expect(detail.projects.map((p) => p.id)).toEqual([b.id, a.id])
 		expect(detail.projects[0]?.content).toBe(b.content)
+		expect(detail.authorImage).toBe('https://avatars.test/writer.png')
 		expect(detail).not.toHaveProperty('authorId')
+		expect(detail).not.toHaveProperty('email')
 		expect(detail).not.toHaveProperty('version')
 		expect(detail.projects[0]).not.toHaveProperty('submitterId')
 		const another = randomUUID()
 		await scope.db.insert(user).values({
 			id: another,
 			name: 'Editor two',
+			image: 'https://avatars.test/editor.png',
 			email: 'editor@example.test',
 			role: 'admin',
 		})
@@ -217,6 +221,18 @@ describe('public curated collections', () => {
 			saved.updatedAt.getTime()
 		)
 		expect(updated.projects.map((p) => p.id)).toEqual([a.id, b.id])
+		expect(
+			(await publicClient().getBySlug({ params: { slug: saved.slug } }))
+				.authorImage
+		).toBe('https://avatars.test/writer.png')
+		await scope.db
+			.update(user)
+			.set({ image: 'https://avatars.test/writer-new.png' })
+			.where(eq(user.id, authorId))
+		expect(
+			(await publicClient().getBySlug({ params: { slug: saved.slug } }))
+				.authorImage
+		).toBe('https://avatars.test/writer-new.png')
 		await scope.db
 			.update(project)
 			.set({ content: 'Updated project documentation' })
@@ -234,6 +250,10 @@ describe('public curated collections', () => {
 			(await publicClient().getBySlug({ params: { slug: saved.slug } }))
 				.authorName
 		).toBe('Collection writer')
+		expect(
+			(await publicClient().getBySlug({ params: { slug: saved.slug } }))
+				.authorImage
+		).toBeNull()
 	})
 	it('filters drafts, hidden members, absent repository metadata and unavailable targets consistently', async () => {
 		const target = await fixture('target'),

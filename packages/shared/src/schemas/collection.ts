@@ -120,6 +120,7 @@ export const collectionDetailSchema = collectionCardSchema
 		content: z.string(),
 		sourceRepositoryUrl: z.string().nullable(),
 		authorName: z.string(),
+		authorImage: z.string().nullable(),
 		mainProject: collectionProjectSchema.nullable(),
 		projects: z.array(collectionProjectSchema),
 	})

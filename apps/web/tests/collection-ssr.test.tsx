@@ -52,6 +52,7 @@ const collection: ORPCRouterOutputs['collection']['getBySlug'] = {
 	kind: 'repository',
 	sourceRepositoryUrl: 'https://github.com/fixtures/list',
 	authorName: 'The original writer',
+	authorImage: null,
 	updatedAt: new Date('2026-10-29T00:00:00Z'),
 	memberCount: 1,
 	mainProject: null,
@@ -84,6 +85,9 @@ describe('collection public SSR', () => {
 			'An editorial title'
 		)
 		expect(container.textContent).toContain('The original writer')
+		expect(
+			container.querySelector('[data-slot="avatar-fallback"]')?.textContent
+		).toBe('TH')
 		expect(container.querySelector('time')?.getAttribute('datetime')).toBe(
 			'2026-10-29T00:00:00.000Z'
 		)

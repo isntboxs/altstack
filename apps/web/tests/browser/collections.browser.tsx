@@ -57,6 +57,7 @@ const collection: Collection = {
 	kind: 'ecosystem',
 	sourceRepositoryUrl: null,
 	authorName: 'Editorial author',
+	authorImage: null,
 	updatedAt: new Date('2026-10-29T00:00:00Z'),
 	memberCount: 35,
 	mainProject: { ...projects[0], id: 'target', name: 'Main tool' },

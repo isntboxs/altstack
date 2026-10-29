@@ -60,7 +60,7 @@ function Page() {
 					Collections
 				</h1>
 				<p className="max-w-3xl text-lg leading-7 text-muted-foreground">
-					Admin-curated collections of listed open-source projects.
+					Explore curated collections of open-source projects.
 				</p>
 			</header>
 			{data.collections.length > 0 ? (
