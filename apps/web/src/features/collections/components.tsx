@@ -7,6 +7,14 @@ import { collectionKindLabels } from '@altstack/shared/schemas/collection'
 import { featuredWebsiteUrl } from '@altstack/shared/schemas/featured'
 
 import { Badge } from '@altstack/ui/components/badge'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from '@altstack/ui/components/breadcrumb'
 import { buttonVariants } from '@altstack/ui/components/button'
 import {
 	Card,
@@ -25,6 +33,37 @@ type Collection = ORPCRouterOutputs['collection']['getBySlug']
 type CollectionCardData =
 	ORPCRouterOutputs['collection']['list']['collections'][number]
 export const memberAnchor = (id: string) => `project-${id}`
+
+export function CollectionBreadcrumb({ name }: { name?: string }) {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList>
+				<BreadcrumbItem className="min-w-0 wrap-anywhere">
+					<BreadcrumbLink render={<Link to="/" />}>Home</BreadcrumbLink>
+				</BreadcrumbItem>
+				<BreadcrumbSeparator />
+				<BreadcrumbItem className="min-w-0 wrap-anywhere">
+					{name ? (
+						<BreadcrumbLink render={<Link to="/collections" />}>
+							Collections
+						</BreadcrumbLink>
+					) : (
+						<BreadcrumbPage>Collections</BreadcrumbPage>
+					)}
+				</BreadcrumbItem>
+				{name && (
+					<>
+						<BreadcrumbSeparator />
+						<BreadcrumbItem className="min-w-0 wrap-anywhere">
+							<BreadcrumbPage>{name}</BreadcrumbPage>
+						</BreadcrumbItem>
+					</>
+				)}
+			</BreadcrumbList>
+		</Breadcrumb>
+	)
+}
+
 export function CollectionCards({
 	collections,
 }: {
@@ -116,12 +155,7 @@ function MainProjectCard({
 export function CollectionArticle({ collection }: { collection: Collection }) {
 	return (
 		<div className="collection-page container mx-auto w-full max-w-6xl px-4 pt-24 pb-12 lg:px-16">
-			<Link
-				to="/collections"
-				className="text-sm text-muted-foreground underline underline-offset-4"
-			>
-				Collections
-			</Link>
+			<CollectionBreadcrumb name={collection.name} />
 			<div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1fr)]">
 				<header className="flex min-w-0 flex-col gap-5">
 					<Badge variant="secondary">

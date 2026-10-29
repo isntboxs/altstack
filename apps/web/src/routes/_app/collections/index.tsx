@@ -10,7 +10,10 @@ import {
 } from '@altstack/ui/components/empty'
 
 import { PublicPending, PublicError } from '#/components/public-page-state'
-import { CollectionCards } from '#/features/collections/components'
+import {
+	CollectionBreadcrumb,
+	CollectionCards,
+} from '#/features/collections/components'
 import { collectionQueries } from '#/features/collections/queries'
 import { seoHead } from '#/features/seo/meta'
 
@@ -48,6 +51,7 @@ function Page() {
 	return (
 		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pt-24 pb-12 lg:px-16">
 			<header className="flex flex-col gap-3">
+				<CollectionBreadcrumb />
 				<h1 className="text-4xl font-semibold">Collections</h1>
 				<p className="text-muted-foreground">
 					Admin-curated collections of listed open-source projects.
