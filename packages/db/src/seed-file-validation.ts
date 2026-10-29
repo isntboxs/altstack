@@ -4,6 +4,7 @@ import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { publishProjectSchema } from '@altstack/shared/schemas/admin-project'
 import {
 	repositoryUrlSchema,
+	projectSlugSchema,
 	slugSchema,
 } from '@altstack/shared/schemas/common'
 import {
@@ -48,7 +49,7 @@ export const seedCategorySchema = z.strictObject({
 
 export const seedProjectSchema = z.strictObject({
 	name: z.string().trim().min(2).max(100),
-	slug: slugSchema,
+	slug: projectSlugSchema,
 	repositoryUrl: repositoryUrlSchema,
 	tagline: z.string().trim().max(100).optional(),
 	description: z.string().trim().max(300).optional(),

@@ -17,9 +17,11 @@ import {
 } from '@altstack/db/schemas'
 
 export const collectionRouter = {
+	/** Returns only eligible public directory entries. */
 	list: publicProcedure.collection.list.handler(({ context: { db }, input }) =>
 		listPublicCollections(db, input.query.page, input.query.limit)
 	),
+	/** Returns not-found for drafts, unavailable targets, and empty collections. */
 	getBySlug: publicProcedure.collection.getBySlug.handler(
 		async ({ context: { db }, input, errors }) => {
 			const result = await getPublicCollection(db, input.params.slug)
@@ -40,6 +42,7 @@ export const adminCollectionRouter = {
 			return result
 		}
 	),
+	/** Locks eligible projects and atomically records the writer and member order. */
 	create: adminProcedure.admin.collection.create.handler(
 		async ({ context: { db, auth }, input, errors }) => {
 			try {
@@ -105,6 +108,7 @@ export const adminCollectionRouter = {
 			}
 		}
 	),
+	/** Replaces editorial fields and membership only when the revision still matches. */
 	update: adminProcedure.admin.collection.update.handler(
 		async ({ context: { db }, input, errors }) => {
 			try {
@@ -183,6 +187,7 @@ export const adminCollectionRouter = {
 			}
 		}
 	),
+	/** Deletes a matching revision and lets membership references cascade. */
 	delete: adminProcedure.admin.collection.delete.handler(
 		async ({ context: { db }, input, errors }) =>
 			db.transaction(async (tx) => {

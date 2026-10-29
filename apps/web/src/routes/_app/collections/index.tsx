@@ -49,6 +49,7 @@ export const Route = createFileRoute('/_app/collections/')({
 	errorComponent: () => <PublicError title="Unable to load collections" />,
 	component: Page,
 })
+/** Displays the loaded directory page with canonical numbered navigation. */
 function Page() {
 	const data = Route.useLoaderData(),
 		{ page } = Route.useSearch()

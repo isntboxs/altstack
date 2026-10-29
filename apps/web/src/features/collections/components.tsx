@@ -35,6 +35,7 @@ type CollectionCardData =
 	ORPCRouterOutputs['collection']['list']['collections'][number]
 export const memberAnchor = (id: string) => `project-${id}`
 
+/** Links the directory and detail page to their public parent pages. */
 export function CollectionBreadcrumb({ name }: { name?: string }) {
 	return (
 		<Breadcrumb>
@@ -65,6 +66,7 @@ export function CollectionBreadcrumb({ name }: { name?: string }) {
 	)
 }
 
+/** Displays collection metadata and live project or source-owner artwork. */
 export function CollectionCards({
 	collections,
 }: {
@@ -117,6 +119,7 @@ export function CollectionCards({
 	)
 }
 
+/** Adds decorative artwork behind card content without intercepting clicks. */
 function CollectionCardBackground({
 	logo,
 	name,
@@ -135,6 +138,7 @@ function CollectionCardBackground({
 	)
 }
 
+/** Shows the listed target and its safe upstream link on desktop. */
 function MainProjectCard({
 	project,
 }: {
@@ -181,6 +185,7 @@ function MainProjectCard({
 		</Card>
 	)
 }
+/** Renders editorial copy and catalogue previews with article-bounded sticky UI. */
 export function CollectionArticle({ collection }: { collection: Collection }) {
 	return (
 		<div className="collection-page container mx-auto w-full max-w-6xl px-4 pt-28 pb-10 lg:px-16">
@@ -311,6 +316,7 @@ export function CollectionArticle({ collection }: { collection: Collection }) {
 		</div>
 	)
 }
+/** Tracks the visible section and scrolls active items within the desktop list. */
 export function MemberNavigation({
 	projects,
 }: {

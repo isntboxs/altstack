@@ -29,3 +29,10 @@ been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-an
   development, feature behavior in the PRD, and navigation in the root README.
 - Replaced deployment-specific configuration with synthetic examples and removed
   production evidence and generated QA artifacts from public documentation.
+
+### Fixed
+
+- Prevent project slugs from shadowing site routes across admin writes,
+  publication, imports, and generated submissions, without changing category slugs.
+- Refresh collection management after failed deletions and omit public links for
+  drafts. Keep collection detail pages available when supplemental discovery fails.

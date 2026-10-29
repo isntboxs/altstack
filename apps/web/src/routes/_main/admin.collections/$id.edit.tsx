@@ -15,6 +15,7 @@ export const Route = createFileRoute('/_main/admin/collections/$id/edit')({
 	errorComponent: () => <PublicError title="Unable to load collection" />,
 	component: Page,
 })
+/** Remounts the editor when its loaded revision changes after a reload. */
 function Page() {
 	const initial = Route.useLoaderData()
 	return (

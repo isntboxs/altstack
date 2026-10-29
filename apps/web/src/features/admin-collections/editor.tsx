@@ -62,6 +62,7 @@ const empty: CollectionBody = {
 	status: 'draft',
 	projectIds: [],
 }
+/** Edits manual collection membership and copy with version-protected saves. */
 export function CollectionEditor({ initial }: { initial?: Initial }) {
 	const queryClient = useQueryClient(),
 		navigate = useNavigate(),
@@ -108,6 +109,7 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 	const create = useMutation(orpc.admin.collection.create.mutationOptions()),
 		update = useMutation(orpc.admin.collection.update.mutationOptions())
 	const busy = create.isPending || update.isPending || reloading
+	/** Flushes Markdown, validates the selection, and saves the loaded revision. */
 	async function save() {
 		editor.current?.flush()
 		const parsed = collectionBodySchema.safeParse({
@@ -151,6 +153,7 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 			)
 		}
 	}
+	/** Discards unsaved fields and remounts the editor after reloading server data. */
 	async function reload() {
 		if (!window.confirm('Discard unsaved edits and reload this collection?')) {
 			return
@@ -171,6 +174,7 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 			setReloading(false)
 		}
 	}
+	/** Changes presentation order without changing project records or membership. */
 	function move(index: number, delta: number) {
 		setMembers((previous) => {
 			const next = [...previous]

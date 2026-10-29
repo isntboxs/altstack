@@ -200,6 +200,41 @@ afterAll(async () => {
 })
 
 describe('admin create project', () => {
+	it('rejects reserved create/update slugs and publishing a legacy reserved slug', async () => {
+		await expect(
+			adminClient.admin.project.create({
+				body: {
+					name: 'Collections',
+					slug: 'collections',
+					status: 'draft',
+					repositoryUrl: 'https://github.com/example/reserved-create',
+				},
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		const id = await insertDirectProject(
+			`${PREFIX}-reserved-check`,
+			'https://github.com/example/reserved-update'
+		)
+		await expect(
+			adminClient.admin.project.update({
+				params: { id },
+				body: { slug: 'collections' },
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		await db
+			.update(project)
+			.set({ slug: 'collections' })
+			.where(eq(project.id, id))
+		await expect(
+			adminClient.admin.project.update({
+				params: { id },
+				body: { status: 'published', categorySlugs: ['backend'] },
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		expect(
+			(await db.select().from(project).where(eq(project.id, id)))[0]?.status
+		).toBe('draft')
+	})
 	it(
 		'creates a project with promoted logo and screenshot',
 		{ timeout: TEST_TIMEOUT },

@@ -21,7 +21,10 @@ import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { PublicContent } from '#/components/public-content'
-import { emptyPublicContent } from '#/features/public-content/model'
+import {
+	emptyPublicContent,
+	projectSlugFromPath,
+} from '#/features/public-content/model'
 import type { PreparedPublicContent } from '#/features/public-content/model'
 
 vi.mock('@altstack/env/web', () => {
@@ -38,6 +41,22 @@ vi.mock('#/features/public-content/server-function', () => {
 
 beforeEach(() => {
 	vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+})
+
+it('does not turn reserved directory paths into project mentions', () => {
+	for (const path of [
+		'/collections',
+		'/tags',
+		'/bookmarks',
+		'/admin',
+		'/og',
+		'/sitemaps',
+	]) {
+		expect(projectSlugFromPath(path)).toBeUndefined()
+	}
+	expect(projectSlugFromPath('/collections-project')).toBe(
+		'collections-project'
+	)
 })
 afterEach(() => {
 	cleanup()

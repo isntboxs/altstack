@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createORPCClient } from '@orpc/client'
+import { createORPCClient, ORPCError } from '@orpc/client'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -23,6 +23,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { CollectionEditor } from '#/features/admin-collections/editor'
+import { Route as CollectionListRoute } from '#/routes/_main/admin.collections/index'
 const { rpc } = vi.hoisted(() => {
 	return {
 		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
@@ -179,6 +180,117 @@ async function mount(existing?: typeof initial) {
 	await screen.findAllByRole('button', { name: 'Add member' })
 	return router
 }
+
+async function mountList() {
+	const client = new QueryClient({
+		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+	})
+	clients.push(client)
+	const root = createRootRoute({ component: Outlet })
+	const list = createRoute({
+		getParentRoute: () => root,
+		path: '/admin/collections',
+		component: CollectionListRoute.options.component,
+	})
+	const router = createRouter({
+		routeTree: root.addChildren([list]),
+		history: createMemoryHistory({ initialEntries: ['/admin/collections'] }),
+	})
+	await router.load()
+	render(
+		<QueryClientProvider client={client}>
+			<RouterProvider router={router} />
+		</QueryClientProvider>
+	)
+	await screen.findByRole('link', { name: initial.name })
+}
+
+describe('collection admin list recovery', () => {
+	it('offers public-page links only for published collections', async () => {
+		rpc.mockResolvedValue({
+			collections: [
+				initial,
+				{
+					...initial,
+					id: first.id,
+					name: 'Published collection',
+					slug: 'published-list',
+					status: 'published',
+				},
+			],
+			total: 2,
+		})
+		await mountList()
+		const links = screen.getAllByRole('link', { name: 'View public page' })
+		expect(links).toHaveLength(1)
+		expect(links[0].getAttribute('href')).toBe('/collections/published-list')
+	})
+	async function failInitialDelete(code: 'CONFLICT' | 'NOT_FOUND') {
+		vi.spyOn(window, 'confirm').mockReturnValue(true)
+		let rows = [initial]
+		let attempts = 0
+		rpc.mockImplementation((path) =>
+			Promise.resolve().then(() => {
+				if (path.join('/') === 'admin/collection/list') {
+					return { collections: rows, total: rows.length }
+				}
+				if (path.join('/') === 'admin/collection/delete') {
+					attempts += 1
+					if (attempts === 1) {
+						rows =
+							code === 'CONFLICT'
+								? [{ ...initial, version: initial.version + 1 }]
+								: []
+						throw new ORPCError(code, {
+							message: 'The collection changed elsewhere.',
+						})
+					}
+					rows = []
+					return { success: true }
+				}
+				throw new Error('Unexpected RPC: ' + path.join('/'))
+			})
+		)
+		await mountList()
+		fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+		await screen.findByText('The collection changed elsewhere.')
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.filter(
+					([path]) => path.join('/') === 'admin/collection/list'
+				).length
+			).toBeGreaterThanOrEqual(2)
+		)
+	}
+	it('refreshes a conflicting revision before the next delete attempt', async () => {
+		await failInitialDelete('CONFLICT')
+		await waitFor(() =>
+			expect(
+				screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' })
+					.disabled
+			).toBe(false)
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+		await waitFor(() =>
+			expect(
+				rpc.mock.calls.filter(
+					([path]) => path.join('/') === 'admin/collection/delete'
+				)[1]?.[1]
+			).toMatchObject({ body: { expectedVersion: initial.version + 1 } })
+		)
+		await screen.findByText(
+			'No collections. Create the first collection to begin curating.'
+		)
+	})
+	it('removes a vanished collection from the list after NOT_FOUND', async () => {
+		await failInitialDelete('NOT_FOUND')
+		await screen.findByText(
+			'No collections. Create the first collection to begin curating.'
+		)
+		expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull()
+	})
+})
+
 describe('collection admin editor', () => {
 	it('creates with explicit editorial fields, canonical source, selected order and flushed Markdown', async () => {
 		await mount()

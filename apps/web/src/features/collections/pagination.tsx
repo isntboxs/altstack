@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 
+/** Shows bounded page links, leaving first-page URL cleanup to route middleware. */
 export function CollectionPagination({
 	page,
 	totalPages,

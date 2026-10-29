@@ -24,6 +24,7 @@ export const Route = createFileRoute('/_main/admin/collections/')({
 	errorComponent: () => <PublicError title="Unable to load collections" />,
 	component: Page,
 })
+/** Lists editorial records and refreshes stale revisions after failed deletes. */
 function Page() {
 	const [page, setPage] = useState(1),
 		[error, setError] = useState(''),
@@ -39,7 +40,12 @@ function Page() {
 				queryClient.invalidateQueries({ queryKey: orpc.collection.key() }),
 			])
 		},
-		onError: (err) => setError(err.message),
+		onError: async (err) => {
+			setError(err.message)
+			await queryClient.invalidateQueries({
+				queryKey: orpc.admin.collection.key(),
+			})
+		},
 	})
 	return (
 		<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 sm:p-6">
@@ -56,9 +62,7 @@ function Page() {
 			{error && (
 				<Alert variant="destructive">
 					<AlertTitle>Unable to delete collection</AlertTitle>
-					<AlertDescription>
-						{error} Reload the list before retrying.
-					</AlertDescription>
+					<AlertDescription>{error}</AlertDescription>
 				</Alert>
 			)}
 			{query.isError && (
@@ -90,13 +94,15 @@ function Page() {
 								{collectionKindLabels[item.kind]} · {item.status}
 							</p>
 						</div>
-						<Link
-							to="/collections/$slug"
-							params={{ slug: item.slug }}
-							className={buttonVariants({ variant: 'outline' })}
-						>
-							View public page
-						</Link>
+						{item.status === 'published' && (
+							<Link
+								to="/collections/$slug"
+								params={{ slug: item.slug }}
+								className={buttonVariants({ variant: 'outline' })}
+							>
+								View public page
+							</Link>
+						)}
 						<Button
 							variant="destructive"
 							disabled={remove.isPending}

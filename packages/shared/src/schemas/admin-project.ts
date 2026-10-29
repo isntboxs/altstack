@@ -6,7 +6,7 @@ import {
 	paginationSchema,
 	projectSchema,
 	repositoryUrlSchema,
-	slugSchema,
+	projectSlugSchema,
 } from '@altstack/shared/schemas/common'
 import { githubDetailSchema } from '@altstack/shared/schemas/project'
 import {
@@ -40,7 +40,7 @@ export const rejectProjectSchema = z.object({
 // Publish checks the complete merged record, including existing final media.
 export const publishProjectSchema = z.object({
 	name: z.string().trim().min(2).max(100),
-	slug: slugSchema,
+	slug: projectSlugSchema,
 	repositoryUrl: repositoryUrlSchema,
 	tagline: z.string().trim().min(1, 'Tagline is required to publish').max(100),
 	description: z
@@ -77,7 +77,7 @@ export const adminProjectParamsSchema = z.object({ id: z.uuid() })
 export const adminCreateProjectBodySchema = z
 	.object({
 		name: z.string().trim().min(2).max(100),
-		slug: slugSchema,
+		slug: projectSlugSchema,
 		repositoryUrl: repositoryUrlSchema,
 		tagline: nullableCopy(100).optional(),
 		description: nullableCopy(300).optional(),
@@ -153,7 +153,7 @@ export const adminListProjectOutputSchema = z.object({
 export const adminUpdateProjectBodySchema = z
 	.object({
 		name: z.string().trim().min(2).max(100).optional(),
-		slug: slugSchema.optional(),
+		slug: projectSlugSchema.optional(),
 		repositoryUrl: repositoryUrlSchema.optional(),
 		tagline: nullableCopy(100).optional(),
 		description: nullableCopy(300).optional(),

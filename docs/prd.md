@@ -70,6 +70,11 @@ The catalogue has search, URL-persisted filters/pagination, categories, GitHub
 topic tags, and license pages. Public counts and results include only published
 projects with the repository data required by the catalogue.
 
+Project slugs cannot use reserved site-route names such as `collections`, `tags`,
+or `bookmarks`. Admin writes, publication, and file imports enforce the shared
+reservation policy. Submission-generated slugs append `-project` when their base
+would be reserved. Category slugs retain their existing validation.
+
 - Categories have at most three levels. Projects receive 1–3 distinct direct
   **leaf** categories; ancestors aggregate distinct published projects. A category
   with assignments cannot gain children. Only empty leaves can be deleted.
@@ -231,6 +236,8 @@ the original writer's current account avatar and the collection's updated date;
 missing or failed images fall back to initials. Account deletion removes the live
 avatar association without removing the saved name. Revision checks prevent stale
 saves/deletes from overwriting newer edits.
+The management list refreshes after failed deletions so retries use the latest
+revision or remove a record deleted elsewhere. Drafts have no public-page link.
 
 The directory shows 12 collections per page, with breadcrumbs and responsive
 Prev/Next, numbered-page, and ellipsis navigation when more than one page exists.
@@ -261,6 +268,8 @@ submission workflow. Mobile omits the main-project card and side navigation whil
 retaining member headings, previews, and sharing.
 
 More collections are discovery links, not recommendations based on a score.
+They load alongside the main collection; a failed discovery query omits that
+section without preventing an available collection from loading.
 Canonical metadata and sitemap entries use the same live public eligibility
 rules. Changing a slug does not create a redirect for the old URL. Deployment
 acceptance is still required for each instance.

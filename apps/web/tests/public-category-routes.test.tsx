@@ -212,6 +212,21 @@ const zed: ORPCRouterOutputs['project']['getBySlug'] = {
 		comparison: null,
 	},
 }
+const editorialCollection: ORPCRouterOutputs['collection']['getBySlug'] = {
+	id: '10000000-0000-4000-8000-000000000080',
+	name: 'Editorial collection',
+	slug: 'editorial-collection',
+	description: 'A curated project selection.',
+	content: '',
+	kind: 'repository',
+	sourceRepositoryUrl: 'https://github.com/fixtures/list',
+	authorName: 'Editorial writer',
+	authorImage: null,
+	updatedAt: new Date('2026-10-29T00:00:00Z'),
+	memberCount: 1,
+	mainProject: null,
+	projects: [zed],
+}
 const testTags = Array.from({ length: 63 }, (_, index) => {
 	return {
 		id: `tag-${index}`,
@@ -404,6 +419,57 @@ async function routerAt(url: string, show = false) {
 	if (show) render(<RouterProvider router={router} />)
 	return router
 }
+
+describe('public collection discovery recovery', () => {
+	it('keeps a valid detail page when optional discovery fails', async () => {
+		rpc.mockImplementation((path) =>
+			path.join('/') === 'collection/getBySlug'
+				? Promise.resolve(editorialCollection)
+				: Promise.reject(new ORPCError('INTERNAL_SERVER_ERROR'))
+		)
+		await routerAt('/collections/editorial-collection', true)
+		expect(
+			screen.getByRole('heading', { name: editorialCollection.name })
+		).toBeTruthy()
+		expect(
+			screen.queryByRole('heading', { name: 'More collections' })
+		).toBeNull()
+		expect(
+			screen.queryByRole('heading', { name: 'Unable to load collection' })
+		).toBeNull()
+	})
+	it('starts discovery while the main collection is still loading', async () => {
+		const main = Promise.withResolvers<typeof editorialCollection>()
+		rpc.mockImplementation((path) =>
+			path.join('/') === 'collection/getBySlug'
+				? main.promise
+				: Promise.resolve({ collections: [], total: 0 })
+		)
+		const loading = routerAt('/collections/editorial-collection', true)
+		await waitFor(() =>
+			expect(rpc.mock.calls.map(([path]) => path.join('/'))).toContain(
+				'collection/list'
+			)
+		)
+		main.resolve(editorialCollection)
+		await loading
+		expect(
+			screen.getByRole('heading', { name: editorialCollection.name })
+		).toBeTruthy()
+	})
+	it('still renders not-found when the primary collection is unavailable', async () => {
+		rpc.mockImplementation((path) =>
+			path.join('/') === 'collection/getBySlug'
+				? Promise.reject(new ORPCError('NOT_FOUND'))
+				: Promise.resolve({ collections: [], total: 0 })
+		)
+		const router = await routerAt('/collections/missing', true)
+		expect(
+			screen.getByRole('heading', { name: 'Collection not found' })
+		).toBeTruthy()
+		expect(router.state.matches.at(-1)?.status).toBe('notFound')
+	})
+})
 
 describe('public footer', () => {
 	it('credits mrboxs, links canonical categories and opens a fresh Most Starred catalogue', async () => {

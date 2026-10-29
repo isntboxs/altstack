@@ -16,13 +16,17 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 	shouldReload: ({ cause }) => cause !== 'stay',
 	loader: async ({ context, params }) => {
 		try {
-			const collection = await context.queryClient.query({
-				...collectionQueries.bySlug(params.slug),
-				retry: false,
-			})
-			const others = await context.queryClient.query(
-				collectionQueries.list(1, 4)
-			)
+			const [collection, others] = await Promise.all([
+				context.queryClient.query({
+					...collectionQueries.bySlug(params.slug),
+					retry: false,
+				}),
+				context.queryClient
+					.query({ ...collectionQueries.list(1, 4), retry: false })
+					.catch(() => {
+						return { collections: [], total: 0 }
+					}),
+			])
 			return {
 				collection,
 				others: others.collections
@@ -76,6 +80,7 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 	errorComponent: () => <PublicError title="Unable to load collection" />,
 	component: Page,
 })
+/** Presents the main article and any independently available discovery cards. */
 function Page() {
 	const { collection, others } = Route.useLoaderData()
 	return (

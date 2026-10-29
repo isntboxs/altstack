@@ -1,3 +1,5 @@
+import { RESERVED_PROJECT_SLUGS } from '@altstack/shared/constants'
+
 export type ProjectMention = {
 	slug: string
 	name: string
@@ -38,23 +40,10 @@ export function emptyPublicContent(): PreparedPublicContent {
 	return { codeBlocks: {}, projectsBySlug: {} }
 }
 
-// These paths resolve to static/layout routes rather than /$slug.
-const reservedPaths = new Set([
-	'collections',
-	'activity',
-	'managed',
-	'submit',
-	'categories',
-	'licenses',
-	'projects',
-	'submission',
-	'auth',
-	'admin',
-])
-
+/** Recognizes project links while excluding the shared set of site routes. */
 export function projectSlugFromPath(path: string) {
 	const match = /^\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(path)
-	return match && !reservedPaths.has(match[1]) ? match[1] : undefined
+	return match && !RESERVED_PROJECT_SLUGS.has(match[1]) ? match[1] : undefined
 }
 
 export function contentLink(href: string, slug: string, appUrl: string) {

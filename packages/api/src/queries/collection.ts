@@ -43,12 +43,14 @@ const cardFields = {
 	// which would otherwise bind id to a project inside the correlated query.
 	memberCount: sql<number>`(SELECT count(*)::integer FROM collection_members cm JOIN projects member ON member.id = cm.project_id JOIN github_repositories repo ON repo.project_id = member.id WHERE cm.collection_id = "collections"."id" AND member.status = 'published')`,
 }
+/** Resolves source-owner artwork only for a validated public GitHub repository. */
 function repositoryAvatar(source: string | null) {
 	const parsed = sourceRepositorySchema.safeParse(source)
 	if (!parsed.success) return null
 	const owner = new URL(parsed.data).pathname.split('/')[1]
 	return owner ? `https://github.com/${owner}.png?size=256` : null
 }
+/** Paginates eligible collections with current artwork and visible-member counts. */
 export async function listPublicCollections(
 	database: CollectionDatabase,
 	page = 1,
@@ -93,6 +95,7 @@ export async function listPublicCollections(
 		total: totals[0]?.total ?? 0,
 	}
 }
+/** Loads current published members and rejects an unavailable target or empty list. */
 export async function getPublicCollection(
 	database: CollectionDatabase,
 	slug: string
@@ -148,6 +151,7 @@ export async function getPublicCollection(
 		projects,
 	}
 }
+/** Includes unavailable selected projects so editors can repair draft membership. */
 export async function getAdminCollection(
 	database: CollectionDatabase,
 	id: string
@@ -173,6 +177,7 @@ export async function getAdminCollection(
 		: []
 	return { ...row, projects, mainProject: mainProject ?? null }
 }
+/** Lists editorial records and revisions without applying public visibility rules. */
 export async function listAdminCollections(
 	database: CollectionDatabase,
 	page: number,
@@ -192,6 +197,7 @@ export async function listAdminCollections(
 	])
 	return { collections, total: totals[0]?.total ?? 0 }
 }
+/** Uses the directory's live eligibility policy for collection sitemap entries. */
 export async function sitemapCollections(database: CollectionDatabase) {
 	return database
 		.select({ slug: collection.slug, updatedAt: collection.updatedAt })
