@@ -87,6 +87,28 @@ afterAll(async () => {
 })
 
 describe('global featured project curation', () => {
+	it('accepts all 24 featured slots and serves them in order while excluding the current project', async () => {
+		const source = await fixture('source')
+		const selected = []
+		for (let index = 0; index < 24; index += 1) {
+			selected.push(await fixture(`featured-${index}`))
+		}
+		const ids = selected.map(({ id }) => id)
+		const result = await client().update({
+			body: { projectIds: ids, expectedProjectIds: [] },
+		})
+		expect(result.projects.map(({ id }) => id)).toEqual(ids)
+		expect(
+			(
+				await publicClient().getBySlug({ params: { slug: source.slug } })
+			).featuredProjects.map(({ id }) => id)
+		).toEqual(ids)
+		expect(
+			(
+				await publicClient().getBySlug({ params: { slug: selected[0]!.slug } })
+			).featuredProjects.map(({ id }) => id)
+		).toEqual(ids.slice(1))
+	})
 	it.each([undefined, 'user'] as const)(
 		'rejects %s reads and writes before DB access over RPC and REST',
 		async (role) => {
@@ -174,7 +196,7 @@ describe('global featured project curation', () => {
 			.where(eq(githubRepository.projectId, invalid.at(-1)!.id))
 		for (const ids of [
 			[valid.id, valid.id],
-			Array.from({ length: 22 }, () => randomUUID()),
+			Array.from({ length: 25 }, () => randomUUID()),
 			[randomUUID()],
 			...invalid.map(({ id }) => [id]),
 		]) {
@@ -273,7 +295,7 @@ describe('global featured project curation', () => {
 		).rejects.toMatchObject({ code: '23505' })
 		await expect(
 			scope.pool.query(
-				'INSERT INTO featured_projects (project_id, position) VALUES ($1, 21)',
+				'INSERT INTO featured_projects (project_id, position) VALUES ($1, 24)',
 				[b.id]
 			)
 		).rejects.toMatchObject({ code: '23514' })

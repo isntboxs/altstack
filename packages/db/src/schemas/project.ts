@@ -85,7 +85,7 @@ export const featuredProject = pgTable(
 	(table) => [
 		check(
 			'featured_projects_position_check',
-			sql`${table.position} >= 0 AND ${table.position} < 21`
+			sql`${table.position} >= 0 AND ${table.position} < 24`
 		),
 	]
 )

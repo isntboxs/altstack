@@ -4,7 +4,10 @@ import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
-import { featuredProjectPreviewSchema } from '@altstack/shared/schemas/featured'
+import {
+	featuredProjectPreviewSchema,
+	MAX_FEATURED_PROJECTS,
+} from '@altstack/shared/schemas/featured'
 import {
 	githubLicenseFields,
 	licenseSlugSchema,
@@ -94,7 +97,10 @@ export const getProjectBySlugInputSchema = z.object({
 
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
-	featuredProjects: z.array(featuredProjectPreviewSchema).max(21).default([]),
+	featuredProjects: z
+		.array(featuredProjectPreviewSchema)
+		.max(MAX_FEATURED_PROJECTS)
+		.default([]),
 	github: githubDetailSchema,
 	githubStarsHistory: githubStarsHistorySchema,
 	categoryDetails: z.array(categoryNodeSchema),

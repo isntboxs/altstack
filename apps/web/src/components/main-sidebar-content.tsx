@@ -8,13 +8,14 @@ import {
 	IconLayoutDashboard,
 	IconPackage,
 	IconPlus,
+	IconRefresh,
 	IconServer,
 	IconStar,
 	IconTags,
 	IconUserCheck,
 	IconUsers,
 } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import {
 	Link,
 	linkOptions,
@@ -46,6 +47,7 @@ import {
 	useSidebar,
 } from '@altstack/ui/components/sidebar'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import { dashboardQueries } from '#/features/admin-dashboard/queries'
 
 const overview = linkOptions([
@@ -223,7 +225,29 @@ function NavigationLink({
 
 function AdminNavigation() {
 	const { auth } = useRouteContext({ from: '/_main' })
-	const query = useQuery(dashboardQueries.overview(auth.user.id))
+	return (
+		<QueryBoundary
+			resetKey={auth.user.id}
+			pending={<AdminNavigationLinks />}
+			error={(_, retry) => <AdminNavigationLinks onRetryCounts={retry} />}
+		>
+			<AdminNavigationCounts userId={auth.user.id} />
+		</QueryBoundary>
+	)
+}
+
+function AdminNavigationCounts({ userId }: { userId: string }) {
+	const query = useSuspenseQuery(dashboardQueries.overview(userId))
+	return <AdminNavigationLinks counts={query.data.counts} />
+}
+
+function AdminNavigationLinks({
+	counts,
+	onRetryCounts,
+}: {
+	counts?: Record<string, number>
+	onRetryCounts?: () => void
+}) {
 	return (
 		<>
 			<NavigationGroup label="Workspace" collapsible={false}>
@@ -236,9 +260,21 @@ function AdminNavigation() {
 					<NavigationLink
 						key={item.to}
 						item={item}
-						count={query.data?.counts[item.count] ?? null}
+						count={counts?.[item.count] ?? null}
 					/>
 				))}
+				{onRetryCounts && (
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							type="button"
+							onClick={onRetryCounts}
+							tooltip="Retry counts"
+						>
+							<IconRefresh aria-hidden="true" />
+							<span>Retry counts</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				)}
 			</NavigationGroup>
 			<NavigationGroup label="Catalog">
 				{catalog.map((item) => (

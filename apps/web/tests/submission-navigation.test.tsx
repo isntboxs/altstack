@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import type * as RouterModule from '@tanstack/react-router'
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from '@testing-library/react'
 // @vitest-environment jsdom
 import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -9,16 +16,28 @@ import { SidebarProvider } from '@altstack/ui/components/sidebar'
 import { MainSidebarContent } from '#/components/main-sidebar-content'
 import { submissionSearchSchema } from '#/features/submissions/search'
 
+const { loadOverview } = vi.hoisted(() => {
+	return {
+		loadOverview: vi.fn<
+			() => Promise<{
+				counts: {
+					needsReview: number
+					pendingClaims: number
+					openReports: number
+				}
+			}>
+		>(),
+	}
+})
+
 vi.mock('#/features/admin-dashboard/queries', () => {
 	return {
 		dashboardQueries: {
 			overview: () => {
 				return {
 					queryKey: ['test-admin-overview'],
-					queryFn: () =>
-						Promise.resolve({
-							counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
-						}),
+					queryFn: loadOverview,
+					retry: false,
 				}
 			},
 		},
@@ -28,8 +47,12 @@ vi.mock('#/features/admin-dashboard/queries', () => {
 const auth = vi.hoisted(() => {
 	return { role: 'user' }
 })
-vi.mock('@tanstack/react-router', () => {
+vi.mock('@tanstack/react-router', async () => {
+	const { CatchBoundary } = await vi.importActual<typeof RouterModule>(
+		'@tanstack/react-router'
+	)
 	return {
+		CatchBoundary,
 		linkOptions: (options: unknown) => options,
 		Link: ({
 			to,
@@ -52,12 +75,15 @@ vi.mock('@tanstack/react-router', () => {
 		),
 		useMatchRoute: () => () => false,
 		useRouteContext: () => {
-			return { auth: { user: { role: auth.role } } }
+			return { auth: { user: { id: 'reviewer', role: auth.role } } }
 		},
 	}
 })
 afterEach(cleanup)
 beforeEach(() => {
+	loadOverview.mockReset().mockResolvedValue({
+		counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
+	})
 	vi.stubGlobal('matchMedia', () => {
 		return {
 			matches: false,
@@ -69,6 +95,57 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('role-specific navigation', () => {
+	it('recovers unavailable moderation counts through retry without hiding navigation', async () => {
+		auth.role = 'admin'
+		loadOverview.mockRejectedValueOnce(new Error('Temporary outage'))
+		const client = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		})
+		const view = render(
+			<QueryClientProvider client={client}>
+				<SidebarProvider>
+					<MainSidebarContent />
+				</SidebarProvider>
+			</QueryClientProvider>
+		)
+		try {
+			const retry = await screen.findByRole('button', { name: 'Retry counts' })
+			expect(screen.getAllByLabelText('Count unavailable')).toHaveLength(3)
+			for (const name of [
+				'Overview',
+				'Submissions',
+				'Ownership requests',
+				'Reports',
+				'Bookmarks',
+			]) {
+				expect(screen.getByRole('link', { name })).toBeTruthy()
+			}
+			const pending = Promise.withResolvers<{
+				counts: {
+					needsReview: number
+					pendingClaims: number
+					openReports: number
+				}
+			}>()
+			loadOverview.mockImplementationOnce(() => pending.promise)
+			fireEvent.click(retry)
+			await waitFor(() => expect(loadOverview).toHaveBeenCalledTimes(2))
+			expect(screen.getByRole('link', { name: 'Submissions' })).toBeTruthy()
+			expect(screen.getAllByLabelText('Count unavailable')).toHaveLength(3)
+			pending.resolve({
+				counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
+			})
+			await screen.findByLabelText('3 awaiting review')
+			expect(screen.getByLabelText('2 awaiting review')).toBeTruthy()
+			expect(screen.getByLabelText('1 awaiting review')).toBeTruthy()
+			expect(screen.queryByLabelText('Count unavailable')).toBeNull()
+			expect(screen.queryByRole('button', { name: 'Retry counts' })).toBeNull()
+			expect(loadOverview).toHaveBeenCalledTimes(2)
+		} finally {
+			view.unmount()
+			client.clear()
+		}
+	})
 	it('shows Submission for regular users and full moderation navigation for admins', () => {
 		auth.role = 'user'
 		const view = render(

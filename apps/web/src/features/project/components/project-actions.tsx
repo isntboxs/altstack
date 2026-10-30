@@ -1,7 +1,6 @@
 import {
 	QueryErrorResetBoundary,
 	useSuspenseQuery,
-	useQuery,
 } from '@tanstack/react-query'
 import { CatchBoundary, Link, useLocation } from '@tanstack/react-router'
 import { Suspense, useRef, useState } from 'react'
@@ -25,6 +24,7 @@ import {
 } from '@altstack/ui/components/tooltip'
 
 import { AuthDialog } from '#/components/auth-dialog'
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	bookmarkQueries,
 	useBookmarkMutation,
@@ -175,9 +175,34 @@ function ProjectBookmarkActions(
 	)
 }
 
-function ProjectActionsView({
+type ActionsViewProps = ProjectActionsProps & { bookmark?: BookmarkAction }
+
+function ProjectActionsView(props: ActionsViewProps) {
+	const fallback = <ProjectActionsContent {...props} />
+	if (!props.userId || !props.verified) return fallback
+	return (
+		<QueryBoundary
+			resetKey={`${props.projectId}:${props.userId}`}
+			pending={fallback}
+			error={() => fallback}
+		>
+			<ProjectAccessActions {...props} userId={props.userId} />
+		</QueryBoundary>
+	)
+}
+
+function ProjectAccessActions(props: ActionsViewProps & { userId: string }) {
+	const access = useSuspenseQuery({
+		...ownershipQueries.state(props.userId, props.projectId),
+		retry: false,
+	})
+	return (
+		<ProjectActionsContent {...props} membership={!!access.data.membership} />
+	)
+}
+
+function ProjectActionsContent({
 	projectId,
-	userId,
 	slug,
 	name,
 	embedOpen,
@@ -187,19 +212,15 @@ function ProjectActionsView({
 	verified,
 	onVerifyOpenChange,
 	bookmark,
-}: ProjectActionsProps & {
-	bookmark?: BookmarkAction
+	membership = false,
+}: ActionsViewProps & {
+	membership?: boolean
 }) {
 	const moreRef = useRef<HTMLButtonElement>(null)
 	const embedRef = useRef<HTMLButtonElement>(null)
 	const returnFocus = useRef<HTMLElement | null>(null)
 	const [authOpen, setAuthOpen] = useState(false)
 	const { href } = useLocation()
-	const access = useQuery({
-		...ownershipQueries.state(userId, projectId),
-		enabled: Boolean(userId && verified),
-		retry: false,
-	})
 	const saved = bookmark?.saved ?? false
 	const bookmarkPending = bookmark?.pending ?? false
 	const bookmarkLabel = bookmark?.label ?? 'Bookmark'
@@ -227,17 +248,15 @@ function ProjectActionsView({
 							{verified && (
 								<DropdownMenuItem
 									render={
-										access.data?.membership ? (
+										membership ? (
 											<Link to="/managed/$id" params={{ id: projectId }} />
 										) : undefined
 									}
 									onClick={() => {
-										if (!access.data?.membership) onVerifyOpenChange?.(true)
+										if (!membership) onVerifyOpenChange?.(true)
 									}}
 								>
-									{access.data?.membership
-										? 'Manage project'
-										: 'Request access'}
+									{membership ? 'Manage project' : 'Request access'}
 								</DropdownMenuItem>
 							)}
 							{!verified && (
@@ -282,7 +301,7 @@ function ProjectActionsView({
 			</div>
 			<div className="hidden flex-wrap gap-2 xl:flex">
 				{verified &&
-					(access.data?.membership ? (
+					(membership ? (
 						<Button
 							variant="outline"
 							render={<Link to="/managed/$id" params={{ id: projectId }} />}

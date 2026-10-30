@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
@@ -9,10 +9,7 @@ import {
 } from '@altstack/ui/components/alert'
 import { Button } from '@altstack/ui/components/button'
 
-import {
-	BookmarksPending,
-	BookmarksTablePending,
-} from '#/components/workspace-skeletons'
+import { BookmarksPending } from '#/components/workspace-skeletons'
 import { BookmarkDataTable } from '#/features/bookmarks/components/bookmark-data-table'
 import { bookmarkQueries } from '#/features/bookmarks/queries'
 import { bookmarkSearchSchema } from '#/features/bookmarks/search'
@@ -64,13 +61,11 @@ function BookmarksPage() {
 	const { auth } = Route.useRouteContext()
 	const search = Route.useSearch()
 	const navigate = Route.useNavigate()
-	const query = useQuery(bookmarkQueries.list(search, auth.user.id))
-	const lastPage = query.data
-		? Math.max(1, query.data.pagination.totalPages)
-		: undefined
+	const query = useSuspenseQuery(bookmarkQueries.list(search, auth.user.id))
+	const lastPage = Math.max(1, query.data.pagination.totalPages)
 	// Removing the final row (or an unpublish) can make the current page vanish.
 	useEffect(() => {
-		if (lastPage !== undefined && (search.page ?? 1) > lastPage) {
+		if ((search.page ?? 1) > lastPage) {
 			void navigate({
 				search: (previous) => {
 					return { ...previous, page: lastPage }
@@ -96,8 +91,6 @@ function BookmarksPage() {
 						</Button>
 					</AlertDescription>
 				</Alert>
-			) : query.isPending ? (
-				<BookmarksTablePending />
 			) : (
 				<BookmarkDataTable
 					data={query.data}

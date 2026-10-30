@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, linkOptions } from '@tanstack/react-router'
 
 import { env } from '@altstack/env/web'
@@ -6,6 +6,7 @@ import { env } from '@altstack/env/web'
 import { Separator } from '@altstack/ui/components/separator'
 
 import { BrandMark } from '#/components/brand-mark'
+import { QueryBoundary } from '#/components/query-boundary'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 import { categoryQueries } from '#/features/category/queries'
 
@@ -129,19 +130,21 @@ export function Footer() {
 					</div>
 				</div>
 
-				<FooterCategories />
+				<QueryBoundary pending={null} error={() => null}>
+					<FooterCategories />
+				</QueryBoundary>
 			</div>
 		</footer>
 	)
 }
 
 function FooterCategories() {
-	const { data } = useQuery({
+	const { data } = useSuspenseQuery({
 		...categoryQueries.list(),
 		staleTime: 5 * 60 * 1000,
 		retry: false,
 	})
-	const categories = (data?.categories ?? [])
+	const categories = data.categories
 		.filter((category) => category.isLeaf && category.projectCount > 0)
 		// Sort a filtered copy for ES2022 browser support.
 		// oxlint-disable-next-line unicorn/no-array-sort

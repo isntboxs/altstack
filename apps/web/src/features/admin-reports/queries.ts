@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+	useMutation,
+	useSuspenseQuery,
+	useQueryClient,
+} from '@tanstack/react-query'
 
 import type { ORPCRouterInputs } from '@altstack/api/routers'
 
@@ -14,7 +18,7 @@ export const adminReportQueries = {
 
 export const useAdminReportList = (
 	query: ORPCRouterInputs['admin']['report']['list']['query']
-) => useQuery({ ...adminReportQueries.list(query), retry: false })
+) => useSuspenseQuery({ ...adminReportQueries.list(query), retry: false })
 
 export function useAdminReportModerate() {
 	const queryClient = useQueryClient()

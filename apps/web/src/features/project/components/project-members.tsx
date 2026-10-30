@@ -1,6 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+	useMutation,
+	useSuspenseQuery,
+	useQueryClient,
+} from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, startTransition } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -23,6 +27,7 @@ import {
 } from '@altstack/ui/components/table'
 
 import { ActionConfirmation } from '#/components/action-confirmation'
+import { QueryBoundary } from '#/components/query-boundary'
 import { adminUsersKey } from '#/features/admin-users/queries'
 import { ownershipKey, ownershipQueries } from '#/features/project/ownership'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
@@ -32,8 +37,29 @@ type Member = ORPCRouterOutputs['ownership']['members']['members'][number]
 type Change = { action: 'role' | 'revoke' | 'leave'; member: Member }
 
 export function ProjectMembers({ id, userId }: { id: string; userId: string }) {
+	return (
+		<QueryBoundary
+			resetKey={`${id}:${userId}`}
+			pending={<output>Loading members…</output>}
+			error={(_, retry) => (
+				<Alert variant="destructive">
+					<AlertDescription>
+						<p>Members unavailable or access not granted.</p>
+						<Button variant="outline" onClick={retry}>
+							Retry loading
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
+		>
+			<MemberList id={id} userId={userId} />
+		</QueryBoundary>
+	)
+}
+
+function MemberList({ id, userId }: { id: string; userId: string }) {
 	const [page, setPage] = useState(1)
-	const query = useQuery(ownershipQueries.members(userId, id, page))
+	const query = useSuspenseQuery(ownershipQueries.members(userId, id, page))
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 	const [change, setChange] = useState<Change | null>(null)
@@ -74,9 +100,7 @@ export function ProjectMembers({ id, userId }: { id: string; userId: string }) {
 		<section aria-label="Project members" className="flex flex-col gap-4">
 			<header className="flex flex-col gap-2">
 				<h2 className="text-lg font-semibold">
-					{query.data
-						? `${query.data.project.name} members`
-						: 'Project members'}
+					{query.data.project.name} members
 				</h2>
 				<p className="text-sm text-muted-foreground">
 					Owners and maintainers can edit and review access requests equally.
@@ -84,7 +108,6 @@ export function ProjectMembers({ id, userId }: { id: string; userId: string }) {
 					project.
 				</p>
 			</header>
-			{query.isPending && <output>Loading members…</output>}
 			{query.error && (
 				<Alert variant="destructive">
 					<AlertDescription>
@@ -104,108 +127,102 @@ export function ProjectMembers({ id, userId }: { id: string; userId: string }) {
 			>
 				Refresh members
 			</Button>
-			{query.data && (
-				<>
-					<Table aria-label="Project members">
-						<TableHeader>
-							<TableRow>
-								<TableHead>Member</TableHead>
-								<TableHead>Project role</TableHead>
-								<TableHead>Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{query.data.members.map((member) => (
-								<TableRow key={member.userId}>
-									<TableCell>
-										<span className="wrap-anywhere">
-											{member.name}
-											{member.userId === userId ? ' (you)' : ''}
-										</span>
-										{!member.active && (
-											<Badge variant="secondary">Account banned</Badge>
-										)}
-									</TableCell>
-									<TableCell>{member.role}</TableCell>
-									<TableCell>
-										<div className="flex flex-wrap gap-2">
-											{query.data.canManage && (
-												<Link
-													to="/admin/users/$id"
-													params={{ id: member.userId }}
-													className="text-sm underline underline-offset-4"
-												>
-													View user
-												</Link>
-											)}
-											{query.data.canManage && member.userId !== userId && (
-												<>
-													<Button
-														variant="outline"
-														size="sm"
-														disabled={mutation.isPending}
-														onClick={() => open({ action: 'role', member })}
-													>
-														Change to{' '}
-														{member.role === 'owner' ? 'maintainer' : 'owner'}
-													</Button>
-													<Button
-														variant="destructive"
-														size="sm"
-														disabled={mutation.isPending}
-														onClick={() => open({ action: 'revoke', member })}
-													>
-														Revoke {member.name}
-													</Button>
-												</>
-											)}
-										</div>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-					{query.data.members.length === 0 && (
-						<Empty>
-							<EmptyHeader>
-								<EmptyTitle>No approved members</EmptyTitle>
-								<EmptyDescription>
-									A new representative must request access and receive admin
-									approval.
-								</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
-					)}
-					<nav aria-label="Member pages" className="flex items-center gap-3">
-						<Button
-							variant="outline"
-							disabled={page === 1 || query.isFetching}
-							onClick={() => setPage(page - 1)}
-						>
-							Previous members
-						</Button>
-						<span className="text-sm">Page {page}</span>
-						<Button
-							variant="outline"
-							disabled={!query.data.pagination.hasNextPage || query.isFetching}
-							onClick={() => setPage(page + 1)}
-						>
-							Next members
-						</Button>
-					</nav>
-					{query.data.self && (
-						<Button
-							variant="outline"
-							className="self-start"
-							disabled={mutation.isPending}
-							onClick={() =>
-								open({ action: 'leave', member: query.data.self! })
-							}
-						>
-							Leave project
-						</Button>
-					)}
-				</>
+			<Table aria-label="Project members">
+				<TableHeader>
+					<TableRow>
+						<TableHead>Member</TableHead>
+						<TableHead>Project role</TableHead>
+						<TableHead>Actions</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{query.data.members.map((member) => (
+						<TableRow key={member.userId}>
+							<TableCell>
+								<span className="wrap-anywhere">
+									{member.name}
+									{member.userId === userId ? ' (you)' : ''}
+								</span>
+								{!member.active && (
+									<Badge variant="secondary">Account banned</Badge>
+								)}
+							</TableCell>
+							<TableCell>{member.role}</TableCell>
+							<TableCell>
+								<div className="flex flex-wrap gap-2">
+									{query.data.canManage && (
+										<Link
+											to="/admin/users/$id"
+											params={{ id: member.userId }}
+											className="text-sm underline underline-offset-4"
+										>
+											View user
+										</Link>
+									)}
+									{query.data.canManage && member.userId !== userId && (
+										<>
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={mutation.isPending}
+												onClick={() => open({ action: 'role', member })}
+											>
+												Change to{' '}
+												{member.role === 'owner' ? 'maintainer' : 'owner'}
+											</Button>
+											<Button
+												variant="destructive"
+												size="sm"
+												disabled={mutation.isPending}
+												onClick={() => open({ action: 'revoke', member })}
+											>
+												Revoke {member.name}
+											</Button>
+										</>
+									)}
+								</div>
+							</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
+			{query.data.members.length === 0 && (
+				<Empty>
+					<EmptyHeader>
+						<EmptyTitle>No approved members</EmptyTitle>
+						<EmptyDescription>
+							A new representative must request access and receive admin
+							approval.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			)}
+			<nav aria-label="Member pages" className="flex items-center gap-3">
+				<Button
+					variant="outline"
+					disabled={page === 1 || query.isFetching}
+					onClick={() => startTransition(() => setPage(page - 1))}
+				>
+					Previous members
+				</Button>
+				<span className="text-sm">Page {page}</span>
+				<Button
+					variant="outline"
+					disabled={!query.data.pagination.hasNextPage || query.isFetching}
+					onClick={() => startTransition(() => setPage(page + 1))}
+				>
+					Next members
+				</Button>
+			</nav>
+			{query.data.self && (
+				<Button
+					variant="outline"
+					className="self-start"
+					disabled={mutation.isPending}
+					onClick={() => open({ action: 'leave', member: query.data.self! })}
+				>
+					Leave project
+				</Button>
 			)}
 			<ActionConfirmation
 				open={change !== null}
