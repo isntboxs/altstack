@@ -3,12 +3,13 @@ import type { ORPCRouterInputs } from '@altstack/api/routers'
 import { orpc } from '#/utils/orpc'
 
 export const submissionQueries = {
-	getById: (id: string, userId: string) =>
+	getById: (id: string, userId: string, dialogId?: string) =>
 		orpc.submission.getById.queryOptions({
 			input: { params: { id } },
 			queryKey: [
 				...orpc.submission.getById.queryKey({ input: { params: { id } } }),
 				{ userId },
+				...(dialogId ? [{ dialogId }] : []),
 			],
 			retry: false,
 			// Keep the read revision stable while correcting input. A stale save is

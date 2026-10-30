@@ -58,12 +58,12 @@ export function FeaturedProjects({
 	if (visible.length === 0) return null
 	return (
 		<Card aria-label="Featured projects" className="@container/featured">
-			<CardHeader>
+			<CardHeader className="px-3">
 				<CardTitle>Featured Projects</CardTitle>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="px-3">
 				<ul
-					className="grid grid-cols-4 gap-2 @min-[300px]/featured:grid-cols-6"
+					className="grid grid-cols-1 gap-1.5 @min-[118px]/featured:grid-cols-2 @min-[168px]/featured:grid-cols-3 @min-[218px]/featured:grid-cols-4 @min-[318px]/featured:grid-cols-6"
 					aria-label="Featured project websites"
 				>
 					{visible.map((project) => (

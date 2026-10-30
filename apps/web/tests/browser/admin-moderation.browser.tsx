@@ -9,7 +9,13 @@ import {
 	Outlet,
 	RouterProvider,
 } from '@tanstack/react-router'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+	cleanup,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -288,6 +294,15 @@ describe('admin moderation pages in Chromium', () => {
 				name: 'Confirm decision',
 			}).disabled
 		).toBe(true)
+		await page
+			.getByRole('textbox', { name: 'Verification notes', exact: true })
+			.fill('Too short')
+		expect(
+			within(screen.getByRole('dialog')).getByText(
+				'Enter at least 20 characters to explain how you verified this representative.'
+			)
+		).toBeTruthy()
+		expect(screen.queryByText(/clear this optional note/)).toBeNull()
 		await page
 			.getByRole('textbox', { name: 'Verification notes', exact: true })
 			.fill('Confirmed the maintainer through the official project website.')

@@ -22,6 +22,8 @@ import { page } from 'vite-plus/test/browser'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { adminListProjectInputSchema } from '@altstack/shared/schemas/admin-project'
+
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 
 import { CollectionEditor } from '#/features/admin-collections/editor'
@@ -210,6 +212,58 @@ function expectPublicationLayout(width: number) {
 }
 
 describe('admin collection layouts', () => {
+	it('keeps candidate rows, pagination and keyboard focus while loading the next page', async () => {
+		const original = rpc.getMockImplementation()!
+		const { promise: pending, resolve: release } = Promise.withResolvers<void>()
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') !== 'admin/project/list') return original(path, input)
+			const {
+				query: { page: currentPage },
+			} = adminListProjectInputSchema.parse(input)
+			const result = {
+				projects: [currentPage === 1 ? first : second],
+				pagination: { hasPreviousPage: currentPage > 1, hasNextPage: true },
+			}
+			return currentPage === 1
+				? Promise.resolve(result)
+				: pending.then(() => result)
+		})
+		await page.viewport(1280, 900)
+		await mount('create')
+		const next = within(
+			screen.getByRole('navigation', { name: 'Project search pagination' })
+		).getByRole<HTMLButtonElement>('button', { name: 'Next' })
+		next.focus()
+		fireEvent.click(next)
+		try {
+			await waitFor(() =>
+				expect(
+					rpc.mock.calls.some(
+						([path, input]) =>
+							path.join('/') === 'admin/project/list' &&
+							adminListProjectInputSchema.parse(input).query.page === 2
+					)
+				).toBe(true)
+			)
+			expect(next.isConnected).toBe(true)
+			expect(
+				within(
+					screen.getByRole('list', { name: 'Available projects' })
+				).getByText(first.name)
+			).toBeTruthy()
+			expect(document.activeElement).toBe(next)
+		} finally {
+			release()
+		}
+		await waitFor(() =>
+			expect(
+				within(
+					screen.getByRole('list', { name: 'Available projects' })
+				).getByText(second.name)
+			).toBeTruthy()
+		)
+		expect(document.activeElement).toBe(next)
+	})
 	it.each([320, 768, 1440])(
 		'keeps list, create, and edit usable at %ipx in both themes',
 		async (width) => {

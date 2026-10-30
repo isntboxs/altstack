@@ -106,32 +106,46 @@ async function mount(selection = projects) {
 }
 
 describe('featured project layout and interaction in Chromium', () => {
-	it('lays out 24 icons in six equal columns and four rows inside a 320px panel', async () => {
-		await page.viewport(1440, 900)
-		await mount()
-		const card = document.querySelector<HTMLElement>(
-			'[aria-label="Featured projects"]'
-		)!
-		card.style.width = '320px'
-		const grid = document.querySelector<HTMLElement>(
-			'[aria-label="Featured project websites"]'
-		)!
-		expect(grid.querySelectorAll('a')).toHaveLength(24)
-		expect(getComputedStyle(grid).gridTemplateColumns.split(' ')).toHaveLength(
-			6
-		)
-		const bounds = Array.from(grid.querySelectorAll('a')).map((a) =>
-			a.getBoundingClientRect()
-		)
-		expect(new Set(bounds.map((rect) => Math.round(rect.top))).size).toBe(4)
-		expect(
-			Math.max(...bounds.map((rect) => rect.width)) -
+	it.each([
+		{ width: 180, columns: 3 },
+		{ width: 232, columns: 4 },
+		{ width: 300, columns: 4 },
+		{ width: 320, columns: 6 },
+		{ width: 336, columns: 6 },
+	])(
+		'keeps 24 icons evenly spaced with 44px touch targets in a $width px panel',
+		async ({ width, columns }) => {
+			await page.viewport(1440, 900)
+			await mount()
+			const card = document.querySelector<HTMLElement>(
+				'[aria-label="Featured projects"]'
+			)!
+			card.style.width = `${width}px`
+			const grid = document.querySelector<HTMLElement>(
+				'[aria-label="Featured project websites"]'
+			)!
+			expect(grid.querySelectorAll('a')).toHaveLength(24)
+			expect(
+				getComputedStyle(grid).gridTemplateColumns.split(' ')
+			).toHaveLength(columns)
+			const bounds = Array.from(grid.querySelectorAll('a')).map((a) =>
+				a.getBoundingClientRect()
+			)
+			expect(new Set(bounds.map((rect) => Math.round(rect.top))).size).toBe(
+				Math.ceil(24 / columns)
+			)
+			expect(
 				Math.min(...bounds.map((rect) => rect.width))
-		).toBeLessThan(1)
-		expect(bounds.at(-1)!.right).toBeLessThanOrEqual(
-			card.getBoundingClientRect().right - 15
-		)
-	})
+			).toBeGreaterThanOrEqual(44)
+			expect(
+				Math.max(...bounds.map((rect) => rect.width)) -
+					Math.min(...bounds.map((rect) => rect.width))
+			).toBeLessThan(1)
+			expect(bounds.at(-1)!.right).toBeLessThanOrEqual(
+				grid.getBoundingClientRect().right + 0.5
+			)
+		}
+	)
 	it.each([1440, 768])(
 		'scrolls stats away before featured sticks, and stops before the footer at %ipx',
 		async (width) => {
@@ -157,7 +171,7 @@ describe('featured project layout and interaction in Chromium', () => {
 			)
 		}
 	)
-	it.each([390, 320])(
+	it.each([390, 375, 320])(
 		'places featured below share and before stats without sticky or page overflow at %ipx',
 		async (width) => {
 			await page.viewport(width, 844)

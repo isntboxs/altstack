@@ -9,12 +9,11 @@ import {
 } from '@tabler/icons-react'
 import {
 	useMutation,
-	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
 import { Link, useBlocker } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -64,6 +63,7 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { toast } from '@altstack/ui/components/toast'
 
 import { ProjectLogo } from '#/components/project-media'
+import { QueryBoundary } from '#/components/query-boundary'
 import { adminFeaturedQueries } from '#/features/admin-featured/queries'
 import { adminProjectQueries } from '#/features/admin-projects/queries'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
@@ -86,6 +86,7 @@ export function FeaturedEditor() {
 }
 
 function SelectionEditor({ initial }: { initial: Selection }) {
+	const [changing, startTransition] = useTransition()
 	const queryClient = useQueryClient()
 	const [projects, setProjects] = useState(initial)
 	const [baseline, setBaseline] = useState(initial.map(({ id }) => id))
@@ -154,8 +155,10 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	}
 	function clearSearch() {
 		setText('')
-		setSearch('')
-		setPage(1)
+		startTransition(() => {
+			setSearch('')
+			setPage(1)
+		})
 	}
 	return (
 		<div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
@@ -314,8 +317,10 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 								<form
 									onSubmit={(event) => {
 										event.preventDefault()
-										setSearch(text.trim())
-										setPage(1)
+										startTransition(() => {
+											setSearch(text.trim())
+											setPage(1)
+										})
 									}}
 								>
 									<Field>
@@ -369,9 +374,12 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 								<Candidates
 									search={search}
 									page={page}
-									onPageChange={setPage}
+									onPageChange={(nextPage) =>
+										startTransition(() => setPage(nextPage))
+									}
 									projects={projects}
 									disabled={busy}
+									loading={changing}
 									onClearSearch={clearSearch}
 									onAdd={(project) =>
 										setProjects((previous) =>
@@ -542,12 +550,37 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	)
 }
 
-function Candidates({
+function Candidates(props: Parameters<typeof CandidateResults>[0]) {
+	return (
+		<QueryBoundary
+			pending={<CandidatePending />}
+			error={(_, retry) => (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to load projects</AlertTitle>
+					<AlertDescription>
+						<p>
+							Your selected projects have been kept. Check your session and
+							retry the search.
+						</p>
+						<Button variant="outline" onClick={retry}>
+							Retry project search
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
+		>
+			<CandidateResults {...props} />
+		</QueryBoundary>
+	)
+}
+
+function CandidateResults({
 	search,
 	page,
 	onPageChange,
 	projects,
 	disabled,
+	loading,
 	onAdd,
 	onClearSearch,
 }: {
@@ -556,10 +589,11 @@ function Candidates({
 	onPageChange: (page: number) => void
 	projects: Selection
 	disabled: boolean
+	loading: boolean
 	onAdd: (project: Selection[number]) => void
 	onClearSearch: () => void
 }) {
-	const query = useQuery({
+	const query = useSuspenseQuery({
 		...adminProjectQueries.list({
 			status: 'published',
 			name: search || undefined,
@@ -568,7 +602,6 @@ function Candidates({
 		}),
 		retry: false,
 	})
-	if (query.isPending) return <CandidatePending />
 	if (query.isError) {
 		return (
 			<Alert variant="destructive">
@@ -590,6 +623,7 @@ function Candidates({
 			{query.data.projects.length > 0 ? (
 				<ul
 					aria-label="Published project candidates"
+					aria-busy={loading || query.isFetching}
 					className="max-h-112 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border"
 				>
 					{query.data.projects.map((project) => {
@@ -656,6 +690,7 @@ function Candidates({
 			)}
 			<nav
 				aria-label="Project search pagination"
+				aria-busy={loading || query.isFetching}
 				className="flex flex-wrap items-center justify-between gap-3"
 			>
 				<span className="text-xs text-muted-foreground">
@@ -665,22 +700,34 @@ function Candidates({
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={
+						disabled={disabled || !query.data.pagination.hasPreviousPage}
+						className="aria-disabled:opacity-50"
+						aria-disabled={
 							disabled ||
+							loading ||
 							query.isFetching ||
 							!query.data.pagination.hasPreviousPage
 						}
-						onClick={() => onPageChange(page - 1)}
+						onClick={() => {
+							if (!loading && !query.isFetching) onPageChange(page - 1)
+						}}
 					>
 						Previous
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={
-							disabled || query.isFetching || !query.data.pagination.hasNextPage
+						disabled={disabled || !query.data.pagination.hasNextPage}
+						className="aria-disabled:opacity-50"
+						aria-disabled={
+							disabled ||
+							loading ||
+							query.isFetching ||
+							!query.data.pagination.hasNextPage
 						}
-						onClick={() => onPageChange(page + 1)}
+						onClick={() => {
+							if (!loading && !query.isFetching) onPageChange(page + 1)
+						}}
 					>
 						Next
 					</Button>

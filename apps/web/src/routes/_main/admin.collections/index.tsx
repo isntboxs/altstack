@@ -7,9 +7,13 @@ import {
 	IconPlus,
 	IconTrash,
 } from '@tabler/icons-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+	useMutation,
+	useSuspenseQuery,
+	useQueryClient,
+} from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, startTransition } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -43,6 +47,7 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { toast } from '@altstack/ui/components/toast'
 
 import { PublicError } from '#/components/public-page-state'
+import { QueryBoundary } from '#/components/query-boundary'
 import { adminCollectionQueries } from '#/features/collections/queries'
 import { orpc } from '#/utils/orpc'
 
@@ -73,17 +78,27 @@ function CollectionListPending() {
 }
 
 function Page() {
+	return (
+		<QueryBoundary pending={<CollectionListPending />}>
+			<CollectionList />
+		</QueryBoundary>
+	)
+}
+
+function CollectionList() {
 	const [page, setPage] = useState(1)
 	const [error, setError] = useState('')
 	const [deleting, setDeleting] = useState<Collection | null>(null)
 	const queryClient = useQueryClient()
-	const query = useQuery(adminCollectionQueries.list(page))
+	const query = useSuspenseQuery(adminCollectionQueries.list(page))
 	const remove = useMutation({
 		...orpc.admin.collection.delete.mutationOptions(),
 		onSuccess: async () => {
 			setDeleting(null)
 			setError('')
-			if (query.data?.collections.length === 1 && page > 1) setPage(page - 1)
+			if (query.data.collections.length === 1 && page > 1) {
+				startTransition(() => setPage(page - 1))
+			}
 			await Promise.all([
 				queryClient.invalidateQueries({
 					queryKey: orpc.admin.collection.key(),
@@ -100,7 +115,7 @@ function Page() {
 			})
 		},
 	})
-	const total = query.data?.total ?? 0
+	const total = query.data.total
 	const pageCount = Math.max(1, Math.ceil(total / 20))
 
 	return (
@@ -138,162 +153,159 @@ function Page() {
 					</AlertDescription>
 				</Alert>
 			)}
-			{query.isPending && <CollectionListPending />}
-			{query.data && (
-				<section
-					aria-label="Collection directory"
-					className="overflow-hidden rounded-xl border bg-card"
-				>
-					<div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3 sm:px-5">
-						<h2 className="text-sm font-medium">
-							All collections{' '}
-							<span className="ml-1 text-muted-foreground">({total})</span>
-						</h2>
-						<p className="text-xs text-muted-foreground">
-							Drafts are only visible to admins
-						</p>
-					</div>
-					<ul className="divide-y">
-						{query.data.collections.map((item) => (
-							<li key={item.id} className="flex flex-col gap-4 p-4 sm:p-5">
-								<div className="flex items-start gap-3">
-									<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40 text-muted-foreground">
-										<IconFolders className="size-5" aria-hidden="true" />
-									</div>
-									<div className="flex min-w-0 flex-1 flex-col gap-1.5">
-										<div className="flex flex-wrap items-center gap-2">
-											<Link
-												to="/admin/collections/$id/edit"
-												params={{ id: item.id }}
-												className="rounded-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-											>
-												{item.name}
-											</Link>
-											<Badge
-												variant={
-													item.status === 'published' ? 'default' : 'secondary'
-												}
-											>
-												{item.status === 'published' ? 'Published' : 'Draft'}
-											</Badge>
-										</div>
-										<p className="line-clamp-2 text-sm wrap-anywhere text-muted-foreground">
-											{item.description}
-										</p>
-										<p className="truncate text-xs text-muted-foreground">
-											/collections/{item.slug}
-										</p>
-									</div>
+			<section
+				aria-label="Collection directory"
+				className="overflow-hidden rounded-xl border bg-card"
+			>
+				<div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3 sm:px-5">
+					<h2 className="text-sm font-medium">
+						All collections{' '}
+						<span className="ml-1 text-muted-foreground">({total})</span>
+					</h2>
+					<p className="text-xs text-muted-foreground">
+						Drafts are only visible to admins
+					</p>
+				</div>
+				<ul className="divide-y">
+					{query.data.collections.map((item) => (
+						<li key={item.id} className="flex flex-col gap-4 p-4 sm:p-5">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40 text-muted-foreground">
+									<IconFolders className="size-5" aria-hidden="true" />
 								</div>
-								<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 sm:pl-13">
-									<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-										<span>{collectionKindLabels[item.kind]}</span>
-										<span className="wrap-anywhere">By {item.authorName}</span>
-										<time dateTime={new Date(item.updatedAt).toISOString()}>
-											Updated{' '}
-											{new Date(item.updatedAt).toLocaleDateString('en-US', {
-												month: 'short',
-												day: 'numeric',
-												year: 'numeric',
-												timeZone: 'UTC',
-											})}
-										</time>
-									</div>
+								<div className="flex min-w-0 flex-1 flex-col gap-1.5">
 									<div className="flex flex-wrap items-center gap-2">
-										{item.status === 'published' && (
-											<Link
-												to="/collections/$slug"
-												params={{ slug: item.slug }}
-												className={buttonVariants({
-													variant: 'ghost',
-													size: 'sm',
-												})}
-											>
-												<IconExternalLink data-icon="inline-start" />
-												View public page
-											</Link>
-										)}
 										<Link
 											to="/admin/collections/$id/edit"
 											params={{ id: item.id }}
+											className="rounded-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+										>
+											{item.name}
+										</Link>
+										<Badge
+											variant={
+												item.status === 'published' ? 'default' : 'secondary'
+											}
+										>
+											{item.status === 'published' ? 'Published' : 'Draft'}
+										</Badge>
+									</div>
+									<p className="line-clamp-2 text-sm wrap-anywhere text-muted-foreground">
+										{item.description}
+									</p>
+									<p className="truncate text-xs text-muted-foreground">
+										/collections/{item.slug}
+									</p>
+								</div>
+							</div>
+							<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 sm:pl-13">
+								<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+									<span>{collectionKindLabels[item.kind]}</span>
+									<span className="wrap-anywhere">By {item.authorName}</span>
+									<time dateTime={new Date(item.updatedAt).toISOString()}>
+										Updated{' '}
+										{new Date(item.updatedAt).toLocaleDateString('en-US', {
+											month: 'short',
+											day: 'numeric',
+											year: 'numeric',
+											timeZone: 'UTC',
+										})}
+									</time>
+								</div>
+								<div className="flex flex-wrap items-center gap-2">
+									{item.status === 'published' && (
+										<Link
+											to="/collections/$slug"
+											params={{ slug: item.slug }}
 											className={buttonVariants({
-												variant: 'outline',
+												variant: 'ghost',
 												size: 'sm',
 											})}
 										>
-											<IconPencil data-icon="inline-start" />
-											Edit<span className="sr-only"> {item.name}</span>
+											<IconExternalLink data-icon="inline-start" />
+											View public page
 										</Link>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											aria-label={`Delete ${item.name}`}
-											disabled={remove.isPending}
-											onClick={() => setDeleting(item)}
-										>
-											<IconTrash />
-										</Button>
-									</div>
+									)}
+									<Link
+										to="/admin/collections/$id/edit"
+										params={{ id: item.id }}
+										className={buttonVariants({
+											variant: 'outline',
+											size: 'sm',
+										})}
+									>
+										<IconPencil data-icon="inline-start" />
+										Edit<span className="sr-only"> {item.name}</span>
+									</Link>
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										aria-label={`Delete ${item.name}`}
+										disabled={remove.isPending}
+										onClick={() => setDeleting(item)}
+									>
+										<IconTrash />
+									</Button>
 								</div>
-							</li>
-						))}
-					</ul>
-					{query.data.collections.length === 0 && (
-						<Empty className="py-16">
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<IconFolders />
-								</EmptyMedia>
-								<EmptyTitle>No collections yet</EmptyTitle>
-								<EmptyDescription>
-									No collections. Create the first collection to begin curating.
-								</EmptyDescription>
-							</EmptyHeader>
-							<Link
-								to="/admin/collections/create"
-								className={buttonVariants({ variant: 'outline' })}
-							>
-								<IconPlus data-icon="inline-start" />
-								Create collection
-							</Link>
-						</Empty>
-					)}
-					{total > 0 && (
-						<nav
-							aria-label="Collection pagination"
-							className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-5"
-						>
-							<p className="text-xs text-muted-foreground">
-								Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, total)} of{' '}
-								{total}
-							</p>
-							<div className="flex items-center gap-3">
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={page === 1 || query.isFetching}
-									onClick={() => setPage(page - 1)}
-								>
-									<IconArrowLeft data-icon="inline-start" />
-									Previous
-								</Button>
-								<span className="text-xs text-muted-foreground">
-									{page} / {pageCount}
-								</span>
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={page >= pageCount || query.isFetching}
-									onClick={() => setPage(page + 1)}
-								>
-									Next
-									<IconArrowRight data-icon="inline-end" />
-								</Button>
 							</div>
-						</nav>
-					)}
-				</section>
-			)}
+						</li>
+					))}
+				</ul>
+				{query.data.collections.length === 0 && (
+					<Empty className="py-16">
+						<EmptyHeader>
+							<EmptyMedia variant="icon">
+								<IconFolders />
+							</EmptyMedia>
+							<EmptyTitle>No collections yet</EmptyTitle>
+							<EmptyDescription>
+								No collections. Create the first collection to begin curating.
+							</EmptyDescription>
+						</EmptyHeader>
+						<Link
+							to="/admin/collections/create"
+							className={buttonVariants({ variant: 'outline' })}
+						>
+							<IconPlus data-icon="inline-start" />
+							Create collection
+						</Link>
+					</Empty>
+				)}
+				{total > 0 && (
+					<nav
+						aria-label="Collection pagination"
+						className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 sm:px-5"
+					>
+						<p className="text-xs text-muted-foreground">
+							Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, total)} of{' '}
+							{total}
+						</p>
+						<div className="flex items-center gap-3">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={page === 1 || query.isFetching}
+								onClick={() => startTransition(() => setPage(page - 1))}
+							>
+								<IconArrowLeft data-icon="inline-start" />
+								Previous
+							</Button>
+							<span className="text-xs text-muted-foreground">
+								{page} / {pageCount}
+							</span>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={page >= pageCount || query.isFetching}
+								onClick={() => startTransition(() => setPage(page + 1))}
+							>
+								Next
+								<IconArrowRight data-icon="inline-end" />
+							</Button>
+						</div>
+					</nav>
+				)}
+			</section>
 			<AlertDialog
 				open={!!deleting}
 				onOpenChange={(open) => {

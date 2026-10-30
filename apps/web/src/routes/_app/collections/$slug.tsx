@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import {
@@ -6,6 +6,7 @@ import {
 	PublicError,
 	PublicNotFound,
 } from '#/components/public-page-state'
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	CollectionArticle,
 	CollectionCards,
@@ -76,18 +77,27 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 /** Presents the main article and any independently available discovery cards. */
 function Page() {
 	const { collection } = Route.useLoaderData()
-	const discovery = useQuery({
+	return (
+		<>
+			<CollectionArticle key={collection.id} collection={collection} />
+			<QueryBoundary pending={null} error={() => null}>
+				<MoreCollections collectionId={collection.id} />
+			</QueryBoundary>
+		</>
+	)
+}
+
+function MoreCollections({ collectionId }: { collectionId: string }) {
+	const discovery = useSuspenseQuery({
 		...collectionQueries.list(1, 4),
 		retry: false,
 		retryOnMount: false,
 	})
-	const others =
-		discovery.data?.collections
-			.filter((item) => item.id !== collection.id)
-			.slice(0, 3) ?? []
+	const others = discovery.data.collections
+		.filter((item) => item.id !== collectionId)
+		.slice(0, 3)
 	return (
 		<>
-			<CollectionArticle key={collection.id} collection={collection} />
 			{others.length > 0 && (
 				<section
 					aria-label="More collections"

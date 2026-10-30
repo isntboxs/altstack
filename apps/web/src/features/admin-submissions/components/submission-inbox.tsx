@@ -1,6 +1,7 @@
 import { IconArrowRight, IconInbox, IconSearch } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useDeferredValue } from 'react'
 
 import {
 	Alert,
@@ -41,6 +42,7 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 
 import { ProjectLogo } from '#/components/project-media'
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	AdminPageHeader,
 	AdminTime,
@@ -66,7 +68,42 @@ const orders = [
 	{ value: 'name:desc', label: 'Name Z–A', sort: 'name', order: 'desc' },
 ] as const
 
-export function SubmissionInbox({
+export function SubmissionInbox(
+	props: Parameters<typeof SubmissionInboxContent>[0]
+) {
+	const search = useDeferredValue(props.search)
+	return (
+		<QueryBoundary
+			pending={<SubmissionsPending />}
+			error={(_, retry) => (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to load submissions</AlertTitle>
+					<AlertDescription>
+						<p>Check your connection and try again.</p>
+						<Button variant="outline" onClick={retry}>
+							Retry loading
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
+		>
+			<SubmissionInboxContent {...props} search={search} />
+		</QueryBoundary>
+	)
+}
+
+function SubmissionsPending() {
+	return (
+		<div className="flex flex-col gap-3">
+			<output className="sr-only">Loading submissions</output>
+			{[0, 1, 2].map((id) => (
+				<Skeleton key={id} className="h-32 w-full rounded-lg" />
+			))}
+		</div>
+	)
+}
+
+function SubmissionInboxContent({
 	search,
 	onSearchChange,
 }: {
@@ -74,7 +111,7 @@ export function SubmissionInbox({
 	onSearchChange: (search: AdminProjectSearch) => void
 }) {
 	const page = search.page ?? 1
-	const query = useQuery({
+	const query = useSuspenseQuery({
 		...adminProjectQueries.list({
 			page,
 			limit: 12,
@@ -109,11 +146,7 @@ export function SubmissionInbox({
 					</CardTitle>
 					<CardAction>
 						<Badge variant="secondary">
-							{query.data
-								? `${query.data.pagination.totalItems} ${search.name ? 'matching' : 'pending'}`
-								: query.isError
-									? 'Unavailable'
-									: 'Loading…'}
+							{`${query.data.pagination.totalItems} ${search.name ? 'matching' : 'pending'}`}
 						</Badge>
 					</CardAction>
 				</CardHeader>
@@ -227,125 +260,109 @@ export function SubmissionInbox({
 							</AlertDescription>
 						</Alert>
 					)}
-					{query.isPending ? (
-						<div className="flex flex-col gap-3">
-							<output className="sr-only">Loading submissions</output>
-							{[0, 1, 2].map((id) => (
-								<Skeleton key={id} className="h-32 w-full rounded-lg" />
+					{query.data.projects.length > 0 ? (
+						<ul
+							aria-label="Community submissions"
+							aria-busy={query.isFetching}
+							className="divide-y rounded-lg border"
+						>
+							{query.data.projects.map((project) => (
+								<li
+									key={project.id}
+									className="flex min-w-0 flex-col gap-4 p-4"
+								>
+									<div className="flex min-w-0 items-start gap-3">
+										<ProjectLogo
+											src={project.logo}
+											name={project.name}
+											className="size-10 shrink-0 rounded-lg"
+										/>
+										<div className="flex min-w-0 flex-1 flex-col gap-1.5">
+											<Link
+												to="/projects/$id/edit"
+												params={{ id: project.id }}
+												className="w-fit rounded-sm text-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+											>
+												{project.name}
+											</Link>
+											<Badge variant="outline">Needs review</Badge>
+											<p className="line-clamp-2 text-sm wrap-anywhere text-muted-foreground">
+												{project.tagline?.trim()
+													? project.tagline
+													: 'No tagline provided yet.'}
+											</p>
+										</div>
+									</div>
+									<div className="flex flex-wrap items-end justify-between gap-3 sm:pl-13">
+										<div className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+											<p className="wrap-anywhere">
+												Submitted by{' '}
+												{project.submitter?.name ?? 'Unavailable submitter'}
+											</p>
+											{project.submitter?.email && (
+												<p className="wrap-anywhere">
+													{project.submitter.email}
+												</p>
+											)}
+											<p>
+												Submitted{' '}
+												<AdminTime value={project.createdAt} relative />
+											</p>
+										</div>
+										<Link
+											to="/projects/$id/edit"
+											params={{ id: project.id }}
+											aria-label={`Review ${project.name}`}
+											className={buttonVariants({
+												variant: 'outline',
+												size: 'sm',
+											})}
+										>
+											Review submission
+											<IconArrowRight data-icon="inline-end" />
+										</Link>
+									</div>
+								</li>
 							))}
-						</div>
+						</ul>
 					) : (
-						query.data && (
-							<>
-								{query.data.projects.length > 0 ? (
-									<ul
-										aria-label="Community submissions"
-										aria-busy={query.isFetching}
-										className="divide-y rounded-lg border"
-									>
-										{query.data.projects.map((project) => (
-											<li
-												key={project.id}
-												className="flex min-w-0 flex-col gap-4 p-4"
-											>
-												<div className="flex min-w-0 items-start gap-3">
-													<ProjectLogo
-														src={project.logo}
-														name={project.name}
-														className="size-10 shrink-0 rounded-lg"
-													/>
-													<div className="flex min-w-0 flex-1 flex-col gap-1.5">
-														<Link
-															to="/projects/$id/edit"
-															params={{ id: project.id }}
-															className="w-fit rounded-sm text-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-														>
-															{project.name}
-														</Link>
-														<Badge variant="outline">Needs review</Badge>
-														<p className="line-clamp-2 text-sm wrap-anywhere text-muted-foreground">
-															{project.tagline?.trim()
-																? project.tagline
-																: 'No tagline provided yet.'}
-														</p>
-													</div>
-												</div>
-												<div className="flex flex-wrap items-end justify-between gap-3 sm:pl-13">
-													<div className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-														<p className="wrap-anywhere">
-															Submitted by{' '}
-															{project.submitter?.name ??
-																'Unavailable submitter'}
-														</p>
-														{project.submitter?.email && (
-															<p className="wrap-anywhere">
-																{project.submitter.email}
-															</p>
-														)}
-														<p>
-															Submitted{' '}
-															<AdminTime value={project.createdAt} relative />
-														</p>
-													</div>
-													<Link
-														to="/projects/$id/edit"
-														params={{ id: project.id }}
-														aria-label={`Review ${project.name}`}
-														className={buttonVariants({
-															variant: 'outline',
-															size: 'sm',
-														})}
-													>
-														Review submission
-														<IconArrowRight data-icon="inline-end" />
-													</Link>
-												</div>
-											</li>
-										))}
-									</ul>
-								) : (
-									<Empty className="min-h-64 border bg-muted/20">
-										<EmptyHeader>
-											<EmptyMedia variant="icon">
-												<IconInbox />
-											</EmptyMedia>
-											<EmptyTitle>
-												{search.name
-													? 'No matching submissions'
-													: page > 1
-														? 'No submissions on this page'
-														: 'No submissions awaiting review'}
-											</EmptyTitle>
-											<EmptyDescription>
-												{search.name
-													? 'Try a different project name or clear your search.'
-													: page > 1
-														? 'Go to the previous page to continue reviewing.'
-														: 'New community submissions will appear here when they are ready for review.'}
-											</EmptyDescription>
-										</EmptyHeader>
-										{search.name && (
-											<Button
-												variant="outline"
-												onClick={() =>
-													updateSearch({ ...search, page: 1, name: undefined })
-												}
-											>
-												Show all submissions
-											</Button>
-										)}
-									</Empty>
-								)}
-							</>
-						)
+						<Empty className="min-h-64 border bg-muted/20">
+							<EmptyHeader>
+								<EmptyMedia variant="icon">
+									<IconInbox />
+								</EmptyMedia>
+								<EmptyTitle>
+									{search.name
+										? 'No matching submissions'
+										: page > 1
+											? 'No submissions on this page'
+											: 'No submissions awaiting review'}
+								</EmptyTitle>
+								<EmptyDescription>
+									{search.name
+										? 'Try a different project name or clear your search.'
+										: page > 1
+											? 'Go to the previous page to continue reviewing.'
+											: 'New community submissions will appear here when they are ready for review.'}
+								</EmptyDescription>
+							</EmptyHeader>
+							{search.name && (
+								<Button
+									variant="outline"
+									onClick={() =>
+										updateSearch({ ...search, page: 1, name: undefined })
+									}
+								>
+									Show all submissions
+								</Button>
+							)}
+						</Empty>
 					)}
 				</CardContent>
 				<CardFooter className="flex-wrap justify-between gap-3">
 					<p className="text-xs text-muted-foreground">
 						Page {page}
-						{query.data
-							? ` · ${query.data.pagination.totalItems} ${search.name ? 'matching ' : ''}${query.data.pagination.totalItems === 1 ? 'submission' : 'submissions'}`
-							: ''}
+						{` · ${query.data.pagination.totalItems} ${search.name ? 'matching ' : ''}${query.data.pagination.totalItems === 1 ? 'submission' : 'submissions'}`}
 					</p>
 					<nav
 						aria-label="Submission pages"
@@ -363,7 +380,7 @@ export function SubmissionInbox({
 							variant="outline"
 							size="sm"
 							disabled={
-								!query.data?.pagination.hasNextPage ||
+								!query.data.pagination.hasNextPage ||
 								query.isFetching ||
 								query.isError
 							}

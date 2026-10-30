@@ -1,5 +1,6 @@
 import { IconRefresh } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useDeferredValue } from 'react'
 import type { z } from 'zod'
 
 import { adminListReportsQuerySchema } from '@altstack/shared/schemas/admin-report'
@@ -22,6 +23,7 @@ import {
 } from '@altstack/ui/components/select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import { AdminPageHeader } from '#/features/admin-dashboard/components/dashboard-state'
 import type { adminReportSearchSchema } from '#/features/admin-dashboard/search'
 import { ReportDataTable } from '#/features/admin-reports/components/report-data-table'
@@ -30,7 +32,29 @@ import { adminORPC } from '#/utils/orpc'
 
 const statusItems = [...reportStatuses, { value: 'all', label: 'All statuses' }]
 
-export function ReportInbox({
+export function ReportInbox(props: Parameters<typeof ReportInboxContent>[0]) {
+	const search = useDeferredValue(props.search)
+	return (
+		<QueryBoundary
+			pending={<ReportsPending />}
+			error={(_, retry) => (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to load reports</AlertTitle>
+					<AlertDescription>
+						<p>Check your admin session and try again.</p>
+						<Button variant="outline" size="sm" onClick={retry}>
+							Retry loading
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
+		>
+			<ReportInboxContent {...props} search={search} />
+		</QueryBoundary>
+	)
+}
+
+function ReportInboxContent({
 	search,
 	onSearchChange,
 }: {
@@ -116,7 +140,6 @@ export function ReportInbox({
 					</AlertDescription>
 				</Alert>
 			)}
-			{query.isPending ? <ReportsPending /> : null}
 			{query.isError && (
 				<Alert variant="destructive">
 					<AlertTitle>Unable to load reports</AlertTitle>
@@ -133,11 +156,9 @@ export function ReportInbox({
 					</AlertDescription>
 				</Alert>
 			)}
-			{query.data && (
-				<div aria-busy={query.isFetching}>
-					<ReportDataTable reports={query.data.reports} />
-				</div>
-			)}
+			<div aria-busy={query.isFetching}>
+				<ReportDataTable reports={query.data.reports} />
+			</div>
 			<nav
 				aria-label="Report pages"
 				className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-3"
@@ -163,11 +184,9 @@ export function ReportInbox({
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={
-						!query.data?.nextCursor || query.isFetching || query.isError
-					}
+					disabled={!query.data.nextCursor || query.isFetching || query.isError}
 					onClick={() => {
-						const cursor = query.data?.nextCursor
+						const cursor = query.data.nextCursor
 						if (cursor) {
 							onSearchChange({
 								...search,

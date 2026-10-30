@@ -22,6 +22,7 @@ import { page } from 'vite-plus/test/browser'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
 
+import { adminListProjectInputSchema } from '@altstack/shared/schemas/admin-project'
 import { adminFeaturedUpdateInputSchema } from '@altstack/shared/schemas/featured'
 
 import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
@@ -143,6 +144,62 @@ function expectPreviewGrid() {
 	expect(rows.size).toBe(4)
 }
 describe('admin featured editor in Chromium', () => {
+	it('retains the candidate page and keyboard focus until the next page is ready', async () => {
+		const original = rpc.getMockImplementation()!
+		const { promise: pending, resolve: release } = Promise.withResolvers<void>()
+		rpc.mockImplementation((path, input) => {
+			if (path.join('/') !== 'admin/project/list') return original(path, input)
+			const {
+				query: { page: currentPage },
+			} = adminListProjectInputSchema.parse(input)
+			const result = {
+				projects: [candidates[currentPage === 1 ? 0 : 1]],
+				pagination: {
+					totalItems: 25,
+					hasPreviousPage: currentPage > 1,
+					hasNextPage: true,
+				},
+			}
+			return currentPage === 1
+				? Promise.resolve(result)
+				: pending.then(() => result)
+		})
+		await page.viewport(1280, 900)
+		await mount()
+		const next = within(
+			screen.getByRole('navigation', { name: 'Project search pagination' })
+		).getByRole<HTMLButtonElement>('button', { name: 'Next' })
+		next.focus()
+		fireEvent.click(next)
+		try {
+			await waitFor(() =>
+				expect(
+					rpc.mock.calls.some(
+						([path, input]) =>
+							path.join('/') === 'admin/project/list' &&
+							adminListProjectInputSchema.parse(input).query.page === 2
+					)
+				).toBe(true)
+			)
+			expect(next.isConnected).toBe(true)
+			expect(
+				within(
+					screen.getByRole('list', { name: 'Published project candidates' })
+				).getByText(candidates[0].name)
+			).toBeTruthy()
+			expect(document.activeElement).toBe(next)
+		} finally {
+			release()
+		}
+		await waitFor(() =>
+			expect(
+				within(
+					screen.getByRole('list', { name: 'Published project candidates' })
+				).getByText(candidates[1].name)
+			).toBeTruthy()
+		)
+		expect(document.activeElement).toBe(next)
+	})
 	it.each([320, 768, 1440])(
 		'fits the selection, search and 24-slot preview at %ipx in both themes',
 		async (width) => {

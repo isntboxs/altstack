@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useDeferredValue } from 'react'
 
 import { AUDIT_ACTIONS } from '@altstack/shared/constants'
 
@@ -39,6 +40,7 @@ import {
 	TableRow,
 } from '@altstack/ui/components/table'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	AdminEmpty,
 	AdminError,
@@ -52,7 +54,14 @@ import { adminActivitySearchSchema } from '#/features/admin-dashboard/search'
 
 export const Route = createFileRoute('/_main/admin/activity')({
 	validateSearch: adminActivitySearchSchema,
-	component: Activity,
+	component: () => (
+		<QueryBoundary
+			pending={<AdminPending />}
+			error={(_, retry) => <AdminError retry={retry} />}
+		>
+			<Activity />
+		</QueryBoundary>
+	),
 })
 const actionItems = [
 	{ value: 'all', label: 'All actions' },
@@ -67,9 +76,11 @@ const actionItems = [
 /** Renders recorded audit events with filters and pagination stored in the URL. */
 function Activity() {
 	const { auth } = Route.useRouteContext()
-	const search = Route.useSearch()
+	const search = useDeferredValue(Route.useSearch())
 	const navigate = Route.useNavigate()
-	const query = useQuery(dashboardQueries.activity(auth.user.id, search))
+	const query = useSuspenseQuery(
+		dashboardQueries.activity(auth.user.id, search)
+	)
 	const filtersKey = [
 		search.actorId,
 		search.projectId,
@@ -199,9 +210,7 @@ function Activity() {
 					</form>
 				</CardContent>
 			</Card>
-			{query.isPending ? (
-				<AdminPending />
-			) : query.isError ? (
+			{query.isError ? (
 				<AdminError retry={() => void query.refetch()} />
 			) : (
 				<>

@@ -11,7 +11,7 @@ import {
 	IconTags,
 	IconUserCheck,
 } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, linkOptions } from '@tanstack/react-router'
 import { useState } from 'react'
 
@@ -48,6 +48,7 @@ import {
 	TabsTrigger,
 } from '@altstack/ui/components/tabs'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	AdminError,
 	AdminPageHeader,
@@ -147,8 +148,20 @@ function reviewItems(data: Overview) {
 	].toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 }
 
-export function AdminOverview({ userId }: { userId: string }) {
-	const query = useQuery(dashboardQueries.overview(userId))
+export function AdminOverview(props: { userId: string }) {
+	return (
+		<QueryBoundary
+			resetKey={props.userId}
+			pending={<OverviewPending />}
+			error={(_, retry) => <AdminError retry={retry} />}
+		>
+			<OverviewContent {...props} />
+		</QueryBoundary>
+	)
+}
+
+function OverviewContent({ userId }: { userId: string }) {
+	const query = useSuspenseQuery(dashboardQueries.overview(userId))
 	const data = query.data
 	return (
 		<div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
@@ -165,45 +178,30 @@ export function AdminOverview({ userId }: { userId: string }) {
 					Create project
 				</Link>
 			</AdminPageHeader>
-			{query.isPending ? (
-				<OverviewPending />
-			) : !data ? (
-				<AdminError
-					fetching={query.isFetching}
-					retry={() => void query.refetch()}
-				/>
-			) : (
-				<>
-					<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
-						<p>
-							Last updated <AdminTime value={data.observedAt} relative />
-						</p>
-						<p>Automatically refreshes every minute</p>
-					</div>
-					{query.isError && (
-						<Alert variant="destructive">
-							<AlertTitle>Unable to refresh overview</AlertTitle>
-							<AlertDescription>
-								The last loaded data is still shown below. Use Refresh to try
-								again.
-							</AlertDescription>
-						</Alert>
-					)}
-					<div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-						<ReviewQueue data={data} />
-						<aside
-							aria-label="Catalog summary and tools"
-							className="grid min-w-0 items-start gap-6 md:grid-cols-2 xl:grid-cols-1"
-						>
-							<ProjectStatusChart
-								statuses={data.statuses}
-								counts={data.counts}
-							/>
-							<CatalogTools />
-						</aside>
-					</div>
-				</>
+			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
+				<p>
+					Last updated <AdminTime value={data.observedAt} relative />
+				</p>
+				<p>Automatically refreshes every minute</p>
+			</div>
+			{query.isError && (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to refresh overview</AlertTitle>
+					<AlertDescription>
+						The last loaded data is still shown below. Use Refresh to try again.
+					</AlertDescription>
+				</Alert>
 			)}
+			<div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+				<ReviewQueue data={data} />
+				<aside
+					aria-label="Catalog summary and tools"
+					className="grid min-w-0 items-start gap-6 md:grid-cols-2 xl:grid-cols-1"
+				>
+					<ProjectStatusChart statuses={data.statuses} counts={data.counts} />
+					<CatalogTools />
+				</aside>
+			</div>
 		</div>
 	)
 }

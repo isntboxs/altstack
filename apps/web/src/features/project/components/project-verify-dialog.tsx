@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+	useMutation,
+	useSuspenseQuery,
+	useQueryClient,
+} from '@tanstack/react-query'
 import { Link, useLocation, useRouter } from '@tanstack/react-router'
 import { useEffect, useId, useRef, useState } from 'react'
 
@@ -31,6 +35,7 @@ import {
 } from '@altstack/ui/components/select'
 import { Spinner } from '@altstack/ui/components/spinner'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import { SignInForm } from '#/components/sign-in-form'
 import { ownershipQueries } from '#/features/project/ownership'
 import { invalidateCatalog } from '#/utils/invalidate-catalog'
@@ -80,12 +85,29 @@ export function ProjectVerifyDialog({
 				</div>
 				{open &&
 					(userId ? (
-						<VerificationForm
-							key={`${projectId}:${userId}`}
-							projectId={projectId}
-							userId={userId}
-							onClose={() => onOpenChange(false)}
-						/>
+						<QueryBoundary
+							resetKey={`${projectId}:${userId}`}
+							pending={
+								<output className="flex items-center gap-2 text-sm">
+									<Spinner /> Loading your request…
+								</output>
+							}
+							error={(_, retry) => (
+								<div className="flex flex-col gap-3">
+									<p role="alert">Unable to load your request.</p>
+									<Button variant="outline" onClick={retry}>
+										Retry
+									</Button>
+								</div>
+							)}
+						>
+							<VerificationForm
+								key={`${projectId}:${userId}`}
+								projectId={projectId}
+								userId={userId}
+								onClose={() => onOpenChange(false)}
+							/>
+						</QueryBoundary>
 					) : (
 						<>
 							<p className="text-sm">
@@ -108,6 +130,67 @@ function VerificationForm({
 	userId: string
 	onClose: () => void
 }) {
+	const state = useVerificationState(userId, projectId)
+	const props = { projectId, userId, onClose, state }
+	if (state.data.membership || state.data.claim?.status === 'pending') {
+		return <VerificationFormContent {...props} />
+	}
+	return (
+		<QueryBoundary
+			pending={
+				<output className="flex items-center gap-2 text-sm">
+					<Spinner /> Checking GitHub access…
+				</output>
+			}
+			error={(_, retry) => (
+				<div className="flex flex-col gap-3">
+					<p role="alert">
+						Unable to check GitHub access. Retry before requesting a code.
+					</p>
+					<Button variant="outline" onClick={retry}>
+						Check GitHub again
+					</Button>
+				</div>
+			)}
+		>
+			<GithubVerificationForm {...props} />
+		</QueryBoundary>
+	)
+}
+
+function useVerificationState(userId: string, projectId: string) {
+	return useSuspenseQuery({
+		...ownershipQueries.state(userId, projectId),
+		retry: false,
+		refetchInterval: 15000,
+	})
+}
+
+function useGithubVerification(userId: string, projectId: string) {
+	return useSuspenseQuery(ownershipQueries.github(userId, projectId))
+}
+
+type VerificationFormProps = {
+	projectId: string
+	userId: string
+	onClose: () => void
+	state: ReturnType<typeof useVerificationState>
+}
+
+function GithubVerificationForm(props: VerificationFormProps) {
+	const github = useGithubVerification(props.userId, props.projectId)
+	return <VerificationFormContent {...props} github={github} />
+}
+
+function VerificationFormContent({
+	projectId,
+	userId,
+	onClose,
+	state,
+	github,
+}: VerificationFormProps & {
+	github?: ReturnType<typeof useGithubVerification>
+}) {
 	const id = useId()
 	const queryClient = useQueryClient()
 	const router = useRouter()
@@ -121,11 +204,6 @@ function VerificationForm({
 	const sending = useRef(false)
 	const queryOptions = ownershipQueries.state(userId, projectId)
 	const queryKey = queryOptions.queryKey
-	const state = useQuery({
-		...queryOptions,
-		retry: false,
-		refetchInterval: 15000,
-	})
 	const send = useMutation({
 		mutationFn: () =>
 			client.ownership.request({
@@ -149,24 +227,20 @@ function VerificationForm({
 		const timer = window.setInterval(() => setNow(Date.now()), 1000)
 		return () => window.clearInterval(timer)
 	}, [])
-	const selectedEmail = email ?? state.data?.claim?.email ?? ''
-	const selectedRole = role ?? state.data?.claim?.role ?? 'owner'
+	const selectedEmail = email ?? state.data.claim?.email ?? ''
+	const selectedRole = role ?? state.data.claim?.role ?? 'owner'
 	const currentChallenge = !editing
-		? (send.data ?? state.data?.claim?.challenge)
+		? (send.data ?? state.data.claim?.challenge)
 		: null
-	const resendAt = send.data?.resendAt ?? state.data?.claim?.challenge?.resendAt
+	const resendAt = send.data?.resendAt ?? state.data.claim?.challenge?.resendAt
 	const cooldown = resendAt
 		? Math.max(0, Math.ceil((resendAt.getTime() - now) / 1000))
 		: 0
 	const codeRef = useRef<HTMLInputElement>(null)
 	const emailRef = useRef<HTMLInputElement>(null)
 	const challengeId = currentChallenge?.challengeId
-	const membership = state.data?.membership
-	const claimStatus = state.data?.claim?.status
-	const github = useQuery({
-		...ownershipQueries.github(userId, projectId),
-		enabled: state.isSuccess && !membership && claimStatus !== 'pending',
-	})
+	const membership = state.data.membership
+	const claimStatus = state.data.claim?.status
 	const link = useMutation({
 		mutationFn: async () => {
 			const callback = new URL(href, window.location.origin)
@@ -186,29 +260,24 @@ function VerificationForm({
 		retry: false,
 	})
 	const githubBlocked =
-		github.isPending ||
+		!github ||
 		github.isError ||
 		github.data.status === 'denied' ||
 		github.data.status === 'disconnected'
 	useEffect(() => {
-		if (
-			state.isSuccess &&
-			!challengeId &&
-			!membership &&
-			claimStatus !== 'pending'
-		) {
+		if (!challengeId && !membership && claimStatus !== 'pending') {
 			emailRef.current?.focus()
 		}
-	}, [state.isSuccess, challengeId, membership, claimStatus])
+	}, [challengeId, membership, claimStatus])
 	useEffect(() => {
 		if (challengeId) codeRef.current?.focus()
 	}, [challengeId])
 	useEffect(() => {
-		if (state.data?.membership) {
+		if (state.data.membership) {
 			void invalidateCatalog(queryClient)
 			void router.invalidate()
 		}
-	}, [state.data?.membership, queryClient, router])
+	}, [state.data.membership, queryClient, router])
 	const expired = currentChallenge
 		? currentChallenge.expiresAt.getTime() <= now
 		: false
@@ -265,13 +334,6 @@ function VerificationForm({
 			sending.current = false
 		}
 	}
-	if (state.isPending) {
-		return (
-			<output className="flex items-center gap-2 text-sm">
-				<Spinner /> Loading your request…
-			</output>
-		)
-	}
 	if (state.isError) {
 		return (
 			<div className="flex flex-col gap-3">
@@ -325,22 +387,18 @@ function VerificationForm({
 		>
 			{!currentChallenge && (
 				<div className="flex flex-col gap-3">
-					{github.isPending ? (
-						<output className="flex items-center gap-2 text-sm">
-							<Spinner /> Checking GitHub access…
-						</output>
-					) : github.isError ? (
+					{github?.isError ? (
 						<Alert variant="destructive">
 							<AlertDescription>
 								Unable to check GitHub access. Retry before requesting a code.
 							</AlertDescription>
 						</Alert>
 					) : (
-						<ClaimGithubEvidenceView evidence={github.data} />
+						<ClaimGithubEvidenceView evidence={github?.data ?? null} />
 					)}
 					<div className="flex flex-wrap gap-2">
-						{github.data?.status !== 'verified' &&
-							github.data?.status !== 'limited' && (
+						{github?.data.status !== 'verified' &&
+							github?.data.status !== 'limited' && (
 								<Button
 									type="button"
 									variant="outline"
@@ -348,7 +406,7 @@ function VerificationForm({
 									onClick={() => link.mutate()}
 								>
 									{link.isPending && <Spinner />}
-									{github.data?.status === 'disconnected'
+									{github?.data.status === 'disconnected'
 										? 'Connect GitHub'
 										: 'Reconnect GitHub'}
 								</Button>
@@ -356,8 +414,8 @@ function VerificationForm({
 						<Button
 							type="button"
 							variant="ghost"
-							disabled={github.isFetching}
-							onClick={() => void github.refetch()}
+							disabled={!github || github.isFetching}
+							onClick={() => void github?.refetch()}
 						>
 							Check GitHub again
 						</Button>

@@ -6,9 +6,9 @@ import {
 	IconSearch,
 	IconX,
 } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 
 import {
 	Alert,
@@ -32,6 +32,7 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 
 import { ProjectLogo } from '#/components/project-media'
+import { QueryBoundary } from '#/components/query-boundary'
 import { adminProjectQueries } from '#/features/admin-projects/queries'
 
 export type SelectedProject = {
@@ -41,7 +42,41 @@ export type SelectedProject = {
 	status: string
 }
 
-export function CollectionProjectSelector({
+export function CollectionProjectSelector(
+	props: Parameters<typeof ProjectSelector>[0]
+) {
+	return (
+		<QueryBoundary
+			pending={<ProjectSearchPending />}
+			error={(_, retry) => (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to load projects</AlertTitle>
+					<AlertDescription>
+						<p>Please retry to find projects for this collection.</p>
+						<Button type="button" variant="outline" onClick={retry}>
+							Retry search
+						</Button>
+					</AlertDescription>
+				</Alert>
+			)}
+		>
+			<ProjectSelector {...props} />
+		</QueryBoundary>
+	)
+}
+
+function ProjectSearchPending() {
+	return (
+		<div className="flex flex-col gap-2">
+			<output className="sr-only">Loading projects…</output>
+			{[0, 1, 2].map((row) => (
+				<Skeleton key={row} className="h-14 w-full" />
+			))}
+		</div>
+	)
+}
+
+function ProjectSelector({
 	members,
 	target,
 	needsMainProject,
@@ -59,7 +94,8 @@ export function CollectionProjectSelector({
 	const [text, setText] = useState('')
 	const [search, setSearch] = useState('')
 	const [page, setPage] = useState(1)
-	const candidates = useQuery({
+	const [changing, startTransition] = useTransition()
+	const candidates = useSuspenseQuery({
 		...adminProjectQueries.list({
 			status: 'published',
 			name: search || undefined,
@@ -69,8 +105,17 @@ export function CollectionProjectSelector({
 		retry: false,
 	})
 	function submitSearch() {
-		setSearch(text.trim())
-		setPage(1)
+		startTransition(() => {
+			setSearch(text.trim())
+			setPage(1)
+		})
+	}
+	function clearSearch() {
+		setText('')
+		startTransition(() => {
+			setSearch('')
+			setPage(1)
+		})
 	}
 	function move(index: number, delta: number) {
 		const next = [...members]
@@ -242,7 +287,7 @@ export function CollectionProjectSelector({
 						<Button
 							type="button"
 							variant="outline"
-							disabled={busy || candidates.isFetching}
+							disabled={busy || changing || candidates.isFetching}
 							onClick={submitSearch}
 						>
 							Search
@@ -259,22 +304,10 @@ export function CollectionProjectSelector({
 							variant="ghost"
 							size="sm"
 							disabled={busy}
-							onClick={() => {
-								setText('')
-								setSearch('')
-								setPage(1)
-							}}
+							onClick={clearSearch}
 						>
 							Clear search
 						</Button>
-					</div>
-				)}
-				{candidates.isPending && (
-					<div className="flex flex-col gap-2">
-						<output className="sr-only">Loading projects…</output>
-						{[0, 1, 2].map((row) => (
-							<Skeleton key={row} className="h-14 w-full" />
-						))}
 					</div>
 				)}
 				{candidates.isError && (
@@ -294,10 +327,10 @@ export function CollectionProjectSelector({
 				)}
 				<ul
 					aria-label="Available projects"
-					aria-busy={candidates.isFetching}
+					aria-busy={changing || candidates.isFetching}
 					className="max-h-80 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border empty:hidden"
 				>
-					{candidates.data?.projects.map((p) => {
+					{candidates.data.projects.map((p) => {
 						const added = members.some((m) => m.id === p.id)
 						const main = target?.id === p.id
 						return (
@@ -344,7 +377,7 @@ export function CollectionProjectSelector({
 						)
 					})}
 				</ul>
-				{!candidates.isError && candidates.data?.projects.length === 0 && (
+				{!candidates.isError && candidates.data.projects.length === 0 && (
 					<Empty className="border py-6">
 						<EmptyHeader>
 							<EmptyTitle>No matching projects</EmptyTitle>
@@ -354,15 +387,7 @@ export function CollectionProjectSelector({
 							</EmptyDescription>
 						</EmptyHeader>
 						{search && (
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => {
-									setText('')
-									setSearch('')
-									setPage(1)
-								}}
-							>
+							<Button type="button" variant="outline" onClick={clearSearch}>
 								Clear search
 							</Button>
 						)}
@@ -375,40 +400,53 @@ export function CollectionProjectSelector({
 					>
 						Submit a missing project
 					</Link>
-					{candidates.data && (
-						<nav
-							aria-label="Project search pagination"
-							className="flex items-center gap-2"
+					<nav
+						aria-label="Project search pagination"
+						aria-busy={changing || candidates.isFetching}
+						className="flex items-center gap-2"
+					>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={busy || !candidates.data.pagination.hasPreviousPage}
+							className="aria-disabled:opacity-50"
+							aria-disabled={
+								busy ||
+								changing ||
+								candidates.isFetching ||
+								!candidates.data.pagination.hasPreviousPage
+							}
+							onClick={() => {
+								if (!changing && !candidates.isFetching) {
+									startTransition(() => setPage(page - 1))
+								}
+							}}
 						>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								disabled={
-									busy ||
-									candidates.isFetching ||
-									!candidates.data.pagination.hasPreviousPage
+							Previous
+						</Button>
+						<span className="text-xs text-muted-foreground">Page {page}</span>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={busy || !candidates.data.pagination.hasNextPage}
+							className="aria-disabled:opacity-50"
+							aria-disabled={
+								busy ||
+								changing ||
+								candidates.isFetching ||
+								!candidates.data.pagination.hasNextPage
+							}
+							onClick={() => {
+								if (!changing && !candidates.isFetching) {
+									startTransition(() => setPage(page + 1))
 								}
-								onClick={() => setPage(page - 1)}
-							>
-								Previous
-							</Button>
-							<span className="text-xs text-muted-foreground">Page {page}</span>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								disabled={
-									busy ||
-									candidates.isFetching ||
-									!candidates.data.pagination.hasNextPage
-								}
-								onClick={() => setPage(page + 1)}
-							>
-								Next
-							</Button>
-						</nav>
-					)}
+							}}
+						>
+							Next
+						</Button>
+					</nav>
 				</div>
 			</section>
 		</div>

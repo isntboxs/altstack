@@ -6,9 +6,13 @@ import {
 	IconCheck,
 	IconX,
 } from '@tabler/icons-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+	useMutation,
+	useSuspenseQuery,
+	useQueryClient,
+} from '@tanstack/react-query'
 import { Link, useRouteContext } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useDeferredValue } from 'react'
 
 import {
 	Alert,
@@ -48,6 +52,7 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
+import { QueryBoundary } from '#/components/query-boundary'
 import {
 	AdminEmpty,
 	AdminError,
@@ -106,15 +111,40 @@ function VerificationNotes({
 			</FieldDescription>
 			{invalid && (
 				<FieldError id={`${id}-error`}>
-					Enter at least 20 characters or clear this optional note when GitHub
-					access is verified.
+					{required
+						? 'Enter at least 20 characters to explain how you verified this representative.'
+						: 'Enter at least 20 characters or clear this optional note when GitHub access is verified.'}
 				</FieldError>
 			)}
 		</Field>
 	)
 }
 
-export function ClaimInbox({
+export function ClaimInbox(props: Parameters<typeof ClaimInboxContent>[0]) {
+	const page = useDeferredValue(props.page)
+	const claimId = useDeferredValue(props.claimId)
+	return (
+		<QueryBoundary
+			pending={<OwnershipPending />}
+			error={(_, retry) => <AdminError retry={retry} />}
+		>
+			<ClaimInboxContent {...props} page={page} claimId={claimId} />
+		</QueryBoundary>
+	)
+}
+
+function OwnershipPending() {
+	return (
+		<div className="flex flex-col gap-4">
+			<output className="sr-only">Loading ownership requests</output>
+			{[0, 1].map((id) => (
+				<Skeleton key={id} className="h-64 w-full rounded-xl" />
+			))}
+		</div>
+	)
+}
+
+function ClaimInboxContent({
 	page,
 	claimId,
 	onPageChange,
@@ -125,7 +155,7 @@ export function ClaimInbox({
 }) {
 	const { auth } = useRouteContext({ from: '/_main' })
 	const queryClient = useQueryClient()
-	const query = useQuery({
+	const query = useSuspenseQuery({
 		...ownershipQueries.inbox(auth.user.id, page, claimId),
 		retry: false,
 	})
@@ -134,7 +164,7 @@ export function ClaimInbox({
 		id: string
 		decision: 'approve' | 'reject'
 	} | null>(null)
-	const selected = query.data?.claims.find((claim) => claim.id === decision?.id)
+	const selected = query.data.claims.find((claim) => claim.id === decision?.id)
 	const noteLength = selected ? (notes[selected.id]?.trim().length ?? 0) : 0
 	const review = useMutation({
 		mutationFn: (input: {
@@ -182,7 +212,7 @@ export function ClaimInbox({
 				<div className="flex min-w-0 flex-col gap-1">
 					<h2 className="text-sm font-medium">
 						{claimId ? 'Selected request' : 'Awaiting review'}
-						{query.data ? ` (${query.data.pagination.totalItems})` : ''}
+						{` (${query.data.pagination.totalItems})`}
 					</h2>
 					<p className="text-xs text-muted-foreground">
 						Email-confirmed requests you are eligible to review
@@ -199,192 +229,174 @@ export function ClaimInbox({
 					retry={() => void query.refetch()}
 				/>
 			)}
-			{query.isPending && (
-				<div className="flex flex-col gap-4">
-					<output className="sr-only">Loading ownership requests</output>
-					{[0, 1].map((id) => (
-						<Skeleton key={id} className="h-64 w-full rounded-xl" />
-					))}
+			{query.data.claims.length === 0 && (
+				<div className="rounded-xl border bg-card py-8">
+					<AdminEmpty
+						title="No requests awaiting your review"
+						description={
+							claimId
+								? 'This request may already be reviewed or no longer eligible. Return to all requests to continue.'
+								: 'Email confirmed requests appear here when you are eligible to review them.'
+						}
+					/>
 				</div>
 			)}
-			{query.data && (
-				<>
-					{query.data.claims.length === 0 && (
-						<div className="rounded-xl border bg-card py-8">
-							<AdminEmpty
-								title="No requests awaiting your review"
-								description={
-									claimId
-										? 'This request may already be reviewed or no longer eligible. Return to all requests to continue.'
-										: 'Email confirmed requests appear here when you are eligible to review them.'
-								}
-							/>
+			{query.data.claims.map((claim) => (
+				<Card key={claim.id} className="min-w-0">
+					<CardHeader className="border-b">
+						<CardTitle>
+							<h2 className="wrap-anywhere">{claim.projectName}</h2>
+						</CardTitle>
+						<CardDescription>Representative access request</CardDescription>
+						<CardAction>
+							<Badge variant="secondary">Pending</Badge>
+						</CardAction>
+					</CardHeader>
+					<CardContent className="flex min-w-0 flex-col gap-5">
+						<div className="flex min-w-0 items-start gap-3">
+							<span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+								<IconUserCheck className="size-5" aria-hidden="true" />
+							</span>
+							<div className="flex min-w-0 flex-1 flex-col gap-1">
+								<p className="text-sm font-medium wrap-anywhere">
+									{claim.name}
+								</p>
+								<p className="text-sm wrap-anywhere text-muted-foreground">
+									{claim.email}
+								</p>
+								<div className="mt-1 flex flex-wrap items-center gap-2">
+									<Badge variant="outline">
+										{claim.role === 'owner' ? 'Owner' : 'Maintainer'} access
+									</Badge>
+									<Badge variant="outline">Email confirmed</Badge>
+								</div>
+							</div>
 						</div>
-					)}
-					{query.data.claims.map((claim) => (
-						<Card key={claim.id} className="min-w-0">
-							<CardHeader className="border-b">
-								<CardTitle>
-									<h2 className="wrap-anywhere">{claim.projectName}</h2>
-								</CardTitle>
-								<CardDescription>Representative access request</CardDescription>
-								<CardAction>
-									<Badge variant="secondary">Pending</Badge>
-								</CardAction>
-							</CardHeader>
-							<CardContent className="flex min-w-0 flex-col gap-5">
-								<div className="flex min-w-0 items-start gap-3">
-									<span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-										<IconUserCheck className="size-5" aria-hidden="true" />
-									</span>
-									<div className="flex min-w-0 flex-1 flex-col gap-1">
-										<p className="text-sm font-medium wrap-anywhere">
-											{claim.name}
+						<p className="text-xs text-muted-foreground">
+							Requested <AdminTime value={claim.requestedAt} relative />
+						</p>
+						<Collapsible
+							key={`${claim.id}:${claimId ?? ''}`}
+							defaultOpen={
+								!!claimId ||
+								query.data.claims.length === 1 ||
+								auth.user.role !== 'admin'
+							}
+							className="flex flex-col gap-4"
+						>
+							<CollapsibleTrigger
+								render={
+									<Button variant="outline" className="group w-full sm:w-fit" />
+								}
+							>
+								<span>Verification & review</span>
+								<IconChevronDown
+									data-icon="inline-end"
+									className="group-aria-expanded:rotate-180"
+								/>
+							</CollapsibleTrigger>
+							<CollapsibleContent className="flex min-w-0 flex-col gap-5">
+								<div className="grid min-w-0 gap-5 lg:grid-cols-2">
+									<div className="flex min-w-0 flex-col gap-3">
+										<h3 className="text-sm font-medium">Repository evidence</h3>
+										<ClaimGithubEvidenceView evidence={claim.githubEvidence} />
+										<p className="text-xs leading-relaxed text-muted-foreground">
+											Approve only after confirming that this person represents
+											the project. Approval grants editing access and permission
+											to review future requests.
 										</p>
-										<p className="text-sm wrap-anywhere text-muted-foreground">
-											{claim.email}
-										</p>
-										<div className="mt-1 flex flex-wrap items-center gap-2">
-											<Badge variant="outline">
-												{claim.role === 'owner' ? 'Owner' : 'Maintainer'} access
-											</Badge>
-											<Badge variant="outline">Email confirmed</Badge>
-										</div>
+									</div>
+									<VerificationNotes
+										id={`evidence-${claim.id}`}
+										label={`Independent verification notes for ${claim.projectName}`}
+										value={notes[claim.id] ?? ''}
+										required={claim.githubEvidence?.status !== 'verified'}
+										disabled={review.isPending}
+										onChange={(value) => updateNote(claim.id, value)}
+									/>
+								</div>
+								<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+									<div className="flex flex-wrap items-center gap-2">
+										<Link
+											to="/$slug"
+											params={{ slug: claim.projectSlug }}
+											className={buttonVariants({
+												variant: 'outline',
+												size: 'sm',
+											})}
+										>
+											<IconExternalLink data-icon="inline-start" />
+											View project
+										</Link>
+										{auth.user.role === 'admin' && (
+											<Link
+												to="/projects/$id/edit"
+												params={{ id: claim.projectId }}
+												className={buttonVariants({
+													variant: 'outline',
+													size: 'sm',
+												})}
+											>
+												<IconPencil data-icon="inline-start" />
+												Project details
+											</Link>
+										)}
+									</div>
+									<div className="ml-auto flex items-center gap-2">
+										<Button
+											variant="outline"
+											disabled={review.isPending}
+											onClick={() => {
+												review.reset()
+												setDecision({ id: claim.id, decision: 'reject' })
+											}}
+										>
+											<IconX data-icon="inline-start" />
+											Decline
+										</Button>
+										<Button
+											disabled={review.isPending}
+											onClick={() => {
+												review.reset()
+												setDecision({ id: claim.id, decision: 'approve' })
+											}}
+										>
+											<IconCheck data-icon="inline-start" />
+											Approve
+										</Button>
 									</div>
 								</div>
-								<p className="text-xs text-muted-foreground">
-									Requested <AdminTime value={claim.requestedAt} relative />
-								</p>
-								<Collapsible
-									key={`${claim.id}:${claimId ?? ''}`}
-									defaultOpen={
-										!!claimId ||
-										query.data.claims.length === 1 ||
-										auth.user.role !== 'admin'
-									}
-									className="flex flex-col gap-4"
-								>
-									<CollapsibleTrigger
-										render={
-											<Button
-												variant="outline"
-												className="group w-full sm:w-fit"
-											/>
-										}
-									>
-										<span>Verification & review</span>
-										<IconChevronDown
-											data-icon="inline-end"
-											className="group-aria-expanded:rotate-180"
-										/>
-									</CollapsibleTrigger>
-									<CollapsibleContent className="flex min-w-0 flex-col gap-5">
-										<div className="grid min-w-0 gap-5 lg:grid-cols-2">
-											<div className="flex min-w-0 flex-col gap-3">
-												<h3 className="text-sm font-medium">
-													Repository evidence
-												</h3>
-												<ClaimGithubEvidenceView
-													evidence={claim.githubEvidence}
-												/>
-												<p className="text-xs leading-relaxed text-muted-foreground">
-													Approve only after confirming that this person
-													represents the project. Approval grants editing access
-													and permission to review future requests.
-												</p>
-											</div>
-											<VerificationNotes
-												id={`evidence-${claim.id}`}
-												label={`Independent verification notes for ${claim.projectName}`}
-												value={notes[claim.id] ?? ''}
-												disabled={review.isPending}
-												onChange={(value) => updateNote(claim.id, value)}
-											/>
-										</div>
-										<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-											<div className="flex flex-wrap items-center gap-2">
-												<Link
-													to="/$slug"
-													params={{ slug: claim.projectSlug }}
-													className={buttonVariants({
-														variant: 'outline',
-														size: 'sm',
-													})}
-												>
-													<IconExternalLink data-icon="inline-start" />
-													View project
-												</Link>
-												{auth.user.role === 'admin' && (
-													<Link
-														to="/projects/$id/edit"
-														params={{ id: claim.projectId }}
-														className={buttonVariants({
-															variant: 'outline',
-															size: 'sm',
-														})}
-													>
-														<IconPencil data-icon="inline-start" />
-														Project details
-													</Link>
-												)}
-											</div>
-											<div className="ml-auto flex items-center gap-2">
-												<Button
-													variant="outline"
-													disabled={review.isPending}
-													onClick={() => {
-														review.reset()
-														setDecision({ id: claim.id, decision: 'reject' })
-													}}
-												>
-													<IconX data-icon="inline-start" />
-													Decline
-												</Button>
-												<Button
-													disabled={review.isPending}
-													onClick={() => {
-														review.reset()
-														setDecision({ id: claim.id, decision: 'approve' })
-													}}
-												>
-													<IconCheck data-icon="inline-start" />
-													Approve
-												</Button>
-											</div>
-										</div>
-									</CollapsibleContent>
-								</Collapsible>
-							</CardContent>
-						</Card>
-					))}
-					<nav
-						aria-label="Ownership request pages"
-						className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-3"
-					>
-						<p className="mr-auto text-xs text-muted-foreground">
-							{query.data.pagination.totalItems}{' '}
-							{query.data.pagination.totalItems === 1 ? 'request' : 'requests'}{' '}
-							· Page {page}
-						</p>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={page <= 1 || query.isFetching}
-							onClick={() => onPageChange(page - 1)}
-						>
-							Previous requests
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={!query.data.pagination.hasNextPage || query.isFetching}
-							onClick={() => onPageChange(page + 1)}
-						>
-							Next requests
-						</Button>
-					</nav>
-				</>
-			)}
+							</CollapsibleContent>
+						</Collapsible>
+					</CardContent>
+				</Card>
+			))}
+			<nav
+				aria-label="Ownership request pages"
+				className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-3"
+			>
+				<p className="mr-auto text-xs text-muted-foreground">
+					{query.data.pagination.totalItems}{' '}
+					{query.data.pagination.totalItems === 1 ? 'request' : 'requests'} ·
+					Page {page}
+				</p>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={page <= 1 || query.isFetching}
+					onClick={() => onPageChange(page - 1)}
+				>
+					Previous requests
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!query.data.pagination.hasNextPage || query.isFetching}
+					onClick={() => onPageChange(page + 1)}
+				>
+					Next requests
+				</Button>
+			</nav>
 			<p className="text-xs leading-relaxed text-muted-foreground">
 				Admins review a project’s first representative; existing representatives
 				review additional requests. Your own requests cannot be reviewed here.

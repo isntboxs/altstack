@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type * as RouterModule from '@tanstack/react-router'
 import {
 	act,
 	cleanup,
@@ -23,8 +24,12 @@ const { rpc, invalidateRouter } = vi.hoisted(() => {
 		invalidateRouter: vi.fn(),
 	}
 })
-vi.mock('@tanstack/react-router', () => {
+vi.mock('@tanstack/react-router', async () => {
+	const actual = await vi.importActual<typeof RouterModule>(
+		'@tanstack/react-router'
+	)
 	return {
+		...actual,
 		useRouter: () => {
 			return { invalidate: invalidateRouter }
 		},
@@ -71,7 +76,7 @@ afterEach(() => {
 function view() {
 	const onClose = vi.fn()
 	const onSuccess = vi.fn()
-	render(
+	const rendered = render(
 		<QueryClientProvider client={queryClient}>
 			<ResubmitSubmissionDialog
 				id={id}
@@ -81,12 +86,34 @@ function view() {
 			/>
 		</QueryClientProvider>
 	)
-	return { onClose, onSuccess }
+	return { ...rendered, onClose, onSuccess }
 }
 async function ready() {
 	await screen.findByLabelText('Project name')
 }
 describe('private Edit & Resubmit dialog', () => {
+	it('reads fresh feedback and revision when reopened without a duplicate read on reveal', async () => {
+		const first = view()
+		await ready()
+		expect(rpc).toHaveBeenCalledTimes(1)
+		first.unmount()
+		rpc.mockResolvedValueOnce({
+			...intake,
+			revision: '456',
+			rejectionReason: 'Updated review feedback.',
+		})
+		const second = view()
+		await ready()
+		expect(screen.getByText('Updated review feedback.')).toBeTruthy()
+		expect(rpc).toHaveBeenCalledTimes(2)
+		fireEvent.click(screen.getByRole('button', { name: 'Resubmit project' }))
+		await waitFor(() => expect(second.onSuccess).toHaveBeenCalledTimes(1))
+		expect(
+			rpc.mock.calls.find(
+				([path]) => path.join('/') === 'submission/resubmit'
+			)?.[1]
+		).toMatchObject({ params: { id }, body: { revision: '456' } })
+	})
 	it('prefills intake and private feedback, sends only allowed fields/revision and refreshes the table route in place', async () => {
 		const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
 		const { onSuccess } = view()
