@@ -67,6 +67,7 @@ function Home() {
 			<ProjectListSection
 				data={data}
 				pageLinkOptions={homeProjectPageLink}
+				scrollTargetId="catalogue"
 				emptyAction={
 					hasFilters ? (
 						<Link

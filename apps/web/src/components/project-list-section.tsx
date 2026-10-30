@@ -6,7 +6,7 @@ import {
 } from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
 import { Link, createLink } from '@tanstack/react-router'
-import type { FC, ReactNode } from 'react'
+import type { FC, MouseEvent, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -232,17 +232,41 @@ export const ProjectListSection = ({
 	emptyMessage,
 	emptyAction,
 	pageLinkOptions,
+	scrollTargetId,
 }: {
 	data: ORPCRouterOutputs['project']['search']
 	emptyMessage: string
 	emptyAction?: ReactNode
 	pageLinkOptions: (page: number) => ProjectPageLinkOptions
+	scrollTargetId?: string
 }) => {
 	const { pagination } = data
 	const currentPage = pagination.page || 1
 	const totalPages = pagination.totalPages
 	const outOfRange = currentPage > Math.max(1, totalPages)
 	const paginationItems = getPaginationItems(currentPage, totalPages)
+	function handlePageClick(event: MouseEvent<HTMLAnchorElement>) {
+		if (
+			!scrollTargetId ||
+			event.defaultPrevented ||
+			event.button !== 0 ||
+			event.metaKey ||
+			event.ctrlKey ||
+			event.shiftKey ||
+			event.altKey ||
+			event.currentTarget.getAttribute('aria-current') === 'page'
+		) {
+			return
+		}
+
+		document.getElementById(scrollTargetId)?.scrollIntoView({
+			block: 'start',
+			behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+				? 'instant'
+				: 'smooth',
+		})
+	}
+
 	return (
 		<section
 			aria-label="Project results"
@@ -262,6 +286,7 @@ export const ProjectListSection = ({
 						<Link
 							{...pageLinkOptions(1)}
 							resetScroll={false}
+							onClick={handlePageClick}
 							className="inline-flex items-center underline underline-offset-4"
 						>
 							First page
@@ -289,6 +314,7 @@ export const ProjectListSection = ({
 								<CustomPaginationPrevious
 									{...pageLinkOptions(currentPage - 1)}
 									resetScroll={false}
+									onClick={handlePageClick}
 									viewTransition
 								/>
 							) : (
@@ -309,6 +335,7 @@ export const ProjectListSection = ({
 									<CustomPaginationLink
 										{...pageLinkOptions(item)}
 										resetScroll={false}
+										onClick={handlePageClick}
 										isActive={item === currentPage}
 										viewTransition
 									>
@@ -322,6 +349,7 @@ export const ProjectListSection = ({
 								<CustomPaginationNext
 									{...pageLinkOptions(currentPage + 1)}
 									resetScroll={false}
+									onClick={handlePageClick}
 									viewTransition
 								/>
 							) : (
