@@ -151,7 +151,7 @@ afterEach(() => {
 	clients.length = 0
 	vi.restoreAllMocks()
 })
-async function mount(existing?: typeof initial) {
+async function mount(existing?: typeof initial, waitForCandidates = true) {
 	const client = new QueryClient({
 		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
 	})
@@ -177,7 +177,9 @@ async function mount(existing?: typeof initial) {
 			<RouterProvider router={router} />
 		</QueryClientProvider>
 	)
-	await screen.findAllByRole('button', { name: 'Add member' })
+	if (waitForCandidates) {
+		await screen.findAllByRole('button', { name: 'Add member' })
+	}
 	return router
 }
 
@@ -204,6 +206,60 @@ async function mountList() {
 	)
 	await screen.findByRole('link', { name: initial.name })
 }
+
+describe('collection project search recovery', () => {
+	it('keeps main project and member controls mounted through pending, error and retry states', async () => {
+		const pending = Promise.withResolvers<unknown>()
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation((path, input) =>
+			path.join('/') === 'candidates' ? pending.promise : original(path, input)
+		)
+		await mount(
+			{
+				...initial,
+				kind: 'alternatives',
+				sourceRepositoryUrl: null,
+				mainProjectId: target.id,
+				mainProject: target,
+			},
+			false
+		)
+		const members = screen.getByRole('region', { name: /Members/ })
+		const removeSecond = within(members).getByRole('button', {
+			name: 'Remove Second tool',
+		})
+		expect(screen.getByText(target.name)).toBeTruthy()
+		expect(screen.getByText('Loading projects…')).toBeTruthy()
+		fireEvent.click(
+			within(members).getByRole('button', { name: 'Move Second tool up' })
+		)
+		expect(within(members).getAllByRole('listitem')[0].textContent).toContain(
+			second.name
+		)
+		pending.reject(new Error('Search unavailable'))
+		await screen.findByText('Unable to load projects')
+		expect(removeSecond.isConnected).toBe(true)
+		fireEvent.click(
+			within(members).getByRole('button', { name: 'Remove First tool' })
+		)
+		expect(within(members).getAllByRole('listitem')).toHaveLength(1)
+		expect(within(members).getByText(second.name)).toBeTruthy()
+		expect(screen.getByText(target.name)).toBeTruthy()
+		rpc.mockImplementation(original)
+		fireEvent.click(screen.getByRole('button', { name: 'Retry search' }))
+		await screen.findAllByRole('button', { name: 'Add member' })
+		expect(screen.queryByText('Unable to load projects')).toBeNull()
+		expect(removeSecond.isConnected).toBe(true)
+		expect(within(members).getAllByRole('listitem')).toHaveLength(1)
+		expect(within(members).getByText(second.name)).toBeTruthy()
+		expect(
+			rpc.mock.calls.filter(([path]) => path.join('/') === 'candidates')
+		).toHaveLength(2)
+		expect(
+			rpc.mock.calls.some(([path]) => path.join('/').includes('update'))
+		).toBe(false)
+	})
+})
 
 describe('collection admin list recovery', () => {
 	it('offers public-page links only for published collections', async () => {

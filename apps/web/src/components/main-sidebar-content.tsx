@@ -8,6 +8,7 @@ import {
 	IconLayoutDashboard,
 	IconPackage,
 	IconPlus,
+	IconRefresh,
 	IconServer,
 	IconStar,
 	IconTags,
@@ -228,7 +229,7 @@ function AdminNavigation() {
 		<QueryBoundary
 			resetKey={auth.user.id}
 			pending={<AdminNavigationLinks />}
-			error={() => <AdminNavigationLinks />}
+			error={(_, retry) => <AdminNavigationLinks onRetryCounts={retry} />}
 		>
 			<AdminNavigationCounts userId={auth.user.id} />
 		</QueryBoundary>
@@ -240,7 +241,13 @@ function AdminNavigationCounts({ userId }: { userId: string }) {
 	return <AdminNavigationLinks counts={query.data.counts} />
 }
 
-function AdminNavigationLinks({ counts }: { counts?: Record<string, number> }) {
+function AdminNavigationLinks({
+	counts,
+	onRetryCounts,
+}: {
+	counts?: Record<string, number>
+	onRetryCounts?: () => void
+}) {
 	return (
 		<>
 			<NavigationGroup label="Workspace" collapsible={false}>
@@ -256,6 +263,18 @@ function AdminNavigationLinks({ counts }: { counts?: Record<string, number> }) {
 						count={counts?.[item.count] ?? null}
 					/>
 				))}
+				{onRetryCounts && (
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							type="button"
+							onClick={onRetryCounts}
+							tooltip="Retry counts"
+						>
+							<IconRefresh aria-hidden="true" />
+							<span>Retry counts</span>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				)}
 			</NavigationGroup>
 			<NavigationGroup label="Catalog">
 				{catalog.map((item) => (

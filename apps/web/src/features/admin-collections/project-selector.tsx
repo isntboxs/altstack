@@ -42,9 +42,7 @@ export type SelectedProject = {
 	status: string
 }
 
-export function CollectionProjectSelector(
-	props: Parameters<typeof ProjectSelector>[0]
-) {
+function ProjectSearch(props: Parameters<typeof CollectionProjectSelector>[0]) {
 	return (
 		<QueryBoundary
 			pending={<ProjectSearchPending />}
@@ -60,7 +58,7 @@ export function CollectionProjectSelector(
 				</Alert>
 			)}
 		>
-			<ProjectSelector {...props} />
+			<ProjectSearchResults {...props} />
 		</QueryBoundary>
 	)
 }
@@ -76,7 +74,7 @@ function ProjectSearchPending() {
 	)
 }
 
-function ProjectSelector({
+export function CollectionProjectSelector({
 	members,
 	target,
 	needsMainProject,
@@ -91,32 +89,6 @@ function ProjectSelector({
 	onMembersChange: (members: Array<SelectedProject>) => void
 	onTargetChange: (project: SelectedProject) => void
 }) {
-	const [text, setText] = useState('')
-	const [search, setSearch] = useState('')
-	const [page, setPage] = useState(1)
-	const [changing, startTransition] = useTransition()
-	const candidates = useSuspenseQuery({
-		...adminProjectQueries.list({
-			status: 'published',
-			name: search || undefined,
-			page,
-			limit: 12,
-		}),
-		retry: false,
-	})
-	function submitSearch() {
-		startTransition(() => {
-			setSearch(text.trim())
-			setPage(1)
-		})
-	}
-	function clearSearch() {
-		setText('')
-		startTransition(() => {
-			setSearch('')
-			setPage(1)
-		})
-	}
 	function move(index: number, delta: number) {
 		const next = [...members]
 		;[next[index], next[index + delta]] = [next[index + delta], next[index]]
@@ -257,198 +229,242 @@ function ProjectSelector({
 					</AlertDescription>
 				</Alert>
 			)}
-			<section
-				aria-label="Project selector"
-				className="flex min-w-0 flex-col gap-3 border-t pt-5"
-			>
-				<Field>
-					<FieldLabel htmlFor="collection-project-search">
-						Search published projects
-					</FieldLabel>
-					<div className="flex gap-2">
-						<InputGroup>
-							<InputGroupAddon>
-								<IconSearch aria-hidden="true" />
-							</InputGroupAddon>
-							<InputGroupInput
-								id="collection-project-search"
-								placeholder="Search by project name…"
-								value={text}
-								disabled={busy}
-								onChange={(e) => setText(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter') {
-										e.preventDefault()
-										submitSearch()
-									}
-								}}
-							/>
-						</InputGroup>
+			<ProjectSearch
+				members={members}
+				target={target}
+				needsMainProject={needsMainProject}
+				busy={busy}
+				onMembersChange={onMembersChange}
+				onTargetChange={onTargetChange}
+			/>
+		</div>
+	)
+}
+
+function ProjectSearchResults({
+	members,
+	target,
+	needsMainProject,
+	busy,
+	onMembersChange,
+	onTargetChange,
+}: Parameters<typeof CollectionProjectSelector>[0]) {
+	const [text, setText] = useState('')
+	const [search, setSearch] = useState('')
+	const [page, setPage] = useState(1)
+	const [changing, startTransition] = useTransition()
+	const candidates = useSuspenseQuery({
+		...adminProjectQueries.list({
+			status: 'published',
+			name: search || undefined,
+			page,
+			limit: 12,
+		}),
+		retry: false,
+	})
+	function submitSearch() {
+		startTransition(() => {
+			setSearch(text.trim())
+			setPage(1)
+		})
+	}
+	function clearSearch() {
+		setText('')
+		startTransition(() => {
+			setSearch('')
+			setPage(1)
+		})
+	}
+	return (
+		<section
+			aria-label="Project selector"
+			className="flex min-w-0 flex-col gap-3 border-t pt-5"
+		>
+			<Field>
+				<FieldLabel htmlFor="collection-project-search">
+					Search published projects
+				</FieldLabel>
+				<div className="flex gap-2">
+					<InputGroup>
+						<InputGroupAddon>
+							<IconSearch aria-hidden="true" />
+						</InputGroupAddon>
+						<InputGroupInput
+							id="collection-project-search"
+							placeholder="Search by project name…"
+							value={text}
+							disabled={busy}
+							onChange={(e) => setText(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault()
+									submitSearch()
+								}
+							}}
+						/>
+					</InputGroup>
+					<Button
+						type="button"
+						variant="outline"
+						disabled={busy || changing || candidates.isFetching}
+						onClick={submitSearch}
+					>
+						Search
+					</Button>
+				</div>
+			</Field>
+			{search && (
+				<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+					<span className="min-w-0 wrap-anywhere">Results for “{search}”</span>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						disabled={busy}
+						onClick={clearSearch}
+					>
+						Clear search
+					</Button>
+				</div>
+			)}
+			{candidates.isError && (
+				<Alert variant="destructive">
+					<AlertTitle>Unable to load projects</AlertTitle>
+					<AlertDescription>
+						<p>Please retry to find projects for this collection.</p>
 						<Button
 							type="button"
 							variant="outline"
-							disabled={busy || changing || candidates.isFetching}
-							onClick={submitSearch}
+							onClick={() => void candidates.refetch()}
 						>
-							Search
+							Retry search
 						</Button>
-					</div>
-				</Field>
-				{search && (
-					<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-						<span className="min-w-0 wrap-anywhere">
-							Results for “{search}”
-						</span>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							disabled={busy}
-							onClick={clearSearch}
-						>
-							Clear search
-						</Button>
-					</div>
-				)}
-				{candidates.isError && (
-					<Alert variant="destructive">
-						<AlertTitle>Unable to load projects</AlertTitle>
-						<AlertDescription>
-							<p>Please retry to find projects for this collection.</p>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => void candidates.refetch()}
-							>
-								Retry search
-							</Button>
-						</AlertDescription>
-					</Alert>
-				)}
-				<ul
-					aria-label="Available projects"
-					aria-busy={changing || candidates.isFetching}
-					className="max-h-80 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border empty:hidden"
-				>
-					{candidates.data.projects.map((p) => {
-						const added = members.some((m) => m.id === p.id)
-						const main = target?.id === p.id
-						return (
-							<li key={p.id} className="flex flex-wrap items-center gap-3 p-3">
-								<ProjectLogo
-									src={p.logo}
-									name={p.name}
-									className="size-8 shrink-0"
-								/>
-								<div className="min-w-0 flex-1">
-									<p className="text-sm font-medium wrap-anywhere">{p.name}</p>
-									<p className="line-clamp-1 text-xs wrap-anywhere text-muted-foreground">
-										{p.description}
-									</p>
-								</div>
-								<div className="ml-auto flex flex-wrap items-center gap-2">
-									{needsMainProject && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											disabled={busy || added || main}
-											onClick={() => onTargetChange(p)}
-										>
-											{main ? 'Main project' : 'Set main project'}
-										</Button>
-									)}
+					</AlertDescription>
+				</Alert>
+			)}
+			<ul
+				aria-label="Available projects"
+				aria-busy={changing || candidates.isFetching}
+				className="max-h-80 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border empty:hidden"
+			>
+				{candidates.data.projects.map((p) => {
+					const added = members.some((m) => m.id === p.id)
+					const main = target?.id === p.id
+					return (
+						<li key={p.id} className="flex flex-wrap items-center gap-3 p-3">
+							<ProjectLogo
+								src={p.logo}
+								name={p.name}
+								className="size-8 shrink-0"
+							/>
+							<div className="min-w-0 flex-1">
+								<p className="text-sm font-medium wrap-anywhere">{p.name}</p>
+								<p className="line-clamp-1 text-xs wrap-anywhere text-muted-foreground">
+									{p.description}
+								</p>
+							</div>
+							<div className="ml-auto flex flex-wrap items-center gap-2">
+								{needsMainProject && (
 									<Button
 										type="button"
-										variant="outline"
+										variant="ghost"
 										size="sm"
-										disabled={busy || members.length >= 100 || added || main}
-										onClick={() => onMembersChange([...members, p])}
+										disabled={busy || added || main}
+										onClick={() => onTargetChange(p)}
 									>
-										{added ? (
-											<IconCheck data-icon="inline-start" />
-										) : (
-											<IconPlus data-icon="inline-start" />
-										)}
-										{added ? 'Added' : 'Add member'}
+										{main ? 'Main project' : 'Set main project'}
 									</Button>
-								</div>
-							</li>
-						)
-					})}
-				</ul>
-				{!candidates.isError && candidates.data.projects.length === 0 && (
-					<Empty className="border py-6">
-						<EmptyHeader>
-							<EmptyTitle>No matching projects</EmptyTitle>
-							<EmptyDescription>
-								Try a different name. Only published projects can be added to a
-								collection.
-							</EmptyDescription>
-						</EmptyHeader>
-						{search && (
-							<Button type="button" variant="outline" onClick={clearSearch}>
-								Clear search
-							</Button>
-						)}
-					</Empty>
-				)}
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<Link
-						to="/submit"
-						className="rounded-sm text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-					>
-						Submit a missing project
-					</Link>
-					<nav
-						aria-label="Project search pagination"
-						aria-busy={changing || candidates.isFetching}
-						className="flex items-center gap-2"
-					>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={busy || !candidates.data.pagination.hasPreviousPage}
-							className="aria-disabled:opacity-50"
-							aria-disabled={
-								busy ||
-								changing ||
-								candidates.isFetching ||
-								!candidates.data.pagination.hasPreviousPage
-							}
-							onClick={() => {
-								if (!changing && !candidates.isFetching) {
-									startTransition(() => setPage(page - 1))
-								}
-							}}
-						>
-							Previous
+								)}
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={busy || members.length >= 100 || added || main}
+									onClick={() => onMembersChange([...members, p])}
+								>
+									{added ? (
+										<IconCheck data-icon="inline-start" />
+									) : (
+										<IconPlus data-icon="inline-start" />
+									)}
+									{added ? 'Added' : 'Add member'}
+								</Button>
+							</div>
+						</li>
+					)
+				})}
+			</ul>
+			{!candidates.isError && candidates.data.projects.length === 0 && (
+				<Empty className="border py-6">
+					<EmptyHeader>
+						<EmptyTitle>No matching projects</EmptyTitle>
+						<EmptyDescription>
+							Try a different name. Only published projects can be added to a
+							collection.
+						</EmptyDescription>
+					</EmptyHeader>
+					{search && (
+						<Button type="button" variant="outline" onClick={clearSearch}>
+							Clear search
 						</Button>
-						<span className="text-xs text-muted-foreground">Page {page}</span>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={busy || !candidates.data.pagination.hasNextPage}
-							className="aria-disabled:opacity-50"
-							aria-disabled={
-								busy ||
-								changing ||
-								candidates.isFetching ||
-								!candidates.data.pagination.hasNextPage
+					)}
+				</Empty>
+			)}
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<Link
+					to="/submit"
+					className="rounded-sm text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+				>
+					Submit a missing project
+				</Link>
+				<nav
+					aria-label="Project search pagination"
+					aria-busy={changing || candidates.isFetching}
+					className="flex items-center gap-2"
+				>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled={busy || !candidates.data.pagination.hasPreviousPage}
+						className="aria-disabled:opacity-50"
+						aria-disabled={
+							busy ||
+							changing ||
+							candidates.isFetching ||
+							!candidates.data.pagination.hasPreviousPage
+						}
+						onClick={() => {
+							if (!changing && !candidates.isFetching) {
+								startTransition(() => setPage(page - 1))
 							}
-							onClick={() => {
-								if (!changing && !candidates.isFetching) {
-									startTransition(() => setPage(page + 1))
-								}
-							}}
-						>
-							Next
-						</Button>
-					</nav>
-				</div>
-			</section>
-		</div>
+						}}
+					>
+						Previous
+					</Button>
+					<span className="text-xs text-muted-foreground">Page {page}</span>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled={busy || !candidates.data.pagination.hasNextPage}
+						className="aria-disabled:opacity-50"
+						aria-disabled={
+							busy ||
+							changing ||
+							candidates.isFetching ||
+							!candidates.data.pagination.hasNextPage
+						}
+						onClick={() => {
+							if (!changing && !candidates.isFetching) {
+								startTransition(() => setPage(page + 1))
+							}
+						}}
+					>
+						Next
+					</Button>
+				</nav>
+			</div>
+		</section>
 	)
 }
