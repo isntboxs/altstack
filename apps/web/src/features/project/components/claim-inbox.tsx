@@ -1,16 +1,35 @@
+import {
+	IconChevronDown,
+	IconUserCheck,
+	IconExternalLink,
+	IconPencil,
+	IconCheck,
+	IconX,
+} from '@tabler/icons-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import {
+	Alert,
+	AlertDescription,
+	AlertTitle,
+} from '@altstack/ui/components/alert'
 import { Badge } from '@altstack/ui/components/badge'
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@altstack/ui/components/card'
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from '@altstack/ui/components/collapsible'
 import {
 	Dialog,
 	DialogContent,
@@ -23,16 +42,15 @@ import {
 	Field,
 	FieldDescription,
 	FieldError,
-	FieldGroup,
 	FieldLabel,
 } from '@altstack/ui/components/field'
+import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
 import {
 	AdminEmpty,
 	AdminError,
-	AdminPending,
 	AdminTime,
 	RefreshButton,
 } from '#/features/admin-dashboard/components/dashboard-state'
@@ -45,6 +63,55 @@ import { client } from '#/utils/orpc'
 function hasShortNote(note: string | undefined) {
 	const length = note?.trim().length ?? 0
 	return length > 0 && length < 20
+}
+function VerificationNotes({
+	id,
+	label,
+	value,
+	disabled,
+	required = false,
+	onChange,
+}: {
+	id: string
+	label: string
+	value: string
+	disabled: boolean
+	required?: boolean
+	onChange: (value: string) => void
+}) {
+	const invalid = hasShortNote(value)
+	return (
+		<Field data-invalid={invalid}>
+			<div className="flex items-start justify-between gap-2">
+				<FieldLabel htmlFor={id}>{label}</FieldLabel>
+				<span className="shrink-0 text-xs text-muted-foreground">
+					{value.trim().length}/1000
+				</span>
+			</div>
+			<Textarea
+				id={id}
+				value={value}
+				rows={3}
+				required={required}
+				aria-invalid={invalid}
+				aria-describedby={`${id}-help${invalid ? ` ${id}-error` : ''}`}
+				onChange={(event) => onChange(event.target.value)}
+				maxLength={1000}
+				disabled={disabled}
+				placeholder="How did you confirm this person represents the project?"
+			/>
+			<FieldDescription id={`${id}-help`}>
+				Required when GitHub cannot confirm access (20–1000 characters). GitHub
+				evidence is checked again on approval. Notes remain private.
+			</FieldDescription>
+			{invalid && (
+				<FieldError id={`${id}-error`}>
+					Enter at least 20 characters or clear this optional note when GitHub
+					access is verified.
+				</FieldError>
+			)}
+		</Field>
+	)
 }
 
 export function ClaimInbox({
@@ -101,137 +168,207 @@ export function ClaimInbox({
 			])
 		},
 	})
+	function updateNote(id: string, value: string) {
+		setNotes((previous) => {
+			return { ...previous, [id]: value }
+		})
+	}
 	return (
-		<section aria-label="Ownership requests" className="flex flex-col gap-4">
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<p className="max-w-2xl text-sm text-muted-foreground">
-					Only approve someone you have confirmed represents the project. Admins
-					review the first representative; existing representatives review
-					additional requests. Your own requests cannot be reviewed here.
-				</p>
+		<section
+			aria-label="Ownership requests"
+			className="flex min-w-0 flex-col gap-5"
+		>
+			<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+				<div className="flex min-w-0 flex-col gap-1">
+					<h2 className="text-sm font-medium">
+						{claimId ? 'Selected request' : 'Awaiting review'}
+						{query.data ? ` (${query.data.pagination.totalItems})` : ''}
+					</h2>
+					<p className="text-xs text-muted-foreground">
+						Email-confirmed requests you are eligible to review
+					</p>
+				</div>
 				<RefreshButton
 					fetching={query.isFetching}
 					refresh={() => void query.refetch()}
 				/>
 			</div>
-			{query.isPending ? (
-				<AdminPending />
-			) : query.isError ? (
-				<AdminError retry={() => void query.refetch()} />
-			) : (
+			{query.isError && (
+				<AdminError
+					fetching={query.isFetching}
+					retry={() => void query.refetch()}
+				/>
+			)}
+			{query.isPending && (
+				<div className="flex flex-col gap-4">
+					<output className="sr-only">Loading ownership requests</output>
+					{[0, 1].map((id) => (
+						<Skeleton key={id} className="h-64 w-full rounded-xl" />
+					))}
+				</div>
+			)}
+			{query.data && (
 				<>
 					{query.data.claims.length === 0 && (
-						<AdminEmpty
-							title="No requests awaiting your review"
-							description={
-								claimId
-									? 'This request may already be reviewed or no longer eligible. Return to all requests to continue.'
-									: 'Email confirmed requests appear here when you are eligible to review them.'
-							}
-						/>
+						<div className="rounded-xl border bg-card py-8">
+							<AdminEmpty
+								title="No requests awaiting your review"
+								description={
+									claimId
+										? 'This request may already be reviewed or no longer eligible. Return to all requests to continue.'
+										: 'Email confirmed requests appear here when you are eligible to review them.'
+								}
+							/>
+						</div>
 					)}
 					{query.data.claims.map((claim) => (
-						<Card key={claim.id}>
-							<CardHeader>
-								<CardTitle>{claim.projectName}</CardTitle>
-								<CardDescription>
-									{claim.name} · {claim.role} access
-								</CardDescription>
-								<div className="flex flex-wrap items-center gap-2">
+						<Card key={claim.id} className="min-w-0">
+							<CardHeader className="border-b">
+								<CardTitle>
+									<h2 className="wrap-anywhere">{claim.projectName}</h2>
+								</CardTitle>
+								<CardDescription>Representative access request</CardDescription>
+								<CardAction>
 									<Badge variant="secondary">Pending</Badge>
-									<Badge variant="outline">Email confirmed</Badge>
-									<span className="text-xs text-muted-foreground">
-										Requested <AdminTime value={claim.requestedAt} relative />
-									</span>
-								</div>
+								</CardAction>
 							</CardHeader>
-							<CardContent className="flex flex-col gap-4">
-								<p className="text-sm wrap-anywhere">{claim.email}</p>
-								<ClaimGithubEvidenceView evidence={claim.githubEvidence} />
-								<FieldGroup>
-									<Field data-invalid={hasShortNote(notes[claim.id])}>
-										<FieldLabel htmlFor={`evidence-${claim.id}`}>
-											Independent verification notes for {claim.projectName}
-										</FieldLabel>
-										<Textarea
-											id={`evidence-${claim.id}`}
-											value={notes[claim.id] ?? ''}
-											aria-invalid={hasShortNote(notes[claim.id])}
-											onChange={(event) =>
-												setNotes((previous) => {
-													return {
-														...previous,
-														[claim.id]: event.target.value,
-													}
-												})
-											}
-											maxLength={1000}
-											disabled={review.isPending}
-											placeholder="How did you confirm this person represents the project?"
-										/>
-										<FieldDescription>
-											Required when GitHub cannot confirm access (20–1000
-											characters). GitHub evidence is checked again on approval.
-											Notes remain private.
-										</FieldDescription>
-										{hasShortNote(notes[claim.id]) && (
-											<FieldError>
-												Enter at least 20 characters or clear this optional note
-												when GitHub access is verified.
-											</FieldError>
-										)}
-									</Field>
-								</FieldGroup>
-								<div className="flex flex-wrap justify-end gap-2">
-									<Link
-										to="/$slug"
-										params={{ slug: claim.projectSlug }}
-										className={buttonVariants({ variant: 'link' })}
-									>
-										View project
-									</Link>
-									{auth.user.role === 'admin' && (
-										<Link
-											to="/projects/$id/edit"
-											params={{ id: claim.projectId }}
-											className={buttonVariants({ variant: 'outline' })}
-										>
-											Project details
-										</Link>
-									)}
-									<Button
-										variant="outline"
-										disabled={review.isPending}
-										onClick={() => {
-											review.reset()
-											setDecision({ id: claim.id, decision: 'reject' })
-										}}
-									>
-										Decline
-									</Button>
-									<Button
-										disabled={review.isPending}
-										onClick={() => {
-											review.reset()
-											setDecision({ id: claim.id, decision: 'approve' })
-										}}
-									>
-										Approve
-									</Button>
+							<CardContent className="flex min-w-0 flex-col gap-5">
+								<div className="flex min-w-0 items-start gap-3">
+									<span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+										<IconUserCheck className="size-5" aria-hidden="true" />
+									</span>
+									<div className="flex min-w-0 flex-1 flex-col gap-1">
+										<p className="text-sm font-medium wrap-anywhere">
+											{claim.name}
+										</p>
+										<p className="text-sm wrap-anywhere text-muted-foreground">
+											{claim.email}
+										</p>
+										<div className="mt-1 flex flex-wrap items-center gap-2">
+											<Badge variant="outline">
+												{claim.role === 'owner' ? 'Owner' : 'Maintainer'} access
+											</Badge>
+											<Badge variant="outline">Email confirmed</Badge>
+										</div>
+									</div>
 								</div>
+								<p className="text-xs text-muted-foreground">
+									Requested <AdminTime value={claim.requestedAt} relative />
+								</p>
+								<Collapsible
+									key={`${claim.id}:${claimId ?? ''}`}
+									defaultOpen={
+										!!claimId ||
+										query.data.claims.length === 1 ||
+										auth.user.role !== 'admin'
+									}
+									className="flex flex-col gap-4"
+								>
+									<CollapsibleTrigger
+										render={
+											<Button
+												variant="outline"
+												className="group w-full sm:w-fit"
+											/>
+										}
+									>
+										<span>Verification & review</span>
+										<IconChevronDown
+											data-icon="inline-end"
+											className="group-aria-expanded:rotate-180"
+										/>
+									</CollapsibleTrigger>
+									<CollapsibleContent className="flex min-w-0 flex-col gap-5">
+										<div className="grid min-w-0 gap-5 lg:grid-cols-2">
+											<div className="flex min-w-0 flex-col gap-3">
+												<h3 className="text-sm font-medium">
+													Repository evidence
+												</h3>
+												<ClaimGithubEvidenceView
+													evidence={claim.githubEvidence}
+												/>
+												<p className="text-xs leading-relaxed text-muted-foreground">
+													Approve only after confirming that this person
+													represents the project. Approval grants editing access
+													and permission to review future requests.
+												</p>
+											</div>
+											<VerificationNotes
+												id={`evidence-${claim.id}`}
+												label={`Independent verification notes for ${claim.projectName}`}
+												value={notes[claim.id] ?? ''}
+												disabled={review.isPending}
+												onChange={(value) => updateNote(claim.id, value)}
+											/>
+										</div>
+										<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+											<div className="flex flex-wrap items-center gap-2">
+												<Link
+													to="/$slug"
+													params={{ slug: claim.projectSlug }}
+													className={buttonVariants({
+														variant: 'outline',
+														size: 'sm',
+													})}
+												>
+													<IconExternalLink data-icon="inline-start" />
+													View project
+												</Link>
+												{auth.user.role === 'admin' && (
+													<Link
+														to="/projects/$id/edit"
+														params={{ id: claim.projectId }}
+														className={buttonVariants({
+															variant: 'outline',
+															size: 'sm',
+														})}
+													>
+														<IconPencil data-icon="inline-start" />
+														Project details
+													</Link>
+												)}
+											</div>
+											<div className="ml-auto flex items-center gap-2">
+												<Button
+													variant="outline"
+													disabled={review.isPending}
+													onClick={() => {
+														review.reset()
+														setDecision({ id: claim.id, decision: 'reject' })
+													}}
+												>
+													<IconX data-icon="inline-start" />
+													Decline
+												</Button>
+												<Button
+													disabled={review.isPending}
+													onClick={() => {
+														review.reset()
+														setDecision({ id: claim.id, decision: 'approve' })
+													}}
+												>
+													<IconCheck data-icon="inline-start" />
+													Approve
+												</Button>
+											</div>
+										</div>
+									</CollapsibleContent>
+								</Collapsible>
 							</CardContent>
 						</Card>
 					))}
 					<nav
 						aria-label="Ownership request pages"
-						className="flex flex-wrap items-center justify-end gap-3"
+						className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-3"
 					>
-						<p className="mr-auto text-sm text-muted-foreground">
-							{query.data.pagination.totalItems} requests · Page {page} of{' '}
-							{Math.max(1, query.data.pagination.totalPages)}
+						<p className="mr-auto text-xs text-muted-foreground">
+							{query.data.pagination.totalItems}{' '}
+							{query.data.pagination.totalItems === 1 ? 'request' : 'requests'}{' '}
+							· Page {page}
 						</p>
 						<Button
 							variant="outline"
+							size="sm"
 							disabled={page <= 1 || query.isFetching}
 							onClick={() => onPageChange(page - 1)}
 						>
@@ -239,6 +376,7 @@ export function ClaimInbox({
 						</Button>
 						<Button
 							variant="outline"
+							size="sm"
 							disabled={!query.data.pagination.hasNextPage || query.isFetching}
 							onClick={() => onPageChange(page + 1)}
 						>
@@ -247,6 +385,10 @@ export function ClaimInbox({
 					</nav>
 				</>
 			)}
+			<p className="text-xs leading-relaxed text-muted-foreground">
+				Admins review a project’s first representative; existing representatives
+				review additional requests. Your own requests cannot be reviewed here.
+			</p>
 			<Dialog
 				open={!!decision}
 				onOpenChange={(open) => {
@@ -271,10 +413,21 @@ export function ClaimInbox({
 							? 'Approval grants permission to edit the published project and review future access requests. Confirm independent verification before continuing.'
 							: 'This person will not receive project access from this request.'}
 					</p>
+					{selected && decision?.decision === 'approve' && (
+						<VerificationNotes
+							id="decision-verification-notes"
+							label="Verification notes"
+							value={notes[selected.id] ?? ''}
+							required={selected.githubEvidence?.status !== 'verified'}
+							disabled={review.isPending}
+							onChange={(value) => updateNote(selected.id, value)}
+						/>
+					)}
 					{review.isError && (
-						<p role="alert" className="text-sm text-destructive">
-							{review.error.message}
-						</p>
+						<Alert variant="destructive">
+							<AlertTitle>Unable to review request</AlertTitle>
+							<AlertDescription>{review.error.message}</AlertDescription>
+						</Alert>
 					)}
 					<DialogFooter>
 						<Button

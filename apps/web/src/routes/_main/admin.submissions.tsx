@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { PublicError } from '#/components/public-page-state'
 import { ProjectsPending } from '#/components/workspace-skeletons'
-import { ProjectListPage } from '#/features/admin-projects/components/project-list-page'
 import { adminProjectSearchSchema } from '#/features/admin-projects/search'
+import { SubmissionInbox } from '#/features/admin-submissions/components/submission-inbox'
 
 export const Route = createFileRoute('/_main/admin/submissions')({
 	validateSearch: adminProjectSearchSchema,
@@ -17,8 +17,7 @@ function Page() {
 	const search = Route.useSearch()
 	const navigate = Route.useNavigate()
 	return (
-		<ProjectListPage
-			submissions
+		<SubmissionInbox
 			search={search}
 			onSearchChange={(next) => void navigate({ search: next })}
 		/>

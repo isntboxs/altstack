@@ -1,3 +1,4 @@
+import { IconRefresh } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { z } from 'zod'
 
@@ -10,6 +11,7 @@ import {
 	AlertTitle,
 } from '@altstack/ui/components/alert'
 import { Button } from '@altstack/ui/components/button'
+import { Field, FieldLabel } from '@altstack/ui/components/field'
 import {
 	Select,
 	SelectContent,
@@ -20,6 +22,7 @@ import {
 } from '@altstack/ui/components/select'
 import { Skeleton } from '@altstack/ui/components/skeleton'
 
+import { AdminPageHeader } from '#/features/admin-dashboard/components/dashboard-state'
 import type { adminReportSearchSchema } from '#/features/admin-dashboard/search'
 import { ReportDataTable } from '#/features/admin-reports/components/report-data-table'
 import { useAdminReportList } from '#/features/admin-reports/queries'
@@ -45,38 +48,42 @@ export function ReportInbox({
 		})
 	)
 	return (
-		<div className="mx-auto flex w-full min-w-0 flex-col gap-5 px-4 py-6">
-			<div className="flex flex-col gap-1">
-				<h1 className="text-xl font-semibold">Reports</h1>
-				<p className="text-sm text-muted-foreground">
-					Review reports and suggested corrections. Edit the project to make a
-					correction, then resolve or dismiss the report.
-				</p>
-			</div>
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<Select
-					items={statusItems}
-					value={status}
-					onValueChange={(value) => {
-						if (!value) return
-						onSearchChange({
-							status: adminListReportsQuerySchema.shape.status.parse(value),
-						})
-					}}
-				>
-					<SelectTrigger aria-label="Filter report status" className="w-40">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectGroup>
-							{statusItems.map((item) => (
-								<SelectItem key={item.value} value={item.value}>
-									{item.label}
-								</SelectItem>
-							))}
-						</SelectGroup>
-					</SelectContent>
-				</Select>
+		<div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+			<AdminPageHeader
+				title="Reports"
+				description="Review reported issues and suggested corrections. Update the project, then resolve or dismiss the report."
+			/>
+			<div className="flex flex-wrap items-end justify-between gap-4 rounded-xl border bg-card p-4">
+				<Field className="w-full sm:w-44">
+					<FieldLabel htmlFor="report-status">Report status</FieldLabel>
+					<Select
+						items={statusItems}
+						value={status}
+						onValueChange={(value) => {
+							if (!value) return
+							onSearchChange({
+								status: adminListReportsQuerySchema.shape.status.parse(value),
+							})
+						}}
+					>
+						<SelectTrigger
+							id="report-status"
+							aria-label="Filter report status"
+							className="w-full"
+						>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectGroup>
+								{statusItems.map((item) => (
+									<SelectItem key={item.value} value={item.value}>
+										{item.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				</Field>
 				<Button
 					variant="outline"
 					size="sm"
@@ -91,20 +98,26 @@ export function ReportInbox({
 						if (!search.cursor) void query.refetch()
 					}}
 				>
+					<IconRefresh data-icon="inline-start" />
 					Refresh inbox
 				</Button>
 			</div>
 			{search.reportId && (
-				<Button
-					variant="outline"
-					onClick={() => onSearchChange({ status: 'open' })}
-				>
-					View all open reports
-				</Button>
+				<Alert>
+					<AlertTitle>Viewing a selected report</AlertTitle>
+					<AlertDescription>
+						<p>This view shows the report opened from your review queue.</p>
+						<Button
+							variant="outline"
+							onClick={() => onSearchChange({ status: 'open' })}
+						>
+							View all open reports
+						</Button>
+					</AlertDescription>
+				</Alert>
 			)}
-			{query.isPending ? (
-				<ReportsPending />
-			) : query.isError ? (
+			{query.isPending ? <ReportsPending /> : null}
+			{query.isError && (
 				<Alert variant="destructive">
 					<AlertTitle>Unable to load reports</AlertTitle>
 					<AlertDescription>
@@ -119,12 +132,16 @@ export function ReportInbox({
 						</Button>
 					</AlertDescription>
 				</Alert>
-			) : (
+			)}
+			{query.data && (
 				<div aria-busy={query.isFetching}>
 					<ReportDataTable reports={query.data.reports} />
 				</div>
 			)}
-			<div className="flex flex-wrap items-center justify-end gap-3">
+			<nav
+				aria-label="Report pages"
+				className="flex flex-wrap items-center justify-end gap-3 rounded-xl border bg-card px-4 py-3"
+			>
 				<p className="mr-auto text-sm text-muted-foreground">
 					Newest first · Page {trail.length + 1}
 					{search.reportId ? ' · Selected report' : ''}
@@ -162,7 +179,7 @@ export function ReportInbox({
 				>
 					Next
 				</Button>
-			</div>
+			</nav>
 		</div>
 	)
 }
@@ -170,8 +187,8 @@ export function ReportInbox({
 export function ReportsPending() {
 	return (
 		<output aria-label="Loading reports" className="flex flex-col gap-3">
-			<Skeleton className="h-12 w-full" />
-			<Skeleton className="h-64 w-full" />
+			<Skeleton className="h-64 w-full rounded-xl" />
+			<Skeleton className="h-64 w-full rounded-xl" />
 		</output>
 	)
 }

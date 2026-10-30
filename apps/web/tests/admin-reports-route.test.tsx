@@ -191,18 +191,11 @@ async function filter(label: string) {
 describe('admin report inbox route', () => {
 	it('renders private reports as plain text with the existing unpublished-project edit destination', async () => {
 		await routerAt()
-		await screen.findByRole('table', { name: 'Project reports' })
+		await screen.findByRole('region', { name: 'Project reports' })
 		expect(
-			screen.getAllByRole('columnheader').map((header) => header.textContent)
-		).toEqual([
-			'Project',
-			'Reporter email',
-			'Type',
-			'Message',
-			'Submitted',
-			'Status',
-			'Actions',
-		])
+			screen.getByRole('heading', { name: item.project.name })
+		).toBeTruthy()
+		expect(screen.getByRole('heading', { name: 'Reported issue' })).toBeTruthy()
 		expect(screen.getByText(item.email)).toBeTruthy()
 		expect(screen.getByText(item.message)).toBeTruthy()
 		expect(document.querySelector('img[src="x"]')).toBeNull()

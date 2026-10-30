@@ -23,6 +23,8 @@ export default defineConfig({
 					include: [
 						'reicon-react',
 						'@altstack/ui > @base-ui/react/avatar',
+						'@altstack/ui > @base-ui/react/collapsible',
+						'@altstack/ui > @base-ui/react/dialog',
 						'recharts',
 						'date-fns',
 					],

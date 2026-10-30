@@ -14,7 +14,7 @@ function Ownership() {
 	const search = Route.useSearch()
 	const navigate = Route.useNavigate()
 	return (
-		<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-8">
+		<div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
 			<AdminPageHeader
 				title="Ownership requests"
 				description="Verify project representatives and review eligible requests with supporting evidence."

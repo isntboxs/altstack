@@ -1,5 +1,5 @@
+import { IconFlag, IconPencil, IconCheck, IconX } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
-import { formatDate } from 'date-fns'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -13,159 +13,184 @@ import {
 import { Badge } from '@altstack/ui/components/badge'
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
+	Card,
+	CardAction,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from '@altstack/ui/components/card'
+import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
+	EmptyMedia,
 	EmptyTitle,
 } from '@altstack/ui/components/empty'
 import { Spinner } from '@altstack/ui/components/spinner'
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@altstack/ui/components/table'
 
 import { ProjectLogo } from '#/components/project-media'
+import { AdminTime } from '#/features/admin-dashboard/components/dashboard-state'
 import { useAdminReportModerate } from '#/features/admin-reports/queries'
 
 type Report = ORPCRouterOutputs['admin']['report']['list']['reports'][number]
 
 export function ReportDataTable({ reports }: { reports: Array<Report> }) {
 	return (
-		<div className="overflow-hidden rounded-md border">
-			<Table aria-label="Project reports">
-				<TableHeader>
-					<TableRow>
-						<TableHead>Project</TableHead>
-						<TableHead>Reporter email</TableHead>
-						<TableHead>Type</TableHead>
-						<TableHead>Message</TableHead>
-						<TableHead>Submitted</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>Actions</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{reports.map((report) => (
-						<TableRow key={report.id}>
-							<TableCell>
-								{report.project ? (
-									<div className="flex min-w-40 items-center gap-3">
-										<ProjectLogo
-											src={report.project.logo}
-											name={report.project.name}
-											className="size-8"
-										/>
-										<div className="flex flex-col gap-1">
-											<p className="max-w-52 truncate">{report.project.name}</p>
-											{report.project.status !== 'published' && (
-												<Badge variant="outline">{report.project.status}</Badge>
-											)}
-										</div>
-									</div>
-								) : (
-									<span className="text-muted-foreground">Project deleted</span>
-								)}
-							</TableCell>
-							<TableCell className="max-w-64 wrap-anywhere whitespace-normal">
-								{report.email}
-							</TableCell>
-							<TableCell>
-								{reportTypes.find((type) => type.value === report.type)?.label}
-							</TableCell>
-							<TableCell className="max-w-md min-w-64 wrap-anywhere whitespace-pre-wrap">
-								{report.message || '—'}
-							</TableCell>
-							<TableCell>
-								<time dateTime={new Date(report.createdAt).toISOString()}>
-									{formatDate(report.createdAt, 'MMM d, yyyy HH:mm')}
-								</time>
-							</TableCell>
-							<TableCell>
-								<Badge
-									variant={report.status === 'open' ? 'default' : 'secondary'}
-								>
-									{
-										reportStatuses.find(
-											(status) => status.value === report.status
-										)?.label
-									}
-								</Badge>
-							</TableCell>
-							<TableCell>
-								<ReportActions report={report} />
-							</TableCell>
-						</TableRow>
-					))}
-					{reports.length === 0 && (
-						<TableRow>
-							<TableCell colSpan={7}>
-								<Empty>
-									<EmptyHeader>
-										<EmptyTitle>No reports on this page</EmptyTitle>
-										<EmptyDescription>
-											Try another status or an earlier page.
-										</EmptyDescription>
-									</EmptyHeader>
-								</Empty>
-							</TableCell>
-						</TableRow>
-					)}
-				</TableBody>
-			</Table>
-		</div>
+		<section
+			aria-label="Project reports"
+			className="flex min-w-0 flex-col gap-4"
+		>
+			{reports.length === 0 && (
+				<Empty className="min-h-64 border bg-card">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<IconFlag />
+						</EmptyMedia>
+						<EmptyTitle>No reports on this page</EmptyTitle>
+						<EmptyDescription>
+							Try another status or an earlier page.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			)}
+			{reports.map((report) => (
+				<Card key={report.id} className="min-w-0">
+					<CardHeader className="border-b">
+						<div className="flex min-w-0 items-center gap-3">
+							{report.project ? (
+								<ProjectLogo
+									src={report.project.logo}
+									name={report.project.name}
+									className="size-9 shrink-0 rounded-lg"
+								/>
+							) : (
+								<span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+									<IconFlag className="size-4" aria-hidden="true" />
+								</span>
+							)}
+							<div className="flex min-w-0 flex-col gap-1">
+								<CardTitle>
+									<h2 className="wrap-anywhere">
+										{report.project?.name ?? 'Project deleted'}
+									</h2>
+								</CardTitle>
+								<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+									<span>
+										{
+											reportTypes.find((type) => type.value === report.type)
+												?.label
+										}
+									</span>
+									{report.project && report.project.status !== 'published' && (
+										<Badge variant="outline">{report.project.status}</Badge>
+									)}
+								</div>
+							</div>
+						</div>
+						<CardAction>
+							<Badge
+								variant={report.status === 'open' ? 'default' : 'secondary'}
+							>
+								{
+									reportStatuses.find(
+										(status) => status.value === report.status
+									)?.label
+								}
+							</Badge>
+						</CardAction>
+					</CardHeader>
+					<CardContent className="flex min-w-0 flex-col gap-4">
+						<div className="flex flex-col gap-2">
+							<h3 className="text-xs font-medium text-muted-foreground">
+								Reported issue
+							</h3>
+							<p className="max-h-72 overflow-y-auto rounded-lg border bg-muted/20 p-4 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap">
+								{report.message || 'No additional details provided.'}
+							</p>
+						</div>
+						<dl className="grid min-w-0 gap-3 text-xs sm:grid-cols-2">
+							<div className="flex min-w-0 flex-col gap-1">
+								<dt className="text-muted-foreground">Reporter email</dt>
+								<dd className="wrap-anywhere">{report.email}</dd>
+							</div>
+							<div className="flex flex-col gap-1">
+								<dt className="text-muted-foreground">Submitted</dt>
+								<dd>
+									<AdminTime value={report.createdAt} />
+								</dd>
+							</div>
+						</dl>
+					</CardContent>
+					<CardFooter className="flex-col items-stretch gap-3">
+						<p className="text-xs text-muted-foreground">
+							{report.status === 'open'
+								? 'Correct the project first, then resolve the report. Dismiss reports that need no action.'
+								: `This report has been ${report.status}.`}
+						</p>
+						<ReportActions report={report} />
+					</CardFooter>
+				</Card>
+			))}
+		</section>
 	)
 }
 
 function ReportActions({ report }: { report: Report }) {
 	const mutation = useAdminReportModerate()
 	return (
-		<div className="flex min-w-44 flex-col items-start gap-2">
-			{report.project && (
-				<Link
-					to="/projects/$id/edit"
-					params={{ id: report.project.id }}
-					className={buttonVariants({ variant: 'link', size: 'sm' })}
-				>
-					Edit project
-				</Link>
-			)}
-			{report.status === 'open' && (
-				<div className="flex items-center gap-2" aria-busy={mutation.isPending}>
-					<Button
-						size="sm"
-						variant="outline"
-						disabled={mutation.isPending}
-						onClick={() =>
-							mutation.mutate({
-								params: { id: report.id },
-								body: { status: 'resolved' },
-							})
-						}
+		<div className="flex min-w-0 flex-col gap-3">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				{report.project && (
+					<Link
+						to="/projects/$id/edit"
+						params={{ id: report.project.id }}
+						className={buttonVariants({ variant: 'outline', size: 'sm' })}
 					>
-						Resolve
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						disabled={mutation.isPending}
-						onClick={() =>
-							mutation.mutate({
-								params: { id: report.id },
-								body: { status: 'dismissed' },
-							})
-						}
+						<IconPencil data-icon="inline-start" />
+						Edit project
+					</Link>
+				)}
+				{report.status === 'open' && (
+					<div
+						className="ml-auto flex flex-wrap items-center gap-2"
+						aria-busy={mutation.isPending}
 					>
-						Dismiss
-					</Button>
-					{mutation.isPending && <Spinner aria-label="Saving report status" />}
-				</div>
-			)}
+						<Button
+							size="sm"
+							variant="ghost"
+							disabled={mutation.isPending}
+							onClick={() =>
+								mutation.mutate({
+									params: { id: report.id },
+									body: { status: 'dismissed' },
+								})
+							}
+						>
+							<IconX data-icon="inline-start" />
+							Dismiss
+						</Button>
+						<Button
+							size="sm"
+							disabled={mutation.isPending}
+							onClick={() =>
+								mutation.mutate({
+									params: { id: report.id },
+									body: { status: 'resolved' },
+								})
+							}
+						>
+							<IconCheck data-icon="inline-start" />
+							Resolve
+						</Button>
+						{mutation.isPending && (
+							<Spinner aria-label="Saving report status" />
+						)}
+					</div>
+				)}
+			</div>
 			{mutation.isError && (
-				<Alert variant="destructive" className="max-w-64 whitespace-normal">
+				<Alert variant="destructive">
 					<AlertTitle>Unable to update report</AlertTitle>
 					<AlertDescription>
 						{'code' in mutation.error && mutation.error.code === 'CONFLICT'

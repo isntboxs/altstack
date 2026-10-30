@@ -279,6 +279,48 @@ async function routerAt(path: string, show = true) {
 }
 
 describe('admin dashboard routes', () => {
+	it('searches and sorts submissions while retaining the needs-review scope in the URL', async () => {
+		const router = await routerAt('/admin/submissions?status=published&page=2')
+		const searchInput = await screen.findByRole('textbox', {
+			name: 'Search project names',
+		})
+		fireEvent.change(searchInput, { target: { value: 'Alpha tools' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+		await waitFor(() =>
+			expect(router.state.location.search).toMatchObject({
+				name: 'Alpha tools',
+				page: 1,
+			})
+		)
+		expect(router.state.location.search).not.toHaveProperty('status')
+		fireEvent.click(screen.getByRole('combobox', { name: 'Sort submissions' }))
+		const option = await screen.findByRole('option', { name: 'Newest first' })
+		fireEvent.pointerDown(option)
+		fireEvent.click(option)
+		await waitFor(() =>
+			expect(router.state.location.search).toMatchObject({
+				name: 'Alpha tools',
+				sort: 'createdAt',
+				order: 'desc',
+				page: 1,
+			})
+		)
+		expect(screen.queryByRole('combobox', { name: 'Filter status' })).toBeNull()
+		expect(
+			rpc.mock.calls
+				.filter(([path]) => path.join('/') === 'admin/project/list')
+				.every(
+					([, input]) =>
+						typeof input === 'object' &&
+						input !== null &&
+						'query' in input &&
+						typeof input.query === 'object' &&
+						input.query !== null &&
+						'needsReview' in input.query &&
+						input.query.needsReview === true
+				)
+		).toBe(true)
+	})
 	it('filters review items locally while keeping the full queues accessible', async () => {
 		await routerAt('/admin')
 		fireEvent.click(await screen.findByRole('tab', { name: /^Reports/ }))
