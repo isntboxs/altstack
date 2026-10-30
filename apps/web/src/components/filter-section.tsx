@@ -165,9 +165,10 @@ export const FilterSection = ({
 
 	return (
 		<Collapsible
+			id="project-filters"
 			open={isOpen}
 			onOpenChange={setIsOpen}
-			className="container mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 lg:px-16"
+			className="container mx-auto flex w-full max-w-6xl scroll-mt-16 flex-col items-center justify-between gap-2 px-4 py-6 lg:px-16"
 		>
 			<div className="flex w-full flex-col items-center justify-between gap-2 md:flex-row">
 				<ButtonGroup className="w-full min-w-0">

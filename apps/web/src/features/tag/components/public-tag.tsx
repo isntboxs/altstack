@@ -48,9 +48,11 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { FilterSection } from '#/components/filter-section'
 import { PublicError } from '#/components/public-page-state'
 import { CategoryControlsSkeleton } from '#/components/public-skeletons'
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 const directoryRoute = getRouteApi('/_app/tags/')
 const detailRoute = getRouteApi('/_app/tags/$slug')
+const handleDirectoryPageClick = createPaginationScrollHandler('tag-filters')
 const sortItems = [
 	{ value: 'popular', label: 'Most Popular' },
 	{ value: 'name-asc', label: 'Name (A to Z)' },
@@ -133,7 +135,7 @@ export function TagDirectoryControls() {
 					Discover topics to find your best open source software options.
 				</p>
 			</div>
-			<div className="flex flex-col gap-2">
+			<div id="tag-filters" className="flex scroll-mt-24 flex-col gap-2">
 				<div className="flex flex-col gap-2 sm:flex-row">
 					<InputGroup className="min-w-0 flex-1">
 						<InputGroupAddon>
@@ -311,6 +313,7 @@ export function TagDirectoryResults({
 								}
 							}}
 							resetScroll={false}
+							onClick={handleDirectoryPageClick}
 						>
 							<IconArrowLeft data-icon="inline-start" />
 							Prev
@@ -339,6 +342,7 @@ export function TagDirectoryResults({
 										return { ...prev, page: page === 1 ? undefined : page }
 									}}
 									resetScroll={false}
+									onClick={handleDirectoryPageClick}
 									aria-current={page === pagination.page ? 'page' : undefined}
 								>
 									{page}
@@ -359,6 +363,7 @@ export function TagDirectoryResults({
 								}
 							}}
 							resetScroll={false}
+							onClick={handleDirectoryPageClick}
 						>
 							Next
 							<IconArrowRight data-icon="inline-end" />

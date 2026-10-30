@@ -64,18 +64,20 @@ function Page() {
 					Explore curated collections of open-source projects.
 				</p>
 			</header>
-			{data.collections.length > 0 ? (
-				<CollectionCards collections={data.collections} />
-			) : (
-				<Empty>
-					<EmptyHeader>
-						<EmptyTitle>No collections yet</EmptyTitle>
-						<EmptyDescription>
-							Published collections will appear here.
-						</EmptyDescription>
-					</EmptyHeader>
-				</Empty>
-			)}
+			<div id="collection-results" className="scroll-mt-24">
+				{data.collections.length > 0 ? (
+					<CollectionCards collections={data.collections} />
+				) : (
+					<Empty>
+						<EmptyHeader>
+							<EmptyTitle>No collections yet</EmptyTitle>
+							<EmptyDescription>
+								Published collections will appear here.
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
+				)}
+			</div>
 			<CollectionPagination
 				page={page}
 				totalPages={Math.ceil(data.total / pageSize)}

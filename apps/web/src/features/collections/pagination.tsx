@@ -3,6 +3,10 @@ import { Link } from '@tanstack/react-router'
 
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
+
+const handlePageClick = createPaginationScrollHandler('collection-results')
+
 /** Shows bounded page links, leaving first-page URL cleanup to route middleware. */
 export function CollectionPagination({
 	page,
@@ -27,6 +31,7 @@ export function CollectionPagination({
 					activeOptions={{ exact: true, explicitUndefined: true }}
 					search={{ page: page - 1 }}
 					resetScroll={false}
+					onClick={handlePageClick}
 				>
 					<IconArrowLeft data-icon="inline-start" />
 					Prev
@@ -53,6 +58,7 @@ export function CollectionPagination({
 							activeOptions={{ exact: true, explicitUndefined: true }}
 							search={{ page: value }}
 							resetScroll={false}
+							onClick={handlePageClick}
 							aria-current={value === page ? 'page' : undefined}
 						>
 							{value}
@@ -67,6 +73,7 @@ export function CollectionPagination({
 					activeOptions={{ exact: true, explicitUndefined: true }}
 					search={{ page: page + 1 }}
 					resetScroll={false}
+					onClick={handlePageClick}
 				>
 					Next
 					<IconArrowRight data-icon="inline-end" />

@@ -16,9 +16,16 @@ import {
 } from '#/features/collections/search'
 import '#/styles.css'
 
-afterEach(cleanup)
+afterEach(() => {
+	cleanup()
+	window.scrollTo(0, 0)
+})
 
-async function mount(url = '/collections', totalPages = 20) {
+async function mount(
+	url = '/collections',
+	totalPages = 20,
+	scrollable = false
+) {
 	const root = createRootRoute()
 	const route = createRoute({
 		getParentRoute: () => root,
@@ -29,7 +36,14 @@ async function mount(url = '/collections', totalPages = 20) {
 			const { page } = route.useSearch()
 			return (
 				<main className="container mx-auto w-full max-w-6xl px-4 lg:px-16">
+					<div style={{ height: scrollable ? 300 : 0 }} />
+					<div
+						id="collection-results"
+						className="scroll-mt-24"
+						style={{ height: scrollable ? 1800 : 0 }}
+					/>
 					<CollectionPagination page={page} totalPages={totalPages} />
+					<div style={{ height: scrollable ? 900 : 0 }} />
 				</main>
 			)
 		},
@@ -56,6 +70,40 @@ const link = (text: string) => {
 }
 
 describe('collections pagination', () => {
+	it.each([320, 1440])(
+		'smoothly returns to the first collection below the header at %ipx',
+		async (width) => {
+			await browserPage.viewport(width, 800)
+			const router = await mount('/collections', 20, true)
+			const target = document.getElementById('collection-results')!
+			for (const [name, expectedPage] of [
+				['Next', 2],
+				['Prev', 1],
+				['2', 2],
+			] as const) {
+				window.scrollTo(0, 1600)
+				await waitFor(() => expect(window.scrollY).toBe(1600))
+				const positions = new Set<number>()
+				const recordScroll = () => positions.add(window.scrollY)
+				window.addEventListener('scroll', recordScroll)
+				try {
+					await browserPage.getByRole('link', { name, exact: true }).click()
+					await waitFor(
+						() => {
+							expect(router.state.location.search.page ?? 1).toBe(expectedPage)
+							expect(
+								Math.abs(target.getBoundingClientRect().top - 96)
+							).toBeLessThan(1)
+						},
+						{ timeout: 3000 }
+					)
+					expect(positions.size).toBeGreaterThan(2)
+				} finally {
+					window.removeEventListener('scroll', recordScroll)
+				}
+			}
+		}
+	)
 	it.each([320, 1440])(
 		'navigates numbered pages and returns to a clean first-page URL at %ipx',
 		async (width) => {

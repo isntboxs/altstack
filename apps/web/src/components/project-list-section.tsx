@@ -6,7 +6,7 @@ import {
 } from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
 import { Link, createLink } from '@tanstack/react-router'
-import type { FC, MouseEvent, ReactNode } from 'react'
+import type { FC, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -35,6 +35,7 @@ import { VerifiedBadge } from '#/components/verified-badge'
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 type ProjectCardProps =
 	ORPCRouterOutputs['project']['search']['projects'][number] & { now?: number }
@@ -232,7 +233,7 @@ export const ProjectListSection = ({
 	emptyMessage,
 	emptyAction,
 	pageLinkOptions,
-	scrollTargetId,
+	scrollTargetId = 'project-filters',
 }: {
 	data: ORPCRouterOutputs['project']['search']
 	emptyMessage: string
@@ -245,27 +246,7 @@ export const ProjectListSection = ({
 	const totalPages = pagination.totalPages
 	const outOfRange = currentPage > Math.max(1, totalPages)
 	const paginationItems = getPaginationItems(currentPage, totalPages)
-	function handlePageClick(event: MouseEvent<HTMLAnchorElement>) {
-		if (
-			!scrollTargetId ||
-			event.defaultPrevented ||
-			event.button !== 0 ||
-			event.metaKey ||
-			event.ctrlKey ||
-			event.shiftKey ||
-			event.altKey ||
-			event.currentTarget.getAttribute('aria-current') === 'page'
-		) {
-			return
-		}
-
-		document.getElementById(scrollTargetId)?.scrollIntoView({
-			block: 'start',
-			behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-				? 'instant'
-				: 'smooth',
-		})
-	}
+	const handlePageClick = createPaginationScrollHandler(scrollTargetId)
 
 	return (
 		<section
