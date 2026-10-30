@@ -20,7 +20,12 @@ export default defineConfig({
 				plugins: [tailwindcss(), react()],
 				server: { preTransformRequests: false },
 				optimizeDeps: {
-					include: ['reicon-react', '@altstack/ui > @base-ui/react/avatar'],
+					include: [
+						'reicon-react',
+						'@altstack/ui > @base-ui/react/avatar',
+						'recharts',
+						'date-fns',
+					],
 					exclude: ['@tanstack/react-start/server'],
 				},
 				test: {

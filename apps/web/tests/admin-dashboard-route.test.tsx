@@ -279,6 +279,83 @@ async function routerAt(path: string, show = true) {
 }
 
 describe('admin dashboard routes', () => {
+	it('filters review items locally while keeping the full queues accessible', async () => {
+		await routerAt('/admin')
+		fireEvent.click(await screen.findByRole('tab', { name: /^Reports/ }))
+		expect(
+			screen.getByRole('link', { name: 'Review report for Reported tool' })
+		).toBeTruthy()
+		expect(
+			screen.queryByRole('link', { name: 'Review Review tool' })
+		).toBeNull()
+		expect(
+			screen.queryByRole('link', { name: "Review Claimant's claim" })
+		).toBeNull()
+		fireEvent.click(screen.getByRole('tab', { name: /^Ownership/ }))
+		expect(
+			screen.getByRole('link', { name: "Review Claimant's claim" })
+		).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: 'Open reports: 2' }).getAttribute('href')
+		).toContain('status=open')
+		fireEvent.click(screen.getByRole('tab', { name: /^All/ }))
+		expect(
+			screen.getByRole('link', { name: 'Review Review tool' })
+		).toBeTruthy()
+		expect(
+			rpc.mock.calls.filter(
+				([path]) => path.join('/') === 'admin/dashboard/overview'
+			)
+		).toHaveLength(1)
+	})
+	it('shows honest empty queues and an empty catalog when every count is zero', async () => {
+		rpc.mockResolvedValueOnce({
+			...overview,
+			counts: {
+				published: 0,
+				needsReview: 0,
+				openReports: 0,
+				pendingClaims: 0,
+				totalProjects: 0,
+				users: 0,
+			},
+			statuses: overview.statuses.map((item) => {
+				return { ...item, count: 0 }
+			}),
+			submissions: [],
+			reports: [],
+			claims: [],
+		})
+		await routerAt('/admin')
+		await screen.findByText('All queues are clear')
+		expect(screen.getByText('No projects yet')).toBeTruthy()
+		expect(screen.getByRole('link', { name: 'Create project' })).toBeTruthy()
+		fireEvent.click(screen.getByRole('tab', { name: /^Reports/ }))
+		expect(screen.getByText('No open reports')).toBeTruthy()
+	})
+	it('preserves the last overview and selected queue after a refresh failure, then recovers', async () => {
+		await routerAt('/admin')
+		fireEvent.click(await screen.findByRole('tab', { name: /^Reports/ }))
+		rpc.mockRejectedValueOnce(new Error('Refresh failed'))
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+		await screen.findByText('Unable to refresh overview')
+		expect(
+			screen.getByRole('link', { name: 'Published projects: 12' })
+		).toBeTruthy()
+		expect(
+			screen
+				.getByRole('tab', { name: /^Reports/ })
+				.getAttribute('aria-selected')
+		).toBe('true')
+		rpc.mockResolvedValueOnce({
+			...overview,
+			counts: { ...overview.counts, openReports: 0 },
+			reports: [],
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+		await screen.findByText('No open reports')
+		expect(screen.queryByText('Unable to refresh overview')).toBeNull()
+	})
 	it('renders actual KPI values, filtered destinations, precise work links, and create actions', async () => {
 		await routerAt('/admin')
 		const published = await screen.findByRole('link', {
