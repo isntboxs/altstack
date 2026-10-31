@@ -75,6 +75,7 @@ RUN vp install --frozen-lockfile --prod --ignore-scripts -- --linker hoisted
 
 # --- runtime stage: Nitro `node-server` output + prod `node_modules` ---
 FROM debian:bookworm-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
