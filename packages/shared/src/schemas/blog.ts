@@ -1,12 +1,14 @@
 import { z } from 'zod'
 
+import { screenshotKeySchema } from '@altstack/shared/schemas/upload'
+
 export const blogSlugSchema = z
 	.string()
 	.trim()
 	.min(1)
 	.max(160)
 	.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-export const blogCoverSchema = z
+export const externalBlogCoverSchema = z
 	.url()
 	.max(2000)
 	.refine((value) => {
@@ -14,6 +16,17 @@ export const blogCoverSchema = z
 		const url = new URL(value)
 		return url.protocol === 'https:' && !url.username && !url.password
 	}, 'Use an HTTPS image URL.')
+export const blogCoverKeySchema = z
+	.string()
+	.regex(
+		/^blogs\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/cover-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpe?g|webp|gif)$/,
+		'Invalid blog cover key.'
+	)
+export const blogCoverSchema = z.union([
+	externalBlogCoverSchema,
+	screenshotKeySchema,
+	blogCoverKeySchema,
+])
 export const blogBodySchema = z
 	.object({
 		title: z.string().trim().min(1).max(200),

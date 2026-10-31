@@ -25,6 +25,7 @@ import { ShareButtons } from '#/components/share-buttons'
 import { UserAvatar } from '#/components/user-avatar'
 import { articleHeadings } from '#/features/public-content/headings'
 import type { PreparedPublicContent } from '#/features/public-content/model'
+import { resolveFileUrl } from '#/utils/storage'
 import { BlogTableOfContents } from './table-of-contents'
 
 type Blog = ORPCRouterOutputs['blog']['getBySlug']
@@ -76,7 +77,7 @@ export function BlogCards({ posts }: { posts: Array<BlogCard> }) {
 				>
 					<Card className="h-full gap-5 overflow-hidden pt-0 ring-0">
 						<img
-							src={post.coverUrl}
+							src={resolveFileUrl(post.coverUrl)}
 							alt=""
 							loading="lazy"
 							decoding="async"
@@ -174,7 +175,7 @@ export function BlogArticle({
 					className="min-w-0 lg:col-start-1 lg:row-start-1"
 				>
 					<img
-						src={post.coverUrl}
+						src={resolveFileUrl(post.coverUrl)}
 						alt={`Cover for ${post.title}`}
 						width={960}
 						height={540}

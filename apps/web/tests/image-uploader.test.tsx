@@ -11,7 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { toast } from '@altstack/ui/components/toast'
 
-import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
+import {
+	LogoUploader,
+	ScreenshotUploader,
+	CoverUploader,
+} from '#/components/image-uploader'
 
 const { uploadApi } = vi.hoisted(() => {
 	return { uploadApi: { request: vi.fn(), change: vi.fn(), remove: vi.fn() } }
@@ -65,6 +69,7 @@ afterEach(() => {
 describe.each([
 	{ noun: 'logo', Uploader: LogoUploader },
 	{ noun: 'screenshot', Uploader: ScreenshotUploader },
+	{ noun: 'cover', Uploader: CoverUploader },
 ])('$noun uploader', ({ noun, Uploader }) => {
 	const savedUrl = `https://images.example/projects/example/${noun}.png`
 

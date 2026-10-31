@@ -17,6 +17,7 @@ import {
 	screen,
 	waitFor,
 } from '@testing-library/react'
+import { useImperativeHandle, useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
@@ -34,6 +35,7 @@ vi.mock('#/utils/orpc', () => {
 		orpc: createTanstackQueryUtils(
 			createORPCClient<ORPCRouterClient>({ call: rpc })
 		),
+		client: createORPCClient<ORPCRouterClient>({ call: rpc }),
 	}
 })
 const initial: ORPCRouterOutputs['admin']['blog']['getById'] = {
@@ -87,6 +89,7 @@ async function mount(existing?: typeof initial) {
 		</QueryClientProvider>
 	)
 	await screen.findByLabelText('Title')
+	await screen.findByLabelText('Markdown editor')
 	return router
 }
 describe('admin blog editor', () => {
@@ -150,10 +153,11 @@ describe('admin blog editor', () => {
 		fireEvent.change(screen.getByLabelText('Description'), {
 			target: { value: initial.description },
 		})
+		fireEvent.click(screen.getByRole('tab', { name: 'Image URL' }))
 		fireEvent.change(screen.getByLabelText('Cover image URL'), {
 			target: { value: initial.coverUrl },
 		})
-		fireEvent.change(screen.getByLabelText('Content (Markdown)'), {
+		fireEvent.change(screen.getByLabelText('Markdown editor'), {
 			target: { value: initial.content },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
@@ -173,6 +177,35 @@ describe('admin blog editor', () => {
 			expect.anything()
 		)
 	})
+
+	it('waits for cover upload and saves the temporary key with the latest editor contents', async () => {
+		await mount(initial)
+		fireEvent.click(screen.getByRole('tab', { name: 'Upload image' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Start cover upload' }))
+		expect(
+			screen.getByRole<HTMLButtonElement>('button', {
+				name: 'Uploading cover…',
+			}).disabled
+		).toBe(true)
+		expect(
+			screen
+				.getByRole('tab', { name: 'Image URL' })
+				.getAttribute('aria-disabled')
+		).toBe('true')
+		fireEvent.click(screen.getByRole('button', { name: 'Finish cover upload' }))
+		const editor = screen.getByLabelText<HTMLTextAreaElement>('Markdown editor')
+		// Save reads the editor directly even before a deferred onChange reaches React.
+		editor.value = '## Latest content\n\nJust typed.'
+		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+		await screen.findByText('Blog directory')
+		const call = rpc.mock.calls.find(([path]) => path.at(-1) === 'update')
+		expect(call?.[1]).toMatchObject({
+			body: {
+				coverUrl: 'tmp/screenshots/cover-1.png',
+				content: '## Latest content\n\nJust typed.',
+			},
+		})
+	})
 	it('validates required fields before mutation and focuses the first invalid input', async () => {
 		await mount()
 		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
@@ -183,6 +216,28 @@ describe('admin blog editor', () => {
 		)
 		expect(document.activeElement).toBe(screen.getByLabelText('Title'))
 		expect(rpc).not.toHaveBeenCalled()
+	})
+	it('restores the saved cover after an upload expires without losing text edits', async () => {
+		rpc.mockRejectedValueOnce(
+			new ORPCError('UPLOAD_EXPIRED', {
+				message: 'Upload expired. Please upload the image again.',
+			})
+		)
+		await mount(initial)
+		fireEvent.click(screen.getByRole('tab', { name: 'Upload image' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Finish cover upload' }))
+		fireEvent.change(screen.getByLabelText('Title'), {
+			target: { value: 'Edited title' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+		await screen.findByText('Upload expired. Please upload the image again.')
+		fireEvent.click(screen.getByRole('tab', { name: 'Image URL' }))
+		expect(
+			screen.getByLabelText<HTMLInputElement>('Cover image URL').value
+		).toBe(initial.coverUrl)
+		expect(screen.getByLabelText<HTMLInputElement>('Title').value).toBe(
+			'Edited title'
+		)
 	})
 	it('updates with the loaded revision and supports publishing from a draft', async () => {
 		await mount(initial)
@@ -246,5 +301,61 @@ vi.mock('@altstack/env/web', () => {
 			VITE_APP_URL: 'https://altstack.test',
 			VITE_S3_PUBLIC_URL: 'https://storage.test',
 		},
+	}
+})
+
+vi.mock('#/components/block-note/editor', () => {
+	return {
+		default: function MockEditor({
+			ref,
+			value = '',
+			onChange,
+		}: {
+			ref: React.Ref<{ flush: () => void; readMarkdown: () => string }>
+			value?: string
+			onChange?: (content: string) => void
+		}) {
+			const input = useRef<HTMLTextAreaElement>(null)
+			useImperativeHandle(ref, () => {
+				return {
+					flush: () => undefined,
+					readMarkdown: () => input.current?.value ?? value,
+				}
+			})
+			return (
+				<textarea
+					aria-label="Markdown editor"
+					ref={input}
+					defaultValue={value}
+					onChange={(event) => onChange?.(event.target.value)}
+				/>
+			)
+		},
+	}
+})
+vi.mock('#/components/image-uploader', () => {
+	return {
+		CoverUploader: ({
+			onChange,
+			onBusyChange,
+		}: {
+			onChange: (value: string) => void
+			onBusyChange: (busy: boolean) => void
+		}) => (
+			<div>
+				<button type="button" onClick={() => onBusyChange(true)}>
+					Start cover upload
+				</button>
+				<button
+					type="button"
+					onClick={() => {
+						onChange('tmp/screenshots/cover-1.png')
+						onBusyChange(false)
+					}}
+				>
+					Finish cover upload
+				</button>
+			</div>
+		),
 	}
 })

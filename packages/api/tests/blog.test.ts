@@ -12,11 +12,17 @@ import {
 	describe,
 	expect,
 	it,
+	vi,
 } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
 import { sitemapBlogs } from '@altstack/api/queries/blog'
 import { adminBlogRouter, blogRouter } from '@altstack/api/routers/blog'
+import {
+	promoteTempImageToBlogCover,
+	deleteFinalKeysBestEffort,
+	TempUploadMissingError,
+} from '@altstack/api/storage'
 
 import { blogPost, user } from '@altstack/db/schemas'
 
@@ -24,6 +30,15 @@ import { blogReadTime } from '@altstack/shared/schemas'
 import type { BlogBody } from '@altstack/shared/schemas'
 
 import { connectTestPostgres } from '../../db/tests/helpers/postgres'
+
+vi.mock('@altstack/api/storage', () => {
+	return {
+		promoteTempImageToBlogCover: vi.fn(),
+		deleteFinalKeysBestEffort: vi.fn(),
+		TempUploadMissingError: class extends Error {},
+		InvalidTempUploadError: class extends Error {},
+	}
+})
 
 let postgres: Awaited<ReturnType<typeof connectTestPostgres>>
 let scope: Awaited<ReturnType<typeof postgres.createSchema>>
@@ -63,6 +78,12 @@ beforeAll(async () => {
 	})
 }, 60000)
 beforeEach(async () => {
+	vi.mocked(promoteTempImageToBlogCover)
+		.mockReset()
+		.mockImplementation(({ postId }) =>
+			Promise.resolve(`blogs/${postId}/cover-${randomUUID()}.png`)
+		)
+	vi.mocked(deleteFinalKeysBestEffort).mockReset().mockResolvedValue(undefined)
 	await scope.db.delete(blogPost)
 	await scope.db.delete(user)
 	authorId = randomUUID()
@@ -80,6 +101,130 @@ afterAll(async () => {
 })
 
 describe('blog publishing and CRUD', () => {
+	it('promotes uploaded covers, retains unchanged covers across slug edits, and cleans up replaced or deleted covers', async () => {
+		const upload = 'tmp/screenshots/cover-1.png'
+		const saved = await admin().create({
+			body: body({ coverUrl: upload, status: 'published' }),
+		})
+		expect(saved.coverUrl).toMatch(new RegExp(`^blogs/${saved.id}/`))
+		expect(deleteFinalKeysBestEffort).toHaveBeenCalledWith([upload])
+		expect(
+			(await reader().getBySlug({ params: { slug: saved.slug } })).coverUrl
+		).toBe(saved.coverUrl)
+		await admin().update({
+			params: { id: saved.id },
+			body: {
+				...body({ slug: 'renamed-post', coverUrl: saved.coverUrl }),
+				expectedVersion: 1,
+			},
+		})
+		expect(promoteTempImageToBlogCover).toHaveBeenCalledTimes(1)
+		vi.mocked(deleteFinalKeysBestEffort).mockClear()
+		const replacement = await admin().update({
+			params: { id: saved.id },
+			body: {
+				...body({ slug: 'renamed-post', coverUrl: upload }),
+				expectedVersion: 2,
+			},
+		})
+		expect(replacement.coverUrl).not.toBe(saved.coverUrl)
+		expect(deleteFinalKeysBestEffort).toHaveBeenCalledWith([
+			upload,
+			saved.coverUrl,
+		])
+		await admin().delete({
+			params: { id: saved.id },
+			body: { expectedVersion: 3 },
+		})
+		expect(deleteFinalKeysBestEffort).toHaveBeenCalledWith([
+			replacement.coverUrl,
+		])
+	})
+	it('keeps the old cover and temporary source when a database save fails after promotion', async () => {
+		const saved = await admin().create({
+			body: body({ coverUrl: 'tmp/screenshots/cover-1.png' }),
+		})
+		await admin().create({ body: body({ slug: 'taken-slug' }) })
+		vi.mocked(deleteFinalKeysBestEffort).mockClear()
+		await expect(
+			admin().update({
+				params: { id: saved.id },
+				body: {
+					...body({
+						slug: 'taken-slug',
+						coverUrl: 'tmp/screenshots/cover-2.png',
+					}),
+					expectedVersion: 1,
+				},
+			})
+		).rejects.toMatchObject({ code: 'CONFLICT' })
+		const current = await admin().getById({ params: { id: saved.id } })
+		expect(current.coverUrl).toBe(saved.coverUrl)
+		expect(current.version).toBe(1)
+		const removed = vi
+			.mocked(deleteFinalKeysBestEffort)
+			.mock.calls.flatMap(([keys]) => keys)
+		expect(removed).toHaveLength(1)
+		expect(removed[0]).toMatch(/^blogs\//)
+		expect(removed).not.toContain(saved.coverUrl)
+		expect(removed).not.toContain('tmp/screenshots/cover-2.png')
+	})
+	it('rejects cross-post keys and expired uploads while leaving HTTPS covers unmanaged', async () => {
+		const saved = await admin().create({
+			body: body({ coverUrl: 'tmp/screenshots/cover-1.png' }),
+		})
+		await expect(
+			admin().create({
+				body: body({ slug: 'another', coverUrl: saved.coverUrl }),
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		const other = await admin().create({ body: body({ slug: 'another' }) })
+		await expect(
+			admin().update({
+				params: { id: other.id },
+				body: {
+					...body({ slug: other.slug, coverUrl: saved.coverUrl }),
+					expectedVersion: 1,
+				},
+			})
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+		vi.mocked(promoteTempImageToBlogCover).mockRejectedValueOnce(
+			new TempUploadMissingError()
+		)
+		await expect(
+			admin().update({
+				params: { id: saved.id },
+				body: {
+					...body({ coverUrl: 'tmp/screenshots/cover-2.png' }),
+					expectedVersion: 1,
+				},
+			})
+		).rejects.toMatchObject({ code: 'UPLOAD_EXPIRED' })
+		vi.mocked(deleteFinalKeysBestEffort).mockClear()
+		await admin().delete({
+			params: { id: other.id },
+			body: { expectedVersion: 1 },
+		})
+		expect(deleteFinalKeysBestEffort).not.toHaveBeenCalled()
+	})
+	it('can switch an uploaded cover to an HTTPS URL and deletes only the old managed image', async () => {
+		const saved = await admin().create({
+			body: body({ coverUrl: 'tmp/screenshots/cover-1.png' }),
+		})
+		vi.mocked(deleteFinalKeysBestEffort).mockClear()
+		const updated = await admin().update({
+			params: { id: saved.id },
+			body: { ...body(), expectedVersion: 1 },
+		})
+		expect(updated.coverUrl).toBe(body().coverUrl)
+		expect(deleteFinalKeysBestEffort).toHaveBeenCalledWith([saved.coverUrl])
+		vi.mocked(deleteFinalKeysBestEffort).mockClear()
+		await admin().delete({
+			params: { id: saved.id },
+			body: { expectedVersion: 2 },
+		})
+		expect(deleteFinalKeysBestEffort).not.toHaveBeenCalled()
+	})
 	it.each([undefined, 'user'] as const)(
 		'protects every admin operation over REST and RPC from %s access',
 		async (role) => {

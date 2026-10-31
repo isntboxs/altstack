@@ -34,6 +34,7 @@ interface ImageUploaderProps extends Omit<
 	onRemoveExisting?: () => void
 	onChange?: (value: string) => void
 	onDisplayUrlChange?: (url: string | null) => void
+	onBusyChange?: (busy: boolean) => void
 	aspectRatio: number
 	accept: Record<string, Array<string>>
 	maxSize: number
@@ -68,6 +69,7 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 	className,
 	onChange,
 	onDisplayUrlChange,
+	onBusyChange,
 	value,
 	existingUrl,
 	onRemoveExisting,
@@ -95,6 +97,7 @@ export const ImageUploader: FC<ImageUploaderProps> = ({
 		value,
 		onChange,
 		onDisplayUrlChange,
+		onBusyChange,
 		accept,
 		maxSize,
 		mimeTypes,
@@ -188,6 +191,7 @@ export type LogoUploaderProps = Pick<
 	| 'onRemoveExisting'
 	| 'onChange'
 	| 'onDisplayUrlChange'
+	| 'onBusyChange'
 > &
 	Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> & {
 		api?: ImageUploadEndpoints
@@ -225,6 +229,28 @@ export const ScreenshotUploader: FC<ScreenshotUploaderProps> = ({
 		mimeTypes={SCREENSHOT_MIME}
 		api={api}
 		copy={SCREENSHOT_COPY}
+		className={cn('aspect-video w-full', className)}
+	/>
+)
+
+export const CoverUploader: FC<ScreenshotUploaderProps> = ({
+	className,
+	api = client.admin.upload.screenshot,
+	...props
+}) => (
+	<ImageUploader
+		{...props}
+		aspectRatio={16 / 9}
+		accept={IMAGE_ACCEPT}
+		maxSize={SCREENSHOT_MAX_SIZE}
+		mimeTypes={SCREENSHOT_MIME}
+		api={api}
+		copy={{
+			...SCREENSHOT_COPY,
+			noun: 'Cover',
+			uploadingNoun: 'cover',
+			dialogTitle: 'Crop cover image',
+		}}
 		className={cn('aspect-video w-full', className)}
 	/>
 )

@@ -9,6 +9,7 @@ import { BlogArticle } from '#/features/blogs/components'
 import { blogQueries } from '#/features/blogs/queries'
 import { publicContentOptions } from '#/features/public-content/queries'
 import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
+import { resolveFileUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/blogs/$slug')({
 	shouldReload: ({ cause }) => cause !== 'stay',
@@ -40,14 +41,14 @@ export const Route = createFileRoute('/_app/blogs/$slug')({
 					title: `${loaderData.post.title} | AltStack`,
 					description: loaderData.post.description,
 					path: `/blogs/${loaderData.post.slug}`,
-					image: loaderData.post.coverUrl,
+					image: resolveFileUrl(loaderData.post.coverUrl),
 					imageAlt: loaderData.post.title,
 					entities: [
 						{
 							'@type': 'BlogPosting',
 							headline: loaderData.post.title,
 							description: loaderData.post.description,
-							image: loaderData.post.coverUrl,
+							image: resolveFileUrl(loaderData.post.coverUrl),
 							url: publicUrl(`/blogs/${loaderData.post.slug}`),
 							datePublished: loaderData.post.publishedAt.toISOString(),
 							dateModified: loaderData.post.updatedAt.toISOString(),

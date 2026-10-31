@@ -14,9 +14,11 @@ import {
 	SCREENSHOT_MAX_SIZE,
 	SCREENSHOT_MIME,
 } from '@altstack/shared/constants'
+import { blogCoverKeySchema } from '@altstack/shared/schemas/blog'
 import {
 	projectLogoKeySchema,
 	projectScreenshotKeySchema,
+	screenshotKeySchema,
 } from '@altstack/shared/schemas/upload'
 
 export type ProjectImageKind = 'logo' | 'screenshot'
@@ -147,7 +149,44 @@ export async function promoteTempImageToProject({
 	if (!finalKeySchema.safeParse(finalKey).success) {
 		throw new StorageError(`Built invalid final ${kind} key`)
 	}
+	return promoteTempImage({ tmpKey, finalKey, kind, consumeSource: true })
+}
 
+export async function promoteTempImageToBlogCover({
+	tmpKey,
+	postId,
+}: {
+	tmpKey: string
+	postId: string
+}) {
+	const ext = extractImageExtension(tmpKey)
+	const finalKey = `blogs/${postId}/cover-${randomUUID()}.${ext}`
+	if (
+		!screenshotKeySchema.safeParse(tmpKey).success ||
+		!blogCoverKeySchema.safeParse(finalKey).success
+	) {
+		throw new StorageError('Invalid blog cover upload.')
+	}
+	// Keep the upload retryable until the blog transaction has committed.
+	return promoteTempImage({
+		tmpKey,
+		finalKey,
+		kind: 'screenshot',
+		consumeSource: false,
+	})
+}
+
+async function promoteTempImage({
+	tmpKey,
+	finalKey,
+	kind,
+	consumeSource,
+}: {
+	tmpKey: string
+	finalKey: string
+	kind: ProjectImageKind
+	consumeSource: boolean
+}): Promise<string> {
 	let contentType: string | undefined
 	try {
 		const head = await s3.send(
@@ -199,6 +238,7 @@ export async function promoteTempImageToProject({
 			})
 		)
 	} catch {
+		await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to promote temporary ${kind}`)
 	}
 	try {
@@ -207,11 +247,12 @@ export async function promoteTempImageToProject({
 		await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to verify promoted ${kind}`)
 	}
-	try {
-		await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey }))
-	} catch {
-		// Copy already succeeded and is verified; a leftover tmp object will
-		// expire via lifecycle, so don't fail the whole operation.
+	if (consumeSource) {
+		try {
+			await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: tmpKey }))
+		} catch {
+			// The verified copy is usable; lifecycle expiry cleans up the source.
+		}
 	}
 	return finalKey
 }

@@ -1,6 +1,7 @@
 import { IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
+	ClientOnly,
 	Link,
 	useBlocker,
 	useNavigate,
@@ -47,10 +48,14 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from '@altstack/ui/components/native-select'
+import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
+import BlockNoteEditor from '#/components/block-note/editor'
+import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { PublicContent } from '#/components/public-content'
+import { BlogCoverInput } from '#/features/admin-blogs/cover-input'
 import { orpc } from '#/utils/orpc'
 
 type Initial = ORPCRouterOutputs['admin']['blog']['getById']
@@ -67,6 +72,7 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 	const router = useRouter()
+	const editor = useRef<BlockNoteEditorHandle>(null)
 	const customizedSlug = useRef(!!initial)
 	const saved = useRef(false)
 	const initialValue: BlogBody = initial
@@ -85,9 +91,12 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 	const [conflict, setConflict] = useState(false)
 	const [reload, setReload] = useState(false)
 	const [reloading, setReloading] = useState(false)
+	const [coverBusy, setCoverBusy] = useState(false)
+	const [coverRevision, setCoverRevision] = useState(0)
 	const create = useMutation(orpc.admin.blog.create.mutationOptions())
 	const update = useMutation(orpc.admin.blog.update.mutationOptions())
-	const busy = create.isPending || update.isPending || reloading
+	const saving = create.isPending || update.isPending || reloading
+	const busy = saving || coverBusy
 	const blocker = useBlocker({
 		shouldBlockFn: () =>
 			!saved.current && JSON.stringify(value) !== JSON.stringify(initialValue),
@@ -114,7 +123,11 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 	async function submit(event: React.SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (busy) return
-		const parsed = blogBodySchema.safeParse(value)
+		editor.current?.flush()
+		const parsed = blogBodySchema.safeParse({
+			...value,
+			content: editor.current?.readMarkdown() ?? value.content,
+		})
 		if (!parsed.success) {
 			const fields: Record<string, string> = {}
 			for (const issue of parsed.error.issues) {
@@ -134,6 +147,15 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 				})
 			} else await create.mutateAsync({ body: parsed.data })
 		} catch (err) {
+			if (
+				typeof err === 'object' &&
+				err !== null &&
+				'code' in err &&
+				err.code === 'UPLOAD_EXPIRED'
+			) {
+				setField('coverUrl', initial?.coverUrl ?? '')
+				setCoverRevision((previous) => previous + 1)
+			}
 			setError(
 				err instanceof Error ? err.message : 'Unable to save this blog post.'
 			)
@@ -213,7 +235,11 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 										title,
 										...(!customizedSlug.current
 											? {
-													slug: slugify(title).slice(0, 160).replace(/-+$/, ''),
+													slug: slugify(title)
+														.replace(/[^a-z0-9]+/g, '-')
+														.replace(/^-+/, '')
+														.slice(0, 160)
+														.replace(/-+$/, ''),
 												}
 											: {}),
 									}
@@ -236,7 +262,8 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 							}}
 						/>
 						<FieldDescription>
-							Public URL: /blogs/{value.slug || 'your-post-slug'}
+							Public URL: /blogs/{value.slug || 'your-post-slug'}. Generated
+							from the title until you customize it.
 						</FieldDescription>
 						{fieldError('slug')}
 					</Field>
@@ -256,32 +283,44 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 						{fieldError('description')}
 					</Field>
 					<Field data-invalid={!!fieldErrors.coverUrl}>
-						<FieldLabel htmlFor="blog-coverUrl">Cover image URL</FieldLabel>
-						<Input
-							id="blog-coverUrl"
-							type="url"
+						<FieldLabel>Cover image</FieldLabel>
+						<BlogCoverInput
+							key={coverRevision}
 							value={value.coverUrl}
-							disabled={busy}
-							{...fieldProps('coverUrl')}
-							onChange={(event) => setField('coverUrl', event.target.value)}
+							onChange={(coverUrl) => setField('coverUrl', coverUrl)}
+							onBusyChange={setCoverBusy}
+							disabled={saving}
+							invalid={!!fieldErrors.coverUrl}
+							errorId={fieldErrors.coverUrl ? 'blog-coverUrl-error' : undefined}
 						/>
-						<FieldDescription>
-							Use an HTTPS image URL. Landscape images with a 16:9 ratio work
-							best.
-						</FieldDescription>
 						{fieldError('coverUrl')}
 					</Field>
 					<Field data-invalid={!!fieldErrors.content}>
-						<FieldLabel htmlFor="blog-content">Content (Markdown)</FieldLabel>
-						<Textarea
+						<FieldLabel id="blog-content-label">Content (Markdown)</FieldLabel>
+						<fieldset
 							id="blog-content"
-							value={value.content}
-							disabled={busy}
-							maxLength={200000}
-							className="min-h-96 font-mono text-sm"
+							aria-labelledby="blog-content-label"
 							{...fieldProps('content')}
-							onChange={(event) => setField('content', event.target.value)}
-						/>
+							tabIndex={-1}
+							inert={saving}
+							className="min-w-0 rounded-lg border p-4 sm:p-5"
+						>
+							<ClientOnly
+								fallback={
+									<div className="flex min-h-40 flex-col gap-3">
+										<output>Loading editor…</output>
+										<Skeleton className="h-4 w-3/4" />
+										<Skeleton className="h-4 w-1/2" />
+									</div>
+								}
+							>
+								<BlockNoteEditor
+									ref={editor}
+									value={value.content}
+									onChange={(content) => setField('content', content)}
+								/>
+							</ClientOnly>
+						</fieldset>
 						<FieldDescription>
 							Use ## headings for sections and ### for subsections. The table of
 							contents and read time are generated automatically. Estimated read
@@ -313,7 +352,11 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 						</FieldDescription>
 					</Field>
 				</FieldGroup>
-				<Collapsible>
+				<Collapsible
+					onOpenChange={(open) => {
+						if (open) editor.current?.flush()
+					}}
+				>
 					<CollapsibleTrigger
 						render={<Button type="button" variant="outline" />}
 					>
@@ -347,11 +390,13 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 					</Link>
 					<Button type="submit" disabled={busy}>
 						<IconDeviceFloppy data-icon="inline-start" />
-						{busy
+						{saving
 							? 'Saving…'
-							: value.status === 'published'
-								? 'Save and publish'
-								: 'Save draft'}
+							: coverBusy
+								? 'Uploading cover…'
+								: value.status === 'published'
+									? 'Save and publish'
+									: 'Save draft'}
 					</Button>
 				</div>
 			</form>
