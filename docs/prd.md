@@ -87,8 +87,10 @@ would be reserved. Category slugs retain their existing validation.
   Missing/custom/unrecognized metadata stays `unknown`. The unknown filter is
   noindex; it is not a license assertion. Archived is based on GitHub's flag;
   it does not automatically unpublish a listing.
-- Home defaults to verified-first recommendation, then stars and deterministic
-  ID ordering. Category/tag/license catalogues default to Most stars. Explicit
+- Home defaults to [Recommended ranking](ranking.md), combining normalized stars
+  and forks, repository age, recent activity, and a 5% verification bonus;
+  archived repositories receive a penalty. Ties use deterministic ID ordering.
+  Category/tag/license catalogues default to Most stars. Explicit
   Latest sorts by listing creation time. Most popular currently means total
   GitHub stars, like Most stars; other options include name, forks, last commit,
   repository age, Oldest, and Trending.

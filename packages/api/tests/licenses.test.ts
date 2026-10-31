@@ -77,6 +77,8 @@ const fetchRepo = vi
 	.mockRejectedValue(new Error('Public reads must not call GitHub'))
 
 beforeAll(async () => {
+	vi.useFakeTimers({ toFake: ['Date'] })
+	vi.setSystemTime(new Date('2026-10-31T12:00:00+07:00'))
 	for (const [index, item] of fixtures.entries()) {
 		await db.insert(project).values({
 			id: item.id,
@@ -185,6 +187,7 @@ afterAll(async () => {
 			inArray(project.id, [...fixtures.map((item) => item.id), ...privateIds])
 		)
 	fetchRepo.mockRestore()
+	vi.useRealTimers()
 })
 
 describe('public license catalogue', () => {
@@ -271,7 +274,7 @@ describe('public license catalogue', () => {
 		})
 		expect(detail.github).toMatchObject({ licenseSlug: 'mit', archived: true })
 	})
-	it('implements all ten deterministic sorts, including nulls last and observed seven-day growth', async () => {
+	it('implements deterministic sorts, including health ranking, nulls last and observed seven-day growth', async () => {
 		const idsDescending = (
 			a: (typeof fixtures)[number],
 			b: (typeof fixtures)[number]
@@ -289,7 +292,13 @@ describe('public license catalogue', () => {
 						? -1
 						: direction * (a[key].getTime() - b[key].getTime())
 		const expected = {
-			recommended: fixtures.toReversed(),
+			recommended: [
+				fixtures[1]!,
+				fixtures[4]!,
+				fixtures[3]!,
+				fixtures[2]!,
+				fixtures[0]!,
+			],
 			oldest: fixtures,
 			newest: fixtures.toReversed(),
 			name: fixtures,

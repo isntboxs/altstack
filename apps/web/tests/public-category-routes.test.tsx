@@ -988,9 +988,7 @@ describe('public category search, sorting and pagination', () => {
 			expect(
 				await screen.findByRole('option', { name: 'Order by', selected: true })
 			).toBeTruthy()
-			expect(
-				screen.queryByRole('option', { name: 'Verified first' })
-			).toBeNull()
+			expect(screen.queryByRole('option', { name: 'Recommended' })).toBeNull()
 			expect(screen.getAllByRole('option')).toHaveLength(11)
 			fireEvent.keyDown(screen.getByRole('option', { name: 'Most stars' }), {
 				key: 'Enter',
@@ -1139,7 +1137,7 @@ describe('public category search, sorting and pagination', () => {
 		expect(
 			await screen.findByRole('option', { name: 'Order by', selected: true })
 		).toBeTruthy()
-		expect(screen.queryByRole('option', { name: 'Verified first' })).toBeNull()
+		expect(screen.queryByRole('option', { name: 'Recommended' })).toBeNull()
 		const mostStars = screen.getByRole('option', { name: 'Most stars' })
 		fireEvent.pointerDown(mostStars, { pointerType: 'mouse' })
 		fireEvent.click(mostStars)

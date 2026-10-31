@@ -34,7 +34,7 @@ import {
 
 export const selectSortItems: Array<{ label: string; value: SearchSortType }> =
 	[
-		{ label: 'Verified first', value: 'recommended' },
+		{ label: 'Recommended', value: 'recommended' },
 		{ label: 'Oldest', value: 'oldest' },
 		{ label: 'Latest', value: 'newest' },
 		{ label: 'Most popular', value: 'most-popular' },

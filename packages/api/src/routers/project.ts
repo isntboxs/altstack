@@ -23,6 +23,7 @@ import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 import { projectHasLicense } from '@altstack/api/queries/license'
 import { projectIsVerified } from '@altstack/api/queries/ownership'
 import { searchPublicProjectMentions } from '@altstack/api/queries/project-mentions'
+import { recommendedProjectScore } from '@altstack/api/queries/project-ranking'
 import { getProjectTags, projectHasPublicTag } from '@altstack/api/queries/tag'
 
 import {
@@ -211,11 +212,7 @@ function searchSortOrder(now: Date) {
 		having count(*) >= 2
 	)`
 	return {
-		recommended: [
-			desc(projectIsVerified),
-			desc(githubRepository.stars),
-			desc(project.id),
-		],
+		recommended: [desc(recommendedProjectScore(now)), desc(project.id)],
 		newest: [desc(project.createdAt), desc(project.id)],
 		oldest: [asc(project.createdAt), asc(project.id)],
 		name: [asc(project.name), asc(project.id)],
@@ -265,6 +262,7 @@ const searchHandler = publicProcedure.project.search.handler(
 		}
 
 		const where = and(...conditions)
+		const asOf = new Date()
 
 		const [rows, [countRow]] = await Promise.all([
 			db
@@ -276,7 +274,7 @@ const searchHandler = publicProcedure.project.search.handler(
 				.from(project)
 				.where(where)
 				.innerJoin(githubRepository, eq(project.id, githubRepository.projectId))
-				.orderBy(...searchSortOrder(new Date())[input.query.sort])
+				.orderBy(...searchSortOrder(asOf)[input.query.sort])
 				.limit(limit)
 				.offset(offset),
 
@@ -316,7 +314,7 @@ const searchHandler = publicProcedure.project.search.handler(
 		const hasPreviousPage = page > 1
 
 		return {
-			asOf: new Date(),
+			asOf,
 			projects: rows.map((row) => {
 				return {
 					...publicFields.parse({ ...row.projects, verified: row.verified }),
