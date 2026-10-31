@@ -1,5 +1,16 @@
-import { IconMenu2 } from '@tabler/icons-react'
-import { Link, useLocation, useRouter } from '@tanstack/react-router'
+import {
+	IconActivity,
+	IconArrowRight,
+	IconLicense,
+	IconMenu2,
+	IconTag,
+} from '@tabler/icons-react'
+import {
+	Link,
+	useLocation,
+	useMatchRoute,
+	useRouter,
+} from '@tanstack/react-router'
 import { log } from 'evlog/client'
 import { useState } from 'react'
 import { Bookmark2, Logout4 } from 'reicon-react'
@@ -19,16 +30,25 @@ import {
 } from '@altstack/ui/components/dropdown-menu'
 import {
 	NavigationMenu,
+	NavigationMenuContent,
 	NavigationMenuItem,
 	NavigationMenuLink,
 	NavigationMenuList,
+	NavigationMenuTrigger,
 	navigationMenuTriggerStyle,
 } from '@altstack/ui/components/navigation-menu'
+import { Separator } from '@altstack/ui/components/separator'
 
 import { AuthDialog } from '#/components/auth-dialog'
 import { BrandMark } from '#/components/brand-mark'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
+
+const resourceLinks = [
+	{ to: '/tags', label: 'Tags', icon: IconTag },
+	{ to: '/licenses', label: 'Licenses', icon: IconLicense },
+	{ to: '/activity', label: 'Activity', icon: IconActivity },
+] as const
 
 /** Provides responsive public navigation and the current session's account actions. */
 export const Header = ({
@@ -40,6 +60,7 @@ export const Header = ({
 	const [openNavigation, setOpenNavigation] = useState(false)
 
 	const { pathname, href } = useLocation()
+	const matchRoute = useMatchRoute()
 
 	const handleAuthDialog = () => {
 		setOpenAuthDialog((prev) => !prev)
@@ -55,7 +76,7 @@ export const Header = ({
 
 			<header className="fixed top-0 z-50 h-12 w-full bg-background">
 				<div className="container mx-auto flex h-full w-full max-w-6xl items-center justify-between px-1 sm:px-4 lg:px-16">
-					<div className="flex min-w-0 items-center gap-0 sm:gap-2 lg:gap-8">
+					<div className="flex min-w-0 items-center gap-0 sm:gap-2 lg:gap-12">
 						<DropdownMenu
 							open={openNavigation}
 							onOpenChange={setOpenNavigation}
@@ -127,71 +148,96 @@ export const Header = ({
 						</Link>
 
 						<NavigationMenu className="max-lg:hidden">
-							<NavigationMenuList>
+							<NavigationMenuList className="gap-2">
 								<NavigationMenuItem>
 									<NavigationMenuLink
-										render={<Link to="/collections" />}
+										render={<Link to="/collections" viewTransition />}
 										className={navigationMenuTriggerStyle({
-											className: 'h-fit p-1',
+											className: `h-fit px-2`,
 										})}
+										active={
+											!!matchRoute({
+												to: '/collections',
+												includeSearch: true,
+												fuzzy: true,
+											})
+										}
 									>
 										Collections
 									</NavigationMenuLink>
 								</NavigationMenuItem>
 								<NavigationMenuItem>
 									<NavigationMenuLink
-										render={
-											<Link
-												to="/categories"
-												activeOptions={{ includeSearch: false }}
-												activeProps={{
-													className: 'font-semibold text-primary',
-												}}
-												viewTransition
-											/>
-										}
+										render={<Link to="/categories" viewTransition />}
 										className={navigationMenuTriggerStyle({
-											className: 'h-fit p-1',
+											className: `h-fit px-2`,
 										})}
+										active={
+											!!matchRoute({
+												to: '/categories',
+												includeSearch: true,
+												fuzzy: true,
+											})
+										}
 									>
 										Categories
 									</NavigationMenuLink>
 								</NavigationMenuItem>
 								<NavigationMenuItem>
-									<NavigationMenuLink
-										render={<Link to="/tags" viewTransition />}
-										className={navigationMenuTriggerStyle({
-											className: 'h-fit p-1',
-										})}
-									>
-										Tags
-									</NavigationMenuLink>
-								</NavigationMenuItem>{' '}
-								<NavigationMenuItem>
-									<NavigationMenuLink
-										render={<Link to="/licenses" viewTransition />}
-										className={navigationMenuTriggerStyle({
-											className: 'h-fit p-1',
-										})}
-									>
-										Licenses
-									</NavigationMenuLink>
-								</NavigationMenuItem>
-								<NavigationMenuItem>
-									<NavigationMenuLink
-										render={<Link to="/activity" viewTransition />}
-										className={navigationMenuTriggerStyle({
-											className: 'h-fit p-1',
-										})}
-									>
-										Activity
-									</NavigationMenuLink>
+									<NavigationMenuTrigger className="h-fit px-2">
+										Resources
+									</NavigationMenuTrigger>
+									<NavigationMenuContent className="p-0">
+										<div className="grid min-h-48 w-100 grid-cols-[minmax(0,1.2fr)_auto_minmax(0,1fr)]">
+											<div className="p-2">
+												<p className="px-2 py-2 text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+													Resources
+												</p>
+												<ul className="flex flex-col gap-0.5">
+													{resourceLinks.map(({ to, label, icon: Icon }) => (
+														<li key={to}>
+															<NavigationMenuLink
+																render={<Link to={to} viewTransition />}
+																className="text-muted-foreground hover:text-foreground focus:text-foreground"
+																active={
+																	!!matchRoute({
+																		to,
+																		includeSearch: true,
+																		fuzzy: true,
+																	})
+																}
+															>
+																<Icon aria-hidden="true" />
+																{label}
+															</NavigationMenuLink>
+														</li>
+													))}
+												</ul>
+											</div>
+											<Separator orientation="vertical" />
+											<NavigationMenuLink
+												render={<Link to="/submit" viewTransition />}
+												className="flex flex-col items-start gap-1 rounded-l-none! bg-muted/20 p-4 text-start"
+											>
+												<p className="text-sm font-medium">
+													Submit your project
+												</p>
+												<p className="text-xs leading-relaxed text-muted-foreground">
+													Add an open source project to the directory.
+												</p>
+												<div className="mt-auto flex gap-1 text-xs">
+													Submit a project
+													<IconArrowRight aria-hidden="true" />
+												</div>
+											</NavigationMenuLink>
+										</div>
+									</NavigationMenuContent>
 								</NavigationMenuItem>
 							</NavigationMenuList>
 						</NavigationMenu>
 					</div>
 
-					<div className="flex shrink-0 items-center gap-0 sm:gap-2">
+					<div className="flex items-center gap-2">
 						<ThemeSwitcher />
 
 						<Link
