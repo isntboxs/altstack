@@ -121,7 +121,7 @@ describe('blog article HTML and anchors', () => {
 		const data = {
 			...post,
 			content:
-				'# Intro\n\n## **Read** [the guide](https://example.test)\n\n### Use `tools`\n\n#### Details\n\n##### Details\n\n###### 日本語',
+				'# Intro\n\n## **Read [the guide](https://example.test)**\n\n### Use `tools`\n\n#### Details\n\n##### Details\n\n###### 日本語',
 		}
 		const root = createRootRoute()
 		const route = createRoute({
@@ -152,9 +152,15 @@ describe('blog article HTML and anchors', () => {
 			)
 			expect(target.pathname).toBe('/blogs/building-software')
 			expect(decodeURIComponent(target.hash.slice(1))).toBe(heading.id)
+			const textLink = heading.querySelector('a:not([aria-label])')!
+			expect(textLink).not.toBeNull()
+			expect(textLink.textContent.trim()).not.toBe('')
+			expect(textLink.getAttribute('href')).toBe(link.getAttribute('href'))
 		}
 		expect(content.querySelector('a a')).toBeNull()
-		expect(content.querySelector('strong')?.textContent).toBe('Read')
+		expect(content.querySelector('strong')?.textContent).toContain(
+			'Read the guide'
+		)
 		expect(content.querySelector('code')?.textContent).toBe('tools')
 		expect(
 			content.querySelector('a[href="https://example.test"]')

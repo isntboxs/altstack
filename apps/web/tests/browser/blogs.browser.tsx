@@ -154,7 +154,7 @@ describe('blog article layout in Chromium', () => {
 		await page.viewport(1440, 800)
 		const router = await mount(false, post, '/blogs/technology?ref=reading')
 		const heading = section(4)
-		const anchor = heading.querySelector<HTMLAnchorElement>('a')!
+		const anchor = heading.querySelector<HTMLAnchorElement>('a[aria-label]')!
 		const link = page.getByRole('link', {
 			name: 'Link to Section 4',
 			exact: true,
@@ -197,6 +197,54 @@ describe('blog article layout in Chromium', () => {
 			).toBeLessThan(2)
 		})
 	})
+	it('follows heading text with mouse and keyboard while preserving formatting and embedded links', async () => {
+		await page.viewport(1440, 800)
+		const router = await mount(false, {
+			...post,
+			content: `## Start **small** with \`tools\`\n\n${'Article content. '.repeat(150)}\n\n## **Read [guide](https://example.test)**\n\nMore content.`,
+		})
+		const article = page.getByRole('article', {
+			name: 'Article content',
+			exact: true,
+		})
+		const heading = document.getElementById('start-small-with-tools-0')!
+		const textLink = heading.querySelector<HTMLAnchorElement>(
+			'a:not([aria-label])'
+		)!
+		expect(textLink.querySelector('strong')?.textContent).toBe('small')
+		expect(textLink.querySelector('code')?.textContent).toBe('tools')
+		expect(getComputedStyle(textLink).fontWeight).toBe(
+			getComputedStyle(heading).fontWeight
+		)
+		expect(getComputedStyle(textLink).color).toBe(
+			getComputedStyle(heading).color
+		)
+		await article
+			.getByRole('link', { name: 'Start small with tools', exact: true })
+			.click()
+		await waitFor(() => {
+			expect(router.state.location.hash).toBe('start-small-with-tools-0')
+			expect(Math.abs(heading.getBoundingClientRect().top - 96)).toBeLessThan(2)
+			expect(active().getAttribute('href')).toBe('#start-small-with-tools-0')
+		})
+		expect(document.activeElement).toBe(heading)
+		const nestedHeading = document.getElementById('read-guide-1')!
+		const nestedTextLink = nestedHeading.querySelector<HTMLAnchorElement>(
+			'a:not([aria-label])'
+		)!
+		expect(nestedHeading.querySelector('a a')).toBeNull()
+		expect(
+			nestedHeading.querySelector('a[href="https://example.test"]')
+		).not.toBeNull()
+		await userEvent.keyboard('{Tab}')
+		nestedTextLink.focus()
+		expect(getComputedStyle(nestedTextLink).outlineStyle).not.toBe('none')
+		await userEvent.keyboard('{Enter}')
+		await waitFor(() => {
+			expect(router.state.location.hash).toBe('read-guide-1')
+			expect(document.activeElement).toBe(nestedHeading)
+		})
+	})
 	it('keeps long headings and 44px permalink targets inside a mobile viewport', async () => {
 		await page.viewport(320, 844)
 		await mount(false, {
@@ -206,7 +254,7 @@ describe('blog article layout in Chromium', () => {
 		const heading = document.querySelector(
 			'article[aria-label="Article content"] h2'
 		)!
-		const anchor = heading.querySelector<HTMLAnchorElement>('a')!
+		const anchor = heading.querySelector<HTMLAnchorElement>('a[aria-label]')!
 		expect(anchor.getBoundingClientRect().width).toBeGreaterThanOrEqual(44)
 		expect(anchor.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
 		expect(anchor.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
