@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
+import { blogSlugSchema } from '@altstack/shared/schemas'
+
 import { emptyPublicContent } from '#/features/public-content/model'
 
 export const preparePublicContent = createServerFn({ method: 'POST' })
@@ -12,4 +14,14 @@ export const preparePublicContent = createServerFn({ method: 'POST' })
 		if (!project?.content) return emptyPublicContent()
 		const { prepareContent } = await import('./prepare.server')
 		return prepareContent({ slug: data.slug, content: project.content })
+	})
+
+export const preparePublicBlogContent = createServerFn({ method: 'POST' })
+	.validator(z.object({ slug: blogSlugSchema }).strict())
+	.handler(async ({ data }) => {
+		const { publicBlogContent } = await import('@altstack/api/queries/blog')
+		const post = await publicBlogContent(data.slug)
+		if (!post) return emptyPublicContent()
+		const { prepareContent } = await import('./prepare.server')
+		return prepareContent({ slug: `blogs/${data.slug}`, content: post.content })
 	})

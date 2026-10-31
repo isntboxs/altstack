@@ -50,7 +50,7 @@ import {
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
-import { BlogMarkdown } from '#/features/blogs/markdown'
+import { PublicContent } from '#/components/public-content'
 import { orpc } from '#/utils/orpc'
 
 type Initial = ORPCRouterOutputs['admin']['blog']['getById']
@@ -325,7 +325,11 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 							className="mt-4 min-w-0 rounded-lg border p-4 sm:p-6"
 						>
 							{value.content.trim() ? (
-								<BlogMarkdown content={value.content} />
+								<PublicContent
+									slug={`blogs/${value.slug || 'preview'}`}
+									content={value.content}
+									headingMode="article"
+								/>
 							) : (
 								<p className="text-sm text-muted-foreground">
 									Write some content to preview it here.

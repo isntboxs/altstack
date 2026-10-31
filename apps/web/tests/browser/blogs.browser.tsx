@@ -271,3 +271,10 @@ describe('blog article layout in Chromium', () => {
 		expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
 	})
 })
+
+vi.mock('#/features/public-content/server-function', () => {
+	return {
+		preparePublicContent: vi.fn(),
+		preparePublicBlogContent: vi.fn(),
+	}
+})

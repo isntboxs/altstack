@@ -5,15 +5,28 @@ import {
 	emptyPublicContent,
 	publicContentQueryKey,
 } from '#/features/public-content/model'
-import { preparePublicContent } from '#/features/public-content/server-function'
+import {
+	preparePublicContent,
+	preparePublicBlogContent,
+} from '#/features/public-content/server-function'
 
-export function publicContentOptions(slug: string, content: string) {
+export function publicContentOptions(
+	slug: string,
+	content: string,
+	kind: 'project' | 'blog' = 'project'
+) {
 	return queryOptions({
-		queryKey: [...publicContentQueryKey, slug, content],
+		queryKey: [
+			...publicContentQueryKey,
+			kind === 'blog' ? `blogs/${slug}` : slug,
+			content,
+		],
 		queryFn: async () => {
 			if (!content) return emptyPublicContent()
 			try {
-				return await preparePublicContent({ data: { slug } })
+				return kind === 'blog'
+					? await preparePublicBlogContent({ data: { slug } })
+					: await preparePublicContent({ data: { slug } })
 			} catch {
 				// Enhancement failure must not hide the documentation. Do not log
 				// source content (or a query key containing the entire document).

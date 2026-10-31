@@ -91,3 +91,13 @@ export function sitemapBlogs(database: BlogDatabase) {
 		.where(visibleBlog)
 		.orderBy(blogPost.slug)
 }
+
+export async function publicBlogContent(slug: string) {
+	const { db } = await import('@altstack/db')
+	const rows = await db
+		.select({ content: blogPost.content })
+		.from(blogPost)
+		.where(and(visibleBlog, eq(blogPost.slug, slug)))
+		.limit(1)
+	return rows.at(0)
+}

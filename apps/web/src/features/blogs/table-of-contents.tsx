@@ -1,4 +1,3 @@
-import type { BlogHeading } from './markdown'
 import { IconChevronDown, IconList } from '@tabler/icons-react'
 import { useNavigate } from '@tanstack/react-router'
 import { cn } from 'cn'
@@ -10,10 +9,12 @@ import {
 	CollapsibleTrigger,
 } from '@altstack/ui/components/collapsible'
 
+import type { ArticleHeading } from '#/features/public-content/headings'
+
 export function BlogTableOfContents({
 	headings,
 }: {
-	headings: Array<BlogHeading>
+	headings: Array<ArticleHeading>
 }) {
 	const navigate = useNavigate()
 	const [open, setOpen] = useState(true)
@@ -36,7 +37,7 @@ export function BlogTableOfContents({
 			const last = headings.at(-1)
 			if (last) {
 				const section = document.getElementById(last.id)
-				const article = section?.closest('article')
+				const article = section?.closest('article[aria-label="Blog post"]')
 				if (
 					section &&
 					article &&

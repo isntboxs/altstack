@@ -13,7 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
 import { BlogArticle, BlogCards } from '#/features/blogs/components'
-import { blogHeadings } from '#/features/blogs/markdown'
+import { articleHeadings } from '#/features/public-content/headings'
+import { emptyPublicContent } from '#/features/public-content/model'
 
 vi.mock('@altstack/env/web', () => {
 	return {
@@ -43,9 +44,68 @@ beforeEach(() =>
 )
 afterEach(() => vi.restoreAllMocks())
 describe('blog article HTML and anchors', () => {
+	it('uses shared highlighted code blocks, project mentions and internal blog links', async () => {
+		const prepared = emptyPublicContent()
+		prepared.codeBlocks[0] = {
+			code: 'const x = 1',
+			language: 'js',
+			tokens: [
+				[
+					{
+						content: 'const x = 1',
+						light: { color: '#123456' },
+						dark: { color: '#abcdef' },
+					},
+				],
+			],
+		}
+		prepared.projectsBySlug.vite = {
+			slug: 'vite',
+			name: 'Vite',
+			logo: null,
+			tagline: null,
+			stars: 0,
+			forks: 0,
+		}
+		const data = {
+			...post,
+			content:
+				'```js\nconst x = 1\n```\n\n## Intro\n\nBuilt with [a tool](/vite). [Next](next-post). [Website](https://example.test).',
+		}
+		const root = createRootRoute({
+			component: () => <BlogArticle post={data} prepared={prepared} />,
+		})
+		const router = createRouter({
+			routeTree: root,
+			history: createMemoryHistory({
+				initialEntries: ['/blogs/building-software'],
+			}),
+		})
+		await router.load()
+		const container = document.createElement('div')
+		container.innerHTML = renderToString(<RouterProvider router={router} />)
+		expect(
+			container
+				.querySelector('[data-code-block] button')
+				?.getAttribute('aria-label')
+		).toBe('Copy code')
+		expect(
+			container.querySelector('.public-code-token')?.getAttribute('style')
+		).toContain('#123456')
+		expect(
+			container.querySelector('[data-project-mention="vite"]')?.textContent
+		).toContain('Vite')
+		expect(container.querySelector('a[href="/blogs/next-post"]')).not.toBeNull()
+		expect(container.querySelector('h2#intro-0')?.textContent).toBe('Intro')
+		expect(
+			container
+				.querySelector('a[href="https://example.test"]')
+				?.getAttribute('target')
+		).toBe('_blank')
+	})
 	it('extracts formatted, repeated, setext, and Unicode headings without treating fenced code as sections', () => {
 		expect(
-			blogHeadings(
+			articleHeadings(
 				'## Start **small**\n\n### Use `tools`\n\n## Start **small**\n\n```md\n## Not a heading\n```\n\nÜber café\n----------\n\n## 日本語'
 			)
 		).toEqual([
@@ -70,6 +130,7 @@ describe('blog article HTML and anchors', () => {
 		const container = document.createElement('div')
 		container.innerHTML = renderToString(<RouterProvider router={router} />)
 		document.body.append(container)
+		expect(container.innerHTML).toContain(post.title)
 		expect(container.querySelectorAll('h1')).toHaveLength(1)
 		expect(container.textContent).toContain('Alex Morgan')
 		expect(container.textContent).toContain('Published: October 1, 2026')
@@ -80,7 +141,7 @@ describe('blog article HTML and anchors', () => {
 		)
 		expect(container.querySelector('script')).toBeNull()
 		expect(container.querySelector('a[href^="javascript:"]')).toBeNull()
-		for (const heading of blogHeadings(post.content)) {
+		for (const heading of articleHeadings(post.content)) {
 			expect(container.querySelector(`a[href="#${heading.id}"]`)).not.toBeNull()
 			expect(container.querySelector(`[id="${heading.id}"]`)?.textContent).toBe(
 				heading.title
@@ -118,4 +179,11 @@ describe('blog article HTML and anchors', () => {
 		expect(html).toContain('2')
 		expect(html).toContain('min read')
 	})
+})
+
+vi.mock('#/features/public-content/server-function', () => {
+	return {
+		preparePublicContent: vi.fn(),
+		preparePublicBlogContent: vi.fn(),
+	}
 })

@@ -2,12 +2,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import type { ZodType } from 'zod'
 
+import { publicBlogContent } from '@altstack/api/queries/blog'
 import { publicProjectContent } from '@altstack/api/queries/project-mentions'
 
 import { emptyPublicContent } from '#/features/public-content/model'
 import type { PreparedPublicContent } from '#/features/public-content/model'
 import { prepareContent } from '#/features/public-content/prepare.server'
-import { preparePublicContent } from '#/features/public-content/server-function'
+import {
+	preparePublicContent,
+	preparePublicBlogContent,
+} from '#/features/public-content/server-function'
 
 type Input = { slug: string }
 
@@ -17,6 +21,12 @@ const { registerValidator } = vi.hoisted(() => {
 
 vi.mock('@altstack/api/queries/project-mentions', () => {
 	return { publicProjectContent: vi.fn() }
+})
+vi.mock('@altstack/db', () => {
+	return { db: {} }
+})
+vi.mock('@altstack/api/queries/blog', () => {
+	return { publicBlogContent: vi.fn() }
 })
 vi.mock('#/features/public-content/prepare.server', () => {
 	return { prepareContent: vi.fn() }
@@ -44,6 +54,7 @@ vi.mock('@tanstack/react-start', () => {
 })
 
 beforeEach(() => {
+	vi.mocked(publicBlogContent).mockReset().mockResolvedValue(undefined)
 	vi.mocked(publicProjectContent).mockReset().mockResolvedValue(undefined)
 	vi.mocked(prepareContent).mockReset().mockResolvedValue(emptyPublicContent())
 })
@@ -111,5 +122,35 @@ describe('public content server input', () => {
 			preparePublicContent({ data: { slug: 'project' } })
 		).rejects.toBe(error)
 		expect(prepareContent).not.toHaveBeenCalled()
+	})
+})
+
+describe('public blog preparation', () => {
+	it('accepts only a blog slug and rejects caller-provided content', () => {
+		const validator = registerValidator.mock.calls[1][0]
+		expect(validator.safeParse({ slug: 'a'.repeat(160) }).success).toBe(true)
+		for (const input of [
+			{ slug: '' },
+			{ slug: 'not/a-slug' },
+			{ slug: 'post', content: '# Caller content' },
+		]) {
+			expect(validator.safeParse(input).success).toBe(false)
+		}
+	})
+	it('does not prepare an unavailable or draft blog', async () => {
+		expect(
+			await preparePublicBlogContent({ data: { slug: 'private-draft' } })
+		).toEqual(emptyPublicContent())
+		expect(prepareContent).not.toHaveBeenCalled()
+	})
+	it('runs stored published blog content through the shared highlighting and mention preparer', async () => {
+		vi.mocked(publicBlogContent).mockResolvedValue({
+			content: '## Intro\n\n```js\nconst x = 1\n```',
+		})
+		await preparePublicBlogContent({ data: { slug: 'tech-article' } })
+		expect(prepareContent).toHaveBeenCalledExactlyOnceWith({
+			slug: 'blogs/tech-article',
+			content: '## Intro\n\n```js\nconst x = 1\n```',
+		})
 	})
 })

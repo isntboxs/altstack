@@ -20,9 +20,11 @@ import {
 	CardTitle,
 } from '@altstack/ui/components/card'
 
+import { PublicContent } from '#/components/public-content'
 import { ShareButtons } from '#/components/share-buttons'
 import { UserAvatar } from '#/components/user-avatar'
-import { BlogMarkdown, blogHeadings } from './markdown'
+import { articleHeadings } from '#/features/public-content/headings'
+import type { PreparedPublicContent } from '#/features/public-content/model'
 import { BlogTableOfContents } from './table-of-contents'
 
 type Blog = ORPCRouterOutputs['blog']['getBySlug']
@@ -114,8 +116,14 @@ export function BlogCards({ posts }: { posts: Array<BlogCard> }) {
 	)
 }
 
-export function BlogArticle({ post }: { post: Blog }) {
-	const headings = useMemo(() => blogHeadings(post.content), [post.content])
+export function BlogArticle({
+	post,
+	prepared,
+}: {
+	post: Blog
+	prepared?: PreparedPublicContent
+}) {
+	const headings = useMemo(() => articleHeadings(post.content), [post.content])
 	const updated = post.updatedAt.getTime() > post.publishedAt.getTime()
 	return (
 		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16">
@@ -173,7 +181,12 @@ export function BlogArticle({ post }: { post: Blog }) {
 						fetchPriority="high"
 						className="mb-10 aspect-video w-full rounded-lg object-cover"
 					/>
-					<BlogMarkdown content={post.content} />
+					<PublicContent
+						slug={`blogs/${post.slug}`}
+						content={post.content}
+						prepared={prepared}
+						headingMode="article"
+					/>
 					<div className="h-8" aria-hidden="true" />
 					<ShareButtons />
 				</article>

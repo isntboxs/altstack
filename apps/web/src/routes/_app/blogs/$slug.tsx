@@ -7,16 +7,21 @@ import {
 } from '#/components/public-page-state'
 import { BlogArticle } from '#/features/blogs/components'
 import { blogQueries } from '#/features/blogs/queries'
+import { publicContentOptions } from '#/features/public-content/queries'
 import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/blogs/$slug')({
 	shouldReload: ({ cause }) => cause !== 'stay',
 	loader: async ({ context, params }) => {
 		try {
-			return await context.queryClient.query({
+			const post = await context.queryClient.query({
 				...blogQueries.bySlug(params.slug),
 				retry: false,
 			})
+			const prepared = await context.queryClient.query(
+				publicContentOptions(post.slug, post.content, 'blog')
+			)
+			return { post, prepared }
 		} catch (error) {
 			if (
 				typeof error === 'object' &&
@@ -29,24 +34,24 @@ export const Route = createFileRoute('/_app/blogs/$slug')({
 			throw error
 		}
 	},
-	head: ({ loaderData: post }) =>
-		post
+	head: ({ loaderData }) =>
+		loaderData
 			? seoHead({
-					title: `${post.title} | AltStack`,
-					description: post.description,
-					path: `/blogs/${post.slug}`,
-					image: post.coverUrl,
-					imageAlt: post.title,
+					title: `${loaderData.post.title} | AltStack`,
+					description: loaderData.post.description,
+					path: `/blogs/${loaderData.post.slug}`,
+					image: loaderData.post.coverUrl,
+					imageAlt: loaderData.post.title,
 					entities: [
 						{
 							'@type': 'BlogPosting',
-							headline: post.title,
-							description: post.description,
-							image: post.coverUrl,
-							url: publicUrl(`/blogs/${post.slug}`),
-							datePublished: post.publishedAt.toISOString(),
-							dateModified: post.updatedAt.toISOString(),
-							author: { '@type': 'Person', name: post.authorName },
+							headline: loaderData.post.title,
+							description: loaderData.post.description,
+							image: loaderData.post.coverUrl,
+							url: publicUrl(`/blogs/${loaderData.post.slug}`),
+							datePublished: loaderData.post.publishedAt.toISOString(),
+							dateModified: loaderData.post.updatedAt.toISOString(),
+							author: { '@type': 'Person', name: loaderData.post.authorName },
 							publisher: { '@id': publicUrl('/#organization') },
 						},
 					],
@@ -61,6 +66,6 @@ export const Route = createFileRoute('/_app/blogs/$slug')({
 })
 
 function Page() {
-	const post = Route.useLoaderData()
-	return <BlogArticle key={post.id} post={post} />
+	const { post, prepared } = Route.useLoaderData()
+	return <BlogArticle key={post.id} post={post} prepared={prepared} />
 }

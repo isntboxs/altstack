@@ -232,3 +232,19 @@ describe('admin blog editor', () => {
 		)
 	})
 })
+
+vi.mock('#/features/public-content/server-function', () => {
+	return {
+		preparePublicContent: vi.fn(),
+		preparePublicBlogContent: vi.fn(),
+	}
+})
+
+vi.mock('@altstack/env/web', () => {
+	return {
+		env: {
+			VITE_APP_URL: 'https://altstack.test',
+			VITE_S3_PUBLIC_URL: 'https://storage.test',
+		},
+	}
+})

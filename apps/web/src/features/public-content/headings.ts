@@ -1,11 +1,10 @@
 import type { Nodes, Root } from 'mdast'
-import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 
-export interface BlogHeading {
+export interface ArticleHeading {
 	id: string
 	title: string
 	depth: number
@@ -20,7 +19,7 @@ function headingText(node: Nodes): string {
 }
 
 function annotateHeadings(tree: Root) {
-	const headings: Array<BlogHeading> = []
+	const headings: Array<ArticleHeading> = []
 	let index = 0
 	visit(tree, 'heading', (node) => {
 		const title = headingText(node)
@@ -49,49 +48,14 @@ function annotateHeadings(tree: Root) {
 	return headings
 }
 
-export function blogHeadings(content: string) {
+export function articleHeadings(content: string) {
 	return annotateHeadings(
 		unified().use(remarkParse).use(remarkGfm).parse(content)
 	)
 }
 
-function remarkBlogHeadings() {
+export function remarkArticleHeadings() {
 	return (tree: Root) => {
 		annotateHeadings(tree)
 	}
-}
-
-export function BlogMarkdown({ content }: { content: string }) {
-	return (
-		<div className="prose max-w-none min-w-0 wrap-anywhere prose-neutral dark:prose-invert prose-headings:scroll-mt-24 prose-pre:overflow-x-auto prose-img:rounded-lg">
-			<Markdown
-				remarkPlugins={[remarkGfm, remarkBlogHeadings]}
-				skipHtml
-				components={{
-					h1: ({ children, id }) => (
-						<h2 id={id} tabIndex={-1}>
-							{children}
-						</h2>
-					),
-					a: ({ href, children }) => (
-						<a
-							href={href}
-							{...(href?.startsWith('https://') || href?.startsWith('http://')
-								? { target: '_blank', rel: 'noopener noreferrer' }
-								: {})}
-						>
-							{children}
-						</a>
-					),
-					table: ({ children }) => (
-						<div className="overflow-x-auto">
-							<table>{children}</table>
-						</div>
-					),
-				}}
-			>
-				{content}
-			</Markdown>
-		</div>
-	)
 }
