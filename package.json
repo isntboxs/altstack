@@ -36,7 +36,7 @@
 		"@tanstack/eslint-plugin-router": "^1.162.0",
 		"@types/bun": "catalog:",
 		"eslint-plugin-react-hooks": "^7.1.1",
-		"tsrs": "0.18.0-ts7.1.0-dev.20260929",
+		"tsrs": "0.20.1-ts7.1.0-beta",
 		"typescript": "catalog:",
 		"vite": "catalog:",
 		"vite-plus": "catalog:"

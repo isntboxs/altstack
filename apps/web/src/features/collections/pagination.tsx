@@ -1,7 +1,9 @@
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 
 import { Button, buttonVariants } from '@altstack/ui/components/button'
+
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 /** Shows bounded page links, leaving first-page URL cleanup to route middleware. */
 export function CollectionPagination({
@@ -11,6 +13,11 @@ export function CollectionPagination({
 	page: number
 	totalPages: number
 }) {
+	const router = useRouter()
+	const handlePageClick = createPaginationScrollHandler(
+		'collection-results',
+		router
+	)
 	if (totalPages <= 1) return null
 	const pages = [...new Set([1, page - 1, page, page + 1, totalPages])].filter(
 		(value) => value > 0 && value <= totalPages
@@ -27,6 +34,7 @@ export function CollectionPagination({
 					activeOptions={{ exact: true, explicitUndefined: true }}
 					search={{ page: page - 1 }}
 					resetScroll={false}
+					onClick={handlePageClick}
 				>
 					<IconArrowLeft data-icon="inline-start" />
 					Prev
@@ -53,6 +61,7 @@ export function CollectionPagination({
 							activeOptions={{ exact: true, explicitUndefined: true }}
 							search={{ page: value }}
 							resetScroll={false}
+							onClick={handlePageClick}
 							aria-current={value === page ? 'page' : undefined}
 						>
 							{value}
@@ -67,6 +76,7 @@ export function CollectionPagination({
 					activeOptions={{ exact: true, explicitUndefined: true }}
 					search={{ page: page + 1 }}
 					resetScroll={false}
+					onClick={handlePageClick}
 				>
 					Next
 					<IconArrowRight data-icon="inline-end" />

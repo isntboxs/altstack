@@ -1265,7 +1265,7 @@ describe('project claims and scoped Better Auth roles', () => {
 			screenshot: current.screenshot,
 		})
 	})
-	it('ranks recommended listings by verification, then stars instead of creation date, across pages', async () => {
+	it('uses verification as a small score bonus, rather than an unconditional first-place sort', async () => {
 		const f = await fixture()
 		await db
 			.update(project)
@@ -1284,8 +1284,17 @@ describe('project claims and scoped Better Auth roles', () => {
 		])
 
 		await approved(f)
-		const verifiedFirst = await f.anon.project.search({ query })
-		expect(verifiedFirst.projects.map((item) => item.id)).toEqual([
+		const withVerification = await f.anon.project.search({ query })
+		expect(withVerification.projects.map((item) => item.id)).toEqual([
+			f.second.id,
+			f.params.id,
+		])
+		await db
+			.update(githubRepository)
+			.set({ stars: 1 })
+			.where(eq(githubRepository.projectId, f.second.id))
+		const equalPopularity = await f.anon.project.search({ query })
+		expect(equalPopularity.projects.map((item) => item.id)).toEqual([
 			f.params.id,
 			f.second.id,
 		])
@@ -1296,10 +1305,11 @@ describe('project claims and scoped Better Auth roles', () => {
 			body: { decision: 'approve' },
 		})
 		const bothVerified = await f.anon.project.search({ query })
-		expect(bothVerified.projects.map((item) => item.id)).toEqual([
-			f.second.id,
-			f.params.id,
-		])
+		const tiedIds = f.projects
+			.map((item) => item.id)
+			.toSorted()
+			.toReversed()
+		expect(bothVerified.projects.map((item) => item.id)).toEqual(tiedIds)
 
 		const firstPage = await f.anon.project.search({
 			query: { ...query, page: 1, limit: 1 },
@@ -1307,10 +1317,10 @@ describe('project claims and scoped Better Auth roles', () => {
 		const secondPage = await f.anon.project.search({
 			query: { ...query, page: 2, limit: 1 },
 		})
-		expect(firstPage.projects[0]!.id).toBe(f.second.id)
-		expect(secondPage.projects[0]!.id).toBe(f.params.id)
+		expect(firstPage.projects[0]!.id).toBe(tiedIds[0])
+		expect(secondPage.projects[0]!.id).toBe(tiedIds[1])
 	})
-	it('keeps public projections private, ranks verified listings first with stable ties, and hides unpublished/deleted projects', async () => {
+	it('keeps public projections private, boosts verified listings with stable ties, and hides unpublished/deleted projects', async () => {
 		const f = await fixture()
 		await approved(f)
 		const date = new Date('2026-10-01T00:00:00Z')

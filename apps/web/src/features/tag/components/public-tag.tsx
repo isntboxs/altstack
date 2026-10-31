@@ -4,7 +4,12 @@ import {
 	IconSearch,
 	IconX,
 } from '@tabler/icons-react'
-import { getRouteApi, Link, useRouterState } from '@tanstack/react-router'
+import {
+	getRouteApi,
+	Link,
+	useRouter,
+	useRouterState,
+} from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { z } from 'zod'
 
@@ -48,6 +53,7 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { FilterSection } from '#/components/filter-section'
 import { PublicError } from '#/components/public-page-state'
 import { CategoryControlsSkeleton } from '#/components/public-skeletons'
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 const directoryRoute = getRouteApi('/_app/tags/')
 const detailRoute = getRouteApi('/_app/tags/$slug')
@@ -133,7 +139,7 @@ export function TagDirectoryControls() {
 					Discover topics to find your best open source software options.
 				</p>
 			</div>
-			<div className="flex flex-col gap-2">
+			<div id="tag-filters" className="flex scroll-mt-24 flex-col gap-2">
 				<div className="flex flex-col gap-2 sm:flex-row">
 					<InputGroup className="min-w-0 flex-1">
 						<InputGroupAddon>
@@ -238,6 +244,11 @@ export function TagDirectoryResults({
 }: {
 	data: ORPCRouterOutputs['tag']['list']
 }) {
+	const router = useRouter()
+	const handleDirectoryPageClick = createPaginationScrollHandler(
+		'tag-filters',
+		router
+	)
 	const { pagination } = data
 	const pages = [
 		...new Set([
@@ -311,6 +322,7 @@ export function TagDirectoryResults({
 								}
 							}}
 							resetScroll={false}
+							onClick={handleDirectoryPageClick}
 						>
 							<IconArrowLeft data-icon="inline-start" />
 							Prev
@@ -339,6 +351,7 @@ export function TagDirectoryResults({
 										return { ...prev, page: page === 1 ? undefined : page }
 									}}
 									resetScroll={false}
+									onClick={handleDirectoryPageClick}
 									aria-current={page === pagination.page ? 'page' : undefined}
 								>
 									{page}
@@ -359,6 +372,7 @@ export function TagDirectoryResults({
 								}
 							}}
 							resetScroll={false}
+							onClick={handleDirectoryPageClick}
 						>
 							Next
 							<IconArrowRight data-icon="inline-end" />

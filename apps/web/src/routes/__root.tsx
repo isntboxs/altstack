@@ -17,6 +17,7 @@ import { ThemeProvider } from '@altstack/ui/components/customs/theme-provider'
 import { Toaster } from '@altstack/ui/components/toast'
 import { TooltipProvider } from '@altstack/ui/components/tooltip'
 
+import { HistoryScrollRestoration } from '#/components/history-scroll-restoration'
 import { LogProvider } from '#/components/log-provider'
 import { PublicError, PublicNotFound } from '#/components/public-page-state'
 import { indexingMiddleware } from '#/features/seo/indexing'
@@ -135,6 +136,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootComponent() {
 	return (
 		<LogProvider>
+			<HistoryScrollRestoration />
 			<ThemeProvider
 				attribute="class"
 				defaultTheme="system"

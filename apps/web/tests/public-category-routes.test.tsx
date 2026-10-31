@@ -260,6 +260,7 @@ beforeEach(() => {
 		}
 	})
 	vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+	HTMLElement.prototype.scrollIntoView = vi.fn()
 	getAuthFn.mockReset().mockResolvedValue(null)
 	vi.mocked(preparePublicContent)
 		.mockReset()
@@ -903,6 +904,46 @@ describe('public category routes and hierarchy UI', () => {
 })
 
 describe('public category search, sorting and pagination', () => {
+	it.each([
+		['/', 'catalogue', 'pagination', 'Zed'],
+		['/categories/' + ai.path, 'project-filters', 'pagination', 'Zed'],
+		['/tags/typescript', 'project-filters', 'pagination', 'Zed'],
+		['/licenses/mit', 'project-filters', 'pagination', 'Zed'],
+		['/tags', 'tag-filters', 'Tags pagination', 'backend'],
+	])(
+		'scrolls pagination at %s to its controls while retaining filters',
+		async (path, targetId, paginationLabel, q) => {
+			total = 36
+			const sort = path === '/tags' ? 'name-asc' : 'name'
+			const router = await routerAt(`${path}?q=${q}&sort=${sort}`, true)
+			const target = document.getElementById(targetId)!
+			expect(target).not.toBeNull()
+			const scrollIntoView = vi.fn()
+			target.scrollIntoView = scrollIntoView
+			const nextLabel = path === '/tags' ? 'Next' : 'Go to next page'
+			const previousLabel = path === '/tags' ? 'Prev' : 'Go to previous page'
+			for (const [name, expectedPage] of [
+				[nextLabel, 2],
+				[previousLabel, undefined],
+				['2', 2],
+			] as const) {
+				const pagination = screen.getByRole('navigation', {
+					name: paginationLabel,
+				})
+				scrollIntoView.mockClear()
+				fireEvent.click(within(pagination).getByRole('link', { name }))
+				await waitFor(() => {
+					expect(router.state.location.search.page).toBe(expectedPage)
+					expect(scrollIntoView).toHaveBeenCalledWith({
+						block: 'start',
+						behavior: 'smooth',
+					})
+				})
+				expect(router.state.location.pathname).toBe(path)
+				expect(router.state.location.search).toMatchObject({ q, sort })
+			}
+		}
+	)
 	it.each(['/categories/' + ai.path, '/tags/typescript', '/licenses/mit'])(
 		'uses most stars as the default order for canonical pagination at %s',
 		(path) => {
@@ -947,9 +988,7 @@ describe('public category search, sorting and pagination', () => {
 			expect(
 				await screen.findByRole('option', { name: 'Order by', selected: true })
 			).toBeTruthy()
-			expect(
-				screen.queryByRole('option', { name: 'Verified first' })
-			).toBeNull()
+			expect(screen.queryByRole('option', { name: 'Recommended' })).toBeNull()
 			expect(screen.getAllByRole('option')).toHaveLength(11)
 			fireEvent.keyDown(screen.getByRole('option', { name: 'Most stars' }), {
 				key: 'Enter',
@@ -1098,7 +1137,7 @@ describe('public category search, sorting and pagination', () => {
 		expect(
 			await screen.findByRole('option', { name: 'Order by', selected: true })
 		).toBeTruthy()
-		expect(screen.queryByRole('option', { name: 'Verified first' })).toBeNull()
+		expect(screen.queryByRole('option', { name: 'Recommended' })).toBeNull()
 		const mostStars = screen.getByRole('option', { name: 'Most stars' })
 		fireEvent.pointerDown(mostStars, { pointerType: 'mouse' })
 		fireEvent.click(mostStars)

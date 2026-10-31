@@ -5,7 +5,7 @@ import {
 	IconStar,
 } from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
-import { Link, createLink } from '@tanstack/react-router'
+import { Link, createLink, useRouter } from '@tanstack/react-router'
 import type { FC, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -35,6 +35,7 @@ import { VerifiedBadge } from '#/components/verified-badge'
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 type ProjectCardProps =
 	ORPCRouterOutputs['project']['search']['projects'][number] & { now?: number }
@@ -227,22 +228,28 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	)
 }
 
+/** Keeps pagination scoped to its catalogue and offers recovery for out-of-range pages. */
 export const ProjectListSection = ({
 	data,
 	emptyMessage,
 	emptyAction,
 	pageLinkOptions,
+	scrollTargetId = 'project-filters',
 }: {
 	data: ORPCRouterOutputs['project']['search']
 	emptyMessage: string
 	emptyAction?: ReactNode
 	pageLinkOptions: (page: number) => ProjectPageLinkOptions
+	scrollTargetId?: string
 }) => {
+	const router = useRouter()
 	const { pagination } = data
 	const currentPage = pagination.page || 1
 	const totalPages = pagination.totalPages
 	const outOfRange = currentPage > Math.max(1, totalPages)
 	const paginationItems = getPaginationItems(currentPage, totalPages)
+	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
+
 	return (
 		<section
 			aria-label="Project results"
@@ -262,6 +269,7 @@ export const ProjectListSection = ({
 						<Link
 							{...pageLinkOptions(1)}
 							resetScroll={false}
+							onClick={handlePageClick}
 							className="inline-flex items-center underline underline-offset-4"
 						>
 							First page
@@ -289,6 +297,7 @@ export const ProjectListSection = ({
 								<CustomPaginationPrevious
 									{...pageLinkOptions(currentPage - 1)}
 									resetScroll={false}
+									onClick={handlePageClick}
 									viewTransition
 								/>
 							) : (
@@ -309,6 +318,7 @@ export const ProjectListSection = ({
 									<CustomPaginationLink
 										{...pageLinkOptions(item)}
 										resetScroll={false}
+										onClick={handlePageClick}
 										isActive={item === currentPage}
 										viewTransition
 									>
@@ -322,6 +332,7 @@ export const ProjectListSection = ({
 								<CustomPaginationNext
 									{...pageLinkOptions(currentPage + 1)}
 									resetScroll={false}
+									onClick={handlePageClick}
 									viewTransition
 								/>
 							) : (
