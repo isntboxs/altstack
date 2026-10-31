@@ -5,7 +5,7 @@ import {
 	IconStar,
 } from '@tabler/icons-react'
 import type { LinkComponent } from '@tanstack/react-router'
-import { Link, createLink } from '@tanstack/react-router'
+import { Link, createLink, useRouter } from '@tanstack/react-router'
 import type { FC, ReactNode } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
@@ -228,6 +228,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	)
 }
 
+/** Keeps pagination scoped to its catalogue and offers recovery for out-of-range pages. */
 export const ProjectListSection = ({
 	data,
 	emptyMessage,
@@ -241,12 +242,13 @@ export const ProjectListSection = ({
 	pageLinkOptions: (page: number) => ProjectPageLinkOptions
 	scrollTargetId?: string
 }) => {
+	const router = useRouter()
 	const { pagination } = data
 	const currentPage = pagination.page || 1
 	const totalPages = pagination.totalPages
 	const outOfRange = currentPage > Math.max(1, totalPages)
 	const paginationItems = getPaginationItems(currentPage, totalPages)
-	const handlePageClick = createPaginationScrollHandler(scrollTargetId)
+	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
 
 	return (
 		<section

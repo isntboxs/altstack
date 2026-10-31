@@ -1,11 +1,9 @@
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 
 import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
-
-const handlePageClick = createPaginationScrollHandler('collection-results')
 
 /** Shows bounded page links, leaving first-page URL cleanup to route middleware. */
 export function CollectionPagination({
@@ -15,6 +13,11 @@ export function CollectionPagination({
 	page: number
 	totalPages: number
 }) {
+	const router = useRouter()
+	const handlePageClick = createPaginationScrollHandler(
+		'collection-results',
+		router
+	)
 	if (totalPages <= 1) return null
 	const pages = [...new Set([1, page - 1, page, page + 1, totalPages])].filter(
 		(value) => value > 0 && value <= totalPages

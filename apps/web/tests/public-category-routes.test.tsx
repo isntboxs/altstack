@@ -932,12 +932,12 @@ describe('public category search, sorting and pagination', () => {
 				})
 				scrollIntoView.mockClear()
 				fireEvent.click(within(pagination).getByRole('link', { name }))
-				await waitFor(() =>
+				await waitFor(() => {
 					expect(router.state.location.search.page).toBe(expectedPage)
-				)
-				expect(scrollIntoView).toHaveBeenCalledWith({
-					block: 'start',
-					behavior: 'smooth',
+					expect(scrollIntoView).toHaveBeenCalledWith({
+						block: 'start',
+						behavior: 'smooth',
+					})
 				})
 				expect(router.state.location.pathname).toBe(path)
 				expect(router.state.location.search).toMatchObject({ q, sort })

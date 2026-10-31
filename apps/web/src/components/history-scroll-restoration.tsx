@@ -1,6 +1,7 @@
 import { useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
+/** Reuses TanStack's per-entry cache, animating history traversal from the top. */
 export function HistoryScrollRestoration() {
 	const router = useRouter()
 

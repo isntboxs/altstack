@@ -99,6 +99,7 @@ const SelectSortBar = ({
 	)
 }
 
+/** Preserves the search draft across route updates; callers own URL and page resets. */
 export const FilterSection = ({
 	q,
 	sort,

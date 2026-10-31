@@ -4,7 +4,12 @@ import {
 	IconSearch,
 	IconX,
 } from '@tabler/icons-react'
-import { getRouteApi, Link, useRouterState } from '@tanstack/react-router'
+import {
+	getRouteApi,
+	Link,
+	useRouter,
+	useRouterState,
+} from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { z } from 'zod'
 
@@ -52,7 +57,6 @@ import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 const directoryRoute = getRouteApi('/_app/tags/')
 const detailRoute = getRouteApi('/_app/tags/$slug')
-const handleDirectoryPageClick = createPaginationScrollHandler('tag-filters')
 const sortItems = [
 	{ value: 'popular', label: 'Most Popular' },
 	{ value: 'name-asc', label: 'Name (A to Z)' },
@@ -240,6 +244,11 @@ export function TagDirectoryResults({
 }: {
 	data: ORPCRouterOutputs['tag']['list']
 }) {
+	const router = useRouter()
+	const handleDirectoryPageClick = createPaginationScrollHandler(
+		'tag-filters',
+		router
+	)
 	const { pagination } = data
 	const pages = [
 		...new Set([
