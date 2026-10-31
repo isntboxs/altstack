@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 
 import { PublicCodeBlock } from '#/components/public-content/code-block'
 import { ContentLink } from '#/components/public-content/content-link'
+import { ContentHeading } from '#/components/public-content/heading'
 import { remarkArticleHeadings } from '#/features/public-content/headings'
 import { emptyPublicContent } from '#/features/public-content/model'
 import type { PreparedPublicContent } from '#/features/public-content/model'
@@ -54,20 +55,59 @@ export function PublicContent({
 				}
 				skipHtml
 				components={{
-					h1: ({ children, id, tabIndex, className }) => (
-						<h2 id={id} tabIndex={tabIndex} className={className}>
+					h1: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h2"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
 							{children}
-						</h2>
+						</ContentHeading>
 					),
-					h2: ({ children, id, tabIndex, className }) => (
-						<SecondHeading id={id} tabIndex={tabIndex} className={className}>
+					h2: ({ node, children, ...props }) => (
+						<ContentHeading
+							as={SecondHeading}
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
 							{children}
-						</SecondHeading>
+						</ContentHeading>
 					),
-					h3: ({ children, id, tabIndex, className }) => (
-						<ThirdHeading id={id} tabIndex={tabIndex} className={className}>
+					h3: ({ node, children, ...props }) => (
+						<ContentHeading
+							as={ThirdHeading}
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
 							{children}
-						</ThirdHeading>
+						</ContentHeading>
+					),
+					h4: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h4"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h5: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h5"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h6: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h6"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
 					),
 					a: ({ node, children, href, title }) => (
 						<ContentLink

@@ -2,6 +2,7 @@
 import {
 	createMemoryHistory,
 	createRootRoute,
+	createRoute,
 	createRouter,
 	RouterProvider,
 } from '@tanstack/react-router'
@@ -115,6 +116,49 @@ describe('blog article HTML and anchors', () => {
 			{ id: 'uber-cafe-3', title: 'Über café', depth: 2 },
 			{ id: '日本語-4', title: '日本語', depth: 2 },
 		])
+	})
+	it('renders permalinks for every content heading without nesting existing Markdown links', async () => {
+		const data = {
+			...post,
+			content:
+				'# Intro\n\n## **Read** [the guide](https://example.test)\n\n### Use `tools`\n\n#### Details\n\n##### Details\n\n###### 日本語',
+		}
+		const root = createRootRoute()
+		const route = createRoute({
+			getParentRoute: () => root,
+			path: '/blogs/$slug',
+			component: () => <BlogArticle post={data} />,
+		})
+		const router = createRouter({
+			routeTree: root.addChildren([route]),
+			history: createMemoryHistory({
+				initialEntries: ['/blogs/building-software'],
+			}),
+		})
+		await router.load()
+		const container = document.createElement('div')
+		container.innerHTML = renderToString(<RouterProvider router={router} />)
+		const content = container.querySelector(
+			'article[aria-label="Article content"]'
+		)!
+		const headings = content.querySelectorAll('h2, h3, h4, h5, h6')
+		expect(headings).toHaveLength(6)
+		for (const heading of headings) {
+			const link = heading.querySelector('a[aria-label^="Link to "]')!
+			expect(link).not.toBeNull()
+			const target = new URL(
+				link.getAttribute('href')!,
+				'https://altstack.test'
+			)
+			expect(target.pathname).toBe('/blogs/building-software')
+			expect(decodeURIComponent(target.hash.slice(1))).toBe(heading.id)
+		}
+		expect(content.querySelector('a a')).toBeNull()
+		expect(content.querySelector('strong')?.textContent).toBe('Read')
+		expect(content.querySelector('code')?.textContent).toBe('tools')
+		expect(
+			content.querySelector('a[href="https://example.test"]')
+		).not.toBeNull()
 	})
 	it('server-renders safe Markdown, byline, cover, dates, matching TOC IDs and sharing, then hydrates cleanly', async () => {
 		const root = createRootRoute({

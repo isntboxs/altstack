@@ -50,7 +50,7 @@ afterEach(() => {
 	document.documentElement.classList.remove('dark')
 	vi.restoreAllMocks()
 })
-async function mount(cards = false, data = post) {
+async function mount(cards = false, data = post, entry = '/blogs/technology') {
 	const root = createRootRoute({ component: Outlet })
 	const route = createRoute({
 		getParentRoute: () => root,
@@ -79,7 +79,7 @@ async function mount(cards = false, data = post) {
 	})
 	const router = createRouter({
 		routeTree: root.addChildren([route]),
-		history: createMemoryHistory({ initialEntries: ['/blogs/technology'] }),
+		history: createMemoryHistory({ initialEntries: [entry] }),
 	})
 	await router.load()
 	render(<RouterProvider router={router} />)
@@ -140,6 +140,7 @@ describe('blog article layout in Chromium', () => {
 					'nav[aria-label="On this page"] a:not([aria-current])'
 				)!,
 				document.querySelector('header p')!,
+				section(0).querySelector('a')!,
 			]) {
 				const text = luminance(getComputedStyle(element).color)
 				expect(
@@ -148,6 +149,74 @@ describe('blog article layout in Chromium', () => {
 				).toBeGreaterThanOrEqual(4.5)
 			}
 		}
+	})
+	it('reveals content permalinks on hover and keyboard focus, updates the URL and TOC, and shares the selected section', async () => {
+		await page.viewport(1440, 800)
+		const router = await mount(false, post, '/blogs/technology?ref=reading')
+		const heading = section(4)
+		const anchor = heading.querySelector<HTMLAnchorElement>('a')!
+		const link = page.getByRole('link', {
+			name: 'Link to Section 4',
+			exact: true,
+		})
+		expect(getComputedStyle(anchor).opacity).toBe('0')
+		await link.hover()
+		expect(getComputedStyle(anchor).opacity).toBe('1')
+		await page.getByText('Global navigation', { exact: true }).hover()
+		anchor.focus()
+		expect(getComputedStyle(anchor).opacity).toBe('1')
+		expect(getComputedStyle(anchor).outlineStyle).not.toBe('none')
+		await userEvent.keyboard('{Enter}')
+		await waitFor(() => {
+			expect(router.state.location.hash).toBe('section-4-4')
+			expect(Math.abs(heading.getBoundingClientRect().top - 96)).toBeLessThan(2)
+			expect(active().getAttribute('href')).toBe('#section-4-4')
+		})
+		expect(router.state.location.search).toEqual({ ref: 'reading' })
+		expect(document.activeElement).toBe(heading)
+		const copy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+		await page.getByRole('button', { name: 'Copy Link' }).click()
+		expect(copy).toHaveBeenCalledWith(
+			'https://altstack.test/blogs/technology?ref=reading#section-4-4'
+		)
+		const matchMedia = window.matchMedia.bind(window)
+		vi.spyOn(window, 'matchMedia').mockImplementation((query) =>
+			query === '(prefers-reduced-motion: reduce)'
+				? { ...matchMedia(query), matches: true }
+				: matchMedia(query)
+		)
+		const scroll = vi.spyOn(section(6), 'scrollIntoView')
+		await page
+			.getByRole('link', { name: 'Link to Section 6', exact: true })
+			.click()
+		expect(scroll).toHaveBeenCalledWith({ block: 'start', behavior: 'instant' })
+		await waitFor(() => {
+			expect(router.state.location.hash).toBe('section-6-6')
+			expect(
+				Math.abs(section(6).getBoundingClientRect().top - 96)
+			).toBeLessThan(2)
+		})
+	})
+	it('keeps long headings and 44px permalink targets inside a mobile viewport', async () => {
+		await page.viewport(320, 844)
+		await mount(false, {
+			...post,
+			content: `## ${'Heading'.repeat(25)}\n\nArticle content.`,
+		})
+		const heading = document.querySelector(
+			'article[aria-label="Article content"] h2'
+		)!
+		const anchor = heading.querySelector<HTMLAnchorElement>('a')!
+		expect(anchor.getBoundingClientRect().width).toBeGreaterThanOrEqual(44)
+		expect(anchor.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+		expect(anchor.getBoundingClientRect().left).toBeGreaterThanOrEqual(0)
+		expect(anchor.getBoundingClientRect().right).toBeLessThanOrEqual(320)
+		expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(320)
+		expect(getComputedStyle(anchor).opacity).toBe('1')
+		anchor.focus()
+		expect(getComputedStyle(anchor).opacity).toBe('1')
+		await userEvent.keyboard('{Enter}')
+		expect(document.activeElement).toBe(heading)
 	})
 	it('starts the TOC beside the cover, limits its height, follows scrolling, aligns anchor links, collapses, and stops before the footer', async () => {
 		await page.viewport(1440, 800)
