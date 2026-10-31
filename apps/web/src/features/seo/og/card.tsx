@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og'
 
+import { blogDate, blogTimestamp } from '#/features/blogs/date'
 import advances from './assets/advances.json'
 import glyphs from './assets/glyphs.json'
 
@@ -25,6 +26,13 @@ type CardContent = {
 export type SocialCard =
 	| { kind: 'home' }
 	| ({ kind: 'category' } & CardContent)
+	| ({
+			kind: 'blog'
+			authorName: string
+			publishedAt: Date
+			updatedAt: Date
+			readTime: number
+	  } & CardContent)
 	| ({
 			kind: 'project'
 			logo?: string | null
@@ -360,8 +368,15 @@ export function cardLayout(card: SocialCard, signature: string) {
 		return <ProjectCard card={card} signature={signature} />
 	}
 	const home = card.kind === 'home'
+	const blog = card.kind === 'blog'
 	const title = home ? homeHeadline : cardText(card.title, card.fallback)
-	const size = home ? 64 : title.length > 65 ? 48 : title.length > 35 ? 60 : 76
+	const size = home
+		? 64
+		: title.length > 65
+			? 48
+			: blog || title.length > 35
+				? 60
+				: 76
 	const lines = home
 		? ['discover open-source', "software you'll", 'actually use.']
 		: fitLines(title, 778, size, 3)
@@ -369,6 +384,13 @@ export function cardLayout(card: SocialCard, signature: string) {
 	const supportingLines = home
 		? ['find quality projects and', 'explore developer tools.']
 		: fitLines(description, 770, 25, 2)
+	const timestamp = blog
+		? blogTimestamp(card.publishedAt, card.updatedAt)
+		: null
+	const byline =
+		blog && timestamp
+			? `${fitLines(cardText(card.authorName), 260, 18, 1).join(' ')} · ${timestamp.label}: ${blogDate(timestamp.date)} · ${card.readTime} min read`
+			: ''
 	return (
 		<div
 			style={{
@@ -417,7 +439,7 @@ export function cardLayout(card: SocialCard, signature: string) {
 						display: 'flex',
 					}}
 				>
-					{'explore the category'}
+					{blog ? 'altstack blog' : 'explore the category'}
 				</div>
 			)}
 			<div
@@ -440,6 +462,21 @@ export function cardLayout(card: SocialCard, signature: string) {
 					</div>
 				))}
 			</div>
+			{blog && (
+				<div
+					style={{
+						position: 'absolute',
+						left: 64,
+						top: 444,
+						width: 790,
+						display: 'flex',
+						fontSize: 18,
+						color: '#525252',
+					}}
+				>
+					{fitLines(byline, 778, 18, 1).join(' ')}
+				</div>
+			)}
 			<div
 				style={{
 					position: 'absolute',

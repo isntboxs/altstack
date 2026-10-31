@@ -50,7 +50,7 @@ afterEach(() => {
 	document.documentElement.classList.remove('dark')
 	vi.restoreAllMocks()
 })
-async function mount(cards = false) {
+async function mount(cards = false, data = post) {
 	const root = createRootRoute({ component: Outlet })
 	const route = createRoute({
 		getParentRoute: () => root,
@@ -71,7 +71,7 @@ async function mount(cards = false) {
 						/>
 					</div>
 				) : (
-					<BlogArticle post={post} />
+					<BlogArticle post={data} />
 				)}
 				<footer style={{ height: 1000 }}>Footer</footer>
 			</>
@@ -225,6 +225,32 @@ describe('blog article layout in Chromium', () => {
 			footer.getBoundingClientRect().top
 		)
 	})
+
+	it.each([320, 375, 768])(
+		'truncates long breadcrumb titles on one line and shows one article date at %ipx',
+		async (width) => {
+			await page.viewport(width, 844)
+			await mount(false, {
+				...post,
+				title:
+					'Panduan Web Modern: Artikel Contoh untuk Menjelajahi Blog dengan Judul yang Panjang Sekali',
+			})
+			const breadcrumb = document.querySelector<HTMLElement>(
+				'[data-slot="breadcrumb-page"]'
+			)!
+			expect(breadcrumb.title).toBe(breadcrumb.textContent)
+			expect(breadcrumb.getBoundingClientRect().height).toBeLessThanOrEqual(21)
+			expect(getComputedStyle(breadcrumb).textOverflow).toBe('ellipsis')
+			expect(breadcrumb.scrollWidth).toBeGreaterThan(breadcrumb.clientWidth)
+			const list = document.querySelector('[data-slot="breadcrumb-list"]')!
+			expect(list.getBoundingClientRect().height).toBeLessThanOrEqual(21)
+			expect(document.querySelectorAll('header time')).toHaveLength(1)
+			expect(
+				document.querySelector('header time')!.getAttribute('datetime')
+			).toBe(post.updatedAt.toISOString())
+			expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
+		}
+	)
 	it.each([320, 390, 768])(
 		'keeps the article, TOC and share bar inside a %ipx viewport',
 		async (width) => {

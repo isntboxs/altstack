@@ -26,28 +26,22 @@ import { UserAvatar } from '#/components/user-avatar'
 import { articleHeadings } from '#/features/public-content/headings'
 import type { PreparedPublicContent } from '#/features/public-content/model'
 import { resolveFileUrl } from '#/utils/storage'
+import { blogDate, blogTimestamp } from './date'
 import { BlogTableOfContents } from './table-of-contents'
 
 type Blog = ORPCRouterOutputs['blog']['getBySlug']
 type BlogCard = ORPCRouterOutputs['blog']['list']['posts'][number]
 export const blogDescription =
 	'Ideas, insights, and practical guides on software development, emerging technology, and the tools shaping how we build.'
-export function blogDate(date: Date) {
-	return new Intl.DateTimeFormat('en-US', {
-		dateStyle: 'long',
-		timeZone: 'UTC',
-	}).format(date)
-}
-
 export function BlogBreadcrumb({ title }: { title?: string }) {
 	return (
 		<Breadcrumb>
-			<BreadcrumbList>
-				<BreadcrumbItem>
+			<BreadcrumbList className="flex-nowrap">
+				<BreadcrumbItem className="shrink-0">
 					<BreadcrumbLink render={<Link to="/" />}>Home</BreadcrumbLink>
 				</BreadcrumbItem>
-				<BreadcrumbSeparator />
-				<BreadcrumbItem>
+				<BreadcrumbSeparator className="shrink-0" />
+				<BreadcrumbItem className="shrink-0">
 					{title ? (
 						<BreadcrumbLink render={<Link to="/blogs" />}>Blogs</BreadcrumbLink>
 					) : (
@@ -56,9 +50,11 @@ export function BlogBreadcrumb({ title }: { title?: string }) {
 				</BreadcrumbItem>
 				{title && (
 					<>
-						<BreadcrumbSeparator />
-						<BreadcrumbItem className="min-w-0 wrap-anywhere">
-							<BreadcrumbPage>{title}</BreadcrumbPage>
+						<BreadcrumbSeparator className="shrink-0" />
+						<BreadcrumbItem className="min-w-0 flex-1">
+							<BreadcrumbPage className="block min-w-0 truncate" title={title}>
+								{title}
+							</BreadcrumbPage>
 						</BreadcrumbItem>
 					</>
 				)}
@@ -125,7 +121,7 @@ export function BlogArticle({
 	prepared?: PreparedPublicContent
 }) {
 	const headings = useMemo(() => articleHeadings(post.content), [post.content])
-	const updated = post.updatedAt.getTime() > post.publishedAt.getTime()
+	const timestamp = blogTimestamp(post.publishedAt, post.updatedAt)
 	return (
 		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16">
 			<header className="flex min-w-0 flex-col gap-4">
@@ -149,19 +145,11 @@ export function BlogArticle({
 						</p>
 						<p className="flex flex-wrap gap-x-2 gap-y-1">
 							<span>
-								Published:{' '}
-								<time dateTime={post.publishedAt.toISOString()}>
-									{blogDate(post.publishedAt)}
+								{timestamp.label}:{' '}
+								<time dateTime={timestamp.date.toISOString()}>
+									{blogDate(timestamp.date)}
 								</time>
 							</span>
-							{updated && (
-								<span>
-									Updated:{' '}
-									<time dateTime={post.updatedAt.toISOString()}>
-										{blogDate(post.updatedAt)}
-									</time>
-								</span>
-							)}
 							<span aria-hidden="true">·</span>
 							<span>{post.readTime} min read</span>
 						</p>

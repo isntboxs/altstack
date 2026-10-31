@@ -1,4 +1,8 @@
-import { publicOgCategory, publicOgProject } from '@altstack/api/queries/seo'
+import {
+	publicOgCategory,
+	publicOgProject,
+	publicOgBlog,
+} from '@altstack/api/queries/seo'
 
 import regularUrl from './assets/inter-400.ttf?inline'
 import mediumUrl from './assets/inter-500.ttf?inline'
@@ -29,7 +33,10 @@ const cache = new Map<
 	{ rendering: Promise<Uint8Array>; expiresAt: number }
 >()
 let activeRenders = 0
-export async function ogResponse(kind: 'project' | 'category', id: string) {
+export async function ogResponse(
+	kind: 'project' | 'category' | 'blog',
+	id: string
+) {
 	if (
 		!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id)
 	) {
@@ -39,7 +46,9 @@ export async function ogResponse(kind: 'project' | 'category', id: string) {
 		const row =
 			kind === 'project'
 				? await publicOgProject(id)
-				: await publicOgCategory(id)
+				: kind === 'blog'
+					? await publicOgBlog(id)
+					: await publicOgCategory(id)
 		if (!row) return missingImage()
 		const key = JSON.stringify({ kind, row })
 		let entry = cache.get(key)
@@ -57,6 +66,21 @@ export async function ogResponse(kind: 'project' | 'category', id: string) {
 			if (cache.size >= 32) cache.delete(cache.keys().next().value!)
 			activeRenders++
 			const rendering = (async () => {
+				if ('title' in row) {
+					return renderCard(
+						{
+							kind: 'blog',
+							title: row.title,
+							fallback: row.slug,
+							description: row.description,
+							authorName: row.authorName,
+							publishedAt: row.publishedAt,
+							updatedAt: row.updatedAt,
+							readTime: row.readTime,
+						},
+						resources
+					)
+				}
 				if ('github' in row) {
 					return renderCard(
 						{

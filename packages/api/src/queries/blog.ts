@@ -53,6 +53,14 @@ export async function getPublicBlog(database: BlogDatabase, slug: string) {
 		.where(and(visibleBlog, eq(blogPost.slug, slug)))
 	return row ? { ...row, publishedAt: row.publishedAt! } : null
 }
+
+export async function getPublicBlogForOg(database: BlogDatabase, id: string) {
+	const [row] = await database
+		.select({ ...cardFields, authorName: blogPost.authorName })
+		.from(blogPost)
+		.where(and(visibleBlog, eq(blogPost.id, id)))
+	return row ? { ...row, publishedAt: row.publishedAt! } : null
+}
 export async function getAdminBlog(database: BlogDatabase, id: string) {
 	const [row] = await database
 		.select({ ...getTableColumns(blogPost), authorImage: user.image })

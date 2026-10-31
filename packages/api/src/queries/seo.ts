@@ -3,6 +3,7 @@ import { and, asc, count, eq } from 'drizzle-orm'
 import { db } from '@altstack/db'
 import { githubRepository, project } from '@altstack/db/schemas'
 
+import { getPublicBlogForOg } from './blog'
 import { getPublicCategoryById, listPublicCategories } from './category'
 import { listPublicLicenses } from './license'
 
@@ -51,6 +52,10 @@ export async function publicOgProject(id: string) {
 
 export async function publicOgCategory(id: string) {
 	return getPublicCategoryById(db, id)
+}
+
+export async function publicOgBlog(id: string) {
+	return getPublicBlogForOg(db, id)
 }
 
 export async function sitemapProjectCount() {

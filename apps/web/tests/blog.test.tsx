@@ -133,7 +133,8 @@ describe('blog article HTML and anchors', () => {
 		expect(container.innerHTML).toContain(post.title)
 		expect(container.querySelectorAll('h1')).toHaveLength(1)
 		expect(container.textContent).toContain('Alex Morgan')
-		expect(container.textContent).toContain('Published: October 1, 2026')
+		expect(container.textContent).not.toContain('Published:')
+		expect(container.querySelectorAll('header time')).toHaveLength(1)
 		expect(container.textContent).toContain('Updated: October 2, 2026')
 		expect(container.textContent).toContain('2 min read')
 		expect(container.querySelector('img')?.getAttribute('src')).toBe(
@@ -162,6 +163,24 @@ describe('blog article HTML and anchors', () => {
 			await Promise.resolve()
 		})
 		container.remove()
+	})
+
+	it('shows the publication date alone when the article has not been updated', async () => {
+		const root = createRootRoute({
+			component: () => (
+				<BlogArticle post={{ ...post, updatedAt: post.publishedAt }} />
+			),
+		})
+		const router = createRouter({
+			routeTree: root,
+			history: createMemoryHistory(),
+		})
+		await router.load()
+		const container = document.createElement('div')
+		container.innerHTML = renderToString(<RouterProvider router={router} />)
+		expect(container.textContent).toContain('Published: October 1, 2026')
+		expect(container.textContent).not.toContain('Updated:')
+		expect(container.querySelectorAll('header time')).toHaveLength(1)
 	})
 	it('renders public cards with cover, title, description, publication date and read time', async () => {
 		const root = createRootRoute({

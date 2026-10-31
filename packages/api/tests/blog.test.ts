@@ -16,7 +16,7 @@ import {
 } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
-import { sitemapBlogs } from '@altstack/api/queries/blog'
+import { sitemapBlogs, getPublicBlogForOg } from '@altstack/api/queries/blog'
 import { adminBlogRouter, blogRouter } from '@altstack/api/routers/blog'
 import {
 	promoteTempImageToBlogCover,
@@ -101,6 +101,32 @@ afterAll(async () => {
 })
 
 describe('blog publishing and CRUD', () => {
+	it('exposes OG metadata only while the blog is publicly available', async () => {
+		const saved = await admin().create({ body: body() })
+		expect(await getPublicBlogForOg(scope.db, saved.id)).toBeNull()
+		await admin().update({
+			params: { id: saved.id },
+			body: { ...body({ status: 'published' }), expectedVersion: 1 },
+		})
+		const image = await getPublicBlogForOg(scope.db, saved.id)
+		expect(image).toMatchObject({
+			title: saved.title,
+			authorName: 'Original author',
+			readTime: 1,
+		})
+		expect(image).not.toHaveProperty('content')
+		expect(image).not.toHaveProperty('authorId')
+		await admin().update({
+			params: { id: saved.id },
+			body: { ...body(), expectedVersion: 2 },
+		})
+		expect(await getPublicBlogForOg(scope.db, saved.id)).toBeNull()
+		await admin().delete({
+			params: { id: saved.id },
+			body: { expectedVersion: 3 },
+		})
+		expect(await getPublicBlogForOg(scope.db, saved.id)).toBeNull()
+	})
 	it('promotes uploaded covers, retains unchanged covers across slug edits, and cleans up replaced or deleted covers', async () => {
 		const upload = 'tmp/screenshots/cover-1.png'
 		const saved = await admin().create({

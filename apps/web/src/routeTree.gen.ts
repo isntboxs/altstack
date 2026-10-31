@@ -48,6 +48,7 @@ import { Route as MainManagedIndexRouteImport } from './routes/_main/managed/ind
 import { Route as MainManagedIdRouteImport } from './routes/_main/managed/$id'
 import { Route as MainProjectsIndexRouteImport } from './routes/_main/projects/index'
 import { Route as MainProjectsCreateRouteImport } from './routes/_main/projects/create'
+import { Route as OgBlogIdRouteImport } from './routes/og.blog.$id'
 import { Route as OgCategoryIdRouteImport } from './routes/og.category.$id'
 import { Route as OgProjectIdRouteImport } from './routes/og.project.$id'
 import { Route as SitemapsProjectsPageRouteImport } from './routes/sitemaps.projects.$page'
@@ -258,6 +259,11 @@ const MainProjectsCreateRoute = MainProjectsCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => MainProjectsRoute,
 } as any)
+const OgBlogIdRoute = OgBlogIdRouteImport.update({
+  id: '/og/blog/$id',
+  path: '/og/blog/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OgCategoryIdRoute = OgCategoryIdRouteImport.update({
   id: '/og/category/$id',
   path: '/og/category/$id',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/admin/tags': typeof MainAdminTagsRoute
   '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
+  '/og/blog/$id': typeof OgBlogIdRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
@@ -427,6 +434,7 @@ export interface FileRoutesByTo {
   '/admin/tags': typeof MainAdminTagsRoute
   '/managed/$id': typeof MainManagedIdRoute
   '/projects/create': typeof MainProjectsCreateRoute
+  '/og/blog/$id': typeof OgBlogIdRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
@@ -485,6 +493,7 @@ export interface FileRoutesById {
   '/_main/admin/tags': typeof MainAdminTagsRoute
   '/_main/managed/$id': typeof MainManagedIdRoute
   '/_main/projects/create': typeof MainProjectsCreateRoute
+  '/og/blog/$id': typeof OgBlogIdRoute
   '/og/category/$id': typeof OgCategoryIdRoute
   '/og/project/$id': typeof OgProjectIdRoute
   '/sitemaps/projects/$page': typeof SitemapsProjectsPageRoute
@@ -542,6 +551,7 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/managed/$id'
     | '/projects/create'
+    | '/og/blog/$id'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/managed/$id'
     | '/projects/create'
+    | '/og/blog/$id'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/_main/admin/tags'
     | '/_main/managed/$id'
     | '/_main/projects/create'
+    | '/og/blog/$id'
     | '/og/category/$id'
     | '/og/project/$id'
     | '/sitemaps/projects/$page'
@@ -685,6 +697,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SlugBadgeDotsvgRoute: typeof SlugBadgeDotsvgRoute
   SitemapsPagesDotxmlRoute: typeof SitemapsPagesDotxmlRoute
+  OgBlogIdRoute: typeof OgBlogIdRoute
   OgCategoryIdRoute: typeof OgCategoryIdRoute
   OgProjectIdRoute: typeof OgProjectIdRoute
   SitemapsProjectsPageRoute: typeof SitemapsProjectsPageRoute
@@ -965,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainProjectsCreateRouteImport
       parentRoute: typeof MainProjectsRoute
     }
+    '/og/blog/$id': {
+      id: '/og/blog/$id'
+      path: '/og/blog/$id'
+      fullPath: '/og/blog/$id'
+      preLoaderRoute: typeof OgBlogIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/og/category/$id': {
       id: '/og/category/$id'
       path: '/og/category/$id'
@@ -1237,6 +1257,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SlugBadgeDotsvgRoute: SlugBadgeDotsvgRoute,
   SitemapsPagesDotxmlRoute: SitemapsPagesDotxmlRoute,
+  OgBlogIdRoute: OgBlogIdRoute,
   OgCategoryIdRoute: OgCategoryIdRoute,
   OgProjectIdRoute: OgProjectIdRoute,
   SitemapsProjectsPageRoute: SitemapsProjectsPageRoute,
