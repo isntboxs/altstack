@@ -4,6 +4,7 @@ export const RESERVED_PROJECT_SLUGS = new Set([
 	'activity',
 	'admin',
 	'auth',
+	'blogs',
 	'bookmarks',
 	'categories',
 	'collections',

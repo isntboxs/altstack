@@ -15,6 +15,12 @@ vi.mock('@altstack/env/web', () => {
 vi.mock('@altstack/api/queries/seo', () => {
 	return {
 		sitemapPageSize: 1000,
+		sitemapBlogs: vi.fn().mockResolvedValue([
+			{
+				slug: 'building-software',
+				updatedAt: new Date('2026-10-31T00:00:00Z'),
+			},
+		]),
 		sitemapProjectCount: vi.fn(),
 		sitemapCategories: vi.fn().mockResolvedValue([]),
 		sitemapLicenses: vi.fn().mockResolvedValue([]),
@@ -38,6 +44,13 @@ describe('sitemap serialization', () => {
 		expect(xml).toContain('/collections</loc>')
 		expect(xml).toContain(
 			'/collections/editorial-tools</loc><lastmod>2026-10-29T00:00:00.000Z</lastmod>'
+		)
+	})
+	it('includes blog discovery and published article revisions', async () => {
+		const xml = await (await sitemapPages()).text()
+		expect(xml).toContain('/blogs</loc>')
+		expect(xml).toContain(
+			'/blogs/building-software</loc><lastmod>2026-10-31T00:00:00.000Z</lastmod>'
 		)
 	})
 	it('encodes public paths, escapes XML and emits a real UTC modification date', async () => {

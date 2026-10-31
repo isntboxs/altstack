@@ -1,0 +1,88 @@
+import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react'
+import { Link, useRouter } from '@tanstack/react-router'
+
+import { Button, buttonVariants } from '@altstack/ui/components/button'
+
+import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
+
+export function BlogPagination({
+	page,
+	totalPages,
+}: {
+	page: number
+	totalPages: number
+}) {
+	const router = useRouter()
+	const handlePageClick = createPaginationScrollHandler('blog-results', router)
+	if (totalPages <= 1) return null
+	const pages = [...new Set([1, page - 1, page, page + 1, totalPages])].filter(
+		(value) => value > 0 && value <= totalPages
+	)
+	return (
+		<nav
+			aria-label="Blogs pagination"
+			className="flex flex-wrap items-center justify-between gap-3 border-t pt-5"
+		>
+			{page > 1 ? (
+				<Link
+					className={buttonVariants({ variant: 'ghost' })}
+					to="/blogs"
+					activeOptions={{ exact: true, explicitUndefined: true }}
+					search={{ page: page - 1 }}
+					resetScroll={false}
+					onClick={handlePageClick}
+				>
+					<IconArrowLeft data-icon="inline-start" />
+					Prev
+				</Link>
+			) : (
+				<Button variant="ghost" disabled>
+					<IconArrowLeft data-icon="inline-start" />
+					Prev
+				</Button>
+			)}
+			<div className="flex flex-wrap items-center gap-1">
+				<span className="mr-1 text-sm text-muted-foreground">Page:</span>
+				{pages.map((value, index) => (
+					<span key={value} className="flex items-center gap-1">
+						{index > 0 && value > (pages[index - 1] ?? 0) + 1 && (
+							<span aria-hidden="true">…</span>
+						)}
+						<Link
+							className={buttonVariants({
+								variant: value === page ? 'secondary' : 'ghost',
+								size: 'sm',
+							})}
+							to="/blogs"
+							activeOptions={{ exact: true, explicitUndefined: true }}
+							search={{ page: value }}
+							resetScroll={false}
+							onClick={handlePageClick}
+							aria-current={value === page ? 'page' : undefined}
+						>
+							{value}
+						</Link>
+					</span>
+				))}
+			</div>
+			{page < totalPages ? (
+				<Link
+					className={buttonVariants({ variant: 'ghost' })}
+					to="/blogs"
+					activeOptions={{ exact: true, explicitUndefined: true }}
+					search={{ page: page + 1 }}
+					resetScroll={false}
+					onClick={handlePageClick}
+				>
+					Next
+					<IconArrowRight data-icon="inline-end" />
+				</Link>
+			) : (
+				<Button variant="ghost" disabled>
+					Next
+					<IconArrowRight data-icon="inline-end" />
+				</Button>
+			)}
+		</nav>
+	)
+}

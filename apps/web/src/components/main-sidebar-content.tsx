@@ -1,5 +1,6 @@
 import {
 	IconActivity,
+	IconArticle,
 	IconBookmark,
 	IconCategory,
 	IconChevronDown,
@@ -78,6 +79,7 @@ const catalog = linkOptions([
 	{ to: '/projects', icon: IconPackage, label: 'Projects' },
 	{ to: '/admin/categories', icon: IconCategory, label: 'Categories' },
 	{ to: '/admin/tags', icon: IconTags, label: 'Tags' },
+	{ to: '/admin/blogs', icon: IconArticle, label: 'Blogs' },
 	{ to: '/admin/collections', icon: IconPackage, label: 'Collections' },
 	{ to: '/admin/featured', icon: IconStar, label: 'Featured projects' },
 ])

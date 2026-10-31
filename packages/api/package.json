@@ -76,7 +76,10 @@
 		"./storage": "./src/storage.ts",
 		"./submission-capacity": "./src/submission-capacity.ts",
 		"./submission-rate-limit": "./src/submission-rate-limit.ts",
-		"./package.json": "./package.json"
+		"./package.json": "./package.json",
+		"./queries/blog": "./src/queries/blog.ts",
+		"./contracts/blog": "./src/contracts/blog.ts",
+		"./routers/blog": "./src/routers/blog.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -149,7 +152,10 @@
 			"./storage": "./dist/storage.mjs",
 			"./submission-capacity": "./dist/submission-capacity.mjs",
 			"./submission-rate-limit": "./dist/submission-rate-limit.mjs",
-			"./package.json": "./package.json"
+			"./package.json": "./package.json",
+			"./queries/blog": "./dist/queries/blog.mjs",
+			"./contracts/blog": "./dist/contracts/blog.mjs",
+			"./routers/blog": "./dist/routers/blog.mjs"
 		}
 	},
 	"scripts": {

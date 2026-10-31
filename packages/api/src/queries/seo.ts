@@ -85,3 +85,8 @@ export async function sitemapCollections() {
 	const { sitemapCollections: list } = await import('./collection')
 	return list(db)
 }
+
+export async function sitemapBlogs() {
+	const { sitemapBlogs: list } = await import('./blog')
+	return list(db)
+}
