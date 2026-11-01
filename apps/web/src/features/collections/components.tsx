@@ -31,11 +31,11 @@ import { ShareButtons } from '#/components/share-buttons'
 import { UserAvatar } from '#/components/user-avatar'
 import { DetailAd, AdListingGrid } from '#/features/ads/components'
 import { useAds } from '#/features/ads/context'
+import { memberAnchor } from './member-anchor'
 
 type Collection = ORPCRouterOutputs['collection']['getBySlug']
 type CollectionCardData =
 	ORPCRouterOutputs['collection']['list']['collections'][number]
-export const memberAnchor = (id: string) => `project-${id}`
 
 /** Links the directory and detail page to their public parent pages. */
 export function CollectionBreadcrumb({ name }: { name?: string }) {

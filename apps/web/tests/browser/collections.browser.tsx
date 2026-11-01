@@ -10,10 +10,8 @@ import { page } from 'vite-plus/test/browser'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
-import {
-	CollectionArticle,
-	memberAnchor,
-} from '#/features/collections/components'
+import { CollectionArticle } from '#/features/collections/components'
+import { memberAnchor } from '#/features/collections/member-anchor'
 import '#/styles.css'
 vi.mock('@altstack/env/web', () => {
 	return {
