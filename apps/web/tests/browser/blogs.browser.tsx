@@ -150,6 +150,22 @@ describe('blog article layout in Chromium', () => {
 			}
 		}
 	})
+	it('aligns an initial article deep link and activates its TOC entry while preserving the query', async () => {
+		await page.viewport(1440, 800)
+		const router = await mount(
+			false,
+			post,
+			'/blogs/technology?ref=reading#section-4-4'
+		)
+		await waitFor(() => {
+			expect(router.state.location.hash).toBe('section-4-4')
+			expect(router.state.location.search).toEqual({ ref: 'reading' })
+			expect(
+				Math.abs(section(4).getBoundingClientRect().top - 96)
+			).toBeLessThan(2)
+			expect(active().getAttribute('href')).toBe('#section-4-4')
+		})
+	})
 	it('reveals content permalinks on hover and keyboard focus, updates the URL and TOC, and shares the selected section', async () => {
 		await page.viewport(1440, 800)
 		const router = await mount(false, post, '/blogs/technology?ref=reading')
