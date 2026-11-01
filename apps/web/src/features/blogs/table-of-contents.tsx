@@ -127,6 +127,7 @@ export function BlogTableOfContents({
 											event.preventDefault()
 											void navigate({
 												hash: heading.id,
+												search: true,
 												resetScroll: false,
 												hashScrollIntoView: false,
 											})

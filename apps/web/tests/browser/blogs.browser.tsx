@@ -268,7 +268,7 @@ describe('blog article layout in Chromium', () => {
 	})
 	it('starts the TOC beside the cover, limits its height, follows scrolling, aligns anchor links, collapses, and stops before the footer', async () => {
 		await page.viewport(1440, 800)
-		const router = await mount()
+		const router = await mount(false, post, '/blogs/technology?ref=reading')
 		const toc = document.querySelector('aside [data-slot="collapsible"]')!
 		const cover = document.querySelector('article > img')!
 		const list = document.querySelector<HTMLOListElement>(
@@ -305,16 +305,19 @@ describe('blog article layout in Chromium', () => {
 			).toBeLessThan(2)
 		)
 		expect(router.state.location.hash).toBe('section-25-25')
+		expect(router.state.location.search).toEqual({ ref: 'reading' })
 		expect(document.activeElement?.id).toBe('section-25-25')
 		const copy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
 		await page.getByRole('button', { name: 'Copy Link' }).click()
 		expect(copy).toHaveBeenCalledWith(
-			'https://altstack.test/blogs/technology#section-25-25'
+			'https://altstack.test/blogs/technology?ref=reading#section-25-25'
 		)
 		expect(
 			document.querySelector<HTMLAnchorElement>('a[title="Share on X"]')!.href
 		).toContain(
-			encodeURIComponent('https://altstack.test/blogs/technology#section-25-25')
+			encodeURIComponent(
+				'https://altstack.test/blogs/technology?ref=reading#section-25-25'
+			)
 		)
 		await page.getByRole('button', { name: 'On this page' }).click()
 		await waitFor(() =>
