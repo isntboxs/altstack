@@ -176,6 +176,23 @@ export async function promoteTempImageToBlogCover({
 	})
 }
 
+export async function promoteTempImageToAd(
+	tmpKey: string,
+	adId: string,
+	kind: 'logo' | 'banner'
+) {
+	const imageKind = kind === 'logo' ? 'logo' : 'screenshot'
+	assertValidPromoteInput(tmpKey, adId, imageKind)
+	const ext = extractImageExtension(tmpKey)
+	if (!ext) throw new InvalidTempUploadError()
+	return promoteTempImage({
+		tmpKey,
+		finalKey: `ads/${adId}/${kind}-${randomUUID()}.${ext}`,
+		kind: imageKind,
+		consumeSource: false,
+	})
+}
+
 async function promoteTempImage({
 	tmpKey,
 	finalKey,

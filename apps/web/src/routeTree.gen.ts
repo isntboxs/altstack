@@ -18,6 +18,7 @@ import { Route as SlugBadgeDotsvgRouteImport } from './routes/$slug.badge[.]svg'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
+import { Route as AppAdvertiseRouteImport } from './routes/_app/advertise'
 import { Route as AppSubmitRouteImport } from './routes/_app/submit'
 import { Route as MainAdminRouteImport } from './routes/_main/admin'
 import { Route as MainBookmarksRouteImport } from './routes/_main/bookmarks'
@@ -37,6 +38,7 @@ import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
 import { Route as AppTagsSlugRouteImport } from './routes/_app/tags/$slug'
 import { Route as MainAdminIndexRouteImport } from './routes/_main/admin.index'
 import { Route as MainAdminActivityRouteImport } from './routes/_main/admin.activity'
+import { Route as MainAdminAdsRouteImport } from './routes/_main/admin.ads'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainAdminFeaturedRouteImport } from './routes/_main/admin.featured'
 import { Route as MainAdminOperationsRouteImport } from './routes/_main/admin.operations'
@@ -107,6 +109,11 @@ const AppSlugRoute = AppSlugRouteImport.update({
 const AppActivityRoute = AppActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAdvertiseRoute = AppAdvertiseRouteImport.update({
+  id: '/advertise',
+  path: '/advertise',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppSubmitRoute = AppSubmitRouteImport.update({
@@ -202,6 +209,11 @@ const MainAdminIndexRoute = MainAdminIndexRouteImport.update({
 const MainAdminActivityRoute = MainAdminActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminAdsRoute = MainAdminAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
   getParentRoute: () => MainAdminRoute,
 } as any)
 const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
@@ -359,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/advertise': typeof AppAdvertiseRoute
   '/submit': typeof AppSubmitRoute
   '/admin': typeof MainAdminRouteWithChildren
   '/bookmarks': typeof MainBookmarksRoute
@@ -372,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
+  '/admin/ads': typeof MainAdminAdsRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/operations': typeof MainAdminOperationsRoute
@@ -415,6 +429,7 @@ export interface FileRoutesByTo {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/advertise': typeof AppAdvertiseRoute
   '/submit': typeof AppSubmitRoute
   '/bookmarks': typeof MainBookmarksRoute
   '/submission': typeof MainSubmissionRoute
@@ -426,6 +441,7 @@ export interface FileRoutesByTo {
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
+  '/admin/ads': typeof MainAdminAdsRoute
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/operations': typeof MainAdminOperationsRoute
   '/admin/ownership': typeof MainAdminOwnershipRoute
@@ -470,6 +486,7 @@ export interface FileRoutesById {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
+  '/_app/advertise': typeof AppAdvertiseRoute
   '/_app/submit': typeof AppSubmitRoute
   '/_main/admin': typeof MainAdminRouteWithChildren
   '/_main/bookmarks': typeof MainBookmarksRoute
@@ -484,6 +501,7 @@ export interface FileRoutesById {
   '/_app/licenses/$slug': typeof AppLicensesSlugRoute
   '/_app/tags/$slug': typeof AppTagsSlugRoute
   '/_main/admin/activity': typeof MainAdminActivityRoute
+  '/_main/admin/ads': typeof MainAdminAdsRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
   '/_main/admin/operations': typeof MainAdminOperationsRoute
@@ -529,6 +547,7 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
+    | '/advertise'
     | '/submit'
     | '/admin'
     | '/bookmarks'
@@ -542,6 +561,7 @@ export interface FileRouteTypes {
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
+    | '/admin/ads'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/operations'
@@ -585,6 +605,7 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
+    | '/advertise'
     | '/submit'
     | '/bookmarks'
     | '/submission'
@@ -596,6 +617,7 @@ export interface FileRouteTypes {
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
+    | '/admin/ads'
     | '/admin/featured'
     | '/admin/operations'
     | '/admin/ownership'
@@ -639,6 +661,7 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/_app/$slug'
     | '/_app/activity'
+    | '/_app/advertise'
     | '/_app/submit'
     | '/_main/admin'
     | '/_main/bookmarks'
@@ -653,6 +676,7 @@ export interface FileRouteTypes {
     | '/_app/licenses/$slug'
     | '/_app/tags/$slug'
     | '/_main/admin/activity'
+    | '/_main/admin/ads'
     | '/_main/admin/categories'
     | '/_main/admin/featured'
     | '/_main/admin/operations'
@@ -766,6 +790,13 @@ declare module '@tanstack/react-router' {
       path: '/activity'
       fullPath: '/activity'
       preLoaderRoute: typeof AppActivityRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/advertise': {
+      id: '/_app/advertise'
+      path: '/advertise'
+      fullPath: '/advertise'
+      preLoaderRoute: typeof AppAdvertiseRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/submit': {
@@ -899,6 +930,13 @@ declare module '@tanstack/react-router' {
       path: '/activity'
       fullPath: '/admin/activity'
       preLoaderRoute: typeof MainAdminActivityRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/ads': {
+      id: '/_main/admin/ads'
+      path: '/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof MainAdminAdsRouteImport
       parentRoute: typeof MainAdminRoute
     }
     '/_main/admin/categories': {
@@ -1103,6 +1141,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppSlugRoute: typeof AppSlugRoute
   AppActivityRoute: typeof AppActivityRoute
+  AppAdvertiseRoute: typeof AppAdvertiseRoute
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
   AppBlogsSlugRoute: typeof AppBlogsSlugRoute
@@ -1120,6 +1159,7 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSlugRoute: AppSlugRoute,
   AppActivityRoute: AppActivityRoute,
+  AppAdvertiseRoute: AppAdvertiseRoute,
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
   AppBlogsSlugRoute: AppBlogsSlugRoute,
@@ -1155,6 +1195,7 @@ const MainAdminCategoriesRouteWithChildren =
 
 interface MainAdminRouteChildren {
   MainAdminActivityRoute: typeof MainAdminActivityRoute
+  MainAdminAdsRoute: typeof MainAdminAdsRoute
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
   MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
   MainAdminOperationsRoute: typeof MainAdminOperationsRoute
@@ -1175,6 +1216,7 @@ interface MainAdminRouteChildren {
 
 const MainAdminRouteChildren: MainAdminRouteChildren = {
   MainAdminActivityRoute: MainAdminActivityRoute,
+  MainAdminAdsRoute: MainAdminAdsRoute,
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
   MainAdminFeaturedRoute: MainAdminFeaturedRoute,
   MainAdminOperationsRoute: MainAdminOperationsRoute,

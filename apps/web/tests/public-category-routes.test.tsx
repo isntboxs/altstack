@@ -41,7 +41,13 @@ import { categoryFixture } from './fixtures/categories'
 const { getAuthFn, rpc } = vi.hoisted(() => {
 	return {
 		getAuthFn: vi.fn<() => Promise<typeof authClient.$Infer.Session | null>>(),
-		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
+		rpc: vi.fn<
+			(
+				path: Array<string>,
+				input: unknown,
+				options?: unknown
+			) => Promise<unknown>
+		>(),
 	}
 })
 vi.mock('#/routes/__root', async () => {
@@ -105,7 +111,12 @@ vi.mock('@tanstack/react-start', async () => {
 	const actual = await vi.importActual<typeof StartModule>(
 		'@tanstack/react-start'
 	)
-	const client: ORPCRouterClient = createORPCClient({ call: rpc })
+	const client: ORPCRouterClient = createORPCClient({
+		call: (path, input, options) =>
+			path.join('/') === 'ads/list'
+				? Promise.resolve({ campaigns: [], serverNow: new Date() })
+				: rpc(path, input, options),
+	})
 	return {
 		...actual,
 		createIsomorphicFn: () => {
@@ -360,19 +371,20 @@ beforeEach(() => {
 					}
 				}
 				case 'project/search': {
-					const { page, q } = searchProjectsInputSchema.parse(input).query
+					const { page, q, limit } =
+						searchProjectsInputSchema.parse(input).query
 					const count = q === 'absent' ? 0 : total
 					return {
 						projects:
-							count > 0 && page <= Math.ceil(count / 12)
+							count > 0 && page <= Math.ceil(count / limit)
 								? [{ ...zed, categories: [ai.slug, general.slug] }]
 								: [],
 						pagination: {
 							page,
-							limit: 12,
+							limit,
 							totalItems: count,
-							totalPages: Math.ceil(count / 12),
-							hasNextPage: page < Math.ceil(count / 12),
+							totalPages: Math.ceil(count / limit),
+							hasNextPage: page < Math.ceil(count / limit),
 							hasPreviousPage: page > 1,
 						},
 					}
@@ -913,7 +925,7 @@ describe('public category search, sorting and pagination', () => {
 	])(
 		'scrolls pagination at %s to its controls while retaining filters',
 		async (path, targetId, paginationLabel, q) => {
-			total = 36
+			total = 135
 			const sort = path === '/tags' ? 'name-asc' : 'name'
 			const router = await routerAt(`${path}?q=${q}&sort=${sort}`, true)
 			const target = document.getElementById(targetId)!
@@ -976,6 +988,8 @@ describe('public category search, sorting and pagination', () => {
 				{
 					query: {
 						...filter,
+						limit: 45,
+						offset: 0,
 						sort: 'most-stars',
 						page: undefined,
 						q: undefined,
@@ -1079,7 +1093,7 @@ describe('public category search, sorting and pagination', () => {
 		).toContain('Order by')
 	})
 	it('sort changes reset page and category pagination hrefs retain q and sort', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/categories/' + ai.path + '?q=Zed&sort=name&page=2',
 			true
@@ -1117,7 +1131,14 @@ describe('public category search, sorting and pagination', () => {
 		expect(rpc).toHaveBeenCalledWith(
 			['project', 'search'],
 			{
-				query: { category: ai.slug, sort: 'most-stars', page: 1, q: undefined },
+				query: {
+					category: ai.slug,
+					sort: 'most-stars',
+					page: 1,
+					q: undefined,
+					limit: 45,
+					offset: 0,
+				},
 			},
 			expect.anything()
 		)
@@ -1156,7 +1177,7 @@ describe('public category search, sorting and pagination', () => {
 		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
 	})
 	it('retains homepage category/search/reset and home pagination URLs', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/?category=backend&q=Zed&sort=name&page=2',
 			true
@@ -1519,7 +1540,7 @@ describe('L2 public affordances and recovery', () => {
 		}
 	)
 	it('distinguishes an out-of-range filtered page and recovers without dropping filters', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/?category=backend&q=Zed&sort=name&page=99',
 			true
@@ -1707,6 +1728,8 @@ describe('public tags', () => {
 			{
 				query: {
 					tag: 'typescript',
+					limit: 45,
+					offset: 0,
 					q: undefined,
 					sort: 'most-stars',
 					page: undefined,

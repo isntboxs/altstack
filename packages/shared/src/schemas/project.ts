@@ -154,6 +154,7 @@ export const searchSortSchema = z.enum([
 export type SearchSortType = z.infer<typeof searchSortSchema>
 
 export const searchProjectsQuerySchema = z.object({
+	offset: z.coerce.number().int().min(0).max(5000000).optional(),
 	q: z
 		.string()
 		.trim()
@@ -174,6 +175,7 @@ export const searchProjectsInputSchema = z.object({
 })
 
 export const searchProjectsOutputSchema = z.object({
+	query: searchProjectsQuerySchema.optional(),
 	asOf: z.coerce.date().optional(),
 	projects: z.array(
 		listProjectItemSchema.extend({ categories: z.array(z.string()) })

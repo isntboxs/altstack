@@ -1,7 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useLocation } from '@tanstack/react-router'
 
 import { Footer } from '#/components/footer'
 import { Header } from '#/components/header'
+import { AdBanner, CornerAd } from '#/features/ads/components'
+import { AdsProvider } from '#/features/ads/provider'
 import { CatalogueShell } from '#/features/project/components/catalogue-shell'
 
 export const Route = createFileRoute('/_app')({
@@ -10,16 +12,21 @@ export const Route = createFileRoute('/_app')({
 
 function RouteComponent() {
 	const { auth } = Route.useRouteContext()
+	const privateRoute = useLocation({
+		select: (location) => location.pathname === '/submit',
+	})
 	return (
-		<div className="flex min-h-dvh flex-col">
-			<Header auth={auth} />
+		<AdsProvider enabled={!privateRoute}>
+			<div className="flex min-h-dvh flex-col">
+				<Header auth={auth} />
+				{!privateRoute && <AdBanner />}
 
-			<div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-12 bg-linear-to-b from-background via-background/40 to-transparent" />
-
-			<main className="flex-1">
-				<CatalogueShell />
-			</main>
-			<Footer />
-		</div>
+				<main className="flex-1">
+					<CatalogueShell />
+				</main>
+				<Footer />
+				{!privateRoute && <CornerAd />}
+			</div>
+		</AdsProvider>
 	)
 }

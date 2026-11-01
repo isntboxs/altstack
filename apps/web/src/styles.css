@@ -110,3 +110,38 @@
 		scroll-behavior: auto !important;
 	}
 }
+
+.ad-sidebar + [data-featured-panel] {
+	margin-top: 1rem;
+}
+.ad-card {
+	height: 100%;
+}
+.ad-listing > .ad-card {
+	height: 100%;
+}
+.ad-corner {
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.ad-corner {
+		animation: ad-enter 200ms ease-out;
+		transition:
+			transform 200ms ease-in,
+			opacity 200ms ease-in;
+	}
+	.ad-corner-leaving {
+		transform: translateY(calc(100% + 2rem));
+		opacity: 0;
+	}
+	@keyframes ad-enter {
+		from {
+			transform: translateY(calc(100% + 2rem));
+			opacity: 0;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+}

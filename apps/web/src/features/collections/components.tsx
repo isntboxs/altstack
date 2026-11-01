@@ -29,6 +29,8 @@ import { ProjectLogo, ProjectScreenshot } from '#/components/project-media'
 import { PublicContent } from '#/components/public-content'
 import { ShareButtons } from '#/components/share-buttons'
 import { UserAvatar } from '#/components/user-avatar'
+import { DetailAd, AdListingGrid } from '#/features/ads/components'
+import { useAds } from '#/features/ads/context'
 
 type Collection = ORPCRouterOutputs['collection']['getBySlug']
 type CollectionCardData =
@@ -69,11 +71,33 @@ export function CollectionBreadcrumb({ name }: { name?: string }) {
 /** Displays collection metadata and live project or source-owner artwork. */
 export function CollectionCards({
 	collections,
+	listing,
 }: {
 	collections: Array<CollectionCardData>
+	listing?: {
+		page: number
+		offset: number
+		onConsumed?: (count: number) => void
+	}
 }) {
+	if (listing) {
+		return (
+			<AdListingGrid
+				items={collections}
+				catalogue="collections"
+				{...listing}
+				renderItem={(item) => <CollectionCards collections={[item]} />}
+			/>
+		)
+	}
 	return (
-		<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+		<div
+			className={
+				collections.length === 1
+					? 'contents'
+					: 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3'
+			}
+		>
 			{collections.map((item) => (
 				<article
 					key={item.id}
@@ -323,6 +347,7 @@ export function MemberNavigation({
 	projects: Collection['projects']
 }) {
 	const navigate = useNavigate()
+	const hasAd = useAds('collection-detail').length > 0
 	const [active, setActive] = useState(projects[0]?.id)
 	const list = useRef<HTMLOListElement>(null)
 	useEffect(() => {
@@ -366,16 +391,17 @@ export function MemberNavigation({
 	}, [active])
 	return (
 		<aside
-			className="hidden min-w-0 lg:block"
+			className={hasAd ? 'min-w-0' : 'hidden min-w-0 lg:block'}
 			data-testid="collection-navigation"
 		>
 			<nav
 				aria-label="Collection projects"
-				className="sticky top-16 z-40 flex max-h-[calc(100dvh-5rem)] flex-col gap-4"
+				className="flex flex-col gap-4 lg:sticky lg:top-16 lg:max-h-[calc(100dvh-5rem)]"
 			>
+				<DetailAd kind="collection-detail" />
 				<ol
 					ref={list}
-					className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-1"
+					className="hidden min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-1 lg:flex"
 				>
 					{projects.map((project, index) => (
 						<li key={project.id}>
@@ -429,7 +455,7 @@ export function MemberNavigation({
 						</li>
 					))}
 				</ol>
-				<div className="flex shrink-0 flex-col gap-2 px-3 pb-2">
+				<div className="hidden shrink-0 flex-col gap-2 px-3 pb-2 lg:flex">
 					<p className="text-sm text-muted-foreground">Missing a project?</p>
 					<Link to="/submit" className={buttonVariants({ variant: 'outline' })}>
 						Submit a project

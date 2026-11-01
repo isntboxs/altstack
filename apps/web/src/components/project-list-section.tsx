@@ -4,9 +4,11 @@ import {
 	IconLicense,
 	IconStar,
 } from '@tabler/icons-react'
+import { useQuery } from '@tanstack/react-query'
 import type { LinkComponent } from '@tanstack/react-router'
 import { Link, createLink, useRouter } from '@tanstack/react-router'
 import type { FC, ReactNode } from 'react'
+import { useState } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -32,9 +34,12 @@ import { Separator } from '@altstack/ui/components/separator'
 
 import { ProjectLogo } from '#/components/project-media'
 import { VerifiedBadge } from '#/components/verified-badge'
+import { AdListingGrid } from '#/features/ads/components'
+import { catalogueOffset } from '#/features/ads/selection'
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
+import { projectCatalogueKey, projectQueries } from '#/features/project/queries'
 import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
 type ProjectCardProps =
@@ -230,7 +235,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 
 /** Keeps pagination scoped to its catalogue and offers recovery for out-of-range pages. */
 export const ProjectListSection = ({
-	data,
+	data: loaded,
 	emptyMessage,
 	emptyAction,
 	pageLinkOptions,
@@ -243,12 +248,49 @@ export const ProjectListSection = ({
 	scrollTargetId?: string
 }) => {
 	const router = useRouter()
+	const query = useQuery({
+		...projectQueries.search(loaded.query ?? {}),
+		enabled: Boolean(loaded.query),
+	})
+	const data = query.data ?? loaded
+	const [consumed, setConsumed] = useState(45)
 	const { pagination } = data
 	const currentPage = pagination.page || 1
-	const totalPages = pagination.totalPages
-	const outOfRange = currentPage > Math.max(1, totalPages)
+	const offset = data.query?.offset ?? (currentPage - 1) * 45
+	const totalPages = Math.max(
+		currentPage,
+		currentPage +
+			Math.ceil(
+				(pagination.totalItems -
+					offset -
+					Math.min(consumed, data.projects.length)) /
+					45
+			)
+	)
+	const outOfRange =
+		data.projects.length === 0 &&
+		currentPage > 1 &&
+		offset >= pagination.totalItems
 	const paginationItems = getPaginationItems(currentPage, totalPages)
 	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
+	if (
+		loaded.query &&
+		!query.data &&
+		loaded.query.offset !==
+			catalogueOffset(projectCatalogueKey(loaded.query), loaded.query.page)
+	) {
+		if (query.isError) {
+			return (
+				<div role="alert" className="container mx-auto p-4">
+					Unable to restore this catalogue page.{' '}
+					<Button onClick={() => void query.refetch()}>Retry projects</Button>
+				</div>
+			)
+		}
+		return (
+			<output className="container mx-auto block p-4">Loading projects…</output>
+		)
+	}
 
 	return (
 		<section
@@ -279,15 +321,20 @@ export const ProjectListSection = ({
 					)}
 				</div>
 			) : (
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{data.projects.map((project) => (
+				<AdListingGrid
+					onConsumed={setConsumed}
+					items={data.projects}
+					catalogue={projectCatalogueKey(data.query ?? {})}
+					page={currentPage}
+					offset={offset}
+					renderItem={(project) => (
 						<ProjectCard
 							key={project.slug}
 							{...project}
 							now={data.asOf?.getTime()}
 						/>
-					))}
-				</div>
+					)}
+				/>
 			)}
 			{totalPages > 1 && !outOfRange && (
 				<Pagination className="mt-8">
@@ -328,7 +375,7 @@ export const ProjectListSection = ({
 							</PaginationItem>
 						))}
 						<PaginationItem>
-							{pagination.hasNextPage ? (
+							{currentPage < totalPages ? (
 								<CustomPaginationNext
 									{...pageLinkOptions(currentPage + 1)}
 									resetScroll={false}

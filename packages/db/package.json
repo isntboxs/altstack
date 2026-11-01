@@ -11,8 +11,10 @@
 		"./project-slug-preflight": "./src/project-slug-preflight.ts",
 		"./relations": "./src/relations.ts",
 		"./schemas": "./src/schemas.ts",
+		"./schemas/ad": "./src/schemas/ad.ts",
 		"./schemas/audit": "./src/schemas/audit.ts",
 		"./schemas/auth": "./src/schemas/auth.ts",
+		"./schemas/blog": "./src/schemas/blog.ts",
 		"./schemas/bookmark": "./src/schemas/bookmark.ts",
 		"./schemas/category": "./src/schemas/category.ts",
 		"./schemas/collection": "./src/schemas/collection.ts",
@@ -29,8 +31,7 @@
 		"./seed-file-validation": "./src/seed-file-validation.ts",
 		"./seed-taxonomy": "./src/seed-taxonomy.ts",
 		"./tags": "./src/tags.ts",
-		"./package.json": "./package.json",
-		"./schemas/blog": "./src/schemas/blog.ts"
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
@@ -38,8 +39,10 @@
 			"./project-slug-preflight": "./dist/project-slug-preflight.mjs",
 			"./relations": "./dist/relations.mjs",
 			"./schemas": "./dist/schemas.mjs",
+			"./schemas/ad": "./dist/schemas/ad.mjs",
 			"./schemas/audit": "./dist/schemas/audit.mjs",
 			"./schemas/auth": "./dist/schemas/auth.mjs",
+			"./schemas/blog": "./dist/schemas/blog.mjs",
 			"./schemas/bookmark": "./dist/schemas/bookmark.mjs",
 			"./schemas/category": "./dist/schemas/category.mjs",
 			"./schemas/collection": "./dist/schemas/collection.mjs",
@@ -56,8 +59,7 @@
 			"./seed-file-validation": "./dist/seed-file-validation.mjs",
 			"./seed-taxonomy": "./dist/seed-taxonomy.mjs",
 			"./tags": "./dist/tags.mjs",
-			"./package.json": "./package.json",
-			"./schemas/blog": "./dist/schemas/blog.mjs"
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {

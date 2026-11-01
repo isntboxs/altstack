@@ -54,7 +54,8 @@ function repositoryAvatar(source: string | null) {
 export async function listPublicCollections(
 	database: CollectionDatabase,
 	page = 1,
-	limit = 12
+	limit = 12,
+	offset?: number
 ) {
 	const [collections, totals] = await Promise.all([
 		database
@@ -74,13 +75,14 @@ export async function listPublicCollections(
 			.where(visibleCollection)
 			.orderBy(desc(collection.updatedAt), asc(collection.id))
 			.limit(limit)
-			.offset((page - 1) * limit),
+			.offset(offset ?? (page - 1) * limit),
 		database
 			.select({ total: count() })
 			.from(collection)
 			.where(visibleCollection),
 	])
 	return {
+		...(offset === undefined ? {} : { offset }),
 		collections: collections.map(
 			({ mainProjectLogo, sourceRepositoryUrl, ...entry }) => {
 				return {

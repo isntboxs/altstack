@@ -1,0 +1,443 @@
+import type { PageLedger } from './selection'
+import {
+	IconArrowUpRight,
+	IconMinus,
+	IconPlayerPause,
+	IconPlayerPlay,
+} from '@tabler/icons-react'
+import { cn } from 'cn'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode, RefObject } from 'react'
+
+import { ctaForeground } from '@altstack/shared/schemas/ads'
+import type { AdCampaign } from '@altstack/shared/schemas/ads'
+
+import { Badge } from '@altstack/ui/components/badge'
+import { Button } from '@altstack/ui/components/button'
+import {
+	Card,
+	CardHeader,
+	CardTitle,
+	CardDescription,
+	CardContent,
+	CardFooter,
+} from '@altstack/ui/components/card'
+
+import { ProjectLogo } from '#/components/project-media'
+import { resolveFileUrl } from '#/utils/storage'
+import { useAds, useAdsEntry } from './context'
+import {
+	CORNER_INTERVAL,
+	ledgerKey,
+	listingSlots,
+	readSession,
+	recordPage,
+	sessionStore,
+	weightedAds,
+} from './selection'
+
+const external = {
+	target: '_blank',
+	rel: 'sponsored noopener noreferrer',
+} as const
+export function AdCard({ ad }: { ad: AdCampaign }) {
+	return (
+		<article
+			className="ad-card relative min-w-0 rounded-xl border p-0.5"
+			aria-label={`Advertisement: ${ad.name}`}
+		>
+			<Badge
+				variant="outline"
+				className="absolute -top-2.5 left-4 z-10 bg-background"
+			>
+				Ad
+			</Badge>
+			<Card className="relative h-full overflow-hidden ring-0">
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -top-6 -right-8 rotate-12 opacity-[0.06]"
+				>
+					<ProjectLogo src={ad.logo} name={ad.name} className="size-40" />
+				</div>
+				<CardHeader>
+					<CardTitle className="flex min-w-0 items-center gap-2">
+						<ProjectLogo src={ad.logo} name={ad.name} className="size-8" />
+						<span className="min-w-0 wrap-anywhere">{ad.name}</span>
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="relative flex-1">
+					<CardDescription className="wrap-anywhere">
+						{ad.description}
+					</CardDescription>
+				</CardContent>
+				<CardFooter className="relative">
+					<a
+						{...external}
+						href={ad.websiteUrl}
+						style={{
+							backgroundColor: ad.buttonColor,
+							color: ctaForeground(ad.buttonColor),
+						}}
+						className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+					>
+						<span className="wrap-anywhere">{ad.ctaText}</span>
+						<IconArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
+						<span className="sr-only"> (opens in a new tab)</span>
+					</a>
+				</CardFooter>
+			</Card>
+		</article>
+	)
+}
+export function AdBanner() {
+	const ad = useAds('banner').at(0)
+	if (!ad) return null
+	return (
+		<aside className="ad-banner mt-12 -mb-12" aria-label="Advertisement">
+			<a
+				{...external}
+				href={ad.websiteUrl}
+				className="block border-y bg-muted/30 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
+			>
+				<span className="mx-auto flex max-w-6xl items-start gap-2 px-4 py-3 text-xs sm:items-center sm:text-sm lg:px-16">
+					<Badge variant="outline">Ad</Badge>
+					<ProjectLogo src={ad.logo} name={ad.name} className="size-5" />
+					<span className="min-w-0 flex-1 wrap-anywhere">
+						<strong>{ad.name}</strong>
+						<span className="text-muted-foreground"> · {ad.description}</span>
+					</span>
+					<span className="hidden shrink-0 underline underline-offset-4 sm:block">
+						Learn more
+					</span>
+					<span className="sr-only"> (opens in a new tab)</span>
+				</span>
+			</a>
+		</aside>
+	)
+}
+export function SponsorGrid() {
+	const ads = useAds('sponsors')
+	if (ads.length === 0) return null
+	// One cell per advertiser, keeping the server's stable creation order.
+	const unique = ads.filter(
+		(ad, i) =>
+			ads.findIndex(
+				(other) =>
+					new URL(other.websiteUrl).hostname.replace(/^www\./, '') ===
+					new URL(ad.websiteUrl).hostname.replace(/^www\./, '')
+			) === i
+	)
+	return (
+		<section
+			className="ad-sponsors container mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 lg:px-16"
+			aria-label="AltStack sponsors"
+		>
+			<p className="text-center text-sm text-muted-foreground">
+				These sponsors support AltStack.{' '}
+				<a href="/advertise" className="underline underline-offset-4">
+					Advertise with us
+				</a>
+			</p>
+			<div className="grid grid-cols-2 border-t border-l sm:grid-cols-3 lg:grid-cols-6">
+				{unique.map((ad) => (
+					<div key={ad.id} className="group relative min-w-0 border-r border-b">
+						<a
+							{...external}
+							href={ad.websiteUrl}
+							aria-label={`Visit ${ad.name} (opens in a new tab)`}
+							aria-describedby={`sponsor-${ad.id}`}
+							className="flex min-h-20 items-center justify-center p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+						>
+							<img
+								src={resolveFileUrl(ad.banner)}
+								width={240}
+								height={80}
+								alt={ad.name}
+								className="h-10 w-full object-contain"
+							/>
+						</a>
+						<details className="px-2 pb-2 text-xs text-muted-foreground">
+							<summary className="cursor-pointer rounded px-1 py-1 wrap-anywhere focus-visible:outline-2 focus-visible:outline-ring">
+								About {ad.name}
+							</summary>
+							<p id={`sponsor-${ad.id}`} className="py-2 wrap-anywhere">
+								{ad.description}
+							</p>
+						</details>
+						<p
+							role="tooltip"
+							className="pointer-events-none absolute bottom-full left-0 z-20 hidden w-64 max-w-[80vw] rounded-md border bg-popover p-3 text-sm text-popover-foreground shadow-sm group-focus-within:block group-hover:block"
+						>
+							{ad.description}
+						</p>
+					</div>
+				))}
+			</div>
+		</section>
+	)
+}
+export function DetailAd({
+	kind,
+}: {
+	kind: 'project-detail' | 'collection-detail'
+}) {
+	const ad = useAds(kind).at(0)
+	return ad ? (
+		<div className="ad-sidebar shrink-0">
+			<AdCard ad={ad} />
+		</div>
+	) : null
+}
+
+/** Observes only hidden ad elements. No network bait or replacement ad request. */
+export function useHiddenAds(
+	ref: RefObject<HTMLDivElement | null>,
+	ids: string
+) {
+	const [hidden, setHidden] = useState<Array<string>>([])
+	useEffect(() => {
+		const root = ref.current
+		if (!root) return
+		const check = () => {
+			const next = Array.from(
+				root.querySelectorAll<HTMLElement>('[data-ad-id]')
+			)
+				.filter((element) => {
+					const style = getComputedStyle(element)
+					const child = element.firstElementChild
+					return (
+						element.getClientRects().length === 0 ||
+						style.display === 'none' ||
+						style.visibility === 'hidden' ||
+						style.opacity === '0' ||
+						(child instanceof HTMLElement &&
+							(getComputedStyle(child).display === 'none' ||
+								getComputedStyle(child).visibility === 'hidden'))
+					)
+				})
+				.map((element) => element.dataset.adId!)
+			setHidden((old) =>
+				next.every((id) => old.includes(id))
+					? old
+					: [...new Set([...old, ...next])]
+			)
+		}
+		const timer = window.setInterval(check, 1000)
+		const observer = new MutationObserver(check)
+		observer.observe(root, {
+			attributes: true,
+			subtree: true,
+			attributeFilter: ['class', 'style', 'hidden'],
+		})
+		check()
+		return () => {
+			clearInterval(timer)
+			observer.disconnect()
+		}
+	}, [ref, ids])
+	return hidden
+}
+export function AdListingGrid<T extends { id: string }>({
+	items,
+	renderItem,
+	catalogue,
+	page,
+	offset,
+	onConsumed,
+}: {
+	items: Array<T>
+	renderItem: (item: T) => ReactNode
+	catalogue: string
+	page: number
+	offset: number
+	onConsumed?: (count: number) => void
+}) {
+	const selected = useAds('listing')
+	const entry = useAdsEntry()
+	const root = useRef<HTMLDivElement>(null)
+	const hidden = useHiddenAds(root, selected.map((ad) => ad.id).join())
+	const [mobile, setMobile] = useState(false)
+	useEffect(() => {
+		const media = matchMedia('(max-width: 767px)')
+		const update = () => setMobile(media.matches)
+		update()
+		media.addEventListener('change', update)
+		return () => media.removeEventListener('change', update)
+	}, [])
+	const ads = selected.filter((ad) => !hidden.includes(ad.id))
+	const slots = listingSlots(items, ads, mobile)
+	const consumed = slots.filter((slot) => 'item' in slot).length
+	useEffect(() => {
+		onConsumed?.(consumed)
+		if (!entry) return
+		const key = ledgerKey(catalogue)
+		const ledger = readSession<PageLedger>(key, {})
+		sessionStore().setItem(
+			key,
+			JSON.stringify(recordPage(ledger, page, offset, consumed))
+		)
+	}, [catalogue, page, offset, consumed, entry, onConsumed])
+	return (
+		<div
+			ref={root}
+			className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+		>
+			{slots.map((slot) =>
+				'ad' in slot ? (
+					<div
+						className="ad-listing min-w-0"
+						data-ad-id={slot.ad.id}
+						key={`ad-${slot.ad.id}`}
+					>
+						<AdCard ad={slot.ad} />
+					</div>
+				) : (
+					<div className="contents" key={slot.item.id}>
+						{renderItem(slot.item)}
+					</div>
+				)
+			)}
+		</div>
+	)
+}
+
+export function CornerAd() {
+	const ads = useAds('corner')
+	const [current, setCurrent] = useState<string>()
+	const [dismissed, setDismissed] = useState(() =>
+		readSession('altstack:ads:corner-dismissed', false)
+	)
+	const [hover, setHover] = useState(false)
+	const [focus, setFocus] = useState(false)
+	const [paused, setPaused] = useState(false)
+	const [hidden, setHidden] = useState(false)
+	const [leaving, setLeaving] = useState(false)
+	const [cycle, setCycle] = useState(0)
+	const corner = useRef<HTMLElement>(null)
+	const [height, setHeight] = useState(180)
+	useEffect(() => {
+		const visibility = () => setHidden(document.hidden)
+		visibility()
+		document.addEventListener('visibilitychange', visibility)
+		return () => document.removeEventListener('visibilitychange', visibility)
+	}, [])
+	const ids = ads.map((ad) => `${ad.id}:${ad.tier}`).join()
+	useEffect(() => {
+		if (ads.some((ad) => ad.id === current)) return
+		const timer = setTimeout(() => setCurrent(weightedAds(ads, 1)[0]?.id), 0)
+		return () => clearTimeout(timer)
+	}, [ids, current]) // eslint-disable-line react-hooks/exhaustive-deps
+	useEffect(() => {
+		const element = corner.current
+		if (!element) return
+		const enter = () => setHover(true),
+			leave = () => setHover(false),
+			focusIn = () => setFocus(true)
+		const focusOut = (event: FocusEvent) => {
+			if (!element.contains(event.relatedTarget as Node | null)) setFocus(false)
+		}
+		element.addEventListener('mouseenter', enter)
+		element.addEventListener('mouseleave', leave)
+		element.addEventListener('focus', focusIn, true)
+		element.addEventListener('blur', focusOut, true)
+		const observer =
+			typeof ResizeObserver === 'undefined'
+				? undefined
+				: new ResizeObserver(() =>
+						setHeight(element.getBoundingClientRect().height + 24)
+					)
+		observer?.observe(element)
+		return () => {
+			element.removeEventListener('mouseenter', enter)
+			element.removeEventListener('mouseleave', leave)
+			element.removeEventListener('focus', focusIn, true)
+			element.removeEventListener('blur', focusOut, true)
+			observer?.disconnect()
+		}
+	}, [current, cycle])
+	const pool = useRef(ads)
+	useEffect(() => {
+		pool.current = ads
+	}, [ads])
+	useEffect(() => {
+		if (dismissed || hover || focus || paused || hidden || !current) {
+			return
+		}
+		const timer = setTimeout(() => setLeaving(true), CORNER_INTERVAL - 200)
+		const swap = setTimeout(() => {
+			setCurrent(weightedAds(pool.current, 1)[0]?.id)
+			setLeaving(false)
+			setCycle((value) => value + 1)
+		}, CORNER_INTERVAL)
+		return () => {
+			clearTimeout(timer)
+			clearTimeout(swap)
+		}
+	}, [current, cycle, dismissed, hover, focus, paused, hidden])
+	const ad = ads.find((item) => item.id === current)
+	if (!ad || dismissed) return null
+	return (
+		<>
+			<div aria-hidden="true" className="sm:hidden" style={{ height }} />
+			<aside
+				ref={corner}
+				key={cycle}
+				aria-label="Sponsored recommendation"
+				className={cn(
+					'ad-corner group fixed inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] z-40 rounded-xl border bg-background shadow-md sm:left-auto sm:w-80',
+					leaving &&
+						!hover &&
+						!focus &&
+						!paused &&
+						!hidden &&
+						'ad-corner-leaving'
+				)}
+			>
+				<Badge
+					variant="outline"
+					className="absolute -top-2.5 left-3 bg-background"
+				>
+					Ad
+				</Badge>
+				<div className="absolute top-0 right-0 flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+					<Button
+						size="icon"
+						className="min-h-11 min-w-11"
+						variant="ghost"
+						aria-label={paused ? 'Resume ad rotation' : 'Pause ad rotation'}
+						onClick={() => setPaused((value) => !value)}
+					>
+						{paused ? <IconPlayerPlay /> : <IconPlayerPause />}
+					</Button>
+					<Button
+						size="icon"
+						className="min-h-11 min-w-11"
+						variant="ghost"
+						aria-label="Hide ads for this session"
+						onClick={() => {
+							sessionStore().setItem('altstack:ads:corner-dismissed', 'true')
+							setDismissed(true)
+						}}
+					>
+						<IconMinus />
+					</Button>
+				</div>
+				<a
+					{...external}
+					key={ad.id}
+					href={ad.websiteUrl}
+					className="flex min-w-0 flex-col gap-2 rounded-xl p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+				>
+					<span className="flex min-w-0 items-center gap-2 pr-22">
+						<ProjectLogo src={ad.logo} name={ad.name} className="size-6" />
+						<strong className="text-sm wrap-anywhere">{ad.name}</strong>
+					</span>
+					<span className="text-xs wrap-anywhere text-muted-foreground">
+						{ad.description}
+					</span>
+					<span className="sr-only"> (opens in a new tab)</span>
+				</a>
+			</aside>
+		</>
+	)
+}

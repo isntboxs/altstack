@@ -19,7 +19,12 @@ import {
 export const collectionRouter = {
 	/** Returns only eligible public directory entries. */
 	list: publicProcedure.collection.list.handler(({ context: { db }, input }) =>
-		listPublicCollections(db, input.query.page, input.query.limit)
+		listPublicCollections(
+			db,
+			input.query.page,
+			input.query.limit,
+			input.query.offset
+		)
 	),
 	/** Returns not-found for drafts, unavailable targets, and empty collections. */
 	getBySlug: publicProcedure.collection.getBySlug.handler(
