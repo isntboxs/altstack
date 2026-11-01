@@ -58,40 +58,43 @@ export function AdCard({ ad }: { ad: AdCampaign }) {
 			>
 				Ad
 			</Badge>
-			<Card className="relative h-full overflow-hidden ring-0">
-				<div
-					aria-hidden="true"
-					className="pointer-events-none absolute -top-6 -right-8 rotate-12 opacity-[0.06]"
-				>
-					<ProjectLogo src={ad.logo} name={ad.name} className="size-40" />
-				</div>
-				<CardHeader>
-					<CardTitle className="flex min-w-0 items-center gap-2">
-						<ProjectLogo src={ad.logo} name={ad.name} className="size-8" />
-						<span className="min-w-0 wrap-anywhere">{ad.name}</span>
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="relative flex-1">
-					<CardDescription className="wrap-anywhere">
-						{ad.description}
-					</CardDescription>
-				</CardContent>
-				<CardFooter className="relative border-0 bg-transparent">
-					<a
-						{...external}
-						href={ad.websiteUrl}
-						style={{
-							backgroundColor: ad.buttonColor,
-							color: ctaForeground(ad.buttonColor),
-						}}
-						className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+			<a {...external} href={ad.websiteUrl}>
+				<Card className="relative h-full overflow-hidden ring-0">
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute -top-6 -right-8 rotate-12 opacity-[0.06]"
 					>
-						<span className="wrap-anywhere">{ad.ctaText}</span>
-						<IconArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
-						<span className="sr-only"> (opens in a new tab)</span>
-					</a>
-				</CardFooter>
-			</Card>
+						<ProjectLogo src={ad.logo} name={ad.name} className="size-40" />
+					</div>
+					<CardHeader>
+						<CardTitle className="flex min-w-0 items-center gap-2">
+							<ProjectLogo src={ad.logo} name={ad.name} className="size-8" />
+							<span className="min-w-0 wrap-anywhere">{ad.name}</span>
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="relative flex-1">
+						<CardDescription className="wrap-anywhere">
+							{ad.description}
+						</CardDescription>
+					</CardContent>
+					<CardFooter className="relative border-0 bg-transparent">
+						<div
+							style={{
+								backgroundColor: ad.buttonColor,
+								color: ctaForeground(ad.buttonColor),
+							}}
+							className="flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+						>
+							<span className="wrap-anywhere">{ad.ctaText}</span>
+							<IconArrowUpRight
+								className="size-4 shrink-0"
+								aria-hidden="true"
+							/>
+							<span className="sr-only"> (opens in a new tab)</span>
+						</div>
+					</CardFooter>
+				</Card>
+			</a>
 		</article>
 	)
 }
@@ -189,6 +192,18 @@ export function SponsorGrid() {
 							{ad.description}
 						</TooltipContent>
 					</Tooltip>
+				))}
+				{Array.from({ length: (6 - (unique.length % 6)) % 6 }, (_, index) => (
+					<div
+						key={`empty-${index}`}
+						aria-hidden="true"
+						className={cn(
+							'min-h-20 min-w-0 border-r border-b',
+							index < (2 - (unique.length % 2)) % 2 ? 'block' : 'hidden',
+							index < (3 - (unique.length % 3)) % 3 ? 'sm:block' : 'sm:hidden',
+							'lg:block'
+						)}
+					/>
 				))}
 			</div>
 		</section>
