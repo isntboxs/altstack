@@ -120,9 +120,6 @@
 .ad-listing > .ad-card {
 	height: 100%;
 }
-.ad-corner {
-	padding-bottom: env(safe-area-inset-bottom, 0px);
-}
 @media (prefers-reduced-motion: no-preference) {
 	.ad-corner {
 		animation: ad-enter 200ms ease-out;

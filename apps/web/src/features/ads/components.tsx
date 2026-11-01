@@ -22,6 +22,11 @@ import {
 	CardContent,
 	CardFooter,
 } from '@altstack/ui/components/card'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@altstack/ui/components/tooltip'
 
 import { ProjectLogo } from '#/components/project-media'
 import { resolveFileUrl } from '#/utils/storage'
@@ -48,7 +53,7 @@ export function AdCard({ ad }: { ad: AdCampaign }) {
 		>
 			<Badge
 				variant="outline"
-				className="absolute -top-2.5 left-4 z-10 bg-background"
+				className="absolute -top-2.5 left-4 z-10 rounded-sm bg-background py-2.5 leading-none font-normal text-muted-foreground"
 			>
 				Ad
 			</Badge>
@@ -70,7 +75,7 @@ export function AdCard({ ad }: { ad: AdCampaign }) {
 						{ad.description}
 					</CardDescription>
 				</CardContent>
-				<CardFooter className="relative">
+				<CardFooter className="relative border-0 bg-transparent">
 					<a
 						{...external}
 						href={ad.websiteUrl}
@@ -93,20 +98,33 @@ export function AdBanner() {
 	const ad = useAds('banner').at(0)
 	if (!ad) return null
 	return (
-		<aside className="ad-banner mt-12 -mb-12" aria-label="Advertisement">
+		<aside
+			className="ad-banner z-40 container mx-auto mt-14 -mb-14 w-full max-w-6xl px-4 lg:px-16"
+			aria-label="Advertisement"
+		>
 			<a
 				{...external}
 				href={ad.websiteUrl}
-				className="block border-y bg-muted/30 hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
+				className="group relative block rounded-md border border-border p-1 transition-all duration-300 ease-in-out hover:border-foreground/20"
 			>
-				<span className="mx-auto flex max-w-6xl items-start gap-2 px-4 py-3 text-xs sm:items-center sm:text-sm lg:px-16">
-					<Badge variant="outline">Ad</Badge>
-					<ProjectLogo src={ad.logo} name={ad.name} className="size-5" />
+				<div className="absolute inset-0 -z-1 rounded-md bg-background" />
+				<span className="mx-auto flex max-w-6xl items-start gap-4 rounded-md bg-muted/30 px-3 py-2 text-xs group-hover:bg-muted/50 sm:items-center sm:text-sm">
+					<Badge
+						variant="outline"
+						className="rounded-sm px-1.5 py-1 text-[11px] leading-none font-normal text-muted-foreground"
+					>
+						Ad
+					</Badge>
+					<ProjectLogo
+						src={ad.logo}
+						name={ad.name}
+						className="-mr-2 size-4.5"
+					/>
 					<span className="min-w-0 flex-1 wrap-anywhere">
 						<strong>{ad.name}</strong>
-						<span className="text-muted-foreground"> · {ad.description}</span>
+						<span className="text-muted-foreground"> - {ad.description}</span>
 					</span>
-					<span className="hidden shrink-0 underline underline-offset-4 sm:block">
+					<span className="hidden shrink-0 rounded-md border border-border bg-background px-2 py-1 text-xs leading-none font-normal text-muted-foreground sm:block">
 						Learn more
 					</span>
 					<span className="sr-only"> (opens in a new tab)</span>
@@ -140,37 +158,36 @@ export function SponsorGrid() {
 			</p>
 			<div className="grid grid-cols-2 border-t border-l sm:grid-cols-3 lg:grid-cols-6">
 				{unique.map((ad) => (
-					<div key={ad.id} className="group relative min-w-0 border-r border-b">
-						<a
-							{...external}
-							href={ad.websiteUrl}
-							aria-label={`Visit ${ad.name} (opens in a new tab)`}
-							aria-describedby={`sponsor-${ad.id}`}
-							className="flex min-h-20 items-center justify-center p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
-						>
-							<img
-								src={resolveFileUrl(ad.banner)}
-								width={240}
-								height={80}
-								alt={ad.name}
-								className="h-10 w-full object-contain"
-							/>
-						</a>
-						<details className="px-2 pb-2 text-xs text-muted-foreground">
-							<summary className="cursor-pointer rounded px-1 py-1 wrap-anywhere focus-visible:outline-2 focus-visible:outline-ring">
-								About {ad.name}
-							</summary>
-							<p id={`sponsor-${ad.id}`} className="py-2 wrap-anywhere">
-								{ad.description}
-							</p>
-						</details>
-						<p
-							role="tooltip"
-							className="pointer-events-none absolute bottom-full left-0 z-20 hidden w-64 max-w-[80vw] rounded-md border bg-popover p-3 text-sm text-popover-foreground shadow-sm group-focus-within:block group-hover:block"
+					<Tooltip key={ad.id}>
+						<TooltipTrigger
+							render={
+								<div className="group relative min-w-0 border-r border-b">
+									<a
+										{...external}
+										href={ad.websiteUrl}
+										aria-label={`Visit ${ad.name} (opens in a new tab)`}
+										aria-describedby={`sponsor-${ad.id}`}
+										className="flex min-h-20 items-center justify-center p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+									>
+										<img
+											src={resolveFileUrl(ad.banner)}
+											width={240}
+											height={80}
+											alt={ad.name}
+											className="h-10 w-full object-contain"
+										/>
+									</a>
+								</div>
+							}
+						/>
+						<TooltipContent
+							sideOffset={10}
+							side="bottom"
+							className="border border-border bg-background text-foreground"
 						>
 							{ad.description}
-						</p>
-					</div>
+						</TooltipContent>
+					</Tooltip>
 				))}
 			</div>
 		</section>
@@ -384,7 +401,7 @@ export function CornerAd() {
 				key={cycle}
 				aria-label="Sponsored recommendation"
 				className={cn(
-					'ad-corner group fixed inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] z-40 rounded-xl border bg-background shadow-md sm:left-auto sm:w-80',
+					'ad-corner group fixed inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] z-40 rounded-md border bg-background px-1 pt-1 pb-[max(.25rem,env(safe-area-inset-bottom))] shadow-md sm:left-auto sm:w-66',
 					leaving &&
 						!hover &&
 						!focus &&
@@ -395,14 +412,14 @@ export function CornerAd() {
 			>
 				<Badge
 					variant="outline"
-					className="absolute -top-2.5 left-3 bg-background"
+					className="absolute -top-2.5 right-4 rounded-sm bg-background px-1.5 py-1 text-[11px] leading-none font-normal text-muted-foreground"
 				>
 					Ad
 				</Badge>
-				<div className="absolute top-0 right-0 flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+				<div className="absolute top-2 right-2 flex sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
 					<Button
-						size="icon"
-						className="min-h-11 min-w-11"
+						size="icon-sm"
+						// className="min-h-4 min-w-4"
 						variant="ghost"
 						aria-label={paused ? 'Resume ad rotation' : 'Pause ad rotation'}
 						onClick={() => setPaused((value) => !value)}
@@ -410,8 +427,8 @@ export function CornerAd() {
 						{paused ? <IconPlayerPlay /> : <IconPlayerPause />}
 					</Button>
 					<Button
-						size="icon"
-						className="min-h-11 min-w-11"
+						size="icon-sm"
+						// className="min-h-4 min-w-4"
 						variant="ghost"
 						aria-label="Hide ads for this session"
 						onClick={() => {
@@ -426,11 +443,11 @@ export function CornerAd() {
 					{...external}
 					key={ad.id}
 					href={ad.websiteUrl}
-					className="flex min-w-0 flex-col gap-2 rounded-xl p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
+					className="flex min-w-0 flex-col gap-2 rounded-md bg-card p-4 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring"
 				>
 					<span className="flex min-w-0 items-center gap-2 pr-22">
-						<ProjectLogo src={ad.logo} name={ad.name} className="size-6" />
-						<strong className="text-sm wrap-anywhere">{ad.name}</strong>
+						<ProjectLogo src={ad.logo} name={ad.name} className="size-5" />
+						<strong className="text-xs wrap-anywhere">{ad.name}</strong>
 					</span>
 					<span className="text-xs wrap-anywhere text-muted-foreground">
 						{ad.description}
