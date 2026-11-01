@@ -44,6 +44,7 @@ export function seoHead(options: {
 	path?: string
 	image?: string
 	imageAlt?: string
+	type?: 'website' | 'article'
 	noindex?: boolean
 	entities?: Array<Record<string, unknown>>
 }) {
@@ -64,7 +65,7 @@ export function seoHead(options: {
 			},
 			{ property: 'og:title', content: title },
 			{ property: 'og:description', content: description },
-			{ property: 'og:type', content: 'website' },
+			{ property: 'og:type', content: options.type ?? 'website' },
 			{ property: 'og:site_name', content: 'AltStack' },
 			{ property: 'og:url', content: path ? publicUrl(path) : publicUrl('/') },
 			{ property: 'og:image', content: image },
@@ -73,6 +74,7 @@ export function seoHead(options: {
 			{ property: 'og:image:type', content: 'image/png' },
 			{ property: 'og:image:alt', content: imageAlt },
 			{ name: 'twitter:card', content: 'summary_large_image' },
+			{ name: 'twitter:url', content: path ? publicUrl(path) : publicUrl('/') },
 			{ name: 'twitter:title', content: title },
 			{ name: 'twitter:description', content: description },
 			{ name: 'twitter:image', content: image },
@@ -134,6 +136,10 @@ export function projectImage(
 	githubRevision?: string | Date
 ) {
 	return `/og/project/${encodeURIComponent(id)}?v=${ogVersion}-${encodeURIComponent(new Date(revision).toISOString())}${githubRevision ? '-' + encodeURIComponent(new Date(githubRevision).toISOString()) : ''}`
+}
+
+export function blogImage(id: string, revision: Date | string) {
+	return `/og/blog/${encodeURIComponent(id)}?v=${ogVersion}-${encodeURIComponent(new Date(revision).toISOString())}`
 }
 
 export function categoryImage(

@@ -1,5 +1,6 @@
 import {
 	IconActivity,
+	IconArticle,
 	IconArrowRight,
 	IconLicense,
 	IconMenu2,
@@ -45,6 +46,7 @@ import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
 
 const resourceLinks = [
+	{ to: '/blogs', label: 'Blogs', icon: IconArticle },
 	{ to: '/tags', label: 'Tags', icon: IconTag },
 	{ to: '/licenses', label: 'Licenses', icon: IconLicense },
 	{ to: '/activity', label: 'Activity', icon: IconActivity },
@@ -112,6 +114,12 @@ export const Header = ({
 										}
 									>
 										Categories
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/blogs" />}
+									>
+										Blogs
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										onClick={() => setOpenNavigation(false)}

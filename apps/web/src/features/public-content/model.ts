@@ -51,7 +51,8 @@ export function contentLink(href: string, slug: string, appUrl: string) {
 	if (!href || href.startsWith('#')) return null
 	try {
 		const origin = new URL(appUrl).origin
-		const url = new URL(href, `${origin}/${encodeURIComponent(slug)}`)
+		const path = slug.split('/').map(encodeURIComponent).join('/')
+		const url = new URL(href, `${origin}/${path}`)
 		if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
 		const internal = url.origin === origin && !url.username && !url.password
 		// Only explicit site links are mentions; relative README paths remain links.

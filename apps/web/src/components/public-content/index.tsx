@@ -5,6 +5,8 @@ import remarkGfm from 'remark-gfm'
 
 import { PublicCodeBlock } from '#/components/public-content/code-block'
 import { ContentLink } from '#/components/public-content/content-link'
+import { ContentHeading } from '#/components/public-content/heading'
+import { remarkArticleHeadings } from '#/features/public-content/headings'
 import { emptyPublicContent } from '#/features/public-content/model'
 import type { PreparedPublicContent } from '#/features/public-content/model'
 import { publicContentOptions } from '#/features/public-content/queries'
@@ -29,23 +31,84 @@ export function PublicContent({
 	slug,
 	content,
 	prepared = emptyPublicContent(),
+	headingMode = 'documentation',
 }: {
 	slug: string
 	content: string
 	prepared?: PreparedPublicContent
+	headingMode?: 'documentation' | 'article'
 }) {
+	const SecondHeading = headingMode === 'article' ? 'h2' : 'h3'
+	const ThirdHeading = headingMode === 'article' ? 'h3' : 'h4'
 	return (
 		<article
-			aria-label="Project documentation"
+			aria-label={
+				headingMode === 'article' ? 'Article content' : 'Project documentation'
+			}
 			className="prose max-w-none min-w-0 wrap-anywhere prose-neutral dark:prose-invert"
 		>
 			<Markdown
-				remarkPlugins={[remarkGfm]}
+				remarkPlugins={
+					headingMode === 'article'
+						? [remarkGfm, remarkArticleHeadings]
+						: [remarkGfm]
+				}
 				skipHtml
 				components={{
-					h1: ({ children, ...props }) => <h2 id={props.id}>{children}</h2>,
-					h2: ({ children, ...props }) => <h3 id={props.id}>{children}</h3>,
-					h3: ({ children, ...props }) => <h4 id={props.id}>{children}</h4>,
+					h1: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h2"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h2: ({ node, children, ...props }) => (
+						<ContentHeading
+							as={SecondHeading}
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h3: ({ node, children, ...props }) => (
+						<ContentHeading
+							as={ThirdHeading}
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h4: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h4"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h5: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h5"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
+					h6: ({ node, children, ...props }) => (
+						<ContentHeading
+							as="h6"
+							label={node ? textContent(node) : ''}
+							{...props}
+						>
+							{children}
+						</ContentHeading>
+					),
 					a: ({ node, children, href, title }) => (
 						<ContentLink
 							node={node}

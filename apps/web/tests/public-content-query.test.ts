@@ -7,10 +7,13 @@ import {
 	publicContentQueryKey,
 } from '#/features/public-content/model'
 import { publicContentOptions } from '#/features/public-content/queries'
-import { preparePublicContent } from '#/features/public-content/server-function'
+import {
+	preparePublicContent,
+	preparePublicBlogContent,
+} from '#/features/public-content/server-function'
 
 vi.mock('#/features/public-content/server-function', () => {
-	return { preparePublicContent: vi.fn() }
+	return { preparePublicContent: vi.fn(), preparePublicBlogContent: vi.fn() }
 })
 vi.mock('evlog/client', () => {
 	return { log: { warn: vi.fn() } }
@@ -25,6 +28,9 @@ function client() {
 	return queryClient
 }
 beforeEach(() => {
+	vi.mocked(preparePublicBlogContent)
+		.mockReset()
+		.mockResolvedValue(emptyPublicContent())
 	vi.mocked(preparePublicContent)
 		.mockReset()
 		.mockResolvedValue(emptyPublicContent())
@@ -32,6 +38,21 @@ beforeEach(() => {
 afterEach(() => clients.splice(0).forEach((queryClient) => queryClient.clear()))
 
 describe('public content cache', () => {
+	it('separates blog and project cache entries and keeps blog Markdown available on enhancement failure', async () => {
+		const queryClient = client()
+		await queryClient.query(publicContentOptions('same-slug', 'Content'))
+		const options = publicContentOptions('same-slug', 'Content', 'blog')
+		await queryClient.query(options)
+		expect(preparePublicContent).toHaveBeenCalledTimes(1)
+		expect(preparePublicBlogContent).toHaveBeenCalledExactlyOnceWith({
+			data: { slug: 'same-slug' },
+		})
+		vi.mocked(preparePublicBlogContent).mockRejectedValueOnce(
+			new Error('offline')
+		)
+		await queryClient.invalidateQueries({ queryKey: publicContentQueryKey })
+		expect(await queryClient.query(options)).toEqual(emptyPublicContent())
+	})
 	it('sends only the slug to prepare stored public documentation', async () => {
 		await client().query(publicContentOptions('source', '# Stored content'))
 		expect(preparePublicContent).toHaveBeenCalledExactlyOnceWith({

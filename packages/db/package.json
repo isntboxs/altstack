@@ -29,7 +29,8 @@
 		"./seed-file-validation": "./src/seed-file-validation.ts",
 		"./seed-taxonomy": "./src/seed-taxonomy.ts",
 		"./tags": "./src/tags.ts",
-		"./package.json": "./package.json"
+		"./package.json": "./package.json",
+		"./schemas/blog": "./src/schemas/blog.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -55,7 +56,8 @@
 			"./seed-file-validation": "./dist/seed-file-validation.mjs",
 			"./seed-taxonomy": "./dist/seed-taxonomy.mjs",
 			"./tags": "./dist/tags.mjs",
-			"./package.json": "./package.json"
+			"./package.json": "./package.json",
+			"./schemas/blog": "./dist/schemas/blog.mjs"
 		}
 	},
 	"scripts": {

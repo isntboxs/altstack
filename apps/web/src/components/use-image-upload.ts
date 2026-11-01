@@ -28,6 +28,7 @@ export interface UseImageUploadOptions {
 	// Notified with the displayable image URL on upload success (`null` on
 	// remove) so parents can preview the image without resolving the file key.
 	onDisplayUrlChange?: (url: string | null) => void
+	onBusyChange?: (busy: boolean) => void
 	accept: Record<string, Array<string>>
 	maxSize: number
 	mimeTypes: ReadonlyArray<string>
@@ -64,6 +65,7 @@ export const useImageUpload = ({
 	value,
 	onChange,
 	onDisplayUrlChange,
+	onBusyChange,
 	accept,
 	maxSize,
 	mimeTypes,
@@ -77,6 +79,11 @@ export const useImageUpload = ({
 	const [progress, setProgress] = useState(0)
 	const [isDeleting, setIsDeleting] = useState(false)
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+	const busy = uploading || isDeleting || cropSource !== null
+	useEffect(() => {
+		onBusyChange?.(busy)
+	}, [busy, onBusyChange])
+	useEffect(() => () => onBusyChange?.(false), [onBusyChange])
 	const xhrRef = useRef<XMLHttpRequest | null>(null)
 	const [prevValue, setPrevValue] = useState(value)
 	const uploadAbortRef = useRef<AbortController | null>(null)

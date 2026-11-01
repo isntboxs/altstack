@@ -1,5 +1,6 @@
 import {
 	sitemapCollections,
+	sitemapBlogs,
 	sitemapCategories,
 	sitemapLicenses,
 	sitemapPageSize,
@@ -55,17 +56,25 @@ export async function sitemapIndex() {
 		`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/sitemaps/pages.xml', ...Array.from({ length: pages }, (_, i) => `/sitemaps/projects/${i + 1}`)].map((path) => `<sitemap><loc>${xmlText(publicUrl(path))}</loc></sitemap>`).join('')}</sitemapindex>`
 	)
 }
-/** Combines static routes with live eligible categories, licenses, and collections. */
+/** Combines static routes with public catalogue and editorial pages. */
 export async function sitemapPages() {
-	const [categories, licenses, collections] = await Promise.all([
+	const [categories, licenses, collections, blogs] = await Promise.all([
 		sitemapCategories(),
 		sitemapLicenses(),
 		sitemapCollections(),
+		sitemapBlogs(),
 	])
 	return urls([
 		{ path: '/' },
 		{ path: '/categories' },
 		{ path: '/collections' },
+		{ path: '/blogs' },
+		...blogs.map((post) => {
+			return {
+				path: `/blogs/${post.slug}`,
+				modified: post.updatedAt,
+			}
+		}),
 		...collections.map((item) => {
 			return {
 				path: `/collections/${item.slug}`,
