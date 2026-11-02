@@ -10,7 +10,7 @@ import {
 } from '@altstack/api/storage'
 
 import type { db as database } from '@altstack/db'
-import { adCampaign } from '@altstack/db/schemas'
+import { adCampaign, adOrder } from '@altstack/db/schemas'
 
 import { campaignPeriod } from '@altstack/shared/schemas/ads'
 import type { AdBody } from '@altstack/shared/schemas/ads'
@@ -53,6 +53,14 @@ async function save(
 			if (expectedVersion && !current) throw new Error('AD_NOT_FOUND')
 			if (current && current.version !== expectedVersion) {
 				throw new Error('AD_CONFLICT')
+			}
+			if (current) {
+				const [linked] = await tx
+					.select({ id: adOrder.id })
+					.from(adOrder)
+					.where(eq(adOrder.campaignId, id))
+					.limit(1)
+				if (linked) throw new Error('AD_CONFLICT')
 			}
 			const assets = { logo: body.logo, banner: body.banner }
 			for (const kind of ['logo', 'banner'] as const) {
@@ -134,6 +142,16 @@ export const adminAdsRouter = {
 	),
 	delete: adminProcedure.admin.ads.delete.handler(
 		async ({ context: { db }, input, errors }) => {
+			const [linked] = await db
+				.select({ id: adOrder.id })
+				.from(adOrder)
+				.where(eq(adOrder.campaignId, input.params.id))
+				.limit(1)
+			if (linked) {
+				throw errors.CONFLICT({
+					message: 'Manage this campaign through its advertising order.',
+				})
+			}
 			const [row] = await db
 				.delete(adCampaign)
 				.where(

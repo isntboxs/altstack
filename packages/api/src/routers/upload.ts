@@ -36,8 +36,11 @@ interface ImageUploadRequestInput {
 	size: number
 }
 
-const LOGO_KIND = { prefix: TMP_LOGO_PREFIX, fallbackBase: 'logo' } as const
-const SCREENSHOT_KIND = {
+export const LOGO_KIND = {
+	prefix: TMP_LOGO_PREFIX,
+	fallbackBase: 'logo',
+} as const
+export const SCREENSHOT_KIND = {
 	prefix: TMP_SCREENSHOT_PREFIX,
 	fallbackBase: 'screenshot',
 } as const
@@ -60,7 +63,7 @@ const buildImageKey = (
 	return `${kind.prefix}${base}-${Date.now()}.${ext}`
 }
 
-async function requestImageUpload(
+export async function requestImageUpload(
 	input: ImageUploadRequestInput,
 	kind: ImageUploadKind
 ) {
@@ -78,7 +81,10 @@ async function requestImageUpload(
 	return { key, presignedUrl }
 }
 
-async function removeImageUpload(key: string, errors: ImageUploadErrors) {
+export async function removeImageUpload(
+	key: string,
+	errors: ImageUploadErrors
+) {
 	try {
 		await s3.send(
 			new DeleteObjectCommand({
@@ -109,7 +115,7 @@ function isNotFoundError(error: unknown): boolean {
 	)
 }
 
-async function changeImageUpload(
+export async function changeImageUpload(
 	oldKey: string,
 	newKey: string,
 	errors: ImageUploadErrors

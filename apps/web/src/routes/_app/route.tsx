@@ -13,7 +13,9 @@ export const Route = createFileRoute('/_app')({
 function RouteComponent() {
 	const { auth } = Route.useRouteContext()
 	const privateRoute = useLocation({
-		select: (location) => location.pathname === '/submit',
+		select: (location) =>
+			location.pathname === '/submit' ||
+			location.pathname === '/advertise/manage',
 	})
 	return (
 		<AdsProvider enabled={!privateRoute}>

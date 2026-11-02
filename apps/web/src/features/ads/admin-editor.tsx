@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 
 import {
 	SCREENSHOT_MAX_SIZE,
@@ -39,7 +40,10 @@ const blank = (): AdBody => {
 		months: 1,
 	}
 }
-export function AdsAdmin() {
+export function AdsAdmin({
+	children,
+	managedCampaignIds = [],
+}: { children?: ReactNode; managedCampaignIds?: Array<string> } = {}) {
 	const query = useQuery(orpc.admin.ads.list.queryOptions({ input: {} }))
 	const [editing, setEditing] = useState<AdCampaign | 'new'>()
 	const [deleting, setDeleting] = useState<AdCampaign>()
@@ -58,8 +62,8 @@ export function AdsAdmin() {
 				<div>
 					<h1 className="text-2xl font-semibold">Ad campaigns</h1>
 					<p className="text-sm text-muted-foreground">
-						Monthly campaigns, scheduled in UTC. No impression or payment
-						tracking.
+						Campaign dates use UTC. Guest orders and manual payment
+						confirmations are managed below.
 					</p>
 				</div>
 				<Button
@@ -71,6 +75,7 @@ export function AdsAdmin() {
 					Create campaign
 				</Button>
 			</header>
+			{children}
 			{error && (
 				<p role="alert" className="text-destructive">
 					{error}
@@ -120,10 +125,23 @@ export function AdsAdmin() {
 									</p>
 								</div>
 								<div className="flex gap-2">
-									<Button variant="outline" onClick={() => setEditing(ad)}>
-										Edit<span className="sr-only"> {ad.name}</span>
-									</Button>
-									<Button variant="destructive" onClick={() => setDeleting(ad)}>
+									{managedCampaignIds.includes(ad.id) ? (
+										<a
+											href={`#order-${ad.id}`}
+											className="self-center text-sm underline underline-offset-4"
+										>
+											Managed by order
+										</a>
+									) : (
+										<Button variant="outline" onClick={() => setEditing(ad)}>
+											Edit<span className="sr-only"> {ad.name}</span>
+										</Button>
+									)}
+									<Button
+										variant="destructive"
+										disabled={managedCampaignIds.includes(ad.id)}
+										onClick={() => setDeleting(ad)}
+									>
 										Delete<span className="sr-only"> {ad.name}</span>
 									</Button>
 								</div>

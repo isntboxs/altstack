@@ -181,6 +181,18 @@ export function SponsorGrid() {
 											className="h-10 w-full object-contain"
 										/>
 									</a>
+									<span id={`sponsor-${ad.id}`} className="sr-only">
+										{ad.description}
+									</span>
+									<details className="absolute right-0 bottom-0 text-xs">
+										<summary className="flex size-8 cursor-pointer list-none items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+											<span aria-hidden="true">ⓘ</span>
+											<span className="sr-only">About {ad.name}</span>
+										</summary>
+										<p className="absolute top-full right-0 z-10 w-40 rounded-md border bg-background p-3 wrap-anywhere text-foreground">
+											{ad.description}
+										</p>
+									</details>
 								</div>
 							}
 						/>

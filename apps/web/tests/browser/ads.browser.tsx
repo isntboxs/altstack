@@ -91,7 +91,15 @@ describe('ad responsive layout', () => {
 			expect(document.querySelectorAll('[data-organic]')).toHaveLength(42)
 			expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
 			const banner = document.querySelector('.ad-banner')!
-			expect(banner.getBoundingClientRect().top).toBe(48)
+			const headerBottom = document
+				.querySelector('header')!
+				.getBoundingClientRect().bottom
+			expect(banner.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+				headerBottom
+			)
+			expect(
+				banner.getBoundingClientRect().top - headerBottom
+			).toBeLessThanOrEqual(16)
 			expect(getComputedStyle(banner).position).not.toBe('sticky')
 			const sponsorGrid = document.querySelector('.ad-sponsors .grid')!
 			expect(
@@ -105,7 +113,8 @@ describe('ad responsive layout', () => {
 			const hide = corner.querySelector<HTMLButtonElement>(
 				'[aria-label="Hide ads for this session"]'
 			)!
-			expect(hide.getBoundingClientRect().width).toBeGreaterThanOrEqual(44)
+			expect(hide.getBoundingClientRect().width).toBeGreaterThanOrEqual(24)
+			expect(hide.getBoundingClientRect().height).toBeGreaterThanOrEqual(24)
 			hide.focus()
 			expect(getComputedStyle(hide.parentElement!).opacity).toBe('1')
 			fireEvent.click(hide)

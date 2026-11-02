@@ -26,6 +26,8 @@ import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
+import { Route as AppAdvertiseManageRouteImport } from './routes/_app/advertise_.manage'
+import { Route as AppAdvertiseTermsRouteImport } from './routes/_app/advertise_.terms'
 import { Route as AppBlogsIndexRouteImport } from './routes/_app/blogs/index'
 import { Route as AppBlogsSlugRouteImport } from './routes/_app/blogs/$slug'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
@@ -150,6 +152,16 @@ const SitemapsPagesDotxmlRoute = SitemapsPagesDotxmlRouteImport.update({
   id: '/sitemaps/pages.xml',
   path: '/sitemaps/pages.xml',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdvertiseManageRoute = AppAdvertiseManageRouteImport.update({
+  id: '/advertise_/manage',
+  path: '/advertise/manage',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAdvertiseTermsRoute = AppAdvertiseTermsRouteImport.update({
+  id: '/advertise_/terms',
+  path: '/advertise/terms',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 const AppBlogsIndexRoute = AppBlogsIndexRouteImport.update({
   id: '/blogs/',
@@ -379,6 +391,8 @@ export interface FileRoutesByFullPath {
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
+  '/advertise/manage': typeof AppAdvertiseManageRoute
+  '/advertise/terms': typeof AppAdvertiseTermsRoute
   '/blogs/$slug': typeof AppBlogsSlugRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/collections/$slug': typeof AppCollectionsSlugRoute
@@ -435,6 +449,8 @@ export interface FileRoutesByTo {
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
+  '/advertise/manage': typeof AppAdvertiseManageRoute
+  '/advertise/terms': typeof AppAdvertiseTermsRoute
   '/blogs/$slug': typeof AppBlogsSlugRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/collections/$slug': typeof AppCollectionsSlugRoute
@@ -495,6 +511,8 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/advertise_/manage': typeof AppAdvertiseManageRoute
+  '/_app/advertise_/terms': typeof AppAdvertiseTermsRoute
   '/_app/blogs/$slug': typeof AppBlogsSlugRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_app/collections/$slug': typeof AppCollectionsSlugRoute
@@ -555,6 +573,8 @@ export interface FileRouteTypes {
     | '/submission'
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
+    | '/advertise/manage'
+    | '/advertise/terms'
     | '/blogs/$slug'
     | '/categories/$'
     | '/collections/$slug'
@@ -611,6 +631,8 @@ export interface FileRouteTypes {
     | '/submission'
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
+    | '/advertise/manage'
+    | '/advertise/terms'
     | '/blogs/$slug'
     | '/categories/$'
     | '/collections/$slug'
@@ -670,6 +692,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/_app/'
+    | '/_app/advertise_/manage'
+    | '/_app/advertise_/terms'
     | '/_app/blogs/$slug'
     | '/_app/categories/$'
     | '/_app/collections/$slug'
@@ -847,6 +871,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sitemaps/pages.xml'
       preLoaderRoute: typeof SitemapsPagesDotxmlRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/advertise_/manage': {
+      id: '/_app/advertise_/manage'
+      path: '/advertise/manage'
+      fullPath: '/advertise/manage'
+      preLoaderRoute: typeof AppAdvertiseManageRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/advertise_/terms': {
+      id: '/_app/advertise_/terms'
+      path: '/advertise/terms'
+      fullPath: '/advertise/terms'
+      preLoaderRoute: typeof AppAdvertiseTermsRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/_app/blogs/': {
       id: '/_app/blogs/'
@@ -1144,6 +1182,8 @@ interface AppRouteRouteChildren {
   AppAdvertiseRoute: typeof AppAdvertiseRoute
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAdvertiseManageRoute: typeof AppAdvertiseManageRoute
+  AppAdvertiseTermsRoute: typeof AppAdvertiseTermsRoute
   AppBlogsSlugRoute: typeof AppBlogsSlugRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
   AppCollectionsSlugRoute: typeof AppCollectionsSlugRoute
@@ -1162,6 +1202,8 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdvertiseRoute: AppAdvertiseRoute,
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAdvertiseManageRoute: AppAdvertiseManageRoute,
+  AppAdvertiseTermsRoute: AppAdvertiseTermsRoute,
   AppBlogsSlugRoute: AppBlogsSlugRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
   AppCollectionsSlugRoute: AppCollectionsSlugRoute,
