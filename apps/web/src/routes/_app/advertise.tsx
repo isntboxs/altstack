@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/advertise')({
 		seoHead({
 			title: 'Advertise on AltStack',
 			description:
-				'Monthly advertising packages from US$15. Arrange payment by email, with no account or automatic renewal.',
+				'Monthly advertising packages from US$15. Pay through Ko-fi with manual confirmation, no AltStack account, and no automatic renewal.',
 			path: '/advertise',
 		}),
 	component: AdvertisePage,

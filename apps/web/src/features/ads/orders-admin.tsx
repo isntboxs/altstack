@@ -57,9 +57,9 @@ export function AdvertisingAdmin() {
 					</Button>
 				</div>
 				<p className="text-sm text-muted-foreground">
-					Coordinate payment by email. Record a payment only after checking that
-					funds arrived. Confirming receipt does not move money. The first paid
-					month starts at approval.
+					Match the Ko-fi payment to the order reference and contact email.
+					Record a payment only after checking that funds arrived. Confirming
+					receipt does not move money. The first paid month starts at approval.
 				</p>
 				{orders.isPending && <output>Loading orders…</output>}
 				{orders.isError && (
@@ -229,7 +229,8 @@ function OrderReview({
 								onChange={(event) => setReference(event.target.value)}
 							/>
 							<FieldDescription>
-								Unique bank or payment reference agreed by email. Amount: US$
+								Unique transaction reference from the Ko-fi payment receipt.
+								Amount: US$
 								{order.amount / 100}. Record any conversion details in your
 								payment correspondence.
 							</FieldDescription>

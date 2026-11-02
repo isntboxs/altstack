@@ -7,6 +7,7 @@ export type AdPlan = z.infer<typeof adPlanSchema>
 export const AD_PLANS = {
 	core: {
 		name: 'Core',
+		paymentUrl: 'https://ko-fi.com/c/04c3fc24d3',
 		amount: 1500,
 		tier: 'tier1',
 		description:
@@ -14,6 +15,7 @@ export const AD_PLANS = {
 	},
 	plus: {
 		name: 'Plus',
+		paymentUrl: 'https://ko-fi.com/c/3da9b0e0d6',
 		amount: 2900,
 		tier: 'tier2',
 		description:
@@ -21,6 +23,7 @@ export const AD_PLANS = {
 	},
 	priority: {
 		name: 'Priority',
+		paymentUrl: 'https://ko-fi.com/c/e8bd0eb73f',
 		amount: 5500,
 		tier: 'tier3',
 		description: 'All Plus placements with twice the selection weight.',
