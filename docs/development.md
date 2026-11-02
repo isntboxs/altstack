@@ -348,6 +348,12 @@ The web `test` script currently runs unit tests only; browser tests are explicit
 - The workspace pins `tsrs` for type checking. VS Code's recommended
   **TypeScript 7** extension uses the launcher under `.vscode/tsdk`; restart the
   TypeScript server after dependency changes. Formatting/lint use Oxc/Vite+.
+- Zed's configured `typescript-ls` requires the separate
+  [TypeScript Language Server (`tsgo`) extension](https://github.com/zed-extensions/tsgo).
+  Install it before using the workspace JavaScript, JSX, TypeScript and TSX
+  language-server lists. The adapter manages its native TypeScript binary;
+  it does not use a workspace `binary.path`/`binary.arguments` override.
+  CLI typechecks still use the workspace-pinned `tsrs`.
 
 ## Troubleshooting
 

@@ -1,11 +1,5 @@
 {
 	"lsp": {
-		"typescript-ls": {
-			"binary": {
-				"path": "node_modules/.bin/tsrs",
-				"arguments": ["--lsp", "-stdio"]
-			}
-		},
 		"oxlint": {
 			"initialization_options": {
 				"settings": {

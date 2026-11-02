@@ -35,7 +35,7 @@ import { Separator } from '@altstack/ui/components/separator'
 import { ProjectLogo } from '#/components/project-media'
 import { VerifiedBadge } from '#/components/verified-badge'
 import { AdListingGrid } from '#/features/ads/components'
-import { catalogueOffset } from '#/features/ads/selection'
+import { useCatalogueOffset } from '#/features/ads/use-catalogue-offset'
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 import type { ProjectPageLinkOptions } from '#/features/project/page-links'
@@ -248,8 +248,12 @@ export const ProjectListSection = ({
 	scrollTargetId?: string
 }) => {
 	const router = useRouter()
+	const expectedOffset = useCatalogueOffset(
+		projectCatalogueKey(loaded.query ?? {}),
+		loaded.query?.page ?? 1
+	)
 	const query = useQuery({
-		...projectQueries.search(loaded.query ?? {}),
+		...projectQueries.search(loaded.query ?? {}, expectedOffset),
 		enabled: Boolean(loaded.query),
 	})
 	const data = query.data ?? loaded
@@ -273,12 +277,7 @@ export const ProjectListSection = ({
 		offset >= pagination.totalItems
 	const paginationItems = getPaginationItems(currentPage, totalPages)
 	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
-	if (
-		loaded.query &&
-		!query.data &&
-		loaded.query.offset !==
-			catalogueOffset(projectCatalogueKey(loaded.query), loaded.query.page)
-	) {
+	if (loaded.query && !query.data && loaded.query.offset !== expectedOffset) {
 		if (query.isError) {
 			return (
 				<div role="alert" className="container mx-auto p-4">

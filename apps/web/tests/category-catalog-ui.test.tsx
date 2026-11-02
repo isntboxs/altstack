@@ -351,7 +351,10 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 		expect(calls).toEqual(
 			expect.arrayContaining([
 				{ path: 'project/getBySlug', input: { params: { slug: 'demo' } } },
-				{ path: 'project/search', input: { query: { q: 'demo', page: 2 } } },
+				{
+					path: 'project/search',
+					input: { query: { q: 'demo', page: 2, limit: 45, offset: 45 } },
+				},
 				{
 					path: 'category/getByPath',
 					input: { query: { path: 'software/editors' } },

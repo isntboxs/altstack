@@ -11,7 +11,7 @@ import {
 } from '@altstack/ui/components/empty'
 
 import { PublicPending, PublicError } from '#/components/public-page-state'
-import { catalogueOffset } from '#/features/ads/selection'
+import { useCatalogueOffset } from '#/features/ads/use-catalogue-offset'
 import {
 	CollectionBreadcrumb,
 	CollectionCards,
@@ -57,10 +57,11 @@ export const Route = createFileRoute('/_app/collections/')({
 function Page() {
 	const loaded = Route.useLoaderData(),
 		{ page } = Route.useSearch()
-	const query = useQuery(collectionQueries.list(page, pageSize))
+	const expectedOffset = useCatalogueOffset('collections', page)
+	const query = useQuery(collectionQueries.list(page, pageSize, expectedOffset))
 	const data = query.data ?? loaded
 	const [consumed, setConsumed] = useState(45)
-	if (!query.data && loaded.offset !== catalogueOffset('collections', page)) {
+	if (!query.data && loaded.offset !== expectedOffset) {
 		if (query.isError) {
 			return (
 				<div role="alert">

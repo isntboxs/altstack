@@ -12,6 +12,8 @@ import {
 	waitFor,
 	within,
 } from '@testing-library/react'
+import { hydrateRoot } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
@@ -26,10 +28,12 @@ import {
 	listTagsInputSchema,
 } from '@altstack/shared/schemas/tag'
 
+import { ledgerKey } from '#/features/ads/selection'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
+import { categoryQueries } from '#/features/category/queries'
 import { collectionQueries } from '#/features/collections/queries'
-import { projectQueries } from '#/features/project/queries'
+import { projectQueries, projectCatalogueKey } from '#/features/project/queries'
 import { emptyPublicContent } from '#/features/public-content/model'
 import { preparePublicContent } from '#/features/public-content/server-function'
 import { cataloguePolicy } from '#/features/seo/meta'
@@ -433,6 +437,109 @@ async function routerAt(url: string, show = false) {
 	if (show) render(<RouterProvider router={router} />)
 	return router
 }
+
+describe('catalogue pagination hydration', () => {
+	it.each(['projects', 'collections'] as const)(
+		'hydrates page two of %s before restoring its saved content boundary',
+		async (catalogue) => {
+			sessionStorage.clear()
+			const original = rpc.getMockImplementation()!
+			const restore = Promise.withResolvers<unknown>()
+			const response = (offset: number) =>
+				catalogue === 'projects'
+					? {
+							projects: [{ ...zed, name: `Project at offset ${offset}` }],
+							query: {
+								page: 2,
+								limit: 45,
+								offset,
+								sort: 'recommended' as const,
+							},
+							pagination: {
+								page: 2,
+								limit: 45,
+								totalItems: 100,
+								totalPages: 3,
+								hasNextPage: true,
+								hasPreviousPage: true,
+							},
+						}
+					: {
+							collections: [
+								{
+									...editorialCollection,
+									logo: null,
+									name: `Collection at offset ${offset}`,
+								},
+							],
+							page: 2,
+							limit: 45,
+							offset,
+							total: 100,
+						}
+			rpc.mockImplementation((path, input, options) => {
+				if (
+					path.join('/') ===
+					(catalogue === 'projects' ? 'project/search' : 'collection/list')
+				) {
+					const { query } = input as { query: { offset: number } }
+					return query.offset === 42
+						? restore.promise
+						: Promise.resolve(response(query.offset))
+				}
+				return original(path, input, options)
+			})
+			const router = await routerAt(
+				catalogue === 'projects' ? '/?page=2' : '/collections?page=2'
+			)
+			await router.options.context.queryClient.query({
+				...categoryQueries.list(),
+				staleTime: 'static',
+			})
+			const key = ledgerKey(
+				catalogue === 'projects'
+					? projectCatalogueKey({ sort: 'recommended' })
+					: 'collections'
+			)
+			sessionStorage.setItem(key, JSON.stringify({ '1': 0, '2': 42 }))
+			const container = document.createElement('div')
+			container.innerHTML = renderToString(<RouterProvider router={router} />)
+			expect(container.textContent).toContain('at offset 45')
+			document.body.append(container)
+			const recoverable = vi.fn()
+			let hydratedRoot: ReturnType<typeof hydrateRoot> | undefined
+			try {
+				await act(async () => {
+					hydratedRoot = hydrateRoot(
+						container,
+						<RouterProvider router={router} />,
+						{ onRecoverableError: recoverable }
+					)
+					await Promise.resolve()
+				})
+				expect(recoverable).not.toHaveBeenCalled()
+				await waitFor(() =>
+					expect(container.textContent).toContain(`Loading ${catalogue}`)
+				)
+				await act(async () => {
+					restore.resolve(response(42))
+					await restore.promise
+				})
+				await waitFor(() =>
+					expect(container.textContent).toContain('at offset 42')
+				)
+				expect(
+					JSON.parse(sessionStorage.getItem(key)!) as Record<string, number>
+				).toMatchObject({ '2': 42 })
+				expect(recoverable).not.toHaveBeenCalled()
+			} finally {
+				act(() => hydratedRoot?.unmount())
+				container.remove()
+				sessionStorage.clear()
+			}
+		}
+	)
+})
 
 describe('public collection discovery recovery', () => {
 	it('keeps a rendered detail page when pending discovery later fails', async () => {

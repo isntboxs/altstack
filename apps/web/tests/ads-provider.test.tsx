@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+	QueryClient,
+	QueryClientProvider,
+	focusManager,
+} from '@tanstack/react-query'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
@@ -28,11 +32,14 @@ function Probe() {
 	return <output>{ads.map((ad) => ad.name).join(',') || 'no ad'}</output>
 }
 const clients: Array<QueryClient> = []
-function tree(enabled = true) {
+function createClient() {
 	const client = new QueryClient({
 		defaultOptions: { queries: { retry: false, gcTime: 0 } },
 	})
 	clients.push(client)
+	return client
+}
+function tree(enabled = true, client = createClient()) {
 	return (
 		<QueryClientProvider client={client}>
 			<AdsProvider enabled={enabled}>
@@ -61,11 +68,32 @@ beforeEach(() => {
 })
 afterEach(() => {
 	cleanup()
+	focusManager.setFocused(undefined)
 	for (const client of clients.splice(0)) client.clear()
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
 describe('session selection boundary', () => {
+	it('polls six times per visible minute and still refetches on navigation and focus', async () => {
+		const client = createClient()
+		const view = render(tree(true, client))
+		await flush()
+		expect(mock.list).toHaveBeenCalledTimes(1)
+		await flush(9999)
+		expect(mock.list).toHaveBeenCalledTimes(1)
+		await flush(50001)
+		expect(mock.list).toHaveBeenCalledTimes(7)
+		focusManager.setFocused(false)
+		await flush(30000)
+		expect(mock.list).toHaveBeenCalledTimes(7)
+		focusManager.setFocused(true)
+		await flush()
+		expect(mock.list).toHaveBeenCalledTimes(8)
+		mock.entry = '/collections'
+		view.rerender(tree(true, client))
+		await flush()
+		expect(mock.list).toHaveBeenCalledTimes(9)
+	})
 	it('never swaps a stationary banner at TTL and rotates on the next navigation using the original timestamp', async () => {
 		const view = render(tree())
 		await flush()
@@ -125,7 +153,7 @@ describe('session selection boundary', () => {
 				serverNow: new Date(),
 			})
 		)
-		await flush(5000)
+		await flush(10000)
 		expect(screen.getByText('no ad')).toBeTruthy()
 	})
 	it('fails closed on inventory failure and makes no requests on private routes', async () => {

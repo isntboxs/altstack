@@ -200,6 +200,7 @@ export function SponsorGrid() {
 							sideOffset={10}
 							side="bottom"
 							className="border border-border bg-background text-foreground"
+							arrowClassName="border-t border-l border-border bg-background fill-background"
 						>
 							{ad.description}
 						</TooltipContent>

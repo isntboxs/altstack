@@ -1,15 +1,17 @@
 import { catalogueOffset } from '#/features/ads/selection'
 import { orpc } from '#/utils/orpc'
 export const collectionQueries = {
-	list: (page = 1, limit = 45) =>
+	list: (
+		page = 1,
+		limit = 45,
+		offset = limit === 45 ? catalogueOffset('collections', page) : undefined
+	) =>
 		orpc.collection.list.queryOptions({
 			input: {
 				query: {
 					page,
 					limit,
-					...(limit === 45
-						? { offset: catalogueOffset('collections', page) }
-						: {}),
+					...(offset === undefined ? {} : { offset }),
 				},
 			},
 		}),

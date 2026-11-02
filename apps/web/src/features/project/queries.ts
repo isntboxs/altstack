@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import type { SearchSortType } from '@altstack/shared/schemas'
 
 import { catalogueOffset } from '#/features/ads/selection'
+import { useCatalogueOffset } from '#/features/ads/use-catalogue-offset'
 import { projectORPC } from '#/utils/orpc'
 
 export function projectCatalogueKey(params: SearchProjectsParams) {
@@ -28,16 +29,16 @@ export interface SearchProjectsParams {
 export const projectQueries = {
 	bySlug: (slug: string) =>
 		projectORPC.getBySlug.queryOptions({ input: { params: { slug } } }),
-	search: (params: SearchProjectsParams) =>
+	search: (
+		params: SearchProjectsParams,
+		offset = catalogueOffset(projectCatalogueKey(params), params.page ?? 1)
+	) =>
 		projectORPC.search.queryOptions({
 			input: {
 				query: {
 					...params,
 					limit: 45,
-					offset: catalogueOffset(
-						projectCatalogueKey(params),
-						params.page ?? 1
-					),
+					offset,
 				},
 			},
 		}),
@@ -47,5 +48,10 @@ export const projectQueries = {
 export const useProjectBySlug = (slug: string) =>
 	useSuspenseQuery(projectQueries.bySlug(slug))
 
-export const useProjectSearch = (params: SearchProjectsParams) =>
-	useSuspenseQuery(projectQueries.search(params))
+export const useProjectSearch = (params: SearchProjectsParams) => {
+	const offset = useCatalogueOffset(
+		projectCatalogueKey(params),
+		params.page ?? 1
+	)
+	return useSuspenseQuery(projectQueries.search(params, offset))
+}

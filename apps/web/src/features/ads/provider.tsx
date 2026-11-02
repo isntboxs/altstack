@@ -19,7 +19,7 @@ export const inventoryOptions = (entry = '') =>
 		queryKey: ['ads', 'inventory', entry],
 		queryFn: () => client.ads.list({}, { context: { cache: 'no-store' } }),
 		staleTime: 0,
-		refetchInterval: 5000,
+		refetchInterval: 10000,
 		refetchOnWindowFocus: 'always',
 		retry: false,
 	})
