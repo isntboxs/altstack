@@ -175,7 +175,7 @@ export function AdvertisePage() {
 								<Card
 									key={key}
 									className={cn(
-										'h-full shrink-0 basis-[calc(100%-2.5rem)] snap-start rounded-lg border bg-muted/10 ring-0 [--card-spacing:--spacing(5)] sm:basis-80 lg:basis-auto',
+										'h-full shrink-0 basis-[calc(100%-2.5rem)] snap-center rounded-lg border bg-muted/10 ring-0 [--card-spacing:--spacing(5)] first:ms-5 last:me-5 sm:basis-80 sm:first:ms-[calc(50%-10rem)] sm:last:me-[calc(50%-10rem)] lg:basis-auto lg:first:ms-0 lg:last:me-0',
 										key === 'plus' && 'border-primary/40 bg-muted/25'
 									)}
 								>

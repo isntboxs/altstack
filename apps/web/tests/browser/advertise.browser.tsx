@@ -63,6 +63,33 @@ afterEach(() => {
 })
 
 describe('advertise responsive layout', () => {
+	it.each([320, 390, 768])(
+		'centers every package after snapping at %i px',
+		async (width) => {
+			await page.viewport(width, 900)
+			await mount()
+			const cards = document.querySelectorAll<HTMLElement>(
+				'[data-package-cards] [data-slot=card]'
+			)
+			for (const card of cards) {
+				card.scrollIntoView({
+					block: 'nearest',
+					inline: 'center',
+					behavior: 'instant',
+				})
+				await waitFor(() => {
+					const rect = card.getBoundingClientRect()
+					expect(
+						Math.abs(
+							rect.left +
+								rect.width / 2 -
+								document.documentElement.clientWidth / 2
+						)
+					).toBeLessThan(2)
+				})
+			}
+		}
+	)
 	it.each([320, 390, 768, 1280])(
 		'keeps packages usable and contains horizontal scrolling at %i px',
 		async (width) => {
