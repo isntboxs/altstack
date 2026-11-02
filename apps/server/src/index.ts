@@ -6,10 +6,13 @@ import type { EvlogVariables } from 'evlog/hono'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
+import { runAdNotificationBatch } from '@altstack/api/ad-notifications'
 import { createORPCContext } from '@altstack/api/context'
 import { rpcHandler, openApiHandler } from '@altstack/api/handler'
 
 import { auth } from '@altstack/auth/server'
+
+import { db } from '@altstack/db'
 
 import { env } from '@altstack/env/server'
 
@@ -23,6 +26,25 @@ const identifyUser = createAuthMiddleware(auth, {
 })
 
 const app = new Hono<EvlogVariables>()
+
+// Durable leases let multiple server instances share this delivery worker.
+if (env.NODE_ENV !== 'test') {
+	let delivering = false
+	const deliver = async () => {
+		if (delivering) return
+		delivering = true
+		try {
+			await runAdNotificationBatch(db)
+		} catch {
+			process.stderr.write(
+				'Ad notification worker failed; queued messages will retry.\n'
+			)
+		} finally {
+			delivering = false
+		}
+	}
+	setInterval(() => void deliver(), 30000).unref()
+}
 
 app.use(
 	evlog({
@@ -62,11 +84,13 @@ app.all('/api/auth/*', async (c) => {
 // Private bookmark state and report contacts must never enter shared caches.
 app.use('/api/*', async (c, next) => {
 	if (
+		/^\/api\/rpc\/(?:adBilling|admin\/adBilling)(?:\/|$)/.test(c.req.path) ||
 		/^\/api\/(?:rpc\/(?:bookmark|ownership|admin\/(?:report|user))(?:\/|$)|reference\/(?:bookmarks|managed-projects|project-claims|projects\/[^/]+\/claim|admin\/(?:reports|users))(?:\/|$))/.test(
 			c.req.path
 		)
 	) {
 		c.header('Cache-Control', 'private, no-store')
+		c.header('Referrer-Policy', 'no-referrer')
 	}
 	await next()
 })

@@ -13,6 +13,8 @@ import {
 
 import { ProjectHoverCard } from '#/components/project-hover-card'
 import { ProjectLogo } from '#/components/project-media'
+import { DetailAd } from '#/features/ads/components'
+import { useAds } from '#/features/ads/context'
 import { GithubStatistics } from '#/features/project/components/github-statistics'
 
 export type FeaturedProjectsData =
@@ -25,6 +27,7 @@ export function ProjectSidebar({
 	ComponentProps<typeof GithubStatistics>,
 	'sticky' | 'className'
 >) {
+	const hasAd = useAds('project-detail').length > 0
 	const visible = projects.filter((project) =>
 		featuredWebsiteUrl(project.websiteUrl)
 	)
@@ -32,14 +35,15 @@ export function ProjectSidebar({
 		<aside className="flex min-w-0 flex-col gap-8" aria-label="Project sidebar">
 			<GithubStatistics
 				{...statistics}
-				sticky={visible.length === 0}
+				sticky={visible.length === 0 && !hasAd}
 				className={visible.length > 0 ? 'order-2 md:order-1' : 'flex-1'}
 			/>
-			{visible.length > 0 && (
+			{(hasAd || visible.length > 0) && (
 				<div
-					className="order-1 md:sticky md:top-17 md:order-2"
+					className="order-1 flex flex-col gap-6 md:sticky md:top-17 md:order-2"
 					data-featured-panel
 				>
+					<DetailAd kind="project-detail" />
 					<FeaturedProjects projects={visible} />
 				</div>
 			)}

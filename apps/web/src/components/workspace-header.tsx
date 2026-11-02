@@ -23,6 +23,7 @@ const labels: Record<string, string> = {
 	'/admin/categories/create': 'Create category',
 	'/admin/tags': 'Tags',
 	'/admin/featured': 'Featured projects',
+	'/admin/ads': 'Ad campaigns',
 	'/admin/users': 'Users',
 	'/admin/activity': 'Activity',
 	'/admin/operations': 'Operations',

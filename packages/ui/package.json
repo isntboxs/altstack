@@ -17,7 +17,8 @@
 		"./emails/magic-link": "./src/emails/magic-link.tsx",
 		"./emails/submission-published": "./src/emails/submission-published.tsx",
 		"./emails/submission-rejected": "./src/emails/submission-rejected.tsx",
-		"./emails/project-claim": "./src/emails/project-claim.tsx"
+		"./emails/project-claim": "./src/emails/project-claim.tsx",
+		"./emails/ad-campaign": "./src/emails/ad-campaign.tsx"
 	},
 	"scripts": {
 		"build": "vp pack",

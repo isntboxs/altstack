@@ -15,6 +15,7 @@ import {
 
 const page = z.object({
 	query: z.object({
+		offset: z.coerce.number().int().min(0).max(5000000).optional(),
 		page: z.coerce.number().int().min(1).max(100000).default(1),
 		limit: z.coerce.number().int().min(1).max(50).default(12),
 	}),
@@ -39,6 +40,7 @@ export const collectionContract = {
 		.input(page)
 		.output(
 			z.object({
+				offset: z.number().int().nonnegative().optional(),
 				collections: z.array(collectionCardSchema),
 				total: z.number().int(),
 			})

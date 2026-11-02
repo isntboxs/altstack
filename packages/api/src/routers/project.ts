@@ -238,7 +238,7 @@ const searchHandler = publicProcedure.project.search.handler(
 
 		const page = input.query.page
 		const limit = input.query.limit
-		const offset = (page - 1) * limit
+		const offset = input.query.offset ?? (page - 1) * limit
 
 		// Visibility is decided here, never in the UI: every branch stays
 		// limited to published projects.
@@ -315,6 +315,7 @@ const searchHandler = publicProcedure.project.search.handler(
 
 		return {
 			asOf,
+			query: input.query,
 			projects: rows.map((row) => {
 				return {
 					...publicFields.parse({ ...row.projects, verified: row.verified }),

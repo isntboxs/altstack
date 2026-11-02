@@ -54,6 +54,9 @@ describe('submission rate-limit CORS headers', () => {
 		'/api/reference/admin/users/id/actions',
 		'/api/rpc/ownership/members',
 		'/api/reference/managed-projects/id/members',
+		'/api/rpc/adBilling/get',
+		'/api/rpc/adBilling/requestAccess',
+		'/api/rpc/admin/adBilling/list',
 	])('keeps private management responses out of caches on %s', async (path) => {
 		const response = await server.fetch(
 			new Request(`http://localhost:3009${path}`, { method: 'POST' })

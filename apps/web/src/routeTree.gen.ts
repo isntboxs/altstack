@@ -18,6 +18,7 @@ import { Route as SlugBadgeDotsvgRouteImport } from './routes/$slug.badge[.]svg'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSlugRouteImport } from './routes/_app/$slug'
 import { Route as AppActivityRouteImport } from './routes/_app/activity'
+import { Route as AppAdvertiseRouteImport } from './routes/_app/advertise'
 import { Route as AppSubmitRouteImport } from './routes/_app/submit'
 import { Route as MainAdminRouteImport } from './routes/_main/admin'
 import { Route as MainBookmarksRouteImport } from './routes/_main/bookmarks'
@@ -25,6 +26,8 @@ import { Route as MainProjectsRouteImport } from './routes/_main/projects'
 import { Route as MainSubmissionRouteImport } from './routes/_main/submission'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as SitemapsPagesDotxmlRouteImport } from './routes/sitemaps.pages[.]xml'
+import { Route as AppAdvertiseManageRouteImport } from './routes/_app/advertise_.manage'
+import { Route as AppAdvertiseTermsRouteImport } from './routes/_app/advertise_.terms'
 import { Route as AppBlogsIndexRouteImport } from './routes/_app/blogs/index'
 import { Route as AppBlogsSlugRouteImport } from './routes/_app/blogs/$slug'
 import { Route as AppCategoriesIndexRouteImport } from './routes/_app/categories/index'
@@ -37,6 +40,7 @@ import { Route as AppTagsIndexRouteImport } from './routes/_app/tags/index'
 import { Route as AppTagsSlugRouteImport } from './routes/_app/tags/$slug'
 import { Route as MainAdminIndexRouteImport } from './routes/_main/admin.index'
 import { Route as MainAdminActivityRouteImport } from './routes/_main/admin.activity'
+import { Route as MainAdminAdsRouteImport } from './routes/_main/admin.ads'
 import { Route as MainAdminCategoriesRouteImport } from './routes/_main/admin.categories'
 import { Route as MainAdminFeaturedRouteImport } from './routes/_main/admin.featured'
 import { Route as MainAdminOperationsRouteImport } from './routes/_main/admin.operations'
@@ -109,6 +113,11 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppAdvertiseRoute = AppAdvertiseRouteImport.update({
+  id: '/advertise',
+  path: '/advertise',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppSubmitRoute = AppSubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
@@ -143,6 +152,16 @@ const SitemapsPagesDotxmlRoute = SitemapsPagesDotxmlRouteImport.update({
   id: '/sitemaps/pages.xml',
   path: '/sitemaps/pages.xml',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdvertiseManageRoute = AppAdvertiseManageRouteImport.update({
+  id: '/advertise_/manage',
+  path: '/advertise/manage',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppAdvertiseTermsRoute = AppAdvertiseTermsRouteImport.update({
+  id: '/advertise_/terms',
+  path: '/advertise/terms',
+  getParentRoute: () => AppRouteRoute,
 } as any)
 const AppBlogsIndexRoute = AppBlogsIndexRouteImport.update({
   id: '/blogs/',
@@ -202,6 +221,11 @@ const MainAdminIndexRoute = MainAdminIndexRouteImport.update({
 const MainAdminActivityRoute = MainAdminActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminAdsRoute = MainAdminAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
   getParentRoute: () => MainAdminRoute,
 } as any)
 const MainAdminCategoriesRoute = MainAdminCategoriesRouteImport.update({
@@ -359,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/advertise': typeof AppAdvertiseRoute
   '/submit': typeof AppSubmitRoute
   '/admin': typeof MainAdminRouteWithChildren
   '/bookmarks': typeof MainBookmarksRoute
@@ -366,12 +391,15 @@ export interface FileRoutesByFullPath {
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
+  '/advertise/manage': typeof AppAdvertiseManageRoute
+  '/advertise/terms': typeof AppAdvertiseTermsRoute
   '/blogs/$slug': typeof AppBlogsSlugRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/collections/$slug': typeof AppCollectionsSlugRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
+  '/admin/ads': typeof MainAdminAdsRoute
   '/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/operations': typeof MainAdminOperationsRoute
@@ -415,17 +443,21 @@ export interface FileRoutesByTo {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/$slug': typeof AppSlugRoute
   '/activity': typeof AppActivityRoute
+  '/advertise': typeof AppAdvertiseRoute
   '/submit': typeof AppSubmitRoute
   '/bookmarks': typeof MainBookmarksRoute
   '/submission': typeof MainSubmissionRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
+  '/advertise/manage': typeof AppAdvertiseManageRoute
+  '/advertise/terms': typeof AppAdvertiseTermsRoute
   '/blogs/$slug': typeof AppBlogsSlugRoute
   '/categories/$': typeof AppCategoriesSplatRoute
   '/collections/$slug': typeof AppCollectionsSlugRoute
   '/licenses/$slug': typeof AppLicensesSlugRoute
   '/tags/$slug': typeof AppTagsSlugRoute
   '/admin/activity': typeof MainAdminActivityRoute
+  '/admin/ads': typeof MainAdminAdsRoute
   '/admin/featured': typeof MainAdminFeaturedRoute
   '/admin/operations': typeof MainAdminOperationsRoute
   '/admin/ownership': typeof MainAdminOwnershipRoute
@@ -470,6 +502,7 @@ export interface FileRoutesById {
   '/$slug/badge.svg': typeof SlugBadgeDotsvgRoute
   '/_app/$slug': typeof AppSlugRoute
   '/_app/activity': typeof AppActivityRoute
+  '/_app/advertise': typeof AppAdvertiseRoute
   '/_app/submit': typeof AppSubmitRoute
   '/_main/admin': typeof MainAdminRouteWithChildren
   '/_main/bookmarks': typeof MainBookmarksRoute
@@ -478,12 +511,15 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/sitemaps/pages.xml': typeof SitemapsPagesDotxmlRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/advertise_/manage': typeof AppAdvertiseManageRoute
+  '/_app/advertise_/terms': typeof AppAdvertiseTermsRoute
   '/_app/blogs/$slug': typeof AppBlogsSlugRoute
   '/_app/categories/$': typeof AppCategoriesSplatRoute
   '/_app/collections/$slug': typeof AppCollectionsSlugRoute
   '/_app/licenses/$slug': typeof AppLicensesSlugRoute
   '/_app/tags/$slug': typeof AppTagsSlugRoute
   '/_main/admin/activity': typeof MainAdminActivityRoute
+  '/_main/admin/ads': typeof MainAdminAdsRoute
   '/_main/admin/categories': typeof MainAdminCategoriesRouteWithChildren
   '/_main/admin/featured': typeof MainAdminFeaturedRoute
   '/_main/admin/operations': typeof MainAdminOperationsRoute
@@ -529,6 +565,7 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
+    | '/advertise'
     | '/submit'
     | '/admin'
     | '/bookmarks'
@@ -536,12 +573,15 @@ export interface FileRouteTypes {
     | '/submission'
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
+    | '/advertise/manage'
+    | '/advertise/terms'
     | '/blogs/$slug'
     | '/categories/$'
     | '/collections/$slug'
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
+    | '/admin/ads'
     | '/admin/categories'
     | '/admin/featured'
     | '/admin/operations'
@@ -585,17 +625,21 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/$slug'
     | '/activity'
+    | '/advertise'
     | '/submit'
     | '/bookmarks'
     | '/submission'
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
+    | '/advertise/manage'
+    | '/advertise/terms'
     | '/blogs/$slug'
     | '/categories/$'
     | '/collections/$slug'
     | '/licenses/$slug'
     | '/tags/$slug'
     | '/admin/activity'
+    | '/admin/ads'
     | '/admin/featured'
     | '/admin/operations'
     | '/admin/ownership'
@@ -639,6 +683,7 @@ export interface FileRouteTypes {
     | '/$slug/badge.svg'
     | '/_app/$slug'
     | '/_app/activity'
+    | '/_app/advertise'
     | '/_app/submit'
     | '/_main/admin'
     | '/_main/bookmarks'
@@ -647,12 +692,15 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/sitemaps/pages.xml'
     | '/_app/'
+    | '/_app/advertise_/manage'
+    | '/_app/advertise_/terms'
     | '/_app/blogs/$slug'
     | '/_app/categories/$'
     | '/_app/collections/$slug'
     | '/_app/licenses/$slug'
     | '/_app/tags/$slug'
     | '/_main/admin/activity'
+    | '/_main/admin/ads'
     | '/_main/admin/categories'
     | '/_main/admin/featured'
     | '/_main/admin/operations'
@@ -768,6 +816,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/advertise': {
+      id: '/_app/advertise'
+      path: '/advertise'
+      fullPath: '/advertise'
+      preLoaderRoute: typeof AppAdvertiseRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/submit': {
       id: '/_app/submit'
       path: '/submit'
@@ -816,6 +871,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sitemaps/pages.xml'
       preLoaderRoute: typeof SitemapsPagesDotxmlRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/advertise_/manage': {
+      id: '/_app/advertise_/manage'
+      path: '/advertise/manage'
+      fullPath: '/advertise/manage'
+      preLoaderRoute: typeof AppAdvertiseManageRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/advertise_/terms': {
+      id: '/_app/advertise_/terms'
+      path: '/advertise/terms'
+      fullPath: '/advertise/terms'
+      preLoaderRoute: typeof AppAdvertiseTermsRouteImport
+      parentRoute: typeof AppRouteRoute
     }
     '/_app/blogs/': {
       id: '/_app/blogs/'
@@ -899,6 +968,13 @@ declare module '@tanstack/react-router' {
       path: '/activity'
       fullPath: '/admin/activity'
       preLoaderRoute: typeof MainAdminActivityRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/ads': {
+      id: '/_main/admin/ads'
+      path: '/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof MainAdminAdsRouteImport
       parentRoute: typeof MainAdminRoute
     }
     '/_main/admin/categories': {
@@ -1103,8 +1179,11 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppSlugRoute: typeof AppSlugRoute
   AppActivityRoute: typeof AppActivityRoute
+  AppAdvertiseRoute: typeof AppAdvertiseRoute
   AppSubmitRoute: typeof AppSubmitRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAdvertiseManageRoute: typeof AppAdvertiseManageRoute
+  AppAdvertiseTermsRoute: typeof AppAdvertiseTermsRoute
   AppBlogsSlugRoute: typeof AppBlogsSlugRoute
   AppCategoriesSplatRoute: typeof AppCategoriesSplatRoute
   AppCollectionsSlugRoute: typeof AppCollectionsSlugRoute
@@ -1120,8 +1199,11 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSlugRoute: AppSlugRoute,
   AppActivityRoute: AppActivityRoute,
+  AppAdvertiseRoute: AppAdvertiseRoute,
   AppSubmitRoute: AppSubmitRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAdvertiseManageRoute: AppAdvertiseManageRoute,
+  AppAdvertiseTermsRoute: AppAdvertiseTermsRoute,
   AppBlogsSlugRoute: AppBlogsSlugRoute,
   AppCategoriesSplatRoute: AppCategoriesSplatRoute,
   AppCollectionsSlugRoute: AppCollectionsSlugRoute,
@@ -1155,6 +1237,7 @@ const MainAdminCategoriesRouteWithChildren =
 
 interface MainAdminRouteChildren {
   MainAdminActivityRoute: typeof MainAdminActivityRoute
+  MainAdminAdsRoute: typeof MainAdminAdsRoute
   MainAdminCategoriesRoute: typeof MainAdminCategoriesRouteWithChildren
   MainAdminFeaturedRoute: typeof MainAdminFeaturedRoute
   MainAdminOperationsRoute: typeof MainAdminOperationsRoute
@@ -1175,6 +1258,7 @@ interface MainAdminRouteChildren {
 
 const MainAdminRouteChildren: MainAdminRouteChildren = {
   MainAdminActivityRoute: MainAdminActivityRoute,
+  MainAdminAdsRoute: MainAdminAdsRoute,
   MainAdminCategoriesRoute: MainAdminCategoriesRouteWithChildren,
   MainAdminFeaturedRoute: MainAdminFeaturedRoute,
   MainAdminOperationsRoute: MainAdminOperationsRoute,

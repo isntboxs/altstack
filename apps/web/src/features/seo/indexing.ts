@@ -5,12 +5,15 @@ export const indexingMiddleware = createMiddleware().server(
 		const result = await next()
 		const path = new URL(request.url).pathname
 		if (
-			/^\/(?:auth|submit|submission|bookmarks|projects|managed|admin)(?:\/|$)/.test(
+			/^\/(?:auth|submit|submission|bookmarks|projects|managed|admin|advertise\/manage)(?:\/|$)/.test(
 				path
 			) ||
 			result.response.status >= 400
 		) {
 			result.response.headers.set('X-Robots-Tag', 'noindex, follow')
+		}
+		if (path === '/advertise/manage') {
+			result.response.headers.set('Referrer-Policy', 'no-referrer')
 		}
 		// Public SSR includes auth-dependent navigation; never persist it in a CDN.
 		if (result.response.headers.get('Content-Type')?.includes('text/html')) {

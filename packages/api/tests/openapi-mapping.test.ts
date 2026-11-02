@@ -34,6 +34,7 @@ function legacyCatalogueSchema(value: unknown): unknown {
 		'licenseUrl',
 		'archived',
 		'asOf',
+		'query',
 	])
 	const properties = 'properties' in value ? value.properties : undefined
 	if (
@@ -1058,7 +1059,21 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(70)
+		expect(operations).toHaveLength(89)
+		expect(paths['/ads']?.query).toMatchObject({
+			operationId: 'listEligibleAds',
+			security: [],
+		})
+		for (const [path, method] of [
+			['/admin/ads', 'query'],
+			['/admin/ads', 'post'],
+			['/admin/ads/{id}', 'put'],
+			['/admin/ads/{id}', 'delete'],
+		] as const) {
+			expect(paths[path]?.[method]?.security ?? spec.security).toEqual(
+				baseline.security
+			)
+		}
 		for (const contract of Object.values(contracts.admin.dashboard)) {
 			const metadata = getOpenAPIMeta(contract)!
 			expect(paths[metadata.path!]?.query).toMatchObject({
@@ -1119,7 +1134,7 @@ describe('generated OpenAPI compatibility', () => {
 						properties: {
 							featuredProjects: {
 								type: 'array',
-								maxItems: 21,
+								maxItems: 24,
 								items: {
 									required: [
 										'id',
@@ -1169,7 +1184,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			36
+			46
 		)
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
@@ -1187,7 +1202,7 @@ describe('generated OpenAPI compatibility', () => {
 							!(
 								'name' in parameter &&
 								operationId === 'searchProjects' &&
-								['tag', 'license'].includes(parameter.name)
+								['tag', 'license', 'offset'].includes(parameter.name)
 							)
 					)
 				)

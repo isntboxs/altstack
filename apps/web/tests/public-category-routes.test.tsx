@@ -12,6 +12,8 @@ import {
 	waitFor,
 	within,
 } from '@testing-library/react'
+import { hydrateRoot } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { ORPCRouterClient, ORPCRouterOutputs } from '@altstack/api/routers'
@@ -26,10 +28,12 @@ import {
 	listTagsInputSchema,
 } from '@altstack/shared/schemas/tag'
 
+import { ledgerKey } from '#/features/ads/selection'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
 import { categoryHead } from '#/features/category/meta'
+import { categoryQueries } from '#/features/category/queries'
 import { collectionQueries } from '#/features/collections/queries'
-import { projectQueries } from '#/features/project/queries'
+import { projectQueries, projectCatalogueKey } from '#/features/project/queries'
 import { emptyPublicContent } from '#/features/public-content/model'
 import { preparePublicContent } from '#/features/public-content/server-function'
 import { cataloguePolicy } from '#/features/seo/meta'
@@ -41,7 +45,13 @@ import { categoryFixture } from './fixtures/categories'
 const { getAuthFn, rpc } = vi.hoisted(() => {
 	return {
 		getAuthFn: vi.fn<() => Promise<typeof authClient.$Infer.Session | null>>(),
-		rpc: vi.fn<(path: Array<string>, input: unknown) => Promise<unknown>>(),
+		rpc: vi.fn<
+			(
+				path: Array<string>,
+				input: unknown,
+				options?: unknown
+			) => Promise<unknown>
+		>(),
 	}
 })
 vi.mock('#/routes/__root', async () => {
@@ -105,7 +115,12 @@ vi.mock('@tanstack/react-start', async () => {
 	const actual = await vi.importActual<typeof StartModule>(
 		'@tanstack/react-start'
 	)
-	const client: ORPCRouterClient = createORPCClient({ call: rpc })
+	const client: ORPCRouterClient = createORPCClient({
+		call: (path, input, options) =>
+			path.join('/') === 'ads/list'
+				? Promise.resolve({ campaigns: [], serverNow: new Date() })
+				: rpc(path, input, options),
+	})
 	return {
 		...actual,
 		createIsomorphicFn: () => {
@@ -360,19 +375,20 @@ beforeEach(() => {
 					}
 				}
 				case 'project/search': {
-					const { page, q } = searchProjectsInputSchema.parse(input).query
+					const { page, q, limit } =
+						searchProjectsInputSchema.parse(input).query
 					const count = q === 'absent' ? 0 : total
 					return {
 						projects:
-							count > 0 && page <= Math.ceil(count / 12)
+							count > 0 && page <= Math.ceil(count / limit)
 								? [{ ...zed, categories: [ai.slug, general.slug] }]
 								: [],
 						pagination: {
 							page,
-							limit: 12,
+							limit,
 							totalItems: count,
-							totalPages: Math.ceil(count / 12),
-							hasNextPage: page < Math.ceil(count / 12),
+							totalPages: Math.ceil(count / limit),
+							hasNextPage: page < Math.ceil(count / limit),
 							hasPreviousPage: page > 1,
 						},
 					}
@@ -421,6 +437,109 @@ async function routerAt(url: string, show = false) {
 	if (show) render(<RouterProvider router={router} />)
 	return router
 }
+
+describe('catalogue pagination hydration', () => {
+	it.each(['projects', 'collections'] as const)(
+		'hydrates page two of %s before restoring its saved content boundary',
+		async (catalogue) => {
+			sessionStorage.clear()
+			const original = rpc.getMockImplementation()!
+			const restore = Promise.withResolvers<unknown>()
+			const response = (offset: number) =>
+				catalogue === 'projects'
+					? {
+							projects: [{ ...zed, name: `Project at offset ${offset}` }],
+							query: {
+								page: 2,
+								limit: 45,
+								offset,
+								sort: 'recommended' as const,
+							},
+							pagination: {
+								page: 2,
+								limit: 45,
+								totalItems: 100,
+								totalPages: 3,
+								hasNextPage: true,
+								hasPreviousPage: true,
+							},
+						}
+					: {
+							collections: [
+								{
+									...editorialCollection,
+									logo: null,
+									name: `Collection at offset ${offset}`,
+								},
+							],
+							page: 2,
+							limit: 45,
+							offset,
+							total: 100,
+						}
+			rpc.mockImplementation((path, input, options) => {
+				if (
+					path.join('/') ===
+					(catalogue === 'projects' ? 'project/search' : 'collection/list')
+				) {
+					const { query } = input as { query: { offset: number } }
+					return query.offset === 42
+						? restore.promise
+						: Promise.resolve(response(query.offset))
+				}
+				return original(path, input, options)
+			})
+			const router = await routerAt(
+				catalogue === 'projects' ? '/?page=2' : '/collections?page=2'
+			)
+			await router.options.context.queryClient.query({
+				...categoryQueries.list(),
+				staleTime: 'static',
+			})
+			const key = ledgerKey(
+				catalogue === 'projects'
+					? projectCatalogueKey({ sort: 'recommended' })
+					: 'collections'
+			)
+			sessionStorage.setItem(key, JSON.stringify({ '1': 0, '2': 42 }))
+			const container = document.createElement('div')
+			container.innerHTML = renderToString(<RouterProvider router={router} />)
+			expect(container.textContent).toContain('at offset 45')
+			document.body.append(container)
+			const recoverable = vi.fn()
+			let hydratedRoot: ReturnType<typeof hydrateRoot> | undefined
+			try {
+				await act(async () => {
+					hydratedRoot = hydrateRoot(
+						container,
+						<RouterProvider router={router} />,
+						{ onRecoverableError: recoverable }
+					)
+					await Promise.resolve()
+				})
+				expect(recoverable).not.toHaveBeenCalled()
+				await waitFor(() =>
+					expect(container.textContent).toContain(`Loading ${catalogue}`)
+				)
+				await act(async () => {
+					restore.resolve(response(42))
+					await restore.promise
+				})
+				await waitFor(() =>
+					expect(container.textContent).toContain('at offset 42')
+				)
+				expect(
+					JSON.parse(sessionStorage.getItem(key)!) as Record<string, number>
+				).toMatchObject({ '2': 42 })
+				expect(recoverable).not.toHaveBeenCalled()
+			} finally {
+				act(() => hydratedRoot?.unmount())
+				container.remove()
+				sessionStorage.clear()
+			}
+		}
+	)
+})
 
 describe('public collection discovery recovery', () => {
 	it('keeps a rendered detail page when pending discovery later fails', async () => {
@@ -913,7 +1032,7 @@ describe('public category search, sorting and pagination', () => {
 	])(
 		'scrolls pagination at %s to its controls while retaining filters',
 		async (path, targetId, paginationLabel, q) => {
-			total = 36
+			total = 135
 			const sort = path === '/tags' ? 'name-asc' : 'name'
 			const router = await routerAt(`${path}?q=${q}&sort=${sort}`, true)
 			const target = document.getElementById(targetId)!
@@ -976,6 +1095,8 @@ describe('public category search, sorting and pagination', () => {
 				{
 					query: {
 						...filter,
+						limit: 45,
+						offset: 0,
 						sort: 'most-stars',
 						page: undefined,
 						q: undefined,
@@ -1079,7 +1200,7 @@ describe('public category search, sorting and pagination', () => {
 		).toContain('Order by')
 	})
 	it('sort changes reset page and category pagination hrefs retain q and sort', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/categories/' + ai.path + '?q=Zed&sort=name&page=2',
 			true
@@ -1117,7 +1238,14 @@ describe('public category search, sorting and pagination', () => {
 		expect(rpc).toHaveBeenCalledWith(
 			['project', 'search'],
 			{
-				query: { category: ai.slug, sort: 'most-stars', page: 1, q: undefined },
+				query: {
+					category: ai.slug,
+					sort: 'most-stars',
+					page: 1,
+					q: undefined,
+					limit: 45,
+					offset: 0,
+				},
 			},
 			expect.anything()
 		)
@@ -1156,7 +1284,7 @@ describe('public category search, sorting and pagination', () => {
 		expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
 	})
 	it('retains homepage category/search/reset and home pagination URLs', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/?category=backend&q=Zed&sort=name&page=2',
 			true
@@ -1519,7 +1647,7 @@ describe('L2 public affordances and recovery', () => {
 		}
 	)
 	it('distinguishes an out-of-range filtered page and recovers without dropping filters', async () => {
-		total = 36
+		total = 135
 		const router = await routerAt(
 			'/?category=backend&q=Zed&sort=name&page=99',
 			true
@@ -1707,6 +1835,8 @@ describe('public tags', () => {
 			{
 				query: {
 					tag: 'typescript',
+					limit: 45,
+					offset: 0,
 					q: undefined,
 					sort: 'most-stars',
 					page: undefined,

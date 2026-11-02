@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import {
 	promoteTempImageToBlogCover,
+	promoteTempImageToAd,
 	promoteTempImageToProject,
 	InvalidTempUploadError,
 	TempUploadMissingError,
@@ -38,6 +39,23 @@ beforeEach(() =>
 )
 
 describe('blog cover storage', () => {
+	it('promotes ad wordmarks and logos into permanent isolated campaign storage', async () => {
+		for (const kind of ['logo', 'banner'] as const) {
+			const source = kind === 'logo' ? 'tmp/logos/logo-1.png' : tmpKey
+			const key = await promoteTempImageToAd(source, postId, kind)
+			expect(key).toMatch(
+				new RegExp(`^ads/${postId}/${kind}-[a-f0-9-]+\\.png$`)
+			)
+		}
+		expect(
+			send.mock.calls.some(
+				([command]) => command instanceof DeleteObjectCommand
+			)
+		).toBe(false)
+		await expect(
+			promoteTempImageToAd('tmp/screenshots/wrong-1.png', postId, 'logo')
+		).rejects.toBeInstanceOf(StorageError)
+	})
 	it('verifies and copies a cover into the post folder without consuming the retryable upload', async () => {
 		const key = await promoteTempImageToBlogCover({ tmpKey, postId })
 		expect(key).toMatch(new RegExp(`^blogs/${postId}/cover-[a-f0-9-]+\\.png$`))

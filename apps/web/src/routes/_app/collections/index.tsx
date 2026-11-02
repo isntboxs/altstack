@@ -1,5 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 
+import { Button } from '@altstack/ui/components/button'
 import {
 	Empty,
 	EmptyDescription,
@@ -8,6 +11,7 @@ import {
 } from '@altstack/ui/components/empty'
 
 import { PublicPending, PublicError } from '#/components/public-page-state'
+import { useCatalogueOffset } from '#/features/ads/use-catalogue-offset'
 import {
 	CollectionBreadcrumb,
 	CollectionCards,
@@ -20,7 +24,7 @@ import {
 } from '#/features/collections/search'
 import { seoHead } from '#/features/seo/meta'
 
-const pageSize = 12
+const pageSize = 45
 
 export const Route = createFileRoute('/_app/collections/')({
 	validateSearch: collectionSearchSchema,
@@ -51,8 +55,25 @@ export const Route = createFileRoute('/_app/collections/')({
 })
 /** Displays the loaded directory page with canonical numbered navigation. */
 function Page() {
-	const data = Route.useLoaderData(),
+	const loaded = Route.useLoaderData(),
 		{ page } = Route.useSearch()
+	const expectedOffset = useCatalogueOffset('collections', page)
+	const query = useQuery(collectionQueries.list(page, pageSize, expectedOffset))
+	const data = query.data ?? loaded
+	const [consumed, setConsumed] = useState(45)
+	if (!query.data && loaded.offset !== expectedOffset) {
+		if (query.isError) {
+			return (
+				<div role="alert">
+					Unable to restore this catalogue page.{' '}
+					<Button onClick={() => void query.refetch()}>
+						Retry collections
+					</Button>
+				</div>
+			)
+		}
+		return <output>Loading collections…</output>
+	}
 	return (
 		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16">
 			<header className="flex flex-col gap-4">
@@ -66,7 +87,14 @@ function Page() {
 			</header>
 			<div id="collection-results" className="scroll-mt-24">
 				{data.collections.length > 0 ? (
-					<CollectionCards collections={data.collections} />
+					<CollectionCards
+						collections={data.collections}
+						listing={{
+							page,
+							offset: data.offset ?? (page - 1) * 45,
+							onConsumed: setConsumed,
+						}}
+					/>
 				) : (
 					<Empty>
 						<EmptyHeader>
@@ -80,7 +108,16 @@ function Page() {
 			</div>
 			<CollectionPagination
 				page={page}
-				totalPages={Math.ceil(data.total / pageSize)}
+				totalPages={Math.max(
+					page,
+					page +
+						Math.ceil(
+							(data.total -
+								(data.offset ?? (page - 1) * 45) -
+								Math.min(consumed, data.collections.length)) /
+								45
+						)
+				)}
 			/>
 		</div>
 	)

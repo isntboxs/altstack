@@ -17,12 +17,15 @@
 		"./lib/slug": "./src/lib/slug.ts",
 		"./lib/spdx-license-ids": "./src/lib/spdx-license-ids.ts",
 		"./schemas": "./src/schemas/index.ts",
+		"./schemas/ad-billing": "./src/schemas/ad-billing.ts",
 		"./schemas/admin-category": "./src/schemas/admin-category.ts",
 		"./schemas/admin-dashboard": "./src/schemas/admin-dashboard.ts",
 		"./schemas/admin-project": "./src/schemas/admin-project.ts",
 		"./schemas/admin-report": "./src/schemas/admin-report.ts",
 		"./schemas/admin-user": "./src/schemas/admin-user.ts",
+		"./schemas/ads": "./src/schemas/ads.ts",
 		"./schemas/audit": "./src/schemas/audit.ts",
+		"./schemas/blog": "./src/schemas/blog.ts",
 		"./schemas/bookmark": "./src/schemas/bookmark.ts",
 		"./schemas/category": "./src/schemas/category.ts",
 		"./schemas/collection": "./src/schemas/collection.ts",
@@ -36,8 +39,7 @@
 		"./schemas/submission": "./src/schemas/submission.ts",
 		"./schemas/tag": "./src/schemas/tag.ts",
 		"./schemas/upload": "./src/schemas/upload.ts",
-		"./package.json": "./package.json",
-		"./schemas/blog": "./src/schemas/blog.ts"
+		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"exports": {
@@ -51,12 +53,15 @@
 			"./lib/slug": "./dist/lib/slug.mjs",
 			"./lib/spdx-license-ids": "./dist/lib/spdx-license-ids.mjs",
 			"./schemas": "./dist/schemas/index.mjs",
+			"./schemas/ad-billing": "./dist/schemas/ad-billing.mjs",
 			"./schemas/admin-category": "./dist/schemas/admin-category.mjs",
 			"./schemas/admin-dashboard": "./dist/schemas/admin-dashboard.mjs",
 			"./schemas/admin-project": "./dist/schemas/admin-project.mjs",
 			"./schemas/admin-report": "./dist/schemas/admin-report.mjs",
 			"./schemas/admin-user": "./dist/schemas/admin-user.mjs",
+			"./schemas/ads": "./dist/schemas/ads.mjs",
 			"./schemas/audit": "./dist/schemas/audit.mjs",
+			"./schemas/blog": "./dist/schemas/blog.mjs",
 			"./schemas/bookmark": "./dist/schemas/bookmark.mjs",
 			"./schemas/category": "./dist/schemas/category.mjs",
 			"./schemas/collection": "./dist/schemas/collection.mjs",
@@ -70,8 +75,7 @@
 			"./schemas/submission": "./dist/schemas/submission.mjs",
 			"./schemas/tag": "./dist/schemas/tag.mjs",
 			"./schemas/upload": "./dist/schemas/upload.mjs",
-			"./package.json": "./package.json",
-			"./schemas/blog": "./dist/schemas/blog.mjs"
+			"./package.json": "./package.json"
 		}
 	},
 	"scripts": {

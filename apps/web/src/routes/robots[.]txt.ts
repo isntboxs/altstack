@@ -20,6 +20,7 @@ export const Route = createFileRoute('/robots.txt')({
 						'Disallow: /bookmarks/',
 						'Disallow: /projects',
 						'Disallow: /admin/',
+						'Disallow: /advertise/manage',
 						'',
 						`Sitemap: ${publicUrl('/sitemap.xml')}`,
 						'',

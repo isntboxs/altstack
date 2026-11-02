@@ -56,6 +56,7 @@ export const env = createEnv({
 		// Optional during build/local GitHub-only setup; email requests fail closed
 		// until both server-only settings are configured.
 		RESEND_API_KEY: z.string().min(1).optional(),
+		ADS_CONTACT_EMAIL: z.email().optional(),
 		RESEND_FROM_EMAIL: z.email().optional(),
 		// Explicit web origin used for review links and email brand assets. The
 		// dispatcher also requires it to match an existing trusted CORS origin.

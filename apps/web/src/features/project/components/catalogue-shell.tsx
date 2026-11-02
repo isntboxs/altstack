@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FilterSection } from '#/components/filter-section'
 import { HeroSection } from '#/components/hero-section'
 import { CategoryControlsSkeleton } from '#/components/public-skeletons'
+import { SponsorGrid } from '#/features/ads/components'
 import {
 	CategoryBreadcrumb,
 	CategoryLinks,
@@ -32,6 +33,7 @@ export function CatalogueShell() {
 		return (
 			<>
 				<HeroSection />
+				<SponsorGrid />
 				<section
 					id="catalogue"
 					tabIndex={-1}
