@@ -235,6 +235,13 @@ function openManage() {
 	return mount(<AdOrderManage />)
 }
 
+async function choosePackage(name = 'Plus') {
+	const button = await screen.findByRole('button', { name: `Choose ${name}` })
+	await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false))
+	fireEvent.click(button)
+	await screen.findByRole('dialog')
+}
+
 describe('guest order flow', () => {
 	it('keeps private links usable during Strict Mode remounts when browser storage is blocked', async () => {
 		vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
@@ -260,6 +267,7 @@ describe('guest order flow', () => {
 	it('retains input and re-enables submission after an order request fails', async () => {
 		mock.create.mockRejectedValue(new Error('Synthetic failure'))
 		mount(<AdvertisePage />)
+		await choosePackage()
 		fireEvent.change(screen.getByLabelText('Contact email'), {
 			target: { value: 'advertiser@example.test' },
 		})
@@ -275,9 +283,10 @@ describe('guest order flow', () => {
 	})
 	it('shows agreed prices and sends a manual order after explicit terms acceptance', async () => {
 		mount(<AdvertisePage />)
-		expect(screen.getByText('US$15')).toBeTruthy()
-		expect(screen.getByText('US$29')).toBeTruthy()
-		expect(screen.getByText('US$55')).toBeTruthy()
+		expect(screen.getByText('15')).toBeTruthy()
+		expect(screen.getByText('29')).toBeTruthy()
+		expect(screen.getByText('55')).toBeTruthy()
+		await choosePackage()
 		const button = await screen.findByRole('button', {
 			name: 'Request Plus — US$29',
 		})
@@ -298,20 +307,86 @@ describe('guest order flow', () => {
 		})
 		expect(mock.confirmPayment).not.toHaveBeenCalled()
 	})
-	it('keeps ordering disabled without email configuration', async () => {
+	it('keeps package selection disabled without email configuration', async () => {
 		mock.available = false
 		mount(<AdvertisePage />)
 		await screen.findByText(/Advertising orders are temporarily unavailable/)
-		fireEvent.change(screen.getByLabelText('Contact email'), {
+		for (const name of ['Core', 'Plus', 'Priority']) {
+			expect(
+				screen
+					.getByRole('button', { name: `Choose ${name}` })
+					.hasAttribute('disabled')
+			).toBe(true)
+		}
+		expect(screen.queryByRole('dialog')).toBeNull()
+		expect(mock.create).not.toHaveBeenCalled()
+	})
+	it.each([
+		['Core', 'core', 15],
+		['Priority', 'priority', 55],
+	] as const)(
+		'opens the correct %s order without changing its price',
+		async (name, plan, amount) => {
+			mount(<AdvertisePage />)
+			await choosePackage(name)
+			expect(
+				screen.getByRole('heading', { name: `Advertise with ${name}` })
+			).toBeTruthy()
+			fireEvent.change(screen.getByLabelText('Contact email'), {
+				target: { value: 'advertiser@example.test' },
+			})
+			fireEvent.click(screen.getByRole('checkbox'))
+			fireEvent.click(
+				screen.getByRole('button', { name: `Request ${name} — US$${amount}` })
+			)
+			await waitFor(() =>
+				expect(mock.create).toHaveBeenCalledWith({
+					body: { plan, email: 'advertiser@example.test', termsAccepted: true },
+				})
+			)
+		}
+	)
+	it('opens existing-order access from the pricing section', async () => {
+		mount(<AdvertisePage />)
+		fireEvent.click(
+			screen.getByRole('button', {
+				name: 'Already advertising? Manage your order',
+			})
+		)
+		await screen.findByRole('dialog')
+		fireEvent.change(screen.getByLabelText('Order email'), {
 			target: { value: 'advertiser@example.test' },
 		})
-		fireEvent.click(screen.getByRole('checkbox'))
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Email management link' })
+		)
+		await waitFor(() =>
+			expect(mock.requestAccess).toHaveBeenCalledWith({
+				body: { email: 'advertiser@example.test' },
+			})
+		)
+	})
+	it('shows actual placements and reveals the manual renewal FAQ', async () => {
+		mount(<AdvertisePage />)
 		expect(
-			screen
-				.getByRole('button', { name: 'Request Plus — US$29' })
-				.hasAttribute('disabled')
-		).toBe(true)
-		expect(mock.create).not.toHaveBeenCalled()
+			screen.getByRole('heading', { name: 'Where your brand appears' })
+		).toBeTruthy()
+		expect(document.querySelectorAll('[data-placement-preview]')).toHaveLength(
+			4
+		)
+		const question = screen.getByRole('button', {
+			name: 'How do payment and renewal work?',
+		})
+		expect(question.getAttribute('aria-expanded')).toBe('false')
+		fireEvent.click(question)
+		await waitFor(() =>
+			expect(question.getAttribute('aria-expanded')).toBe('true')
+		)
+		expect(
+			screen.getByText(
+				/No account, card on file, or automatic renewal is required/
+			)
+		).toBeTruthy()
 	})
 	it('captures fragment credentials, removes them from the URL and preserves access across reloads', async () => {
 		const query = openManage()

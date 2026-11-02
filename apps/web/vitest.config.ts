@@ -22,7 +22,9 @@ export default defineConfig({
 				optimizeDeps: {
 					include: [
 						'reicon-react',
+						'@altstack/ui > @base-ui/react/accordion',
 						'@altstack/ui > @base-ui/react/avatar',
+						'@altstack/ui > @base-ui/react/checkbox',
 						'@altstack/ui > @base-ui/react/collapsible',
 						'@altstack/ui > @base-ui/react/dialog',
 						'@altstack/ui > @base-ui/react/progress',
