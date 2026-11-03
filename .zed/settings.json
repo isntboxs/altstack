@@ -1,5 +1,11 @@
 {
 	"lsp": {
+		"typescript-ls": {
+			"binary": {
+				"path": "node_modules/.bin/tsrs",
+				"arguments": ["--lsp", "-stdio"]
+			}
+		},
 		"oxlint": {
 			"initialization_options": {
 				"settings": {
@@ -77,6 +83,7 @@
 				"typescript-ls",
 				"!vtsls",
 				"!typescript-language-server",
+				"!eslint",
 				"..."
 			],
 			"format_on_save": "on",
@@ -97,6 +104,7 @@
 				"typescript-ls",
 				"!vtsls",
 				"!typescript-language-server",
+				"!eslint",
 				"..."
 			],
 			"format_on_save": "on",
@@ -207,6 +215,7 @@
 				"typescript-ls",
 				"!vtsls",
 				"!typescript-language-server",
+				"!eslint",
 				"..."
 			],
 			"format_on_save": "on",
@@ -226,6 +235,7 @@
 				"typescript-ls",
 				"!vtsls",
 				"!typescript-language-server",
+				"!eslint",
 				"..."
 			],
 			"format_on_save": "on",
