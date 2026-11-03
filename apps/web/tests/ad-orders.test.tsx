@@ -546,9 +546,48 @@ describe('guest order flow', () => {
 	})
 })
 describe('admin manual confirmation and material review', () => {
+	it('keeps orders compact, opens one at a time, and combines search with status filters', async () => {
+		mock.orders = [
+			{ ...row(), payments: [] },
+			{
+				...row(),
+				id: '550e8400-e29b-41d4-a716-446655440002',
+				email: 'second@example.test',
+				status: 'approved',
+				paidAt: new Date(),
+				payments: [],
+			},
+		]
+		mount(<AdvertisingAdmin />)
+		await screen.findByText('second@example.test')
+		expect(screen.queryByLabelText('Initial payment reference')).toBeNull()
+		fireEvent.click(screen.getByRole('button', { name: 'Review order' }))
+		expect(screen.getByLabelText('Initial payment reference')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'View details' }))
+		expect(screen.queryByLabelText('Initial payment reference')).toBeNull()
+		expect(
+			screen.getAllByRole('button', { name: 'Close details' })
+		).toHaveLength(1)
+		fireEvent.change(screen.getByLabelText('Status'), {
+			target: { value: 'attention' },
+		})
+		expect(screen.queryByText('second@example.test')).toBeNull()
+		fireEvent.change(screen.getByLabelText('Search orders'), {
+			target: { value: 'second' },
+		})
+		expect(screen.getByText('No matching orders')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+		expect(screen.getByRole('button', { name: 'Close details' })).toBeTruthy()
+		fireEvent.change(screen.getByLabelText('Search orders'), {
+			target: { value: 'ADVERTISER@EXAMPLE.TEST' },
+		})
+		expect(screen.queryByText('second@example.test')).toBeNull()
+		expect(screen.getByRole('button', { name: 'Review order' })).toBeTruthy()
+	})
 	it('requires explicit receipt verification and a payment reference', async () => {
 		mock.orders = [{ ...row(), payments: [] }]
 		mount(<AdvertisingAdmin />)
+		fireEvent.click(await screen.findByRole('button', { name: 'Review order' }))
 		const button = await screen.findByRole('button', {
 			name: 'Record received payment',
 		})
@@ -591,6 +630,7 @@ describe('admin manual confirmation and material review', () => {
 			},
 		]
 		mount(<AdvertisingAdmin />)
+		fireEvent.click(await screen.findByRole('button', { name: 'Review order' }))
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Request changes' })
 		)
