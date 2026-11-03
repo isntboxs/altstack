@@ -191,7 +191,7 @@
 		"@orpc/evlog": "catalog:",
 		"@orpc/json-schema": "catalog:",
 		"@orpc/openapi": "catalog:",
-		"@orpc/ratelimit": "2.0.0-beta.42",
+		"@orpc/ratelimit": "2.0.0-beta.48",
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
 		"@react-email/render": "^2.2.0",

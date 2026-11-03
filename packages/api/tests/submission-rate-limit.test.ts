@@ -400,10 +400,7 @@ describe('submission quota middleware', () => {
 describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 	function httpClient() {
 		const handler = transport === 'rpc' ? rpcHandler : openApiHandler
-		const responses: Array<{
-			status: number
-			headers: { get(name: string): string | null }
-		}> = []
+		const responses: Array<Response> = []
 		const customFetch: NonNullable<
 			FetchLinkTransportOptions<object>['fetch']
 		> = async (url, init) => {
@@ -427,7 +424,7 @@ describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 						...options,
 						// The app preserves its REST status field; strip that extra
 						// field when decoding oRPC v2's strict native error shape.
-						customErrorResponseBodyDecoder: (body) => {
+						errorResponseBodyDecoder: (body, _response, defaultError) => {
 							const parsed = z
 								.object({
 									defined: z.boolean(),
@@ -441,7 +438,7 @@ describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 										...parsed.data,
 										data: parsed.data.data,
 									})
-								: undefined
+								: defaultError()
 						},
 					})
 		const caller: ContractRouterClient<typeof contracts> =
@@ -502,6 +499,14 @@ describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 		expect(rejection.defined).toBe(true)
 		expect(reset).toBeGreaterThan(Date.now())
 		expect(response.status).toBe(429)
+		if (transport === 'rest') {
+			// oxlint-disable-next-line jest/no-conditional-expect -- Only REST responses include the application's status field.
+			expect(await response.json()).toMatchObject({
+				code: 'TOO_MANY_REQUESTS',
+				status: 429,
+				data: { limit: 5, remaining: 0, reset },
+			})
+		}
 		expect(response.headers.get('ratelimit-limit')).toBe('5')
 		expect(response.headers.get('ratelimit-remaining')).toBe('0')
 		expect(Number(response.headers.get('retry-after'))).toBe(

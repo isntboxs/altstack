@@ -1,4 +1,4 @@
-import { UpstashRateLimiter } from '@orpc/ratelimit/upstash'
+import type { RateLimiter } from '@orpc/ratelimit'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
@@ -20,20 +20,30 @@ export function createSubmissionRateLimiter(
 	redis: Redis,
 	prefix: string,
 	maxRequests = 5
-) {
-	return new UpstashRateLimiter(
-		new Ratelimit({
-			redis,
-			limiter: Ratelimit.slidingWindow(maxRequests, '10 m'),
-			prefix,
-			ephemeralCache: false,
-			// Upstash's default timeout returns success without a Redis decision.
-			// Disable it; the Redis request deadline above rejects instead.
-			timeout: 0,
-			analytics: false,
-		}),
-		{ blockingUntilReady: { enabled: false, timeout: 0 } }
-	)
+): RateLimiter {
+	// Keep the sliding window and deployed counters; oRPC's Redis adapter now
+	// implements a fixed window instead of wrapping @upstash/ratelimit.
+	const ratelimit = new Ratelimit({
+		redis,
+		limiter: Ratelimit.slidingWindow(maxRequests, '10 m'),
+		prefix,
+		ephemeralCache: false,
+		// Upstash's default timeout returns success without a Redis decision.
+		// Disable it; the Redis request deadline above rejects instead.
+		timeout: 0,
+		analytics: false,
+	})
+	return {
+		limit(key, options) {
+			const weight = options?.weight ?? 1
+			if (!Number.isInteger(weight) || weight <= 0) {
+				throw new TypeError(
+					'Rate limit weight must be an integer greater than 0'
+				)
+			}
+			return ratelimit.limit(key, { rate: weight })
+		},
+	}
 }
 
 export const submissionRateLimiter = createSubmissionRateLimiter(

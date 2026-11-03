@@ -10,9 +10,9 @@ Scans React codebases for security, performance, correctness, and architecture i
 
 ## After making React code changes:
 
-Run `npx react-doctor@latest --verbose --scope changed` and check the score did not regress.
+Run `npx react-doctor@latest --verbose --scope changed --include-untracked` to report newly introduced findings, including those in untracked files.
 
-If the score dropped, fix the regressions before committing.
+Review the findings reported by the command and fix newly introduced issues before committing.
 
 ## For general cleanup or code improvement:
 
@@ -55,18 +55,19 @@ When the user wants to understand a rule, disagrees with one, or wants to disabl
 ## Command
 
 ```bash
-npx react-doctor@latest --verbose --scope changed
+npx react-doctor@latest --verbose --scope changed --include-untracked
 ```
 
-| Flag                 | Purpose                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `.`                  | Scan current directory                                                                  |
-| `--verbose`          | Show affected files and line numbers per rule                                           |
-| `--scope changed`    | Only report issues introduced vs the base branch (default: full)                        |
-| `--scope contextual` | Report findings in modified functions, JSX elements, or files, as selected by each rule |
-| `--scope lines`      | Only report issues on the changed lines                                                 |
-| `--score`            | Output only the numeric score                                                           |
-| `design`             | Run only the focused UI design diagnostics                                              |
+| Flag                  | Purpose                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `.`                   | Scan current directory                                                                  |
+| `--verbose`           | Show affected files and line numbers per rule                                           |
+| `--scope changed`     | Only report issues introduced vs the base branch (default: full)                        |
+| `--include-untracked` | Include untracked files in changed-scope scans (respects `.gitignore`)                  |
+| `--scope contextual`  | Report findings in modified functions, JSX elements, or files, as selected by each rule |
+| `--scope lines`       | Only report issues on the changed lines                                                 |
+| `--score`             | Output only the numeric score                                                           |
+| `design`              | Run only the focused UI design diagnostics                                              |
 
 ### Reuse a base scan
 

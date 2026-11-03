@@ -237,7 +237,7 @@ describe('admin GitHub metadata', () => {
 								origin: 'http://localhost',
 								url: '/',
 								fetch: (request, init) => handle(new Request(request, init)),
-								customErrorResponseBodyDecoder: (body) => {
+								errorResponseBodyDecoder: (body, _response, defaultError) => {
 									const parsed = z
 										.object({
 											defined: z.boolean(),
@@ -251,7 +251,7 @@ describe('admin GitHub metadata', () => {
 												...parsed.data,
 												data: parsed.data.data,
 											})
-										: undefined
+										: defaultError()
 								},
 							})
 				)

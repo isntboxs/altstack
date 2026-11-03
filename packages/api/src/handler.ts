@@ -76,7 +76,7 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 		}),
 	],
 
-	customErrorResponseBodyEncoder: (error) => {
+	errorResponseBodyEncoder: (error) => {
 		return {
 			...error.toJSON(),
 			status:
