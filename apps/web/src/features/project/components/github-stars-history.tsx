@@ -25,11 +25,8 @@ const time = new Intl.DateTimeFormat('en-US', {
 const fullDate = (value: string) =>
 	date.format(new Date(`${value}T00:00:00+07:00`))
 
-export function GithubStarsHistory({ history }: { history: StarsHistory }) {
-	const [activeIndex, setActiveIndex] = useState<number | null>(null)
-	const id = useId()
+function historyPresentation(history: StarsHistory) {
 	const { points, comparison, windowStartDate, windowEndDate } = history
-	const active = activeIndex === null ? undefined : points[activeIndex]
 	const values = points.map((point) => point.stars)
 	const min = Math.min(...values)
 	const max = Math.max(...values)
@@ -77,6 +74,33 @@ export function GithubStarsHistory({ history }: { history: StarsHistory }) {
 		: points.length === 1
 			? 'One daily observation. Collecting daily history.'
 			: 'No star history for this period.'
+	return {
+		plotted,
+		segments,
+		missing,
+		fullPeriod,
+		delta,
+		period,
+		range,
+		summary,
+	}
+}
+
+export function GithubStarsHistory({ history }: { history: StarsHistory }) {
+	const [activeIndex, setActiveIndex] = useState<number | null>(null)
+	const id = useId()
+	const { points, comparison } = history
+	const active = activeIndex === null ? undefined : points[activeIndex]
+	const {
+		plotted,
+		segments,
+		missing,
+		fullPeriod,
+		delta,
+		period,
+		range,
+		summary,
+	} = historyPresentation(history)
 	const pointDescription = active
 		? `${fullDate(active.date)} (WIB): ${number.format(active.stars)} stars. Observed ${time.format(active.observedAt)}.`
 		: ''

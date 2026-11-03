@@ -48,14 +48,15 @@ export function weightedAds(
 	previous: Array<string> = [],
 	random = Math.random
 ) {
+	const previousIds = new Set(previous)
 	const chosen: Array<AdCampaign> = []
 	const remaining = [...pool]
 	while (chosen.length < count && remaining.length > 0) {
 		// Prefer new advertisers only when that can fill the entire requested set.
-		const fresh = remaining.filter((ad) => !previous.includes(ad.id))
+		const fresh = remaining.filter((ad) => !previousIds.has(ad.id))
 		const needsNewAdvertiser =
 			chosen.length === count - 1 &&
-			chosen.every((ad) => previous.includes(ad.id))
+			chosen.every((ad) => previousIds.has(ad.id))
 		const candidates =
 			fresh.length >= count - chosen.length ||
 			(needsNewAdvertiser && fresh.length > 0)

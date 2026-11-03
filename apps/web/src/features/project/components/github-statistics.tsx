@@ -96,8 +96,11 @@ export const GithubStatistics = ({
 
 				<CardContent className="grid grid-cols-1 gap-2.5">
 					<GithubStarsHistory history={history} />
-					{githubStatsItem.map((item, idx) => (
-						<div key={idx} className="flex items-center justify-between gap-2">
+					{githubStatsItem.map((item) => (
+						<div
+							key={item.label}
+							className="flex items-center justify-between gap-2"
+						>
 							<div className="flex shrink-0 items-center gap-1.5">
 								<item.icon className="size-4 shrink-0 text-muted-foreground" />
 								<span className="text-sm whitespace-nowrap text-muted-foreground">

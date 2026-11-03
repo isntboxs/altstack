@@ -28,7 +28,10 @@ vi.mock('@altstack/auth/client', () => {
 	return { authClient: { getSession } }
 })
 vi.mock('@tanstack/react-start/server', () => {
-	return { getResponseHeaders: () => responseHeaders }
+	return {
+		appendResponseHeader: (name: string, value: string) =>
+			responseHeaders.append(name, value),
+	}
 })
 vi.mock('@tanstack/react-start', () => {
 	return {

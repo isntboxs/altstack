@@ -6,7 +6,7 @@ import { blogSlugSchema } from '@altstack/shared/schemas'
 import { emptyPublicContent } from '#/features/public-content/model'
 
 export const preparePublicContent = createServerFn({ method: 'POST' })
-	.validator(z.object({ slug: z.string().min(1).max(100) }).strict())
+	.validator(z.strictObject({ slug: z.string().min(1).max(100) }))
 	.handler(async ({ data }) => {
 		const { publicProjectContent } =
 			await import('@altstack/api/queries/project-mentions')
@@ -17,7 +17,7 @@ export const preparePublicContent = createServerFn({ method: 'POST' })
 	})
 
 export const preparePublicBlogContent = createServerFn({ method: 'POST' })
-	.validator(z.object({ slug: blogSlugSchema }).strict())
+	.validator(z.strictObject({ slug: blogSlugSchema }))
 	.handler(async ({ data }) => {
 		const { publicBlogContent } = await import('@altstack/api/queries/blog')
 		const post = await publicBlogContent(data.slug)

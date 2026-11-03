@@ -1,5 +1,6 @@
-import { BlockNoteSchema, SyntaxHighlightingExtension } from '@blocknote/core'
+import { BlockNoteSchema } from '@blocknote/core'
 import type { BlockNoteEditor, InlineContent } from '@blocknote/core'
+import { SyntaxHighlightingExtension } from '@blocknote/core/extensions'
 
 import {
 	BNCustomCodeBlock,

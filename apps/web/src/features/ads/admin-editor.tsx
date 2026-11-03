@@ -56,6 +56,7 @@ export function AdsAdmin({
 	managedCampaignIds?: Array<string>
 	onManageOrder?: (campaignId: string) => void
 } = {}) {
+	const managedIds = new Set(managedCampaignIds)
 	const query = useQuery(orpc.admin.ads.list.queryOptions({ input: {} }))
 	const [editing, setEditing] = useState<AdCampaign | 'new'>()
 	const [deleting, setDeleting] = useState<AdCampaign>()
@@ -182,7 +183,7 @@ export function AdsAdmin({
 											</p>
 										</div>
 										<div className="flex gap-2">
-											{managedCampaignIds.includes(ad.id) ? (
+											{managedIds.has(ad.id) ? (
 												<Button
 													variant="outline"
 													onClick={() => {
@@ -211,7 +212,7 @@ export function AdsAdmin({
 													Edit<span className="sr-only"> {ad.name}</span>
 												</Button>
 											)}
-											{!managedCampaignIds.includes(ad.id) && (
+											{!managedIds.has(ad.id) && (
 												<Button
 													variant="destructive"
 													onClick={() => setDeleting(ad)}

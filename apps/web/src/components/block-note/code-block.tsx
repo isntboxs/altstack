@@ -297,6 +297,7 @@ export const BNCustomCodeBlock = createReactBlockSpec(
 
 		return {
 			...baseSpec.implementation,
+			renderFrame: undefined,
 			render: CustomCodeBlock,
 			toExternalHTML: CodeBlockExternalHTML,
 		}

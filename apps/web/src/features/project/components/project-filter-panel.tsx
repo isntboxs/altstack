@@ -36,6 +36,7 @@ export function ProjectFilterPanel({
 }) {
 	const id = useId()
 	const [query, setQuery] = useState('')
+	const selectedSlugs = new Set(selected)
 	const term = query.trim().toLowerCase()
 	const filtered = options.filter((option) =>
 		`${option.name} ${option.slug}`.toLowerCase().includes(term)
@@ -88,7 +89,7 @@ export function ProjectFilterPanel({
 								className="rounded-sm"
 								id={`${id}-${option.slug}`}
 								aria-description={`${option.projectCount} projects`}
-								checked={selected.includes(option.slug)}
+								checked={selectedSlugs.has(option.slug)}
 								onCheckedChange={() => onToggle(option.slug)}
 							/>
 							<span className="min-w-0 flex-1 truncate" title={option.name}>
