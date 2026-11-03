@@ -212,12 +212,12 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 	// Form image fields hold tmp keys only (undefined = keep,
 	// screenshot null = remove). The existing file keys are resolved to
 	// display URLs here so the preview keeps showing them until replaced.
-	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(
+	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(() =>
 		resolveFileUrl(project.logo)
 	)
 	const [screenshotDisplayUrl, setScreenshotDisplayUrl] = useState<
 		string | null
-	>(resolveFileUrl(project.screenshot))
+	>(() => resolveFileUrl(project.screenshot))
 
 	// Refetching saved GitHub stats must never replace in-progress form values.
 	const [defaultValues] = useState<EditProjectValues>(() => {

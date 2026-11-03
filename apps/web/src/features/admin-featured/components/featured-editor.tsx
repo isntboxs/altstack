@@ -89,7 +89,7 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	const [changing, startTransition] = useTransition()
 	const queryClient = useQueryClient()
 	const [projects, setProjects] = useState(initial)
-	const [baseline, setBaseline] = useState(initial.map(({ id }) => id))
+	const [baseline, setBaseline] = useState(() => initial.map(({ id }) => id))
 	const [error, setError] = useState<{
 		operation: 'save' | 'reload'
 		message: string

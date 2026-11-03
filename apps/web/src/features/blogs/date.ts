@@ -1,8 +1,10 @@
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+	dateStyle: 'long',
+	timeZone: 'UTC',
+})
+
 export function blogDate(date: Date) {
-	return new Intl.DateTimeFormat('en-US', {
-		dateStyle: 'long',
-		timeZone: 'UTC',
-	}).format(date)
+	return dateFormatter.format(date)
 }
 
 export function blogTimestamp(publishedAt: Date, updatedAt: Date) {

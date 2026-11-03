@@ -256,6 +256,11 @@ async function routerAt(path: string) {
 	return router
 }
 describe('admin users and project membership journeys', () => {
+	it('shows the UTC join date even when the host timezone is behind UTC', async () => {
+		await routerAt(`/admin/users/${targetId}`)
+		expect(await screen.findByText('01/10/2026')).toBeTruthy()
+	})
+
 	it.each(['/admin/users', `/admin/users/${targetId}`])(
 		'guards %s before reading private users',
 		async (path) => {

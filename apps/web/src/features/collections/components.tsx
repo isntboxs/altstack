@@ -37,6 +37,11 @@ type Collection = ORPCRouterOutputs['collection']['getBySlug']
 type CollectionCardData =
 	ORPCRouterOutputs['collection']['list']['collections'][number]
 
+const dateFormatter = new Intl.DateTimeFormat('en', {
+	dateStyle: 'long',
+	timeZone: 'UTC',
+})
+
 /** Links the directory and detail page to their public parent pages. */
 export function CollectionBreadcrumb({ name }: { name?: string }) {
 	return (
@@ -253,10 +258,7 @@ export function CollectionArticle({ collection }: { collection: Collection }) {
 							<span>
 								Updated{' '}
 								<time dateTime={collection.updatedAt.toISOString()}>
-									{new Intl.DateTimeFormat('en', {
-										dateStyle: 'long',
-										timeZone: 'UTC',
-									}).format(collection.updatedAt)}
+									{dateFormatter.format(collection.updatedAt)}
 								</time>
 							</span>
 						</div>

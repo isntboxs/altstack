@@ -67,7 +67,11 @@ function UserPage() {
 				<dt>Active sessions</dt>
 				<dd>{activeSessions}</dd>
 				<dt>Joined</dt>
-				<dd>{new Date(user.createdAt).toLocaleDateString('en-GB')}</dd>
+				<dd>
+					{new Date(user.createdAt).toLocaleDateString('en-GB', {
+						timeZone: 'UTC',
+					})}
+				</dd>
 				{user.banned && (
 					<>
 						<dt>Ban reason</dt>
@@ -77,7 +81,9 @@ function UserPage() {
 						<dt>Ban expires</dt>
 						<dd>
 							{user.banExpires
-								? new Date(user.banExpires).toLocaleString('en-GB')
+								? new Date(user.banExpires).toLocaleString('en-GB', {
+										timeZone: 'UTC',
+									})
 								: 'Until an admin unbans this account'}
 						</dd>
 					</>

@@ -112,15 +112,15 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 	]
 }
 
+const numberFormatter = new Intl.NumberFormat('en-US', { notation: 'standard' })
+
 export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	const Heading = projectData.headingLevel ?? 'h2'
 	const githubStatsItem = [
 		{
 			icon: IconStar,
 			label: 'Stars',
-			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-				projectData.github.stars
-			),
+			value: numberFormatter.format(projectData.github.stars),
 		},
 		{
 			icon: IconGitCommit,
