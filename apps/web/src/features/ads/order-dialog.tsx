@@ -59,14 +59,14 @@ function OrderForm({ plan }: { plan: AdPlan }) {
 					{sent ? 'Check your inbox' : `Advertise with ${item.name}`}
 				</DialogTitle>
 				<DialogDescription>
-					{item.name} · US${item.amount / 100} for one month. Payment is
-					arranged by email.
+					{item.name} · US${item.amount / 100} for one month. Pay through Ko-fi
+					after creating your order.
 				</DialogDescription>
 			</DialogHeader>
 			{sent ? (
 				<output className="leading-relaxed">
-					Check your email for your private management link. Our team will
-					contact you to arrange payment. Nothing has been charged.
+					Check your email for your private management link. Open it to find
+					your order reference and pay through Ko-fi. Nothing has been charged.
 				</output>
 			) : (
 				<form
@@ -124,7 +124,8 @@ function OrderForm({ plan }: { plan: AdPlan }) {
 										advertising terms
 										<span className="sr-only"> (opens in a new tab)</span>
 									</Link>{' '}
-									and understand that payment and renewal are arranged manually.
+									and understand that Ko-fi payments are confirmed manually and
+									renewals are not automatic.
 								</span>
 							</FieldLabel>
 						</Field>

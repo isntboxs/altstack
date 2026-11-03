@@ -123,7 +123,7 @@ const questions = [
 	{
 		question: 'How do payment and renewal work?',
 		answer:
-			'Choose a package and enter your email. We send a private order link and coordinate payment with you by email. No account, card on file, or automatic renewal is required. To renew, request another month from your private page and arrange a new payment.',
+			'Choose a package and enter your email. We send a private order link where you can pay through Ko-fi. Use the same contact email and include your order reference in your Ko-fi message. Our team confirms receipt manually. No account, card on file, or automatic renewal is required on AltStack. To renew, request another month from your private page, then pay through Ko-fi again.',
 	},
 	{
 		question: 'Can I update my ad after it goes live?',
@@ -161,7 +161,7 @@ export function AdvertisePage() {
 				</header>
 				<div className="flex min-w-0 flex-col gap-4">
 					<p className="text-center text-sm text-muted-foreground">
-						Monthly packages. Payment by email.
+						Monthly packages. Pay through Ko-fi, with manual confirmation.
 					</p>
 					<section
 						aria-label="Monthly advertising packages"

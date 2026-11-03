@@ -15,9 +15,11 @@ export const Route = createFileRoute('/_app/advertise_/terms')({
 			<h1 className="text-3xl font-semibold">Advertising terms</h1>
 			<p>
 				Core is US$15, Plus is US$29, and Priority is US$55 for one month.
-				Prices are quoted in USD. Payment method, any currency conversion, and
-				the final payable amount are agreed by email before you pay. Submitting
-				an order does not charge you.
+				Prices are quoted in USD. After creating an order, use your private
+				management link to pay for the matching package through Ko-fi. Use the
+				same contact email and include your order reference in your Ko-fi
+				message. Check the final payable amount and any currency conversion at
+				checkout before paying. Submitting an order does not charge you.
 			</p>
 			<h2 className="text-xl font-semibold">Payment and approval</h2>
 			<p>
@@ -37,8 +39,8 @@ export const Route = createFileRoute('/_app/advertise_/terms')({
 			<h2 className="text-xl font-semibold">Renewal and revisions</h2>
 			<p>
 				There is no automatic renewal or recurring charge. Request a renewal
-				from your private management page and arrange a new payment by email. A
-				confirmed renewal adds one month from your current expiry, or from the
+				from your private management page and make a new payment through Ko-fi.
+				A confirmed renewal adds one month from your current expiry, or from the
 				confirmation time if the campaign has already expired. Material
 				revisions do not reset or extend your dates. Previously approved artwork
 				remains in place while a revision is reviewed.

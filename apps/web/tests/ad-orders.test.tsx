@@ -243,6 +243,48 @@ async function choosePackage(name = 'Plus') {
 }
 
 describe('guest order flow', () => {
+	it.each([
+		['core', 'Core', 'https://ko-fi.com/c/04c3fc24d3'],
+		['plus', 'Plus', 'https://ko-fi.com/c/3da9b0e0d6'],
+		['priority', 'Priority', 'https://ko-fi.com/c/e8bd0eb73f'],
+	] as const)(
+		'offers the matching Ko-fi checkout for %s after loading a private order',
+		async (plan, name, url) => {
+			mock.get.mockResolvedValue({ ...row(), plan })
+			openManage()
+			const link = await screen.findByRole('link', {
+				name: new RegExp(`Pay ${name} on Ko-fi`),
+			})
+			expect(link.getAttribute('href')).toBe(url)
+			expect(link.getAttribute('referrerpolicy')).toBe('no-referrer')
+			expect(screen.getByText(/include your order reference/)).toBeTruthy()
+			expect(
+				screen.getByText(
+					/Your first advertising month starts after materials are approved/
+				)
+			).toBeTruthy()
+			expect(
+				screen.queryByText(
+					/Your campaign dates extend after the team confirms this renewal payment/
+				)
+			).toBeNull()
+			expect(screen.getByText(id)).toBeTruthy()
+			expect(screen.getByText('advertiser@example.test')).toBeTruthy()
+			expect(mock.confirmPayment).not.toHaveBeenCalled()
+		}
+	)
+	it('removes checkout after refreshing a confirmed payment', async () => {
+		openManage()
+		await screen.findByRole('link', { name: /Pay Core on Ko-fi/ })
+		mock.get.mockResolvedValue({
+			...row(),
+			paidAt: new Date(),
+			status: 'awaiting_materials',
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh order' }))
+		await screen.findByRole('button', { name: 'Upload advertising materials' })
+		expect(screen.queryByRole('link', { name: /on Ko-fi/ })).toBeNull()
+	})
 	it('keeps private links usable during Strict Mode remounts when browser storage is blocked', async () => {
 		vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
 			throw new Error('denied')
@@ -496,6 +538,8 @@ describe('guest order flow', () => {
 			renewalRequestedAt: new Date(),
 		})
 		openManage()
+		await screen.findByRole('button', { name: 'Request one more month' })
+		expect(screen.queryByRole('link', { name: /on Ko-fi/ })).toBeNull()
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Request one more month' })
 		)
@@ -503,13 +547,67 @@ describe('guest order flow', () => {
 			name: 'Renewal requested — awaiting payment',
 		})
 		expect(requested.hasAttribute('disabled')).toBe(true)
+		expect(
+			screen.getByText(
+				/Your campaign dates extend after the team confirms this renewal payment/
+			)
+		).toBeTruthy()
+		expect(
+			screen.queryByText(
+				/Your first advertising month starts after materials are approved/
+			)
+		).toBeNull()
+		expect(
+			screen
+				.getByRole('link', { name: /Pay Core on Ko-fi/ })
+				.getAttribute('href')
+		).toBe('https://ko-fi.com/c/04c3fc24d3')
 		expect(mock.confirmPayment).not.toHaveBeenCalled()
 	})
 })
 describe('admin manual confirmation and material review', () => {
+	it('keeps orders compact, opens one at a time, and combines search with status filters', async () => {
+		mock.orders = [
+			{ ...row(), payments: [] },
+			{
+				...row(),
+				id: '550e8400-e29b-41d4-a716-446655440002',
+				email: 'second@example.test',
+				status: 'approved',
+				paidAt: new Date(),
+				payments: [],
+			},
+		]
+		mount(<AdvertisingAdmin />)
+		await screen.findByText('second@example.test')
+		expect(screen.queryByLabelText('Initial payment reference')).toBeNull()
+		fireEvent.click(screen.getByRole('button', { name: 'Review order' }))
+		expect(screen.getByLabelText('Initial payment reference')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'View details' }))
+		expect(screen.queryByLabelText('Initial payment reference')).toBeNull()
+		expect(
+			screen.getAllByRole('button', { name: 'Close details' })
+		).toHaveLength(1)
+		fireEvent.change(screen.getByLabelText('Status'), {
+			target: { value: 'attention' },
+		})
+		expect(screen.queryByText('second@example.test')).toBeNull()
+		fireEvent.change(screen.getByLabelText('Search orders'), {
+			target: { value: 'second' },
+		})
+		expect(screen.getByText('No matching orders')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+		expect(screen.getByRole('button', { name: 'Close details' })).toBeTruthy()
+		fireEvent.change(screen.getByLabelText('Search orders'), {
+			target: { value: 'ADVERTISER@EXAMPLE.TEST' },
+		})
+		expect(screen.queryByText('second@example.test')).toBeNull()
+		expect(screen.getByRole('button', { name: 'Review order' })).toBeTruthy()
+	})
 	it('requires explicit receipt verification and a payment reference', async () => {
 		mock.orders = [{ ...row(), payments: [] }]
 		mount(<AdvertisingAdmin />)
+		fireEvent.click(await screen.findByRole('button', { name: 'Review order' }))
 		const button = await screen.findByRole('button', {
 			name: 'Record received payment',
 		})
@@ -552,6 +650,7 @@ describe('admin manual confirmation and material review', () => {
 			},
 		]
 		mount(<AdvertisingAdmin />)
+		fireEvent.click(await screen.findByRole('button', { name: 'Review order' }))
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Request changes' })
 		)

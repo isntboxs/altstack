@@ -17,7 +17,7 @@ import {
 	AlertDescription,
 	AlertTitle,
 } from '@altstack/ui/components/alert'
-import { Button } from '@altstack/ui/components/button'
+import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
 	Field,
 	FieldGroup,
@@ -96,7 +96,8 @@ export function AdOrderManage() {
 			<header className="flex flex-col gap-3">
 				<h1 className="text-3xl font-semibold">Your advertising order</h1>
 				<p className="text-sm text-muted-foreground">
-					Keep this page private. Payment and renewal are coordinated by email.
+					Keep this page private. Pay through Ko-fi; our team confirms receipt
+					by email.
 				</p>
 			</header>
 			{loading && <output>Loading your order…</output>}
@@ -180,16 +181,39 @@ export function AdOrderManage() {
 							</div>
 						)}
 					</dl>
-					{!order.paidAt && (
-						<Alert>
-							<AlertTitle>Waiting for payment confirmation</AlertTitle>
-							<AlertDescription>
-								Our team will email you to arrange payment. Your order is not
-								paid until an admin confirms receipt. Your advertising month
-								starts after materials are approved.
-							</AlertDescription>
-						</Alert>
-					)}
+					{order.status !== 'rejected' &&
+						(!order.paidAt || order.renewalRequestedAt) && (
+							<Alert className="gap-3">
+								<AlertTitle>Waiting for payment confirmation</AlertTitle>
+								<AlertDescription>
+									<p>
+										Pay for one month of {AD_PLANS[order.plan].name} on Ko-fi.
+										Use the contact email above and include your order reference
+										in the message so we can match your payment.
+									</p>
+									<p>
+										Already paid? Wait for our team to confirm receipt by email;
+										do not pay again. Opening Ko-fi does not update your payment
+										status.{' '}
+										{order.paidAt
+											? 'Your campaign dates extend after the team confirms this renewal payment.'
+											: 'Your first advertising month starts after materials are approved.'}
+									</p>
+								</AlertDescription>
+								<a
+									href={AD_PLANS[order.plan].paymentUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									referrerPolicy="no-referrer"
+									className={buttonVariants({
+										className: 'min-h-11 justify-self-start',
+									})}
+								>
+									Pay {AD_PLANS[order.plan].name} on Ko-fi
+									<span className="sr-only"> (opens in a new tab)</span>
+								</a>
+							</Alert>
+						)}
 					{order.feedback && (
 						<Alert>
 							<AlertTitle>Review feedback</AlertTitle>
@@ -241,9 +265,10 @@ export function AdOrderManage() {
 							</h2>
 							<p className="text-sm text-muted-foreground">
 								No automatic billing. Request another month at US$
-								{order.amount / 100}; dates extend only after the team confirms
-								the new payment. If your period has ended, a new month starts at
-								confirmation.
+								{order.amount / 100}, then pay through Ko-fi using the link that
+								appears after your request. Dates extend only after the team
+								confirms the new payment. If your period has ended, a new month
+								starts at confirmation.
 							</p>
 							<Button
 								className="self-start"

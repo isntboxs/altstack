@@ -54,7 +54,7 @@ export async function queueAdNotification(
 const messages = {
 	access: 'Use this private link to manage your advertising order.',
 	ordered:
-		'Your order is received. Our team will contact you by email to arrange payment. No payment has been taken. Your month starts when the paid campaign is approved.',
+		'Your order is received. Open your private management link to find your order reference and pay through Ko-fi. Use the same contact email and include your order reference in your Ko-fi message. No payment has been taken by AltStack. Our team confirms receipt manually; your month starts when the paid campaign is approved.',
 	paid: 'The team has confirmed your payment. Upload your advertising materials for review. Your paid month begins when your campaign is approved.',
 	submitted:
 		'Your advertising materials are waiting for review. Previously approved artwork stays in place while a revision is reviewed.',
@@ -65,7 +65,7 @@ const messages = {
 	rejected:
 		'Your submission was declined. Check the feedback below. For a declined first campaign, reply to arrange a manual refund with the team.',
 	renewal_requested:
-		'Your renewal request is received. The team will contact you to arrange payment. Your campaign dates change only after payment is confirmed.',
+		'Your renewal request is received. Open your private management link to pay for another month through Ko-fi. Use the same contact email and include your order reference in your Ko-fi message. Already paid? Wait for confirmation; do not pay again. Your campaign dates change only after the team confirms receipt.',
 	renewed:
 		'The team has confirmed your renewal payment and extended your campaign by one month.',
 }
@@ -141,7 +141,7 @@ export async function runAdNotificationBatch(
 					? `${config.appUrl}/admin/ads`
 					: `${config.appUrl}/advertise/manage#id=${order.id}&token=${adAccessToken(order, row.createdAt.getTime())}`
 				const description = admin
-					? `Order ${order.id}, ${AD_PLANS[order.plan].name}, US$${(order.amount / 100).toFixed(2)}, ${order.email}: ${row.kind.replaceAll('_', ' ')}. Coordinate payment by email; confirm only after independently checking receipt.`
+					? `Order ${order.id}, ${AD_PLANS[order.plan].name}, US$${(order.amount / 100).toFixed(2)}, ${order.email}: ${row.kind.replaceAll('_', ' ')}. Match the Ko-fi payment to this order reference and contact email; confirm only after independently checking receipt.`
 					: messages[row.kind]
 				const message =
 					description + (row.reason ? ` Feedback: ${row.reason}` : '')
