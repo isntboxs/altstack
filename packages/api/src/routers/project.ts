@@ -9,6 +9,7 @@ import {
 	inArray,
 	lte,
 	ne,
+	or,
 	sql,
 } from 'drizzle-orm'
 
@@ -245,14 +246,17 @@ const searchHandler = publicProcedure.project.search.handler(
 		const conditions = [eq(project.status, 'published')]
 
 		if (input.query.license) {
-			conditions.push(projectHasLicense(input.query.license))
+			const licenses = or(
+				...input.query.license.split(',').map(projectHasLicense)
+			)
+			if (licenses) conditions.push(licenses)
 		}
 
 		if (input.query.tag) conditions.push(projectHasPublicTag(input.query.tag))
 
 		if (input.query.category) {
 			// An unknown slug naturally yields zero matches through EXISTS.
-			conditions.push(projectInCategorySubtree(input.query.category))
+			conditions.push(projectInCategorySubtree(input.query.category.split(',')))
 		}
 
 		if (input.query.q) {

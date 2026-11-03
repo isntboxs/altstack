@@ -106,7 +106,13 @@ export function unavailableHead() {
 
 export function cataloguePolicy(
 	path: string,
-	search: { q?: string; category?: string; sort?: string; page?: number },
+	search: {
+		q?: string
+		category?: string
+		license?: string
+		sort?: string
+		page?: number
+	},
 	totalPages = Infinity
 ) {
 	const defaultSort =
@@ -120,6 +126,7 @@ export function cataloguePolicy(
 	const filtered = Boolean(
 		Boolean(search.q) ||
 		Boolean(search.category) ||
+		Boolean(search.license) ||
 		Boolean(search.sort && search.sort !== defaultSort)
 	)
 	const page = search.page ?? 1

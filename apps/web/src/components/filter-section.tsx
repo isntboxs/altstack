@@ -104,8 +104,8 @@ export const FilterSection = ({
 	q,
 	sort,
 	page,
-	category,
-	categorySelector,
+	hasSelectedFilters = false,
+	filters,
 	placeholder = 'Search...',
 	defaultSort = 'newest',
 	defaultSortLabel,
@@ -116,8 +116,8 @@ export const FilterSection = ({
 	q?: string
 	sort?: SearchSortType
 	page?: number
-	category?: string
-	categorySelector?: ReactNode
+	hasSelectedFilters?: boolean
+	filters?: ReactNode
 	placeholder?: string
 	defaultSort?: SearchSortType
 	defaultSortLabel?: string
@@ -125,7 +125,7 @@ export const FilterSection = ({
 	onSortChange: (sort: SearchSortType | undefined) => void
 	onReset: () => void
 }) => {
-	const [isOpen, setIsOpen] = useState(false)
+	const [isOpen, setIsOpen] = useState(hasSelectedFilters)
 	const [inputValue, setInputValue] = useState(q ?? '')
 	const submittedQuery = useRef<{ value: string | undefined } | null>(null)
 
@@ -156,7 +156,7 @@ export const FilterSection = ({
 
 	const hasActiveFilters =
 		Boolean(inputValue) ||
-		Boolean(category) ||
+		hasSelectedFilters ||
 		(sort !== undefined && sort !== defaultSort) ||
 		(page ?? 1) > 1
 	const handleReset = () => {
@@ -193,14 +193,18 @@ export const FilterSection = ({
 						</Button>
 					)}
 
-					{categorySelector && (
+					{filters && (
 						<CollapsibleTrigger
 							render={
 								<Button
 									variant="outline"
 									className={cn(isOpen && 'bg-secondary!')}
 								>
-									{isOpen ? <IconFilter2Up /> : <IconFilter2Down />}
+									{isOpen ? (
+										<IconFilter2Up data-icon="inline-start" />
+									) : (
+										<IconFilter2Down data-icon="inline-start" />
+									)}
 									<span>Filter</span>
 								</Button>
 							}
@@ -221,9 +225,9 @@ export const FilterSection = ({
 					Search update pending…
 				</output>
 			)}
-			{categorySelector && (
-				<CollapsibleContent className="h-(--collapsible-panel-height) w-full overflow-hidden transition-[height] duration-200 ease-in-out data-ending-style:h-0 data-starting-style:h-0">
-					{categorySelector}
+			{filters && (
+				<CollapsibleContent className="h-(--collapsible-panel-height) w-full overflow-hidden transition-[height] duration-200 ease-in-out data-ending-style:h-0 data-starting-style:h-0 motion-reduce:transition-none">
+					{filters}
 				</CollapsibleContent>
 			)}
 		</Collapsible>

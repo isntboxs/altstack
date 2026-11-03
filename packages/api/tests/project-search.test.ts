@@ -133,6 +133,22 @@ beforeAll(async () => {
 	await assignFixtureCategory(alphaId, 'test-r2-tools')
 	await assignFixtureCategory(zuluId, 'test-r2-tools')
 	await assignFixtureCategory(draftId, 'test-r2-draftonly')
+	for (const [slug, projectId] of [
+		['test-r2-alpha-only', alphaId],
+		['test-r2-zulu-only', zuluId],
+	] as const) {
+		await db.insert(category).values({ slug, name: slug })
+		createdCategorySlugs.push(slug)
+		await assignFixtureCategory(projectId, slug)
+	}
+	await db
+		.update(githubRepository)
+		.set({ licenseSlug: 'mit', licenseSpdxId: 'MIT' })
+		.where(inArray(githubRepository.projectId, [alphaId, draftId]))
+	await db
+		.update(githubRepository)
+		.set({ licenseSlug: 'apache-2.0', licenseSpdxId: 'Apache-2.0' })
+		.where(eq(githubRepository.projectId, zuluId))
 })
 
 afterAll(async () => {
@@ -150,6 +166,36 @@ afterAll(async () => {
 })
 
 describe('searchProjects', () => {
+	it('unions categories and licenses, intersects groups, and deduplicates overlapping categories', async () => {
+		const query = {
+			q: TOKEN,
+			category:
+				'test-r2-alpha-only,test-r2-zulu-only,test-r2-tools,test-r2-draftonly',
+			license: 'mit,apache-2.0',
+			sort: 'name' as const,
+			limit: 1,
+		}
+		const first = await client.project.search({ query })
+		expect(first.projects.map((item) => item.slug)).toEqual(['test-r2-alpha'])
+		expect(first.pagination).toMatchObject({
+			totalItems: 2,
+			totalPages: 2,
+			hasNextPage: true,
+		})
+		const second = await client.project.search({ query: { ...query, page: 2 } })
+		expect(second.projects.map((item) => item.slug)).toEqual(['test-r2-zulu'])
+		const mitOnly = await client.project.search({
+			query: { ...query, license: 'mit,unknown' },
+		})
+		expect(mitOnly.projects.map((item) => item.slug)).toEqual(['test-r2-alpha'])
+		expect(mitOnly.pagination.totalItems).toBe(1)
+		const intersection = await client.project.search({
+			query: { ...query, category: 'test-r2-zulu-only', license: 'mit' },
+		})
+		expect(intersection.projects).toEqual([])
+		expect(intersection.pagination.totalItems).toBe(0)
+	})
+
 	it(
 		'finds published projects by text query with categories attached',
 		{ timeout: TEST_TIMEOUT },

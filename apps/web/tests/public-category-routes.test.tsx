@@ -1286,13 +1286,23 @@ describe('public category search, sorting and pagination', () => {
 	it('retains homepage category/search/reset and home pagination URLs', async () => {
 		total = 135
 		const router = await routerAt(
-			'/?category=backend&q=Zed&sort=name&page=2',
+			'/?category=backend,ai&license=mit,apache-2.0&q=Zed&sort=name&page=2',
 			true
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Filter' }))
 		expect(
-			await screen.findByRole('combobox', { name: 'Category' })
+			await screen.findByRole('textbox', { name: 'Search category' })
 		).toBeTruthy()
+		expect(
+			rpc.mock.calls.some(([path, input]) => {
+				if (path.join('/') !== 'project/search') return false
+				const query = searchProjectsInputSchema.parse(input).query
+				return (
+					query.category === 'backend,ai' &&
+					query.license === 'mit,apache-2.0' &&
+					query.page === 2
+				)
+			})
+		).toBe(true)
 		const next = new URL(
 			screen
 				.getByRole('link', { name: 'Go to next page' })
@@ -1301,7 +1311,8 @@ describe('public category search, sorting and pagination', () => {
 		)
 		expect(next.pathname).toBe('/')
 		expect(Object.fromEntries(next.searchParams)).toEqual({
-			category: 'backend',
+			category: 'backend,ai',
+			license: 'mit,apache-2.0',
 			q: 'Zed',
 			sort: 'name',
 			page: '3',
