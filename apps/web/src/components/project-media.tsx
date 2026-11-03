@@ -38,7 +38,7 @@ function LogoImage({
 		<span
 			aria-hidden="true"
 			className={cn(
-				'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xs bg-muted text-sm font-semibold text-muted-foreground',
+				'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xs text-sm font-semibold text-muted-foreground',
 				className
 			)}
 		>
@@ -101,7 +101,7 @@ function ScreenshotImage({
 
 	const media = (
 		<div
-			className="relative aspect-video overflow-hidden rounded-lg bg-muted"
+			className="relative aspect-video overflow-hidden rounded-lg"
 			aria-busy={state === 'loading'}
 		>
 			{state === 'loading' && (

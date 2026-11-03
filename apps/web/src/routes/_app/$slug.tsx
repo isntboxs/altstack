@@ -15,6 +15,7 @@ import {
 import { ShareButtons } from '#/components/share-buttons'
 import { VerifiedBadge } from '#/components/verified-badge'
 import { PublicProjectCategories } from '#/features/category/components/public-category'
+import { ProjectCollectionRecommendations } from '#/features/project/components/collection-recommendations'
 import { ProjectSidebar } from '#/features/project/components/featured-projects'
 import { ProjectActions } from '#/features/project/components/project-actions'
 import { projectDialogSearch } from '#/features/project/embed/badge'
@@ -219,6 +220,10 @@ function RouteComponent() {
 					now={statisticsNow}
 				/>
 			</section>
+			<ProjectCollectionRecommendations
+				collections={projectData.relatedCollections}
+				now={statisticsNow}
+			/>
 		</div>
 	)
 }

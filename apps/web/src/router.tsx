@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 
+import { stringifyProjectSearch } from '#/features/project/search-serialization'
 import { getQueryClient } from '#/lib/query-client'
 import { routeTree } from '#/routeTree.gen'
 import { orpc } from '#/utils/orpc'
@@ -10,6 +11,7 @@ export function getRouter() {
 
 	const router = createTanStackRouter({
 		routeTree,
+		stringifySearch: stringifyProjectSearch,
 		context: { orpc, queryClient },
 		scrollRestoration: true,
 		defaultPreload: 'intent',

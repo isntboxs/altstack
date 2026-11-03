@@ -15,9 +15,10 @@ import {
 
 export const Route = createFileRoute('/_app/')({
 	validateSearch: homeProjectSearchSchema,
-	loaderDeps: ({ search: { category, page, q, sort } }) => {
+	loaderDeps: ({ search: { category, license, page, q, sort } }) => {
 		return {
 			category,
+			license,
 			page,
 			q,
 			sort,
@@ -55,10 +56,11 @@ export const Route = createFileRoute('/_app/')({
 })
 
 function Home() {
-	const { category, page, q, sort } = Route.useSearch()
+	const { category, license, page, q, sort } = Route.useSearch()
 	const data = Route.useLoaderData()
 	const hasFilters =
 		Boolean(category) ||
+		Boolean(license) ||
 		Boolean(q) ||
 		(sort !== undefined && sort !== 'recommended')
 

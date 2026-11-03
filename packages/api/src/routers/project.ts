@@ -9,6 +9,7 @@ import {
 	inArray,
 	lte,
 	ne,
+	or,
 	sql,
 } from 'drizzle-orm'
 
@@ -19,6 +20,7 @@ import {
 	listPublicCategories,
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
+import { getProjectCollectionRecommendations } from '@altstack/api/queries/collection'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 import { projectHasLicense } from '@altstack/api/queries/license'
 import { projectIsVerified } from '@altstack/api/queries/ownership'
@@ -124,6 +126,10 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 				return {
 					...publicFields.parse({ ...row.projects, verified: row.verified }),
 					featuredProjects,
+					relatedCollections: await getProjectCollectionRecommendations(
+						tx,
+						row.projects.id
+					),
 					tags: await getProjectTags(tx, row.projects.id),
 					categoryDetails: await getDirectProjectCategories(
 						tx,
@@ -245,14 +251,17 @@ const searchHandler = publicProcedure.project.search.handler(
 		const conditions = [eq(project.status, 'published')]
 
 		if (input.query.license) {
-			conditions.push(projectHasLicense(input.query.license))
+			const licenses = or(
+				...input.query.license.split(',').map(projectHasLicense)
+			)
+			if (licenses) conditions.push(licenses)
 		}
 
 		if (input.query.tag) conditions.push(projectHasPublicTag(input.query.tag))
 
 		if (input.query.category) {
 			// An unknown slug naturally yields zero matches through EXISTS.
-			conditions.push(projectInCategorySubtree(input.query.category))
+			conditions.push(projectInCategorySubtree(input.query.category.split(',')))
 		}
 
 		if (input.query.q) {

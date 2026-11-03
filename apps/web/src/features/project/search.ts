@@ -16,6 +16,7 @@ export const projectFilterSearchSchema = searchProjectsQuerySchema
 export const homeProjectSearchSchema = projectFilterSearchSchema.extend({
 	sort: searchSortSchema.optional().catch(undefined),
 	category: searchProjectsQuerySchema.shape.category.catch(undefined),
+	license: searchProjectsQuerySchema.shape.license.catch(undefined),
 })
 
 export const catalogueProjectSearchSchema = projectFilterSearchSchema.extend({

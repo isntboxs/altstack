@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
+import { collectionSlugSchema } from '@altstack/shared/schemas/collection'
 import {
 	featuredProjectPreviewSchema,
 	MAX_FEATURED_PROJECTS,
@@ -95,8 +96,36 @@ export const getProjectBySlugInputSchema = z.object({
 	params: getProjectBySlugParamsSchema,
 })
 
+export const projectCardPreviewSchema = z.object({
+	id: projectField.id,
+	name: projectField.name,
+	verified: projectField.verified,
+	slug: projectField.slug,
+	tagline: projectField.tagline,
+	description: projectField.description,
+	logo: projectField.logo,
+	github: z.object(githubField),
+})
+
+export type ProjectCardPreview = z.infer<typeof projectCardPreviewSchema>
+
+export const MAX_COLLECTION_RECOMMENDATIONS = 3
+
+export const projectCollectionRecommendationSchema = z.object({
+	id: z.uuid(),
+	name: z.string(),
+	slug: collectionSlugSchema,
+	projects: z
+		.array(projectCardPreviewSchema)
+		.min(1)
+		.max(MAX_COLLECTION_RECOMMENDATIONS),
+})
+
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
+	relatedCollections: z
+		.array(projectCollectionRecommendationSchema)
+		.default([]),
 	featuredProjects: z
 		.array(featuredProjectPreviewSchema)
 		.max(MAX_FEATURED_PROJECTS)
@@ -153,6 +182,17 @@ export const searchSortSchema = z.enum([
 
 export type SearchSortType = z.infer<typeof searchSortSchema>
 
+function commaSeparatedFilter(slug: z.ZodString) {
+	return z
+		.string()
+		.min(1)
+		.max(10099)
+		.transform((value) => value.split(','))
+		.pipe(z.array(slug).min(1).max(100))
+		.transform((values) => [...new Set(values)].join(','))
+		.optional()
+}
+
 export const searchProjectsQuerySchema = z.object({
 	offset: z.coerce.number().int().min(0).max(5000000).optional(),
 	q: z
@@ -162,9 +202,9 @@ export const searchProjectsQuerySchema = z.object({
 		.transform((value) =>
 			value === undefined || value === '' ? undefined : value
 		),
-	category: z.string().trim().min(1).max(100).optional(),
+	category: commaSeparatedFilter(z.string().trim().min(1).max(100)),
 	tag: tagSlugSchema.optional(),
-	license: licenseSlugSchema.optional(),
+	license: commaSeparatedFilter(licenseSlugSchema),
 	sort: searchSortSchema.optional().default('newest'),
 	page: z.coerce.number().int().min(1).optional().default(1),
 	limit: z.coerce.number().int().min(1).max(50).optional().default(12),

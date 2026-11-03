@@ -194,6 +194,7 @@ const project = {
 	},
 	githubStarsHistory: { points: [], comparison: null },
 	featuredProjects: [],
+	relatedCollections: [],
 	tags: [],
 }
 const routers: Array<ReturnType<typeof getRouter>> = []

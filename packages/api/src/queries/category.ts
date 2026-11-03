@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm'
+import { inArray, sql } from 'drizzle-orm'
 
 import type { db } from '@altstack/db'
 import { project } from '@altstack/db/schemas'
@@ -167,7 +167,7 @@ export async function getAdminCategoryById(
 
 // Both search data and count receive this identical predicate. EXISTS keeps a
 // project assigned to multiple descendants from multiplying search rows.
-export function projectInCategorySubtree(slug: string) {
+export function projectInCategorySubtree(slug: string | Array<string>) {
 	return sql`EXISTS (
 		${hierarchyCte}
 		SELECT 1 FROM category_hierarchy descendant
@@ -175,7 +175,8 @@ export function projectInCategorySubtree(slug: string) {
 		WHERE assignment.project_id = ${project.id}
 		AND EXISTS (
 			SELECT 1 FROM category_hierarchy ancestor
-			WHERE ancestor.slug = ${slug} AND ancestor.id = ANY(descendant.ancestry_ids)
+			WHERE ${inArray(sql`ancestor.slug`, typeof slug === 'string' ? [slug] : slug)}
+			AND ancestor.id = ANY(descendant.ancestry_ids)
 		)
 	)`
 }

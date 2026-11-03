@@ -1,4 +1,18 @@
-import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	lte,
+	ne,
+	or,
+	sql,
+} from 'drizzle-orm'
+
+import { projectIsVerified } from '@altstack/api/queries/ownership'
 
 import type { db } from '@altstack/db'
 import {
@@ -10,6 +24,10 @@ import {
 } from '@altstack/db/schemas'
 
 import { sourceRepositorySchema } from '@altstack/shared/schemas/collection'
+import {
+	MAX_COLLECTION_RECOMMENDATIONS,
+	projectCardPreviewSchema,
+} from '@altstack/shared/schemas/project'
 
 export type CollectionDatabase = Pick<typeof db, 'select'>
 // One shared live policy for public list, detail, and sitemap. No draft or
@@ -21,6 +39,75 @@ export const visibleCollection = sql` ${collection.status} = 'published'
  AND EXISTS (SELECT 1 FROM collection_members cm JOIN projects member ON member.id = cm.project_id
  JOIN github_repositories member_repo ON member_repo.project_id = member.id
  WHERE cm.collection_id = "collections"."id" AND member.status = 'published')`
+
+export async function getProjectCollectionRecommendations(
+	database: CollectionDatabase,
+	projectId: string
+) {
+	const collections = await database
+		.select({ id: collection.id, name: collection.name, slug: collection.slug })
+		.from(collection)
+		.where(
+			and(
+				visibleCollection,
+				or(
+					eq(collection.mainProjectId, projectId),
+					sql`EXISTS (SELECT 1 FROM collection_members membership WHERE membership.collection_id = ${collection.id} AND membership.project_id = ${projectId})`
+				)
+			)
+		)
+		.orderBy(desc(collection.updatedAt), asc(collection.id))
+	if (collections.length === 0) return []
+
+	const ranked = database
+		.select({
+			collectionId: collectionMember.collectionId,
+			id: project.id,
+			name: project.name,
+			slug: project.slug,
+			verified: projectIsVerified.as('verified'),
+			logo: project.logo,
+			tagline: project.tagline,
+			description: project.description,
+			github: getTableColumns(githubRepository),
+			rank: sql<number>`row_number() over (partition by ${collectionMember.collectionId} order by ${collectionMember.position})`.as(
+				'rank'
+			),
+		})
+		.from(collectionMember)
+		.innerJoin(project, eq(project.id, collectionMember.projectId))
+		.innerJoin(githubRepository, eq(githubRepository.projectId, project.id))
+		.where(
+			and(
+				inArray(
+					collectionMember.collectionId,
+					collections.map((entry) => entry.id)
+				),
+				eq(project.status, 'published'),
+				ne(project.id, projectId)
+			)
+		)
+		.as('ranked_collection_projects')
+	const rows = await database
+		.select()
+		.from(ranked)
+		.where(lte(ranked.rank, MAX_COLLECTION_RECOMMENDATIONS))
+		.orderBy(asc(ranked.collectionId), asc(ranked.rank))
+	return collections.flatMap((entry) => {
+		const projects = rows
+			.filter((row) => row.collectionId === entry.id)
+			.map((row) =>
+				projectCardPreviewSchema.parse({
+					...row,
+					logo: row.logo ?? '',
+					tagline: row.tagline ?? '',
+					description: row.description ?? '',
+				})
+			)
+		return projects.length > 0 ? [{ ...entry, projects }] : []
+	})
+}
+
 export const collectionProjectFields = {
 	id: project.id,
 	name: project.name,

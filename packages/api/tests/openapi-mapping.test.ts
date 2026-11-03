@@ -35,6 +35,7 @@ function legacyCatalogueSchema(value: unknown): unknown {
 		'archived',
 		'asOf',
 		'query',
+		'relatedCollections',
 	])
 	const properties = 'properties' in value ? value.properties : undefined
 	if (
@@ -202,6 +203,7 @@ const responses = {
 		...project,
 		verified: false,
 		featuredProjects: [],
+		relatedCollections: [],
 		tags: [],
 		categoryDetails: [node],
 		githubStarsHistory: {
@@ -1112,7 +1114,19 @@ describe('generated OpenAPI compatibility', () => {
 		expect(paths['/projects/{slug}']?.query?.responses?.['200']).toMatchObject({
 			content: {
 				'application/json': {
-					schema: { properties: { verified: { type: 'boolean' } } },
+					schema: {
+						properties: {
+							verified: { type: 'boolean' },
+							relatedCollections: {
+								type: 'array',
+								items: {
+									properties: {
+										projects: { type: 'array', minItems: 1, maxItems: 3 },
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		})
@@ -1186,6 +1200,15 @@ describe('generated OpenAPI compatibility', () => {
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
 			46
 		)
+		for (const name of ['category', 'license']) {
+			expect(paths['/projects/search']?.query?.parameters).toContainEqual(
+				expect.objectContaining({
+					name,
+					in: 'query',
+					schema: { type: 'string', minLength: 1, maxLength: 10099 },
+				})
+			)
+		}
 		for (const [operationId, expected] of Object.entries(baseline.operations)) {
 			const actual = operations.find(
 				({ operation }) => operation.operationId === operationId
@@ -1202,11 +1225,23 @@ describe('generated OpenAPI compatibility', () => {
 							!(
 								'name' in parameter &&
 								operationId === 'searchProjects' &&
-								['tag', 'license', 'offset'].includes(parameter.name)
+								['category', 'tag', 'license', 'offset'].includes(
+									parameter.name
+								)
 							)
 					)
 				)
-			).toEqual(legacyCatalogueSchema(expected.parameters))
+			).toEqual(
+				legacyCatalogueSchema(
+					expected.parameters.filter(
+						(parameter) =>
+							!(
+								operationId === 'searchProjects' &&
+								parameter.name === 'category'
+							)
+					)
+				)
+			)
 			expect(actual?.operation.requestBody ?? null).toEqual(
 				expected.requestBody
 			)

@@ -12,6 +12,8 @@ import { useState } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import type { ProjectCardPreview } from '@altstack/shared/schemas/project'
+
 import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import {
@@ -42,8 +44,10 @@ import type { ProjectPageLinkOptions } from '#/features/project/page-links'
 import { projectCatalogueKey, projectQueries } from '#/features/project/queries'
 import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
-type ProjectCardProps =
-	ORPCRouterOutputs['project']['search']['projects'][number] & { now?: number }
+type ProjectCardProps = ProjectCardPreview & {
+	now?: number
+	headingLevel?: 'h2' | 'h3'
+}
 
 const CreatedPaginationPrevious = createLink(PaginationPrevious)
 
@@ -109,6 +113,7 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 }
 
 export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
+	const Heading = projectData.headingLevel ?? 'h2'
 	const githubStatsItem = [
 		{
 			icon: IconStar,
@@ -147,7 +152,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	return (
 		<article
 			data-slot="project-card"
-			className="group relative min-w-0 rounded-xl p-0.5 ring-1 ring-border transition-colors hover:ring-primary/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+			className="group/project-card relative min-w-0 rounded-xl p-0.5 ring-1 ring-border transition-colors hover:ring-primary/50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
 		>
 			<Card className="relative size-full overflow-hidden ring-0">
 				<div
@@ -167,7 +172,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							name={projectData.name}
 							className="size-7"
 						/>
-						<h2 className="min-w-0 text-xl font-semibold wrap-anywhere">
+						<Heading className="min-w-0 text-xl font-semibold wrap-anywhere">
 							<Link
 								to="/$slug"
 								params={{ slug: projectData.slug }}
@@ -176,7 +181,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							>
 								{projectData.name} {projectData.verified && <VerifiedBadge />}
 							</Link>
-						</h2>
+						</Heading>
 						{projectData.github.archived === true && (
 							<Badge variant="secondary" className="shrink-0">
 								Archived
@@ -185,20 +190,15 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 					</CardTitle>
 				</CardHeader>
 
-				<CardContent className="flex-1">
-					<div className="size-full">
-						<div className="flex flex-col gap-4 transition-all duration-300">
-							<div className="relative min-h-10">
-								<CardDescription className="wrap-anywhere transition-opacity group-hover:opacity-0">
-									{projectData.tagline}
-								</CardDescription>
-								<p
-									aria-hidden="true"
-									className="pointer-events-none absolute inset-0 line-clamp-2 text-sm text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-								>
-									{projectData.description}
-								</p>
-							</div>
+				<CardContent className="flex flex-1 flex-col">
+					<div className="relative flex min-h-38 flex-1 flex-col">
+						<div
+							data-slot="project-card-summary"
+							className="flex flex-1 flex-col gap-4 group-focus-within/project-card:invisible group-hover/project-card:invisible pointer-coarse:pb-8"
+						>
+							<CardDescription className="min-h-10 wrap-anywhere">
+								{projectData.tagline}
+							</CardDescription>
 							<div className="mt-auto grid grid-cols-1 gap-2">
 								{githubStatsItem.map((item) => (
 									<div
@@ -221,11 +221,35 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 									</div>
 								))}
 							</div>
-							<div className="flex items-center justify-between gap-2 text-xs font-medium text-primary">
-								<span>View project details</span>
-								<IconArrowRight aria-hidden="true" className="size-4" />
-							</div>
 						</div>
+						<section
+							data-slot="project-card-description"
+							aria-label={`${projectData.name} description`}
+							// oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Keyboard users need to scroll long descriptions without opening the project.
+							tabIndex={0}
+							className="invisible absolute inset-x-0 top-0 bottom-8 z-20 overflow-y-auto overscroll-contain rounded-sm wrap-anywhere whitespace-pre-line group-focus-within/project-card:visible group-hover/project-card:visible focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+						>
+							<CardDescription className="h-full">
+								<Link
+									to="/$slug"
+									params={{ slug: projectData.slug }}
+									viewTransition
+									tabIndex={-1}
+									className="block min-h-full"
+								>
+									{projectData.description.trim() || projectData.tagline}
+								</Link>
+							</CardDescription>
+						</section>
+						<Link
+							to="/$slug"
+							params={{ slug: projectData.slug }}
+							viewTransition
+							className="invisible absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-2 rounded-sm text-xs font-medium text-primary group-focus-within/project-card:visible group-hover/project-card:visible hover:underline focus-visible:outline-2 focus-visible:outline-ring pointer-coarse:visible"
+						>
+							<span>View project details</span>
+							<IconArrowRight aria-hidden="true" className="size-4" />
+						</Link>
 					</div>
 				</CardContent>
 			</Card>
