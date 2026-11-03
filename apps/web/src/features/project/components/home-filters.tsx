@@ -71,7 +71,7 @@ export function HomeFilterSection() {
 			hasSelectedFilters={hasSelectedFilters}
 			filters={
 				<div className="flex min-w-0 flex-col gap-2 p-1">
-					<div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+					<div className="grid w-full max-w-md min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
 						{groups.map(({ key, ...group }) => (
 							<ProjectFilterPanel
 								key={key}

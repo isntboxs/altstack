@@ -52,9 +52,9 @@ export function ProjectFilterPanel({
 				placeholder={`Search ${label.toLowerCase()}`}
 				value={query}
 				onChange={(event) => setQuery(event.target.value)}
-				className="w-full shrink-0 rounded-b-none"
+				className="w-full shrink-0 rounded-sm rounded-b-none border-0 border-b border-border"
 			/>
-			<div className="h-56 overflow-y-auto overscroll-contain p-1">
+			<div className="h-48 overflow-y-auto overscroll-contain p-1">
 				{isPending ? (
 					<div aria-busy="true" className="flex flex-col gap-2 p-2">
 						<output className="sr-only">
@@ -82,7 +82,7 @@ export function ProjectFilterPanel({
 						<FieldLabel
 							key={option.slug}
 							htmlFor={`${id}-${option.slug}`}
-							className="min-h-8 w-full min-w-0 cursor-pointer gap-2 rounded-sm px-2 py-1 hover:bg-muted active:bg-muted has-focus-visible:ring-2 has-focus-visible:ring-ring has-data-checked:bg-muted pointer-coarse:min-h-11"
+							className="min-h-7 w-full min-w-0 cursor-pointer gap-2 rounded-sm px-2 py-1 hover:bg-muted active:bg-muted has-focus-visible:ring-2 has-focus-visible:ring-ring has-data-checked:bg-muted pointer-coarse:min-h-11"
 						>
 							<Checkbox
 								className="rounded-sm"
