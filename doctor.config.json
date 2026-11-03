@@ -1,0 +1,11 @@
+{
+	"$schema": "https://react.doctor/schema/config.json",
+	"rules": {
+		"react-doctor/unused-file": "warn",
+		"react-doctor/unused-export": "warn",
+		"react-doctor/unused-type": "warn",
+		"react-doctor/unused-dependency": "warn",
+		"react-doctor/unused-dev-dependency": "warn",
+		"react-doctor/circular-dependency": "warn"
+	}
+}

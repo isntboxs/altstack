@@ -1,13 +1,10 @@
 import { EvlogHandlerPlugin } from '@orpc/evlog'
 import { SmartCoercionHandlerPlugin } from '@orpc/json-schema'
-import {
-	COMMON_ERROR_STATUS_MAP,
-	getOpenAPIMeta,
-	OpenAPIGenerator,
-} from '@orpc/openapi'
+import { getOpenAPIMeta, OpenAPIGenerator } from '@orpc/openapi'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { OpenAPIReferenceHandlerPlugin } from '@orpc/openapi/plugins'
 import { RateLimitHandlerPlugin } from '@orpc/ratelimit'
+import type { ORPCError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/fetch'
 import { RPC_DEFAULT_ALLOW_METHODS } from '@orpc/server/standard'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
@@ -15,6 +12,8 @@ import { ZodToJsonSchemaConverter } from '@orpc/zod'
 import { routers } from '@altstack/api/routers'
 
 import { env } from '@altstack/env/server'
+
+import { ERROR_STATUS_MAP } from './openapi-errors'
 
 export const rpcHandler = new RPCHandler(routers, {
 	allowMethods: ['QUERY', ...RPC_DEFAULT_ALLOW_METHODS],
@@ -33,6 +32,7 @@ const generator = new OpenAPIGenerator({
 })
 
 export const openApiHandler = new OpenAPIHandler(routers, {
+	errorStatusMap: ERROR_STATUS_MAP,
 	// Expose only explicitly mapped REST procedures. RPC-only compatibility
 	// procedures must not acquire fallback paths in the matcher or reference.
 	filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
@@ -52,6 +52,7 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 			provider: 'scalar',
 			spec: () =>
 				generator.generate(routers, {
+					errorStatusMap: ERROR_STATUS_MAP,
 					filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 					base: {
 						info: {
@@ -76,13 +77,10 @@ export const openApiHandler = new OpenAPIHandler(routers, {
 		}),
 	],
 
-	customErrorResponseBodyEncoder: (error) => {
+	errorResponseBodyEncoder: (error: ORPCError<string, unknown>) => {
 		return {
 			...error.toJSON(),
-			status:
-				COMMON_ERROR_STATUS_MAP[
-					error.code as keyof typeof COMMON_ERROR_STATUS_MAP
-				],
+			status: ERROR_STATUS_MAP[error.code] ?? 400,
 		}
 	},
 })

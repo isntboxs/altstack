@@ -280,7 +280,7 @@ describe('README wire contract', () => {
 								origin: 'http://localhost',
 								url: '/',
 								fetch: (request, init) => handle(new Request(request, init)),
-								customErrorResponseBodyDecoder: (body) => {
+								errorResponseBodyDecoder: (body, _response, defaultError) => {
 									const parsed = z
 										.object({
 											defined: z.boolean(),
@@ -294,7 +294,7 @@ describe('README wire contract', () => {
 												...parsed.data,
 												data: parsed.data.data,
 											})
-										: undefined
+										: defaultError()
 								},
 							})
 				)
