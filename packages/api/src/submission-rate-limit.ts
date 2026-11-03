@@ -16,6 +16,7 @@ export const submissionRedis = new Redis({
 	signal: () => AbortSignal.timeout(5_000),
 })
 
+/** Creates a shared ten-minute sliding-window quota without local denial caching. */
 export function createSubmissionRateLimiter(
 	redis: Redis,
 	prefix: string,
@@ -34,6 +35,7 @@ export function createSubmissionRateLimiter(
 		analytics: false,
 	})
 	return {
+		/** Consumes a positive integer weight; Redis failures reject instead of allowing the request. */
 		limit(key, options) {
 			const weight = options?.weight ?? 1
 			if (!Number.isInteger(weight) || weight <= 0) {
