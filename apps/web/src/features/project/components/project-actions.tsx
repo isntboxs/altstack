@@ -299,91 +299,24 @@ function ProjectActionsContent({
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
-			<div className="hidden flex-wrap gap-2 xl:flex">
-				{verified &&
-					(membership ? (
-						<Button
-							variant="outline"
-							render={<Link to="/managed/$id" params={{ id: projectId }} />}
-						>
-							Manage project
-						</Button>
-					) : (
-						<Button
-							variant="outline"
-							data-project-access
-							onClick={() => onVerifyOpenChange?.(true)}
-						>
-							Request access
-						</Button>
-					))}
-				{!verified && (
-					<Button
-						variant="outline"
-						data-project-verify
-						onClick={() => onVerifyOpenChange?.(true)}
-					>
-						<Verified aria-hidden="true" />
-						Verify
-					</Button>
-				)}
-
-				<ButtonGroup>
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<Button
-									variant={saved ? 'secondary' : 'outline'}
-									aria-label={bookmarkLabel}
-									aria-pressed={saved}
-									aria-busy={bookmarkPending}
-									disabled={bookmarkPending}
-									onClick={changeBookmark}
-								>
-									{bookmarkPending ? (
-										<Spinner />
-									) : (
-										<Bookmark aria-hidden="true" />
-									)}
-								</Button>
-							}
-						/>
-						<TooltipContent>
-							{saved ? 'Remove from your bookmarks' : 'Bookmark this project'}
-						</TooltipContent>
-					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger
-							render={
-								<Button
-									data-project-report
-									variant="outline"
-									aria-label="Report"
-									aria-haspopup="dialog"
-									aria-expanded={reportOpen}
-									onClick={() => onReportOpenChange(true)}
-								>
-									<Flag aria-hidden="true" />
-								</Button>
-							}
-						/>
-						<TooltipContent>Send a report/suggestion</TooltipContent>
-					</Tooltip>
-					<Button
-						ref={embedRef}
-						variant="outline"
-						aria-label="Embed"
-						aria-haspopup="dialog"
-						aria-expanded={embedOpen}
-						onClick={() => {
-							returnFocus.current = embedRef.current
-							onEmbedOpenChange(true)
-						}}
-					>
-						<Code aria-hidden="true" />
-					</Button>
-				</ButtonGroup>
-			</div>
+			<DesktopProjectActions
+				verified={verified}
+				membership={membership}
+				projectId={projectId}
+				onVerifyOpenChange={onVerifyOpenChange}
+				saved={saved}
+				bookmarkLabel={bookmarkLabel}
+				bookmarkPending={bookmarkPending}
+				changeBookmark={changeBookmark}
+				reportOpen={reportOpen}
+				onReportOpenChange={onReportOpenChange}
+				embedRef={embedRef}
+				embedOpen={embedOpen}
+				onEmbed={() => {
+					returnFocus.current = embedRef.current
+					onEmbedOpenChange(true)
+				}}
+			/>
 
 			{bookmark?.error && (
 				<p role="alert" className="max-w-60 text-xs text-destructive">
@@ -403,6 +336,123 @@ function ProjectActionsContent({
 						: moreRef.current
 				}}
 			/>
+		</div>
+	)
+}
+
+function DesktopProjectActions({
+	verified,
+	membership,
+	projectId,
+	onVerifyOpenChange,
+	saved,
+	bookmarkLabel,
+	bookmarkPending,
+	changeBookmark,
+	reportOpen,
+	onReportOpenChange,
+	embedRef,
+	embedOpen,
+	onEmbed,
+}: Pick<
+	ActionsViewProps,
+	| 'verified'
+	| 'projectId'
+	| 'onVerifyOpenChange'
+	| 'reportOpen'
+	| 'onReportOpenChange'
+	| 'embedOpen'
+> & {
+	membership: boolean
+	saved: boolean
+	bookmarkLabel: string
+	bookmarkPending: boolean
+	changeBookmark: () => void
+	embedRef: React.RefObject<HTMLButtonElement | null>
+	onEmbed: () => void
+}) {
+	return (
+		<div className="hidden flex-wrap gap-2 xl:flex">
+			{verified &&
+				(membership ? (
+					<Button
+						variant="outline"
+						render={<Link to="/managed/$id" params={{ id: projectId }} />}
+					>
+						Manage project
+					</Button>
+				) : (
+					<Button
+						variant="outline"
+						data-project-access
+						onClick={() => onVerifyOpenChange?.(true)}
+					>
+						Request access
+					</Button>
+				))}
+			{!verified && (
+				<Button
+					variant="outline"
+					data-project-verify
+					onClick={() => onVerifyOpenChange?.(true)}
+				>
+					<Verified aria-hidden="true" />
+					Verify
+				</Button>
+			)}
+
+			<ButtonGroup>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant={saved ? 'secondary' : 'outline'}
+								aria-label={bookmarkLabel}
+								aria-pressed={saved}
+								aria-busy={bookmarkPending}
+								disabled={bookmarkPending}
+								onClick={changeBookmark}
+							>
+								{bookmarkPending ? (
+									<Spinner />
+								) : (
+									<Bookmark aria-hidden="true" />
+								)}
+							</Button>
+						}
+					/>
+					<TooltipContent>
+						{saved ? 'Remove from your bookmarks' : 'Bookmark this project'}
+					</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								data-project-report
+								variant="outline"
+								aria-label="Report"
+								aria-haspopup="dialog"
+								aria-expanded={reportOpen}
+								onClick={() => onReportOpenChange(true)}
+							>
+								<Flag aria-hidden="true" />
+							</Button>
+						}
+					/>
+					<TooltipContent>Send a report/suggestion</TooltipContent>
+				</Tooltip>
+				<Button
+					ref={embedRef}
+					variant="outline"
+					aria-label="Embed"
+					aria-haspopup="dialog"
+					aria-expanded={embedOpen}
+					onClick={onEmbed}
+				>
+					<Code aria-hidden="true" />
+				</Button>
+			</ButtonGroup>
 		</div>
 	)
 }

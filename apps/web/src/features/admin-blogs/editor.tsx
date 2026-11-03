@@ -352,35 +352,7 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 						</FieldDescription>
 					</Field>
 				</FieldGroup>
-				<Collapsible
-					onOpenChange={(open) => {
-						if (open) editor.current?.flush()
-					}}
-				>
-					<CollapsibleTrigger
-						render={<Button type="button" variant="outline" />}
-					>
-						Preview content
-					</CollapsibleTrigger>
-					<CollapsibleContent>
-						<section
-							aria-label="Markdown preview"
-							className="mt-4 min-w-0 rounded-lg border p-4 sm:p-6"
-						>
-							{value.content.trim() ? (
-								<PublicContent
-									slug={`blogs/${value.slug || 'preview'}`}
-									content={value.content}
-									headingMode="article"
-								/>
-							) : (
-								<p className="text-sm text-muted-foreground">
-									Write some content to preview it here.
-								</p>
-							)}
-						</section>
-					</CollapsibleContent>
-				</Collapsible>
+				<BlogContentPreview editor={editor} value={value} />
 				<div className="flex flex-wrap justify-end gap-3 border-t pt-4">
 					<Link
 						to="/admin/blogs"
@@ -449,5 +421,43 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 				</AlertDialogContent>
 			</AlertDialog>
 		</div>
+	)
+}
+
+function BlogContentPreview({
+	editor,
+	value,
+}: {
+	editor: React.RefObject<BlockNoteEditorHandle | null>
+	value: BlogBody
+}) {
+	return (
+		<Collapsible
+			onOpenChange={(open) => {
+				if (open) editor.current?.flush()
+			}}
+		>
+			<CollapsibleTrigger render={<Button type="button" variant="outline" />}>
+				Preview content
+			</CollapsibleTrigger>
+			<CollapsibleContent>
+				<section
+					aria-label="Markdown preview"
+					className="mt-4 min-w-0 rounded-lg border p-4 sm:p-6"
+				>
+					{value.content.trim() ? (
+						<PublicContent
+							slug={`blogs/${value.slug || 'preview'}`}
+							content={value.content}
+							headingMode="article"
+						/>
+					) : (
+						<p className="text-sm text-muted-foreground">
+							Write some content to preview it here.
+						</p>
+					)}
+				</section>
+			</CollapsibleContent>
+		</Collapsible>
 	)
 }

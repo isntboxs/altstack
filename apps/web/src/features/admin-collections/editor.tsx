@@ -178,30 +178,7 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 		enableBeforeUnload: () => !saved.current && dirty,
 		withResolver: true,
 	})
-	const readiness = [
-		{
-			label: 'Title, URL, and description added',
-			done:
-				value.name.trim().length > 0 &&
-				collectionBodySchema.shape.slug.safeParse(value.slug).success &&
-				value.description.trim().length > 0,
-		},
-		{
-			label:
-				value.kind === 'repository'
-					? 'Valid source repository linked'
-					: 'Published main project selected',
-			done:
-				value.kind === 'repository'
-					? sourceRepositorySchema.safeParse(value.sourceRepositoryUrl).success
-					: target?.status === 'published',
-		},
-		{
-			label: 'At least one published member',
-			done:
-				members.length > 0 && members.every((p) => p.status === 'published'),
-		},
-	]
+	const readiness = getCollectionReadiness(value, target, members)
 	const ready = readiness.every((item) => item.done)
 	function fieldProps(name: string) {
 		return {
@@ -465,43 +442,13 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 									{kindDescriptions[value.kind]}
 								</FieldDescription>
 							</Field>
-							{value.kind === 'repository' ? (
-								<Field data-invalid={!!fieldErrors.sourceRepositoryUrl}>
-									<FieldLabel htmlFor="collection-source">
-										Source repository URL
-									</FieldLabel>
-									<Input
-										id="collection-source"
-										{...fieldProps('sourceRepositoryUrl')}
-										type="url"
-										required
-										placeholder="https://github.com/owner/repository"
-										value={value.sourceRepositoryUrl ?? ''}
-										onChange={(e) =>
-											setValue({
-												...value,
-												sourceRepositoryUrl: e.target.value,
-											})
-										}
-									/>
-									<FieldDescription id="collection-sourceRepositoryUrl-help">
-										Link the original GitHub list. You’ll choose its members
-										below; projects are not imported automatically.
-									</FieldDescription>
-									{fieldError('sourceRepositoryUrl')}
-								</Field>
-							) : (
-								<Alert>
-									<AlertTitle>Choose a main project below</AlertTitle>
-									<AlertDescription>
-										{value.kind === 'alternatives'
-											? 'Select the project readers are looking for alternatives to.'
-											: 'Select the project at the center of this ecosystem.'}{' '}
-										If the main project becomes unavailable, this collection
-										will be hidden publicly.
-									</AlertDescription>
-								</Alert>
-							)}
+							<CollectionSourceField
+								value={value}
+								setValue={setValue}
+								fieldErrors={fieldErrors}
+								fieldProps={fieldProps}
+								fieldError={fieldError}
+							/>
 						</FieldGroup>
 					</EditorSection>
 					<EditorSection
@@ -593,143 +540,17 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 						</div>
 					</EditorSection>
 				</fieldset>
-				<aside
-					aria-label="Collection publication"
-					className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20"
-				>
-					<Card>
-						<CardHeader className="border-b">
-							<CardTitle>
-								<h2>Publication</h2>
-							</CardTitle>
-							<CardDescription>
-								Control when readers can see this collection.
-							</CardDescription>
-							<CardAction>
-								<Badge
-									variant={
-										value.status === 'published' ? 'default' : 'secondary'
-									}
-								>
-									{value.status === 'published' ? 'Published' : 'Draft'}
-								</Badge>
-							</CardAction>
-						</CardHeader>
-						<CardContent className="flex flex-col gap-5">
-							<Field data-disabled={busy}>
-								<FieldLabel htmlFor="collection-status">Publication</FieldLabel>
-								<NativeSelect
-									id="collection-status"
-									className="w-full"
-									disabled={busy}
-									aria-describedby="collection-status-help"
-									value={value.status}
-									onChange={(e) =>
-										setValue({
-											...value,
-											status:
-												e.target.value === 'published' ? 'published' : 'draft',
-										})
-									}
-								>
-									<NativeSelectOption value="draft">Draft</NativeSelectOption>
-									<NativeSelectOption value="published">
-										Published
-									</NativeSelectOption>
-								</NativeSelect>
-								<FieldDescription id="collection-status-help">
-									{value.status === 'draft'
-										? 'Only admins can see this collection. Save it now and publish when it’s ready.'
-										: 'Saving will make this collection visible to everyone.'}
-								</FieldDescription>
-							</Field>
-							<div className="flex flex-col gap-3 border-t pt-4">
-								<h3 className="text-sm font-medium">Before publishing</h3>
-								<ul className="flex flex-col gap-3">
-									{readiness.map((item) => (
-										<li
-											key={item.label}
-											className="flex items-start gap-2 text-xs"
-										>
-											{item.done ? (
-												<IconCheck
-													className="size-4 shrink-0"
-													aria-hidden="true"
-												/>
-											) : (
-												<IconCircle
-													className="size-4 shrink-0 text-muted-foreground"
-													aria-hidden="true"
-												/>
-											)}
-											<span
-												className={
-													item.done
-														? 'text-foreground'
-														: 'text-muted-foreground'
-												}
-											>
-												<span className="sr-only">
-													{item.done ? 'Complete: ' : 'Needed: '}
-												</span>
-												{item.label}
-											</span>
-										</li>
-									))}
-								</ul>
-								{!ready && value.status === 'published' && (
-									<output className="text-xs text-destructive">
-										Complete the checklist before publishing.
-									</output>
-								)}
-							</div>
-							<div className="flex flex-col gap-2 border-t pt-4">
-								<Button type="submit" disabled={busy}>
-									<IconDeviceFloppy data-icon="inline-start" />
-									{reloading
-										? 'Reloading…'
-										: busy
-											? 'Saving…'
-											: 'Save collection'}
-								</Button>
-								<Link
-									to="/admin/collections"
-									className={buttonVariants({ variant: 'outline' })}
-								>
-									Cancel
-								</Link>
-								<output className="pt-1 text-center text-xs text-muted-foreground">
-									{dirty
-										? 'You have unsaved changes'
-										: initial
-											? 'No unsaved changes'
-											: 'Your collection starts as a draft'}
-								</output>
-							</div>
-							{initial && (
-								<div className="flex flex-col gap-2 border-t pt-4">
-									<p className="text-xs wrap-anywhere text-muted-foreground">
-										Written by {initial.authorName}. Authorship stays with the
-										original writer.
-									</p>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										disabled={busy}
-										onClick={() => void reload()}
-									>
-										Discard and reload
-									</Button>
-								</div>
-							)}
-						</CardContent>
-					</Card>
-					<p className="px-1 text-xs leading-relaxed text-muted-foreground">
-						Projects are curated manually. Unavailable members are hidden from
-						readers and must be removed before saving.
-					</p>
-				</aside>
+				<CollectionPublication
+					value={value}
+					setValue={setValue}
+					busy={busy}
+					reloading={reloading}
+					readiness={readiness}
+					ready={ready}
+					dirty={dirty}
+					initial={initial}
+					reload={reload}
+				/>
 			</form>
 			<AlertDialog
 				open={blocker.status === 'blocked'}
@@ -757,5 +578,245 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 				</AlertDialogContent>
 			</AlertDialog>
 		</div>
+	)
+}
+
+function CollectionPublication({
+	value,
+	setValue,
+	busy,
+	reloading,
+	readiness,
+	ready,
+	dirty,
+	initial,
+	reload,
+}: {
+	value: CollectionBody
+	setValue: React.Dispatch<React.SetStateAction<CollectionBody>>
+	busy: boolean
+	reloading: boolean
+	readiness: Array<{ label: string; done: boolean }>
+	ready: boolean
+	dirty: boolean
+	initial?: Initial
+	reload: () => Promise<void>
+}) {
+	return (
+		<aside
+			aria-label="Collection publication"
+			className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20"
+		>
+			<Card>
+				<CardHeader className="border-b">
+					<CardTitle>
+						<h2>Publication</h2>
+					</CardTitle>
+					<CardDescription>
+						Control when readers can see this collection.
+					</CardDescription>
+					<CardAction>
+						<Badge
+							variant={value.status === 'published' ? 'default' : 'secondary'}
+						>
+							{value.status === 'published' ? 'Published' : 'Draft'}
+						</Badge>
+					</CardAction>
+				</CardHeader>
+				<CardContent className="flex flex-col gap-5">
+					<Field data-disabled={busy}>
+						<FieldLabel htmlFor="collection-status">Publication</FieldLabel>
+						<NativeSelect
+							id="collection-status"
+							className="w-full"
+							disabled={busy}
+							aria-describedby="collection-status-help"
+							value={value.status}
+							onChange={(e) =>
+								setValue({
+									...value,
+									status:
+										e.target.value === 'published' ? 'published' : 'draft',
+								})
+							}
+						>
+							<NativeSelectOption value="draft">Draft</NativeSelectOption>
+							<NativeSelectOption value="published">
+								Published
+							</NativeSelectOption>
+						</NativeSelect>
+						<FieldDescription id="collection-status-help">
+							{value.status === 'draft'
+								? 'Only admins can see this collection. Save it now and publish when it’s ready.'
+								: 'Saving will make this collection visible to everyone.'}
+						</FieldDescription>
+					</Field>
+					<div className="flex flex-col gap-3 border-t pt-4">
+						<h3 className="text-sm font-medium">Before publishing</h3>
+						<ul className="flex flex-col gap-3">
+							{readiness.map((item) => (
+								<li key={item.label} className="flex items-start gap-2 text-xs">
+									{item.done ? (
+										<IconCheck className="size-4 shrink-0" aria-hidden="true" />
+									) : (
+										<IconCircle
+											className="size-4 shrink-0 text-muted-foreground"
+											aria-hidden="true"
+										/>
+									)}
+									<span
+										className={
+											item.done ? 'text-foreground' : 'text-muted-foreground'
+										}
+									>
+										<span className="sr-only">
+											{item.done ? 'Complete: ' : 'Needed: '}
+										</span>
+										{item.label}
+									</span>
+								</li>
+							))}
+						</ul>
+						{!ready && value.status === 'published' && (
+							<output className="text-xs text-destructive">
+								Complete the checklist before publishing.
+							</output>
+						)}
+					</div>
+					<div className="flex flex-col gap-2 border-t pt-4">
+						<Button type="submit" disabled={busy}>
+							<IconDeviceFloppy data-icon="inline-start" />
+							{reloading ? 'Reloading…' : busy ? 'Saving…' : 'Save collection'}
+						</Button>
+						<Link
+							to="/admin/collections"
+							className={buttonVariants({ variant: 'outline' })}
+						>
+							Cancel
+						</Link>
+						<output className="pt-1 text-center text-xs text-muted-foreground">
+							{dirty
+								? 'You have unsaved changes'
+								: initial
+									? 'No unsaved changes'
+									: 'Your collection starts as a draft'}
+						</output>
+					</div>
+					{initial && (
+						<div className="flex flex-col gap-2 border-t pt-4">
+							<p className="text-xs wrap-anywhere text-muted-foreground">
+								Written by {initial.authorName}. Authorship stays with the
+								original writer.
+							</p>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								disabled={busy}
+								onClick={() => void reload()}
+							>
+								Discard and reload
+							</Button>
+						</div>
+					)}
+				</CardContent>
+			</Card>
+			<p className="px-1 text-xs leading-relaxed text-muted-foreground">
+				Projects are curated manually. Unavailable members are hidden from
+				readers and must be removed before saving.
+			</p>
+		</aside>
+	)
+}
+
+function getCollectionReadiness(
+	value: CollectionBody,
+	target: SelectedProject | null,
+	members: Array<SelectedProject>
+) {
+	const readiness = [
+		{
+			label: 'Title, URL, and description added',
+			done:
+				value.name.trim().length > 0 &&
+				collectionBodySchema.shape.slug.safeParse(value.slug).success &&
+				value.description.trim().length > 0,
+		},
+		{
+			label:
+				value.kind === 'repository'
+					? 'Valid source repository linked'
+					: 'Published main project selected',
+			done:
+				value.kind === 'repository'
+					? sourceRepositorySchema.safeParse(value.sourceRepositoryUrl).success
+					: target?.status === 'published',
+		},
+		{
+			label: 'At least one published member',
+			done:
+				members.length > 0 && members.every((p) => p.status === 'published'),
+		},
+	]
+
+	return readiness
+}
+
+function CollectionSourceField({
+	value,
+	setValue,
+	fieldErrors,
+	fieldProps,
+	fieldError,
+}: {
+	value: CollectionBody
+	setValue: React.Dispatch<React.SetStateAction<CollectionBody>>
+	fieldErrors: Record<string, string>
+	fieldProps: (name: string) => {
+		'aria-invalid': boolean
+		'aria-describedby': string
+	}
+	fieldError: (name: string) => ReactNode
+}) {
+	return (
+		<>
+			{value.kind === 'repository' ? (
+				<Field data-invalid={!!fieldErrors.sourceRepositoryUrl}>
+					<FieldLabel htmlFor="collection-source">
+						Source repository URL
+					</FieldLabel>
+					<Input
+						id="collection-source"
+						{...fieldProps('sourceRepositoryUrl')}
+						type="url"
+						required
+						placeholder="https://github.com/owner/repository"
+						value={value.sourceRepositoryUrl ?? ''}
+						onChange={(e) =>
+							setValue({
+								...value,
+								sourceRepositoryUrl: e.target.value,
+							})
+						}
+					/>
+					<FieldDescription id="collection-sourceRepositoryUrl-help">
+						Link the original GitHub list. You’ll choose its members below;
+						projects are not imported automatically.
+					</FieldDescription>
+					{fieldError('sourceRepositoryUrl')}
+				</Field>
+			) : (
+				<Alert>
+					<AlertTitle>Choose a main project below</AlertTitle>
+					<AlertDescription>
+						{value.kind === 'alternatives'
+							? 'Select the project readers are looking for alternatives to.'
+							: 'Select the project at the center of this ecosystem.'}{' '}
+						If the main project becomes unavailable, this collection will be
+						hidden publicly.
+					</AlertDescription>
+				</Alert>
+			)}
+		</>
 	)
 }

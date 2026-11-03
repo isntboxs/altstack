@@ -52,120 +52,24 @@ export function GithubMetadataPrefill({
 	getCurrentValues: () => CurrentValues
 	onApply: (values: MetadataFields) => void
 }) {
-	const { mutateAsync } = useAdminProjectGithubMetadata()
-	const id = useId()
-	const requestId = useRef(0)
-	const activeRepository = useRef(repositoryUrl)
-	const [pending, setPending] = useState(false)
-	const [error, setError] = useState<string | null>(null)
-	const [feedback, setFeedback] = useState<string | null>(null)
-	const [preview, setPreview] = useState<Preview | null>(null)
-
-	useEffect(() => {
-		if (activeRepository.current === repositoryUrl) return
-		activeRepository.current = repositoryUrl
-		if (requestId.current === 0) return
-		requestId.current += 1
-		// Synchronize an external form field with the request/dialog lifecycle.
-		// oxlint-disable-next-line react-hooks-js/set-state-in-effect
-		setPending(false)
-		setError(null)
-		setPreview(null)
-		setFeedback(REPOSITORY_CHANGED)
-	}, [repositoryUrl])
-	useEffect(
-		() => () => {
-			if (requestId.current > 0) requestId.current += 1
-		},
-		[]
-	)
-
-	async function fetchMetadata() {
-		if (
-			disabled ||
-			pending ||
-			!repositoryUrlSchema.safeParse(repositoryUrl).success
-		) {
-			return
-		}
-		const requestedRepositoryUrl = repositoryUrl
-		const currentRequestId = ++requestId.current
-		setPending(true)
-		setError(null)
-		setFeedback(null)
-		setPreview(null)
-		try {
-			const metadata = await mutateAsync({
-				repositoryUrl: requestedRepositoryUrl,
-			})
-			if (currentRequestId !== requestId.current) return
-			const current = getCurrentValues()
-			if (current.repositoryUrl !== requestedRepositoryUrl) {
-				setFeedback(REPOSITORY_CHANGED)
-				return
-			}
-			setPreview({
-				repositoryUrl: metadata.repositoryUrl,
-				requestedRepositoryUrl,
-				description: metadata.description ?? '',
-				websiteUrl: metadata.websiteUrl ?? '',
-				hasDescription: metadata.description !== null,
-				hasWebsite: metadata.websiteUrl !== null,
-				selectDescription:
-					metadata.description !== null && isBlank(current.description),
-				selectWebsite:
-					metadata.websiteUrl !== null && isBlank(current.websiteUrl),
-			})
-		} catch (cause) {
-			if (currentRequestId !== requestId.current) return
-			if (getCurrentValues().repositoryUrl !== requestedRepositoryUrl) {
-				setFeedback(REPOSITORY_CHANGED)
-				return
-			}
-			setError(
-				cause instanceof Error
-					? cause.message
-					: 'Unable to fetch GitHub metadata. Please try again.'
-			)
-		} finally {
-			if (currentRequestId === requestId.current) setPending(false)
-		}
-	}
-
-	const description = adminCreateProjectBodySchema.shape.description.safeParse(
-		preview?.description
-	)
-	const website = adminCreateProjectBodySchema.shape.websiteUrl.safeParse(
-		preview?.websiteUrl.trim()
-	)
-	const canApply = Boolean(
-		preview &&
-		!disabled &&
-		(preview.selectDescription || preview.selectWebsite) &&
-		(!preview.selectDescription || description.success) &&
-		(!preview.selectWebsite || website.success)
-	)
-
-	function apply() {
-		if (!preview || !canApply) return
-		if (getCurrentValues().repositoryUrl !== preview.requestedRepositoryUrl) {
-			setPreview(null)
-			setFeedback(REPOSITORY_CHANGED)
-			return
-		}
-		const values: MetadataFields = {}
-		if (preview.selectDescription && description.success) {
-			values.description = description.data ?? null
-		}
-		if (preview.selectWebsite && website.success) {
-			values.websiteUrl = website.data
-		}
-		onApply(values)
-		setPreview(null)
-		setFeedback(
-			'Selected metadata applied to the form. Save the project to keep these changes.'
-		)
-	}
+	const {
+		id,
+		pending,
+		error,
+		feedback,
+		preview,
+		setPreview,
+		fetchMetadata,
+		description,
+		website,
+		canApply,
+		apply,
+	} = useGithubMetadataPrefill({
+		repositoryUrl,
+		disabled,
+		getCurrentValues,
+		onApply,
+	})
 
 	return (
 		<div className="min-w-0 space-y-2">
@@ -337,4 +241,140 @@ export function GithubMetadataPrefill({
 			</Dialog>
 		</div>
 	)
+}
+
+function useGithubMetadataPrefill({
+	repositoryUrl,
+	disabled,
+	getCurrentValues,
+	onApply,
+}: Parameters<typeof GithubMetadataPrefill>[0]) {
+	const { mutateAsync } = useAdminProjectGithubMetadata()
+	const id = useId()
+	const requestId = useRef(0)
+	const activeRepository = useRef(repositoryUrl)
+	const [pending, setPending] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const [feedback, setFeedback] = useState<string | null>(null)
+	const [preview, setPreview] = useState<Preview | null>(null)
+
+	useEffect(() => {
+		if (activeRepository.current === repositoryUrl) return
+		activeRepository.current = repositoryUrl
+		if (requestId.current === 0) return
+		requestId.current += 1
+		// Synchronize an external form field with the request/dialog lifecycle.
+		// oxlint-disable-next-line react-hooks-js/set-state-in-effect
+		setPending(false)
+		setError(null)
+		setPreview(null)
+		setFeedback(REPOSITORY_CHANGED)
+	}, [repositoryUrl])
+	useEffect(
+		() => () => {
+			if (requestId.current > 0) requestId.current += 1
+		},
+		[]
+	)
+
+	async function fetchMetadata() {
+		if (
+			disabled ||
+			pending ||
+			!repositoryUrlSchema.safeParse(repositoryUrl).success
+		) {
+			return
+		}
+		const requestedRepositoryUrl = repositoryUrl
+		const currentRequestId = ++requestId.current
+		setPending(true)
+		setError(null)
+		setFeedback(null)
+		setPreview(null)
+		try {
+			const metadata = await mutateAsync({
+				repositoryUrl: requestedRepositoryUrl,
+			})
+			if (currentRequestId !== requestId.current) return
+			const current = getCurrentValues()
+			if (current.repositoryUrl !== requestedRepositoryUrl) {
+				setFeedback(REPOSITORY_CHANGED)
+				return
+			}
+			setPreview({
+				repositoryUrl: metadata.repositoryUrl,
+				requestedRepositoryUrl,
+				description: metadata.description ?? '',
+				websiteUrl: metadata.websiteUrl ?? '',
+				hasDescription: metadata.description !== null,
+				hasWebsite: metadata.websiteUrl !== null,
+				selectDescription:
+					metadata.description !== null && isBlank(current.description),
+				selectWebsite:
+					metadata.websiteUrl !== null && isBlank(current.websiteUrl),
+			})
+		} catch (cause) {
+			if (currentRequestId !== requestId.current) return
+			if (getCurrentValues().repositoryUrl !== requestedRepositoryUrl) {
+				setFeedback(REPOSITORY_CHANGED)
+				return
+			}
+			setError(
+				cause instanceof Error
+					? cause.message
+					: 'Unable to fetch GitHub metadata. Please try again.'
+			)
+		} finally {
+			if (currentRequestId === requestId.current) setPending(false)
+		}
+	}
+
+	const description = adminCreateProjectBodySchema.shape.description.safeParse(
+		preview?.description
+	)
+	const website = adminCreateProjectBodySchema.shape.websiteUrl.safeParse(
+		preview?.websiteUrl.trim()
+	)
+	const canApply = Boolean(
+		preview &&
+		!disabled &&
+		(preview.selectDescription || preview.selectWebsite) &&
+		(!preview.selectDescription || description.success) &&
+		(!preview.selectWebsite || website.success)
+	)
+
+	function apply() {
+		if (!preview || !canApply) return
+		if (getCurrentValues().repositoryUrl !== preview.requestedRepositoryUrl) {
+			setPreview(null)
+			setFeedback(REPOSITORY_CHANGED)
+			return
+		}
+		const values: MetadataFields = {}
+		if (preview.selectDescription && description.success) {
+			values.description = description.data ?? null
+		}
+		if (preview.selectWebsite && website.success) {
+			values.websiteUrl = website.data
+		}
+		onApply(values)
+		setPreview(null)
+		setFeedback(
+			'Selected metadata applied to the form. Save the project to keep these changes.'
+		)
+	}
+
+	return {
+		id,
+		pending,
+		error,
+		feedback,
+		preview,
+		setPreview,
+		fetchMetadata,
+		description,
+		website,
+		canApply,
+		apply,
+	}
 }

@@ -108,16 +108,7 @@ export function ProjectReportDialog({
 			sending.current = false
 		}
 	}
-	const errorMessage =
-		mutation.error &&
-		'code' in mutation.error &&
-		mutation.error.code === 'TOO_MANY_REQUESTS'
-			? 'Too many reports. Please wait a few minutes before trying again.'
-			: mutation.error &&
-				  'code' in mutation.error &&
-				  mutation.error.code === 'NOT_FOUND'
-				? 'This project is no longer available for reports.'
-				: 'Unable to send your report. Please try again.'
+	const errorMessage = getReportErrorMessage(mutation.error)
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
@@ -139,31 +130,12 @@ export function ProjectReportDialog({
 				>
 					<FieldGroup className="gap-5">
 						{!userId && (
-							<Field data-invalid={Boolean(errors.email)}>
-								<FieldLabel htmlFor={`${id}-email`}>
-									Email <span aria-hidden="true">*</span>
-								</FieldLabel>
-								<Input
-									id={`${id}-email`}
-									data-report-field="email"
-									type="email"
-									autoComplete="email"
-									required
-									maxLength={254}
-									placeholder="Your email"
-									value={email}
-									onChange={(event) => setEmail(event.target.value)}
-									aria-invalid={Boolean(errors.email)}
-									aria-describedby={
-										errors.email ? `${id}-email-error` : undefined
-									}
-								/>
-								{errors.email && (
-									<FieldError id={`${id}-email-error`}>
-										{errors.email}
-									</FieldError>
-								)}
-							</Field>
+							<ReportEmailField
+								id={id}
+								email={email}
+								setEmail={setEmail}
+								errors={errors}
+							/>
 						)}
 						<FieldSet data-invalid={Boolean(errors.type)}>
 							<FieldLegend id={`${id}-type-label`} variant="label">
@@ -247,4 +219,50 @@ export function ProjectReportDialog({
 			</DialogContent>
 		</Dialog>
 	)
+}
+
+function ReportEmailField({
+	id,
+	email,
+	setEmail,
+	errors,
+}: {
+	id: string
+	email: string
+	setEmail: (email: string) => void
+	errors: Record<string, string>
+}) {
+	return (
+		<Field data-invalid={Boolean(errors.email)}>
+			<FieldLabel htmlFor={`${id}-email`}>
+				Email <span aria-hidden="true">*</span>
+			</FieldLabel>
+			<Input
+				id={`${id}-email`}
+				data-report-field="email"
+				type="email"
+				autoComplete="email"
+				required
+				maxLength={254}
+				placeholder="Your email"
+				value={email}
+				onChange={(event) => setEmail(event.target.value)}
+				aria-invalid={Boolean(errors.email)}
+				aria-describedby={errors.email ? `${id}-email-error` : undefined}
+			/>
+			{errors.email && (
+				<FieldError id={`${id}-email-error`}>{errors.email}</FieldError>
+			)}
+		</Field>
+	)
+}
+
+function getReportErrorMessage(error: Error | null) {
+	const errorMessage =
+		error && 'code' in error && error.code === 'TOO_MANY_REQUESTS'
+			? 'Too many reports. Please wait a few minutes before trying again.'
+			: error && 'code' in error && error.code === 'NOT_FOUND'
+				? 'This project is no longer available for reports.'
+				: 'Unable to send your report. Please try again.'
+	return errorMessage
 }

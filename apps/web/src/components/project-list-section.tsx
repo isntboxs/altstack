@@ -282,23 +282,8 @@ export const ProjectListSection = ({
 	})
 	const data = query.data ?? loaded
 	const [consumed, setConsumed] = useState(45)
-	const { pagination } = data
-	const currentPage = pagination.page || 1
-	const offset = data.query?.offset ?? (currentPage - 1) * 45
-	const totalPages = Math.max(
-		currentPage,
-		currentPage +
-			Math.ceil(
-				(pagination.totalItems -
-					offset -
-					Math.min(consumed, data.projects.length)) /
-					45
-			)
-	)
-	const outOfRange =
-		data.projects.length === 0 &&
-		currentPage > 1 &&
-		offset >= pagination.totalItems
+	const { pagination, currentPage, offset, totalPages, outOfRange } =
+		getCataloguePagination(data, consumed)
 	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
 	if (loaded.query && !query.data && loaded.query.offset !== expectedOffset) {
 		if (query.isError) {
@@ -461,4 +446,28 @@ function ProjectResultsEmpty({
 			)}
 		</div>
 	)
+}
+
+function getCataloguePagination(
+	data: ORPCRouterOutputs['project']['search'],
+	consumed: number
+) {
+	const { pagination } = data
+	const currentPage = pagination.page || 1
+	const offset = data.query?.offset ?? (currentPage - 1) * 45
+	const totalPages = Math.max(
+		currentPage,
+		currentPage +
+			Math.ceil(
+				(pagination.totalItems -
+					offset -
+					Math.min(consumed, data.projects.length)) /
+					45
+			)
+	)
+	const outOfRange =
+		data.projects.length === 0 &&
+		currentPage > 1 &&
+		offset >= pagination.totalItems
+	return { pagination, currentPage, offset, totalPages, outOfRange }
 }

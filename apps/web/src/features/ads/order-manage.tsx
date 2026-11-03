@@ -131,172 +131,24 @@ export function AdOrderManage() {
 			)}
 			{order && access && (
 				<>
-					<dl className="grid gap-5 rounded-xl border p-5 sm:grid-cols-2">
-						<div>
-							<dt className="text-sm text-muted-foreground">Package</dt>
-							<dd className="font-medium">
-								{AD_PLANS[order.plan].name} · US${order.amount / 100}/month
-							</dd>
-						</div>
-						<div>
-							<dt className="text-sm text-muted-foreground">Status</dt>
-							<dd className="capitalize">
-								{order.status.replaceAll('_', ' ')}
-								{order.paidThrough && order.paidThrough.getTime() <= loadedAt
-									? ' · Period ended'
-									: ''}
-							</dd>
-						</div>
-						<div>
-							<dt className="text-sm text-muted-foreground">Order reference</dt>
-							<dd className="text-sm break-all">{order.id}</dd>
-						</div>
-						<div>
-							<dt className="text-sm text-muted-foreground">Contact</dt>
-							<dd className="text-sm break-all">{order.email}</dd>
-						</div>
-						{order.startsAt && (
-							<div>
-								<dt className="text-sm text-muted-foreground">
-									First approved
-								</dt>
-								<dd>
-									{order.startsAt.toISOString().replace('T', ' ').slice(0, 19)}{' '}
-									UTC
-								</dd>
-							</div>
-						)}
-						{order.paidThrough && (
-							<div>
-								<dt className="text-sm text-muted-foreground">
-									Paid through (exclusive)
-								</dt>
-								<dd>
-									{order.paidThrough
-										.toISOString()
-										.replace('T', ' ')
-										.slice(0, 19)}{' '}
-									UTC
-								</dd>
-							</div>
-						)}
-					</dl>
-					{order.status !== 'rejected' &&
-						(!order.paidAt || order.renewalRequestedAt) && (
-							<Alert className="gap-3">
-								<AlertTitle>Waiting for payment confirmation</AlertTitle>
-								<AlertDescription>
-									<p>
-										Pay for one month of {AD_PLANS[order.plan].name} on Ko-fi.
-										Use the contact email above and include your order reference
-										in the message so we can match your payment.
-									</p>
-									<p>
-										Already paid? Wait for our team to confirm receipt by email;
-										do not pay again. Opening Ko-fi does not update your payment
-										status.{' '}
-										{order.paidAt
-											? 'Your campaign dates extend after the team confirms this renewal payment.'
-											: 'Your first advertising month starts after materials are approved.'}
-									</p>
-								</AlertDescription>
-								<a
-									href={AD_PLANS[order.plan].paymentUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									referrerPolicy="no-referrer"
-									className={buttonVariants({
-										className: 'min-h-11 justify-self-start',
-									})}
-								>
-									Pay {AD_PLANS[order.plan].name} on Ko-fi
-									<span className="sr-only"> (opens in a new tab)</span>
-								</a>
-							</Alert>
-						)}
-					{order.feedback && (
-						<Alert>
-							<AlertTitle>Review feedback</AlertTitle>
-							<AlertDescription>{order.feedback}</AlertDescription>
-						</Alert>
-					)}
-					{order.status === 'rejected' && (
-						<p>
-							Your first campaign was declined. Reply to your order email to
-							arrange a manual refund with the team.
-						</p>
-					)}
-					{order.status === 'in_review' && (
-						<p className="text-muted-foreground">
-							Your materials are waiting for review. Previously approved artwork
-							remains live during the review.
-						</p>
-					)}
-					{order.paidAt && order.status !== 'rejected' && (
-						<>
-							{!editing && (
-								<Button className="self-start" onClick={() => setEditing(true)}>
-									{order.material
-										? 'Edit submitted materials'
-										: 'Upload advertising materials'}
-								</Button>
-							)}
-							{editing && (
-								<AdMaterialForm
-									key={`${order.id}:${order.version}`}
-									access={access}
-									order={order}
-									onSaved={(value) => {
-										setOrder(value)
-										setEditing(false)
-									}}
-									onCancel={() => setEditing(false)}
-								/>
-							)}
-						</>
-					)}
+					<AdOrderSummary order={order} loadedAt={loadedAt} />
+					<AdOrderNotices order={order} />
+					<AdOrderMaterials
+						order={order}
+						access={access}
+						editing={editing}
+						setEditing={setEditing}
+						setOrder={setOrder}
+					/>
 					{order.campaignId && order.status !== 'rejected' && (
-						<section
-							className="flex flex-col gap-3"
-							aria-labelledby="ad-renewal-title"
-						>
-							<h2 id="ad-renewal-title" className="text-xl font-semibold">
-								Renew your campaign
-							</h2>
-							<p className="text-sm text-muted-foreground">
-								No automatic billing. Request another month at US$
-								{order.amount / 100}, then pay through Ko-fi using the link that
-								appears after your request. Dates extend only after the team
-								confirms the new payment. If your period has ended, a new month
-								starts at confirmation.
-							</p>
-							<Button
-								className="self-start"
-								variant="outline"
-								disabled={busy || !!order.renewalRequestedAt}
-								onClick={async () => {
-									setBusy(true)
-									setError('')
-									try {
-										setOrder(
-											await client.adBilling.requestRenewal({ body: access })
-										)
-									} catch {
-										setError(
-											'Unable to request renewal. Please refresh and try again.'
-										)
-									} finally {
-										setBusy(false)
-									}
-								}}
-							>
-								{order.renewalRequestedAt
-									? 'Renewal requested — awaiting payment'
-									: busy
-										? 'Requesting…'
-										: 'Request one more month'}
-							</Button>
-						</section>
+						<AdOrderRenewal
+							order={order}
+							access={access}
+							busy={busy}
+							setBusy={setBusy}
+							setError={setError}
+							setOrder={setOrder}
+						/>
 					)}
 				</>
 			)}
@@ -481,5 +333,211 @@ function AdMaterialForm({
 				</div>
 			</FieldGroup>
 		</form>
+	)
+}
+
+function AdOrderSummary({
+	order,
+	loadedAt,
+}: {
+	order: AdOrderView
+	loadedAt: number
+}) {
+	return (
+		<dl className="grid gap-5 rounded-xl border p-5 sm:grid-cols-2">
+			<div>
+				<dt className="text-sm text-muted-foreground">Package</dt>
+				<dd className="font-medium">
+					{AD_PLANS[order.plan].name} · US${order.amount / 100}/month
+				</dd>
+			</div>
+			<div>
+				<dt className="text-sm text-muted-foreground">Status</dt>
+				<dd className="capitalize">
+					{order.status.replaceAll('_', ' ')}
+					{order.paidThrough && order.paidThrough.getTime() <= loadedAt
+						? ' · Period ended'
+						: ''}
+				</dd>
+			</div>
+			<div>
+				<dt className="text-sm text-muted-foreground">Order reference</dt>
+				<dd className="text-sm break-all">{order.id}</dd>
+			</div>
+			<div>
+				<dt className="text-sm text-muted-foreground">Contact</dt>
+				<dd className="text-sm break-all">{order.email}</dd>
+			</div>
+			{order.startsAt && (
+				<div>
+					<dt className="text-sm text-muted-foreground">First approved</dt>
+					<dd>
+						{order.startsAt.toISOString().replace('T', ' ').slice(0, 19)} UTC
+					</dd>
+				</div>
+			)}
+			{order.paidThrough && (
+				<div>
+					<dt className="text-sm text-muted-foreground">
+						Paid through (exclusive)
+					</dt>
+					<dd>
+						{order.paidThrough.toISOString().replace('T', ' ').slice(0, 19)} UTC
+					</dd>
+				</div>
+			)}
+		</dl>
+	)
+}
+
+function AdOrderNotices({ order }: { order: AdOrderView }) {
+	return (
+		<>
+			{order.status !== 'rejected' &&
+				(!order.paidAt || order.renewalRequestedAt) && (
+					<Alert className="gap-3">
+						<AlertTitle>Waiting for payment confirmation</AlertTitle>
+						<AlertDescription>
+							<p>
+								Pay for one month of {AD_PLANS[order.plan].name} on Ko-fi. Use
+								the contact email above and include your order reference in the
+								message so we can match your payment.
+							</p>
+							<p>
+								Already paid? Wait for our team to confirm receipt by email; do
+								not pay again. Opening Ko-fi does not update your payment
+								status.{' '}
+								{order.paidAt
+									? 'Your campaign dates extend after the team confirms this renewal payment.'
+									: 'Your first advertising month starts after materials are approved.'}
+							</p>
+						</AlertDescription>
+						<a
+							href={AD_PLANS[order.plan].paymentUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							referrerPolicy="no-referrer"
+							className={buttonVariants({
+								className: 'min-h-11 justify-self-start',
+							})}
+						>
+							Pay {AD_PLANS[order.plan].name} on Ko-fi
+							<span className="sr-only"> (opens in a new tab)</span>
+						</a>
+					</Alert>
+				)}
+			{order.feedback && (
+				<Alert>
+					<AlertTitle>Review feedback</AlertTitle>
+					<AlertDescription>{order.feedback}</AlertDescription>
+				</Alert>
+			)}
+			{order.status === 'rejected' && (
+				<p>
+					Your first campaign was declined. Reply to your order email to arrange
+					a manual refund with the team.
+				</p>
+			)}
+			{order.status === 'in_review' && (
+				<p className="text-muted-foreground">
+					Your materials are waiting for review. Previously approved artwork
+					remains live during the review.
+				</p>
+			)}
+		</>
+	)
+}
+
+function AdOrderRenewal({
+	order,
+	access,
+	busy,
+	setBusy,
+	setError,
+	setOrder,
+}: {
+	order: AdOrderView
+	access: AdAccess
+	busy: boolean
+	setBusy: (busy: boolean) => void
+	setError: (error: string) => void
+	setOrder: (order: AdOrderView) => void
+}) {
+	return (
+		<section className="flex flex-col gap-3" aria-labelledby="ad-renewal-title">
+			<h2 id="ad-renewal-title" className="text-xl font-semibold">
+				Renew your campaign
+			</h2>
+			<p className="text-sm text-muted-foreground">
+				No automatic billing. Request another month at US$
+				{order.amount / 100}, then pay through Ko-fi using the link that appears
+				after your request. Dates extend only after the team confirms the new
+				payment. If your period has ended, a new month starts at confirmation.
+			</p>
+			<Button
+				className="self-start"
+				variant="outline"
+				disabled={busy || !!order.renewalRequestedAt}
+				onClick={async () => {
+					setBusy(true)
+					setError('')
+					try {
+						setOrder(await client.adBilling.requestRenewal({ body: access }))
+					} catch {
+						setError('Unable to request renewal. Please refresh and try again.')
+					} finally {
+						setBusy(false)
+					}
+				}}
+			>
+				{order.renewalRequestedAt
+					? 'Renewal requested — awaiting payment'
+					: busy
+						? 'Requesting…'
+						: 'Request one more month'}
+			</Button>
+		</section>
+	)
+}
+
+function AdOrderMaterials({
+	order,
+	access,
+	editing,
+	setEditing,
+	setOrder,
+}: {
+	order: AdOrderView
+	access: AdAccess
+	editing: boolean
+	setEditing: (editing: boolean) => void
+	setOrder: (order: AdOrderView) => void
+}) {
+	return (
+		<>
+			{order.paidAt && order.status !== 'rejected' && (
+				<>
+					{!editing && (
+						<Button className="self-start" onClick={() => setEditing(true)}>
+							{order.material
+								? 'Edit submitted materials'
+								: 'Upload advertising materials'}
+						</Button>
+					)}
+					{editing && (
+						<AdMaterialForm
+							key={`${order.id}:${order.version}`}
+							access={access}
+							order={order}
+							onSaved={(value) => {
+								setOrder(value)
+								setEditing(false)
+							}}
+							onCancel={() => setEditing(false)}
+						/>
+					)}
+				</>
+			)}
+		</>
 	)
 }

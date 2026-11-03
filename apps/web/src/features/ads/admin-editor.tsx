@@ -117,20 +117,7 @@ export function AdsAdmin({
 					keepMounted
 					className="flex min-w-0 flex-col gap-5"
 				>
-					<div className="flex flex-col gap-1">
-						<h2 className="text-lg font-semibold">
-							{editing
-								? editing === 'new'
-									? 'New direct campaign'
-									: 'Edit campaign'
-								: 'Campaign inventory'}
-						</h2>
-						<p className="text-sm text-muted-foreground">
-							{editing
-								? 'Configure artwork, placements, and schedule. Advertiser purchases are managed in Orders.'
-								: 'Published, paused, and draft campaigns. All dates use UTC.'}
-						</p>
-					</div>
+					<CampaignInventoryHeading editing={editing} />
 					{error && (
 						<p role="alert" className="text-destructive">
 							{error}
@@ -224,50 +211,14 @@ export function AdsAdmin({
 									</article>
 								))}
 							</div>
-							{deleting && (
-								<section
-									aria-label="Confirm campaign deletion"
-									className="flex flex-col gap-3 rounded-xl border p-4"
-								>
-									<p>
-										Delete campaign “{deleting.name}” and its artwork? This
-										cannot be undone.
-									</p>
-									<div className="flex gap-2">
-										<Button
-											disabled={busy}
-											variant="destructive"
-											onClick={async () => {
-												setBusy(true)
-												setError('')
-												try {
-													await client.admin.ads.delete({
-														params: { id: deleting.id },
-														body: { expectedVersion: deleting.version },
-													})
-													setDeleting(undefined)
-													await refresh()
-												} catch {
-													setError(
-														'Unable to delete. Reload campaigns if another admin changed this campaign.'
-													)
-												} finally {
-													setBusy(false)
-												}
-											}}
-										>
-											{busy ? 'Deleting…' : 'Confirm delete'}
-										</Button>
-										<Button
-											variant="outline"
-											disabled={busy}
-											onClick={() => setDeleting(undefined)}
-										>
-											Cancel
-										</Button>
-									</div>
-								</section>
-							)}
+							<CampaignDeletion
+								deleting={deleting}
+								busy={busy}
+								setBusy={setBusy}
+								setError={setError}
+								setDeleting={setDeleting}
+								refresh={refresh}
+							/>
 						</>
 					)}
 				</TabsContent>
@@ -559,5 +510,94 @@ function CampaignForm({
 				)}
 			</aside>
 		</form>
+	)
+}
+
+function CampaignInventoryHeading({
+	editing,
+}: {
+	editing: AdCampaign | 'new' | undefined
+}) {
+	return (
+		<div className="flex flex-col gap-1">
+			<h2 className="text-lg font-semibold">
+				{editing
+					? editing === 'new'
+						? 'New direct campaign'
+						: 'Edit campaign'
+					: 'Campaign inventory'}
+			</h2>
+			<p className="text-sm text-muted-foreground">
+				{editing
+					? 'Configure artwork, placements, and schedule. Advertiser purchases are managed in Orders.'
+					: 'Published, paused, and draft campaigns. All dates use UTC.'}
+			</p>
+		</div>
+	)
+}
+
+function CampaignDeletion({
+	deleting,
+	busy,
+	setBusy,
+	setError,
+	setDeleting,
+	refresh,
+}: {
+	deleting: AdCampaign | undefined
+	busy: boolean
+	setBusy: (busy: boolean) => void
+	setError: (error: string) => void
+	setDeleting: (campaign: AdCampaign | undefined) => void
+	refresh: () => Promise<void>
+}) {
+	return (
+		<>
+			{' '}
+			{deleting && (
+				<section
+					aria-label="Confirm campaign deletion"
+					className="flex flex-col gap-3 rounded-xl border p-4"
+				>
+					<p>
+						Delete campaign “{deleting.name}” and its artwork? This cannot be
+						undone.
+					</p>
+					<div className="flex gap-2">
+						<Button
+							disabled={busy}
+							variant="destructive"
+							onClick={async () => {
+								setBusy(true)
+								setError('')
+								try {
+									await client.admin.ads.delete({
+										params: { id: deleting.id },
+										body: { expectedVersion: deleting.version },
+									})
+									setDeleting(undefined)
+									await refresh()
+								} catch {
+									setError(
+										'Unable to delete. Reload campaigns if another admin changed this campaign.'
+									)
+								} finally {
+									setBusy(false)
+								}
+							}}
+						>
+							{busy ? 'Deleting…' : 'Confirm delete'}
+						</Button>
+						<Button
+							variant="outline"
+							disabled={busy}
+							onClick={() => setDeleting(undefined)}
+						>
+							Cancel
+						</Button>
+					</div>
+				</section>
+			)}{' '}
+		</>
 	)
 }
