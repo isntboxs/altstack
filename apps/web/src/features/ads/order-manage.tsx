@@ -194,8 +194,10 @@ export function AdOrderManage() {
 									<p>
 										Already paid? Wait for our team to confirm receipt by email;
 										do not pay again. Opening Ko-fi does not update your payment
-										status. Your first advertising month starts after materials
-										are approved.
+										status.{' '}
+										{order.paidAt
+											? 'Your campaign dates extend after the team confirms this renewal payment.'
+											: 'Your first advertising month starts after materials are approved.'}
 									</p>
 								</AlertDescription>
 								<a

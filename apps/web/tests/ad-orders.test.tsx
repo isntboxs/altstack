@@ -258,6 +258,16 @@ describe('guest order flow', () => {
 			expect(link.getAttribute('href')).toBe(url)
 			expect(link.getAttribute('referrerpolicy')).toBe('no-referrer')
 			expect(screen.getByText(/include your order reference/)).toBeTruthy()
+			expect(
+				screen.getByText(
+					/Your first advertising month starts after materials are approved/
+				)
+			).toBeTruthy()
+			expect(
+				screen.queryByText(
+					/Your campaign dates extend after the team confirms this renewal payment/
+				)
+			).toBeNull()
 			expect(screen.getByText(id)).toBeTruthy()
 			expect(screen.getByText('advertiser@example.test')).toBeTruthy()
 			expect(mock.confirmPayment).not.toHaveBeenCalled()
@@ -537,6 +547,16 @@ describe('guest order flow', () => {
 			name: 'Renewal requested — awaiting payment',
 		})
 		expect(requested.hasAttribute('disabled')).toBe(true)
+		expect(
+			screen.getByText(
+				/Your campaign dates extend after the team confirms this renewal payment/
+			)
+		).toBeTruthy()
+		expect(
+			screen.queryByText(
+				/Your first advertising month starts after materials are approved/
+			)
+		).toBeNull()
 		expect(
 			screen
 				.getByRole('link', { name: /Pay Core on Ko-fi/ })
