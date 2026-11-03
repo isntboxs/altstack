@@ -194,7 +194,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 					<div className="relative flex min-h-38 flex-1 flex-col">
 						<div
 							data-slot="project-card-summary"
-							className="flex flex-1 flex-col gap-4 group-focus-within/project-card:invisible group-hover/project-card:invisible"
+							className="flex flex-1 flex-col gap-4 group-focus-within/project-card:invisible group-hover/project-card:invisible pointer-coarse:pb-8"
 						>
 							<CardDescription className="min-h-10 wrap-anywhere">
 								{projectData.tagline}
