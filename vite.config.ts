@@ -150,8 +150,13 @@ export default defineConfig({
 				name: 'eslint-tanstack-query',
 				specifier: '@tanstack/eslint-plugin-query',
 			},
+			{ name: 'react-doctor', specifier: 'oxlint-plugin-react-doctor' },
 		],
 		rules: {
+			// react doctor
+			'react-doctor/no-fetch-in-effect': 'warn',
+			'react-doctor/no-derived-state': 'warn',
+
 			'vite-plus/prefer-vite-plus-imports': 'error',
 			// Tanstack Router rules, ref: https://tanstack.com/router/latest/docs/eslint/eslint-plugin-router
 			'eslint-tanstack-router/create-route-property-order': 'error',
