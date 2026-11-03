@@ -37,6 +37,7 @@ const exploreLinks = linkOptions([
 const communityLinks = linkOptions([
 	{ label: 'Blogs', to: '/blogs', search: {} },
 	{ label: 'Submit a Project', to: '/submit', search: {} },
+	{ label: 'Advertise', to: '/advertise', search: {} },
 	{ label: 'Project Activity', to: '/activity', search: {} },
 ])
 

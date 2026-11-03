@@ -139,6 +139,18 @@ export const Header = ({
 									>
 										Activity
 									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={
+											<Link
+												to="/advertise"
+												activeOptions={{ includeSearch: false }}
+												activeProps={{ className: 'font-semibold' }}
+											/>
+										}
+									>
+										Advertise
+									</DropdownMenuItem>
 								</DropdownMenuGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -240,6 +252,23 @@ export const Header = ({
 											</NavigationMenuLink>
 										</div>
 									</NavigationMenuContent>
+								</NavigationMenuItem>
+								<NavigationMenuItem>
+									<NavigationMenuLink
+										render={<Link to="/advertise" viewTransition />}
+										className={navigationMenuTriggerStyle({
+											className: 'h-fit px-2',
+										})}
+										active={
+											!!matchRoute({
+												to: '/advertise',
+												fuzzy: true,
+												includeSearch: false,
+											})
+										}
+									>
+										Advertise
+									</NavigationMenuLink>
 								</NavigationMenuItem>
 							</NavigationMenuList>
 						</NavigationMenu>
