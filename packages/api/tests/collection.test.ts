@@ -15,11 +15,15 @@ import {
 } from 'vite-plus/test'
 
 import type { ORPCContext } from '@altstack/api/context'
-import { sitemapCollections } from '@altstack/api/queries/collection'
+import {
+	getProjectCollectionRecommendations,
+	sitemapCollections,
+} from '@altstack/api/queries/collection'
 import {
 	collectionRouter,
 	adminCollectionRouter,
 } from '@altstack/api/routers/collection'
+import { projectRouter } from '@altstack/api/routers/project'
 
 import {
 	collection,
@@ -62,6 +66,7 @@ async function fixture(
 		.values({
 			name: slug,
 			slug,
+			tagline: `Tagline ${slug}`,
 			repositoryUrl: `https://github.com/fixtures/${slug}`,
 			description: `Description ${slug}`,
 			content: `# Documentation ${slug}`,
@@ -124,6 +129,128 @@ afterAll(async () => {
 	await postgres.close()
 })
 describe('public curated collections', () => {
+	it('returns up to three other published members in editorial order on project detail', async () => {
+		const current = await fixture('recommendation-current')
+		const hidden = await fixture('recommendation-hidden')
+		const first = await fixture('recommendation-first')
+		const unavailable = await fixture('recommendation-unavailable')
+		const second = await fixture('recommendation-second')
+		const third = await fixture('recommendation-third')
+		const fourth = await fixture('recommendation-fourth')
+		const saved = await admin().create({
+			body: body([
+				current.id,
+				hidden.id,
+				first.id,
+				unavailable.id,
+				second.id,
+				third.id,
+				fourth.id,
+			]),
+		})
+		await scope.db
+			.update(project)
+			.set({ status: 'draft' })
+			.where(eq(project.id, hidden.id))
+		await scope.db
+			.delete(githubRepository)
+			.where(eq(githubRepository.projectId, unavailable.id))
+		const detail = await createRouterClient(projectRouter, {
+			context: context(),
+		}).getBySlug({ params: { slug: current.slug } })
+		expect(detail.relatedCollections).toHaveLength(1)
+		expect(detail.relatedCollections[0]).toMatchObject({
+			id: saved.id,
+			name: saved.name,
+			slug: saved.slug,
+		})
+		expect(
+			detail.relatedCollections[0]?.projects.map((entry) => entry.id)
+		).toEqual([first.id, second.id, third.id])
+		expect(detail.relatedCollections[0]?.projects[0]).toMatchObject({
+			name: first.name,
+			description: first.description,
+			github: { stars: 0, licenseSlug: null },
+		})
+	})
+
+	it('uses every visible collection, including main-project collections, and responds to publication changes', async () => {
+		const current = await fixture('recommendation-main')
+		const peer = await fixture('recommendation-peer')
+		const target = await fixture('recommendation-target')
+		const first = await admin().create({
+			body: body([peer.id], {
+				slug: 'related-alternatives',
+				kind: 'alternatives',
+				sourceRepositoryUrl: null,
+				mainProjectId: current.id,
+			}),
+		})
+		const second = await admin().create({
+			body: body([current.id, peer.id], { slug: 'related-repository' }),
+		})
+		await admin().create({
+			body: body([current.id, peer.id], {
+				slug: 'related-draft',
+				status: 'draft',
+			}),
+		})
+		await admin().create({
+			body: body([current.id, peer.id], {
+				slug: 'related-unavailable-target',
+				kind: 'ecosystem',
+				mainProjectId: target.id,
+				sourceRepositoryUrl: null,
+			}),
+		})
+		await scope.db
+			.update(project)
+			.set({ status: 'draft' })
+			.where(eq(project.id, target.id))
+		const groups = await getProjectCollectionRecommendations(
+			scope.db,
+			current.id
+		)
+		expect(groups.map((entry) => entry.id).toSorted()).toEqual(
+			[first.id, second.id].toSorted()
+		)
+		await scope.db
+			.update(project)
+			.set({ logo: null, tagline: null, description: null })
+			.where(eq(project.id, peer.id))
+		expect(
+			(await getProjectCollectionRecommendations(scope.db, current.id))[0]
+				?.projects[0]
+		).toMatchObject({ logo: '', tagline: '', description: '' })
+		await scope.db
+			.update(collection)
+			.set({ status: 'draft' })
+			.where(eq(collection.id, second.id))
+		expect(
+			(await getProjectCollectionRecommendations(scope.db, current.id)).map(
+				(entry) => entry.id
+			)
+		).toEqual([first.id])
+		await scope.db
+			.update(project)
+			.set({ status: 'draft' })
+			.where(eq(project.id, peer.id))
+		expect(
+			await getProjectCollectionRecommendations(scope.db, current.id)
+		).toEqual([])
+	})
+
+	it('omits recommendations for uncollected projects and collections containing only the current project', async () => {
+		const current = await fixture('recommendation-only')
+		expect(
+			await getProjectCollectionRecommendations(scope.db, current.id)
+		).toEqual([])
+		await admin().create({ body: body([current.id]) })
+		expect(
+			await getProjectCollectionRecommendations(scope.db, current.id)
+		).toEqual([])
+	})
+
 	it.each([undefined, 'user'] as const)(
 		'rejects %s admin access before touching the database over REST and RPC',
 		async (role) => {

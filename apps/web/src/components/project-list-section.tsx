@@ -12,6 +12,8 @@ import { useState } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
+import type { ProjectCardPreview } from '@altstack/shared/schemas/project'
+
 import { Badge } from '@altstack/ui/components/badge'
 import { Button } from '@altstack/ui/components/button'
 import {
@@ -42,8 +44,10 @@ import type { ProjectPageLinkOptions } from '#/features/project/page-links'
 import { projectCatalogueKey, projectQueries } from '#/features/project/queries'
 import { createPaginationScrollHandler } from '#/lib/pagination-scroll'
 
-type ProjectCardProps =
-	ORPCRouterOutputs['project']['search']['projects'][number] & { now?: number }
+type ProjectCardProps = ProjectCardPreview & {
+	now?: number
+	headingLevel?: 'h2' | 'h3'
+}
 
 const CreatedPaginationPrevious = createLink(PaginationPrevious)
 
@@ -109,6 +113,7 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 }
 
 export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
+	const Heading = projectData.headingLevel ?? 'h2'
 	const githubStatsItem = [
 		{
 			icon: IconStar,
@@ -167,7 +172,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							name={projectData.name}
 							className="size-7"
 						/>
-						<h2 className="min-w-0 text-xl font-semibold wrap-anywhere">
+						<Heading className="min-w-0 text-xl font-semibold wrap-anywhere">
 							<Link
 								to="/$slug"
 								params={{ slug: projectData.slug }}
@@ -176,7 +181,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 							>
 								{projectData.name} {projectData.verified && <VerifiedBadge />}
 							</Link>
-						</h2>
+						</Heading>
 						{projectData.github.archived === true && (
 							<Badge variant="secondary" className="shrink-0">
 								Archived

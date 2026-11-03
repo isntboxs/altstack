@@ -35,6 +35,7 @@ function legacyCatalogueSchema(value: unknown): unknown {
 		'archived',
 		'asOf',
 		'query',
+		'relatedCollections',
 	])
 	const properties = 'properties' in value ? value.properties : undefined
 	if (
@@ -202,6 +203,7 @@ const responses = {
 		...project,
 		verified: false,
 		featuredProjects: [],
+		relatedCollections: [],
 		tags: [],
 		categoryDetails: [node],
 		githubStarsHistory: {
@@ -1112,7 +1114,19 @@ describe('generated OpenAPI compatibility', () => {
 		expect(paths['/projects/{slug}']?.query?.responses?.['200']).toMatchObject({
 			content: {
 				'application/json': {
-					schema: { properties: { verified: { type: 'boolean' } } },
+					schema: {
+						properties: {
+							verified: { type: 'boolean' },
+							relatedCollections: {
+								type: 'array',
+								items: {
+									properties: {
+										projects: { type: 'array', minItems: 1, maxItems: 3 },
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		})

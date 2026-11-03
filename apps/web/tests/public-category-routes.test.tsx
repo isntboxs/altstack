@@ -179,6 +179,7 @@ const flat = categoryFixture(105, {
 })
 const nodes = [general, root, ai, flat, editors]
 const zed: ORPCRouterOutputs['project']['getBySlug'] = {
+	relatedCollections: [],
 	verified: false,
 	featuredProjects: [],
 	tags: [
@@ -2125,5 +2126,70 @@ describe('public license routes', () => {
 			await screen.findByRole('heading', { name: 'License not found' })
 		).toBeTruthy()
 		expect(router.state.matches.at(-1)?.status).toBe('notFound')
+	})
+})
+
+describe('project collection recommendations', () => {
+	it('places related project cards after project details and before the footer, and links to the collection', async () => {
+		const original = rpc.getMockImplementation()!
+		rpc.mockImplementation(async (path, input) => {
+			const data = await original(path, input)
+			if (path.join('/') !== 'project/getBySlug') return data
+			return {
+				...zed,
+				relatedCollections: [
+					{
+						id: editorialCollection.id,
+						name: editorialCollection.name,
+						slug: editorialCollection.slug,
+						projects: [
+							{
+								...zed,
+								id: '10000000-0000-4000-8000-000000000090',
+								name: 'Collection peer',
+								slug: 'collection-peer',
+							},
+						],
+					},
+				],
+			}
+		})
+		const router = await routerAt('/test-zed', true)
+		const related = screen.getByRole('region', {
+			name: 'Similar open source projects',
+		})
+		expect(
+			within(related).getByRole('heading', {
+				name: 'Collection peer',
+				level: 3,
+			})
+		).toBeTruthy()
+		expect(within(related).queryByRole('heading', { name: 'Zed' })).toBeNull()
+		expect(
+			screen
+				.getByRole('region', { name: 'Project details' })
+				.compareDocumentPosition(related) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy()
+		expect(
+			related.compareDocumentPosition(screen.getByRole('contentinfo')) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy()
+		const link = within(related).getByRole('link', {
+			name: 'View collection: Editorial collection',
+		})
+		expect(link.getAttribute('href')).toBe('/collections/editorial-collection')
+		fireEvent.click(link)
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe(
+				'/collections/editorial-collection'
+			)
+		)
+	})
+
+	it('omits the section when no collection has recommendations', async () => {
+		await routerAt('/test-zed', true)
+		expect(
+			screen.queryByRole('heading', { name: 'Similar open source projects' })
+		).toBeNull()
 	})
 })

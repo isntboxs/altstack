@@ -20,6 +20,7 @@ import {
 	listPublicCategories,
 	projectInCategorySubtree,
 } from '@altstack/api/queries/category'
+import { getProjectCollectionRecommendations } from '@altstack/api/queries/collection'
 import { buildGithubStarsHistory } from '@altstack/api/queries/github-stars'
 import { projectHasLicense } from '@altstack/api/queries/license'
 import { projectIsVerified } from '@altstack/api/queries/ownership'
@@ -125,6 +126,10 @@ const getBySlugHandler = publicProcedure.project.getBySlug.handler(
 				return {
 					...publicFields.parse({ ...row.projects, verified: row.verified }),
 					featuredProjects,
+					relatedCollections: await getProjectCollectionRecommendations(
+						tx,
+						row.projects.id
+					),
 					tags: await getProjectTags(tx, row.projects.id),
 					categoryDetails: await getDirectProjectCategories(
 						tx,

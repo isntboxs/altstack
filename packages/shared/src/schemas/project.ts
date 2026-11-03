@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { PROJECT_STATUS } from '@altstack/shared/constants'
 import { categoryNodeSchema } from '@altstack/shared/schemas/category'
+import { collectionSlugSchema } from '@altstack/shared/schemas/collection'
 import {
 	featuredProjectPreviewSchema,
 	MAX_FEATURED_PROJECTS,
@@ -95,8 +96,36 @@ export const getProjectBySlugInputSchema = z.object({
 	params: getProjectBySlugParamsSchema,
 })
 
+export const projectCardPreviewSchema = z.object({
+	id: projectField.id,
+	name: projectField.name,
+	verified: projectField.verified,
+	slug: projectField.slug,
+	tagline: projectField.tagline,
+	description: projectField.description,
+	logo: projectField.logo,
+	github: z.object(githubField),
+})
+
+export type ProjectCardPreview = z.infer<typeof projectCardPreviewSchema>
+
+export const MAX_COLLECTION_RECOMMENDATIONS = 3
+
+export const projectCollectionRecommendationSchema = z.object({
+	id: z.uuid(),
+	name: z.string(),
+	slug: collectionSlugSchema,
+	projects: z
+		.array(projectCardPreviewSchema)
+		.min(1)
+		.max(MAX_COLLECTION_RECOMMENDATIONS),
+})
+
 export const getProjectBySlugOutputSchema = z.object({
 	...projectField,
+	relatedCollections: z
+		.array(projectCollectionRecommendationSchema)
+		.default([]),
 	featuredProjects: z
 		.array(featuredProjectPreviewSchema)
 		.max(MAX_FEATURED_PROJECTS)
