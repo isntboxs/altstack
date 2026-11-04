@@ -732,6 +732,7 @@ describe('public category routes and hierarchy UI', () => {
 		)
 		vi.mocked(preparePublicContent).mockImplementation(() =>
 			Promise.resolve({
+				collectionsBySlug: {},
 				codeBlocks: {},
 				projectsBySlug: {
 					'linked-project': {

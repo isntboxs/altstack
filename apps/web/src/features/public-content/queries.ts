@@ -8,22 +8,29 @@ import {
 import {
 	preparePublicContent,
 	preparePublicBlogContent,
+	preparePublicPageContent,
 } from '#/features/public-content/server-function'
 
 export function publicContentOptions(
 	slug: string,
 	content: string,
-	kind: 'project' | 'blog' = 'project'
+	kind: 'project' | 'blog' | 'collection' | 'about' = 'project'
 ) {
 	return queryOptions({
 		queryKey: [
 			...publicContentQueryKey,
-			kind === 'blog' ? `blogs/${slug}` : slug,
+			kind === 'blog' || kind === 'collection' ? `${kind}s/${slug}` : slug,
 			content,
 		],
 		queryFn: async () => {
 			if (!content) return emptyPublicContent()
 			try {
+				if (kind === 'collection' || kind === 'about') {
+					return await preparePublicPageContent({
+						data:
+							kind === 'collection' ? { kind, slug } : { kind, slug: 'about' },
+					})
+				}
 				return kind === 'blog'
 					? await preparePublicBlogContent({ data: { slug } })
 					: await preparePublicContent({ data: { slug } })

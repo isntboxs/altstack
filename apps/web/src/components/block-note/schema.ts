@@ -7,8 +7,12 @@ import {
 	DEFAULT_CODE_BLOCK_LANGUAGE,
 	SUPPORTED_CODE_BLOCK_LANGUAGES,
 } from '#/components/block-note/code-block'
+import { CollectionMentionInline } from '#/components/block-note/collection-mention'
 import { ProjectMentionInline } from '#/components/block-note/project-mention'
-import { projectSlugFromPath } from '#/features/public-content/model'
+import {
+	projectSlugFromPath,
+	collectionSlugFromPath,
+} from '#/features/public-content/model'
 import {
 	CODE_BLOCK_SHIKI_THEME,
 	createHighlighter,
@@ -16,7 +20,10 @@ import {
 } from '#/utils/shiki.bundle'
 
 export const blockNoteSchema = BlockNoteSchema.create().extend({
-	inlineContentSpecs: { projectMention: ProjectMentionInline },
+	inlineContentSpecs: {
+		projectMention: ProjectMentionInline,
+		collectionMention: CollectionMentionInline,
+	},
 	blockSpecs: {
 		codeBlock: BNCustomCodeBlock({
 			indentLineWithTab: true,
@@ -53,15 +60,14 @@ type ContentInline = InlineContent<
 	typeof blockNoteSchema.styleSchema
 >
 
-function restoreProjectMentions(
-	content: Array<ContentInline>
-): Array<ContentInline> {
+function restoreMentions(content: Array<ContentInline>): Array<ContentInline> {
 	return content.map((inline) => {
 		if (inline.type !== 'link') return inline
-		const slug = projectSlugFromPath(inline.href)
+		const collectionSlug = collectionSlugFromPath(inline.href)
+		const slug = collectionSlug ?? projectSlugFromPath(inline.href)
 		if (!slug) return inline
 		return {
-			type: 'projectMention',
+			type: collectionSlug ? 'collectionMention' : 'projectMention',
 			content: undefined,
 			props: {
 				slug,
@@ -72,22 +78,18 @@ function restoreProjectMentions(
 }
 
 // BlockNote's Markdown parser returns built-in links rather than custom inline
-// content. Restore project atoms in every editable location after parsing.
+// content. Restore mention atoms in every editable location after parsing.
 export function parseContentMarkdown(editor: ContentEditor, markdown: string) {
 	const blocks = editor.tryParseMarkdownToBlocks(markdown)
 	const restore = (items: typeof blocks) => {
 		for (const block of items) {
 			if (Array.isArray(block.content)) {
-				block.content = restoreProjectMentions(block.content)
+				block.content = restoreMentions(block.content)
 			} else if (block.type === 'table') {
 				for (const row of block.content.rows) {
 					for (const cell of row.cells) {
 						const content = Array.isArray(cell) ? cell : cell.content
-						content.splice(
-							0,
-							content.length,
-							...restoreProjectMentions(content)
-						)
+						content.splice(0, content.length, ...restoreMentions(content))
 					}
 				}
 			}

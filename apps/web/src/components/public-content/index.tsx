@@ -116,6 +116,7 @@ export function PublicContent({
 							title={title}
 							slug={slug}
 							projects={prepared.projectsBySlug}
+							collections={prepared.collectionsBySlug}
 						>
 							{children}
 						</ContentLink>

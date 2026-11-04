@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
-import { blogSlugSchema } from '@altstack/shared/schemas'
+import { blogSlugSchema, collectionSlugSchema } from '@altstack/shared/schemas'
 
 import { emptyPublicContent } from '#/features/public-content/model'
 
@@ -24,4 +24,28 @@ export const preparePublicBlogContent = createServerFn({ method: 'POST' })
 		if (!post) return emptyPublicContent()
 		const { prepareContent } = await import('./prepare.server')
 		return prepareContent({ slug: `blogs/${data.slug}`, content: post.content })
+	})
+
+export const preparePublicPageContent = createServerFn({ method: 'POST' })
+	.validator(
+		z.discriminatedUnion('kind', [
+			z.strictObject({
+				kind: z.literal('collection'),
+				slug: collectionSlugSchema,
+			}),
+			z.strictObject({ kind: z.literal('about'), slug: z.literal('about') }),
+		])
+	)
+	.handler(async ({ data }) => {
+		const { client } = await import('#/utils/orpc')
+		const page =
+			data.kind === 'collection'
+				? await client.collection.getBySlug({ params: { slug: data.slug } })
+				: await client.about.get({})
+		if (!page.content) return emptyPublicContent()
+		const { prepareContent } = await import('./prepare.server')
+		return prepareContent({
+			slug: data.kind === 'collection' ? `collections/${data.slug}` : 'about',
+			content: page.content,
+		})
 	})

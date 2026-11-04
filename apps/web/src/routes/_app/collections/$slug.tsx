@@ -12,6 +12,7 @@ import {
 	CollectionCards,
 } from '#/features/collections/components'
 import { collectionQueries } from '#/features/collections/queries'
+import { publicContentOptions } from '#/features/public-content/queries'
 import { publicUrl, seoHead, unavailableHead } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/collections/$slug')({
@@ -26,7 +27,10 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 				...collectionQueries.bySlug(params.slug),
 				retry: false,
 			})
-			return { collection }
+			const prepared = await context.queryClient.query(
+				publicContentOptions(collection.slug, collection.content, 'collection')
+			)
+			return { collection, prepared }
 		} catch (error) {
 			if (
 				typeof error === 'object' &&
@@ -76,10 +80,14 @@ export const Route = createFileRoute('/_app/collections/$slug')({
 })
 /** Presents the main article and any independently available discovery cards. */
 function Page() {
-	const { collection } = Route.useLoaderData()
+	const { collection, prepared } = Route.useLoaderData()
 	return (
 		<>
-			<CollectionArticle key={collection.id} collection={collection} />
+			<CollectionArticle
+				key={collection.id}
+				collection={collection}
+				prepared={prepared}
+			/>
 			<QueryBoundary pending={null} error={() => null}>
 				<MoreCollections collectionId={collection.id} />
 			</QueryBoundary>

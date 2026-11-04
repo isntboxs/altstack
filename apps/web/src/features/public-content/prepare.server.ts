@@ -5,6 +5,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 
+import { publicCollectionMentions } from '@altstack/api/queries/collection'
 import { publicProjectMentions } from '@altstack/api/queries/project-mentions'
 
 import { env } from '@altstack/env/web'
@@ -67,6 +68,7 @@ export async function prepareContent(input: { slug: string; content: string }) {
 		}
 	})
 	const slugs = new Set<string>()
+	const collectionSlugs = new Set<string>()
 	const code: Array<Code> = []
 	visit(tree, (node) => {
 		if (node.type === 'code') code.push(node)
@@ -80,9 +82,9 @@ export async function prepareContent(input: { slug: string; content: string }) {
 		}
 		const href =
 			node.type === 'link' ? node.url : definitions.get(node.identifier)
-		const slug =
-			href && contentLink(href, input.slug, env.VITE_APP_URL)?.projectSlug
-		if (slug) slugs.add(slug)
+		const target = href ? contentLink(href, input.slug, env.VITE_APP_URL) : null
+		if (target?.projectSlug) slugs.add(target.projectSlug)
+		if (target?.collectionSlug) collectionSlugs.add(target.collectionSlug)
 	})
 	await Promise.all([
 		...code.map(async (node) => {
@@ -99,6 +101,20 @@ export async function prepareContent(input: { slug: string; content: string }) {
 				)
 			} catch {
 				log.warn({ action: 'public_content_mentions_failed', slug: input.slug })
+			}
+		})(),
+		(async () => {
+			if (collectionSlugs.size === 0) return
+			try {
+				const collections = await publicCollectionMentions([...collectionSlugs])
+				result.collectionsBySlug = Object.fromEntries(
+					collections.map((collection) => [collection.slug, collection])
+				)
+			} catch {
+				log.warn({
+					action: 'public_content_collection_mentions_failed',
+					slug: input.slug,
+				})
 			}
 		})(),
 	])

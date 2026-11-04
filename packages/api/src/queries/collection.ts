@@ -5,6 +5,7 @@ import {
 	desc,
 	eq,
 	getTableColumns,
+	ilike,
 	inArray,
 	lte,
 	ne,
@@ -14,7 +15,7 @@ import {
 
 import { projectIsVerified } from '@altstack/api/queries/ownership'
 
-import type { db } from '@altstack/db'
+import { db } from '@altstack/db'
 import {
 	collection,
 	collectionMember,
@@ -137,6 +138,69 @@ function repositoryAvatar(source: string | null) {
 	const owner = new URL(parsed.data).pathname.split('/')[1]
 	return owner ? `https://github.com/${owner}.png?size=256` : null
 }
+
+function collectionMentionQuery(database: CollectionDatabase) {
+	return database
+		.select({
+			slug: collection.slug,
+			name: collection.name,
+			description: collection.description,
+			kind: collection.kind,
+			memberCount: cardFields.memberCount,
+			mainProjectLogo: project.logo,
+			sourceRepositoryUrl: collection.sourceRepositoryUrl,
+		})
+		.from(collection)
+		.leftJoin(project, eq(project.id, collection.mainProjectId))
+}
+
+function withCollectionArtwork<
+	T extends {
+		kind: string
+		mainProjectLogo: string | null
+		sourceRepositoryUrl: string | null
+	},
+>({ mainProjectLogo, sourceRepositoryUrl, ...entry }: T) {
+	return {
+		...entry,
+		logo:
+			entry.kind === 'repository'
+				? repositoryAvatar(sourceRepositoryUrl)
+				: mainProjectLogo,
+	}
+}
+
+export async function publicCollectionMentions(
+	slugs: Array<string>,
+	database: CollectionDatabase = db
+) {
+	if (slugs.length === 0) return []
+	const rows = await collectionMentionQuery(database).where(
+		and(visibleCollection, inArray(collection.slug, [...new Set(slugs)]))
+	)
+	return rows.map(withCollectionArtwork)
+}
+
+export async function searchPublicCollectionMentions(
+	database: CollectionDatabase,
+	query: string
+) {
+	const term = query.trim()
+	const pattern = `%${term.replace(/[\\%_]/g, '\\$&')}%`
+	const rows = await collectionMentionQuery(database)
+		.where(
+			and(
+				visibleCollection,
+				term
+					? or(ilike(collection.name, pattern), ilike(collection.slug, pattern))
+					: undefined
+			)
+		)
+		.orderBy(desc(collection.updatedAt), asc(collection.id))
+		.limit(8)
+	return rows.map(withCollectionArtwork)
+}
+
 /** Paginates eligible collections with current artwork and visible-member counts. */
 export async function listPublicCollections(
 	database: CollectionDatabase,
@@ -170,17 +234,7 @@ export async function listPublicCollections(
 	])
 	return {
 		...(offset === undefined ? {} : { offset }),
-		collections: collections.map(
-			({ mainProjectLogo, sourceRepositoryUrl, ...entry }) => {
-				return {
-					...entry,
-					logo:
-						entry.kind === 'repository'
-							? repositoryAvatar(sourceRepositoryUrl)
-							: mainProjectLogo,
-				}
-			}
-		),
+		collections: collections.map(withCollectionArtwork),
 		total: totals[0]?.total ?? 0,
 	}
 }

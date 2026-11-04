@@ -114,6 +114,17 @@ export const collectionCardSchema = z.object({
 	updatedAt: z.coerce.date(),
 	memberCount: z.number().int().nonnegative(),
 })
+export const collectionMentionSchema = collectionCardSchema.omit({
+	id: true,
+	updatedAt: true,
+})
+export type CollectionMention = z.infer<typeof collectionMentionSchema>
+export const collectionMentionsInputSchema = z.object({
+	query: z.object({ q: z.string().trim().max(100).default('') }),
+})
+export const collectionMentionsOutputSchema = z.object({
+	collections: z.array(collectionMentionSchema),
+})
 export const collectionDetailSchema = collectionCardSchema
 	.omit({ logo: true })
 	.extend({

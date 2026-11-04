@@ -1,12 +1,15 @@
-import { IconExternalLink } from '@tabler/icons-react'
+import { IconExternalLink, IconFolders } from '@tabler/icons-react'
 import { Link, useRouter } from '@tanstack/react-router'
 import type { Element, ElementContent } from 'hast'
 import type { ReactNode } from 'react'
 
 import { env } from '@altstack/env/web'
 
+import type { CollectionMention } from '@altstack/shared/schemas/collection'
+
 import { Badge } from '@altstack/ui/components/badge'
 
+import { CollectionHoverCard } from '#/components/collection-hover-card'
 import { ProjectHoverCard } from '#/components/project-hover-card'
 import { ProjectLogo } from '#/components/project-media'
 import { contentLink } from '#/features/public-content/model'
@@ -26,6 +29,7 @@ export function ContentLink({
 	node,
 	slug,
 	projects,
+	collections,
 }: {
 	href?: string
 	title?: string
@@ -33,6 +37,7 @@ export function ContentLink({
 	node?: Element
 	slug: string
 	projects: Record<string, ProjectMention>
+	collections: Record<string, CollectionMention>
 }) {
 	const target = href && contentLink(href, slug, env.VITE_APP_URL)
 	if (!target) {
@@ -58,11 +63,17 @@ export function ContentLink({
 		target.projectSlug && Object.hasOwn(projects, target.projectSlug)
 			? projects[target.projectSlug]
 			: undefined
+	const collection =
+		target.collectionSlug && Object.hasOwn(collections, target.collectionSlug)
+			? collections[target.collectionSlug]
+			: undefined
+	const imageLink = node && containsImage(node)
 	return (
 		<InternalContentLink
 			url={target.url}
 			title={title}
-			project={node && containsImage(node) ? undefined : project}
+			project={imageLink ? undefined : project}
+			collection={imageLink ? undefined : collection}
 		>
 			{children}
 		</InternalContentLink>
@@ -73,16 +84,41 @@ function InternalContentLink({
 	url,
 	title,
 	project,
+	collection,
 	children,
 }: {
 	url: URL
 	title?: string
 	project?: ProjectMention
+	collection?: CollectionMention
 	children: ReactNode
 }) {
 	const router = useRouter()
 	const search = router.options.parseSearch(url.search)
 	const hash = url.hash.slice(1)
+	if (collection) {
+		return (
+			<CollectionHoverCard collection={collection}>
+				<Badge
+					variant="secondary"
+					className="not-prose h-auto max-w-full gap-1.5 px-2 py-1 align-middle"
+					render={
+						<Link
+							to="/collections/$slug"
+							params={{ slug: collection.slug }}
+							search={search}
+							hash={hash}
+							title={title}
+						/>
+					}
+					data-collection-mention={collection.slug}
+				>
+					<IconFolders aria-hidden="true" />
+					<span className="truncate">{collection.name}</span>
+				</Badge>
+			</CollectionHoverCard>
+		)
+	}
 	if (project) {
 		return (
 			<ProjectHoverCard project={project}>
