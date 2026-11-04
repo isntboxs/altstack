@@ -60,7 +60,8 @@ web values are validated in [web.ts](../packages/env/src/web.ts).
 | `S3_PUBLIC_URL`                            | Yes                   | Public base URL for published assets                                              |
 | `RESEND_API_KEY`                           | For email             | Server-only sending credential                                                    |
 | `RESEND_FROM_EMAIL`                        | For email             | Plain address on your verified sender domain, e.g. `notifications@example.com`    |
-| `EMAIL_APP_URL`                            | For review worker     | Canonical web origin, also present in `CORS_ORIGINS`; HTTPS in production         |
+| `EMAIL_APP_URL`                            | For review/ad email   | Canonical web origin, also present in `CORS_ORIGINS`; HTTPS in production         |
+| `ADS_CONTACT_EMAIL`                        | No                    | Monitored ad-order/reply inbox; defaults to `RESEND_FROM_EMAIL`                   |
 
 Generate the auth secret locally with `openssl rand -hex 32` and store the result
 only in your private `.env` or secret manager. Empty optional strings are treated
@@ -116,7 +117,10 @@ temporary `tmp/*` uploads; keep database backups in separate private storage.
 GitHub-only local sign-in can run without them; email requests return a generic
 retryable error until configured. Disable click tracking for authentication
 emails. Review decisions require the separate scheduled worker described in
-[deployment](deployment.md#scheduled-workers).
+[deployment](deployment.md#scheduled-workers). Advertising order/access emails
+use a separate durable outbox drained by the running API process. Configure a
+monitored `ADS_CONTACT_EMAIL` and review the Ko-fi destinations before testing
+real orders; see [advertising operations](deployment.md#advertising-orders-and-campaigns).
 
 ### Origins and cookies
 
@@ -318,6 +322,40 @@ running it and keep the expected ports available.
 and builds. Use these broad checks only for justified repository-wide changes or
 an explicit baseline, following [Testing Scope](../AGENTS.md#testing-scope).
 Stop the test service with `db:test:stop`, or remove it with `db:test:down`.
+
+### Ranking, advertising, and editorial checks
+
+The [ranking policy](architecture.md#recommended-ranking) has database-backed
+coverage in
+[project-ranking.test.ts](../packages/api/tests/project-ranking.test.ts) for
+normalized contributions, age/activity boundaries, unknown/empty metadata,
+future dates, verification removal, archived visibility, daily stability,
+filtering, and pagination ties. Ownership/license tests cover eligibility and
+other explicit sort integrations.
+
+Advertising API tests cover calendar periods, authorization, conflicts, order
+privacy, payment-reference uniqueness, concurrent confirmation, upload ownership,
+review/renewal, and outbox retries. Web unit/browser tests cover weighted
+selection, TTL/navigation, live removal, pause/dismissal, storage denial, responsive
+insertion/backfill, session offsets, and hydration. About tests cover initial
+copy, first-save/update conflicts, public rendering, real-editor saves, and admin
+access. Use the subset affected by the change, for example:
+
+```sh
+# Choose the API test file(s) for the feature under change.
+vp run --filter @altstack/api test run tests/project-ranking.test.ts
+vp run --filter @altstack/api test run tests/ads.test.ts tests/ad-billing.test.ts
+vp run --filter web test:unit tests/ads-selection.test.ts tests/ads-provider.test.tsx tests/ads-lifecycle.test.tsx
+vp run --filter web test:unit tests/about.test.tsx tests/admin-about-editor.test.tsx
+vp run --filter web test:browser tests/browser/ads.browser.tsx tests/browser/about.browser.tsx
+```
+
+The API database tests above own migrated disposable schemas and require the
+local test database described earlier. Provider operations are mocked. Passing
+them does not establish live S3 access, email delivery, receipt of a Ko-fi
+payment, or deployment acceptance; those belong in the instance's operating
+checks. Public docs describe coverage and reproducible commands, not historical
+test counts or a complete accessibility certification.
 
 ## Browser tests
 

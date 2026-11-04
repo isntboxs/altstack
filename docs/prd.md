@@ -26,6 +26,8 @@ and [shared schemas](../packages/shared/src/schemas).
 | Project contributor        | Submit a project and understand a moderation decision                        |
 | Project representative     | Establish authority and keep a listing accurate                              |
 | Catalogue administrator    | Review intake, maintain taxonomy, handle reports, and protect access         |
+| Editorial administrator    | Publish blog posts and maintain the public About page                        |
+| Advertiser                 | Buy a monthly placement, submit artwork, and manage its review and renewal   |
 
 ## Product principles
 
@@ -57,6 +59,12 @@ published project content current within their scoped permissions.
 | Approved project Owner or Maintainer | Edit the approved published project, review additional access requests, view members, leave membership                                          |
 | Admin                                | Catalogue moderation, taxonomy/featured/collection/report management, eligible first-claim review, protected membership and user administration |
 
+Guests can also read published blogs and `/about`, and order advertising without
+an AltStack account. A private emailed link authorizes access to that advertising
+order only; it does not create a session or grant project membership. Admins also
+manage blogs, About content, advertising campaigns, payment confirmations, and
+artwork review.
+
 Owner and Maintainer have equal project permissions. Roles are scoped to a
 membership, not inferred from sign-in, a global label, or submission history.
 Admins cannot approve their own claims or bypass another submitter's correction
@@ -70,8 +78,8 @@ The catalogue has search, URL-persisted filters/pagination, categories, GitHub
 topic tags, and license pages. Public counts and results include only published
 projects with the repository data required by the catalogue.
 
-Project slugs cannot use reserved site-route names such as `collections`, `tags`,
-or `bookmarks`. Admin writes, publication, and file imports enforce the shared
+Project slugs cannot use reserved site-route names such as `about`, `collections`,
+`tags`, or `bookmarks`. Admin writes, publication, and file imports enforce the shared
 reservation policy. Submission-generated slugs append `-project` when their base
 would be reserved. Category slugs retain their existing validation.
 
@@ -87,7 +95,7 @@ would be reserved. Category slugs retain their existing validation.
   Missing/custom/unrecognized metadata stays `unknown`. The unknown filter is
   noindex; it is not a license assertion. Archived is based on GitHub's flag;
   it does not automatically unpublish a listing.
-- Home defaults to [Recommended ranking](ranking.md), combining normalized stars
+- Home defaults to [Recommended ranking](architecture.md#recommended-ranking), combining normalized stars
   and forks, repository age, recent activity, and a 5% verification bonus;
   archived repositories receive a penalty. Ties use deterministic ID ordering.
   Category/tag/license catalogues default to Most stars. Explicit
@@ -97,6 +105,13 @@ would be reserved. Category slugs retain their existing validation.
 - Trending compares the earliest/latest observed totals within a seven-day
   interval using Asia/Jakarta dates. It requires two different observation dates;
   missing history ranks last, and negative changes remain valid.
+
+Project and collection directories have 45 display slots per full page. Eligible
+listing ads occupy up to three slots, leaving 42 organic items; missing or hidden
+ads are backfilled with catalogue items. Numbered page URLs stay shareable.
+Session offsets preserve sequential traversal as ad availability changes; a new
+tab uses canonical 45-item boundaries. See [listing pagination](architecture.md#listing-capacity-and-pagination)
+for the ledger and its limits during concurrent catalogue changes.
 
 ### GitHub metadata and content
 
@@ -210,7 +225,7 @@ plus a shared guest cap of fifty. Admins resolve or dismiss Open reports at
 `/admin/reports`; decisions do not change project data. No reopen, assignment,
 report email, or automatic correction exists. Contact/message data stays private.
 
-**Featured:** `/admin/featured` manages an ordered selection of up to 21 eligible
+**Featured:** `/admin/featured` manages an ordered selection of up to 24 eligible
 published projects. Save is explicit and detects concurrent changes. Public
 project details omit the current project and unavailable entries. This selection
 does not control homepage order.
@@ -241,7 +256,7 @@ saves/deletes from overwriting newer edits.
 The management list refreshes after failed deletions so retries use the latest
 revision or remove a record deleted elsewhere. Drafts have no public-page link.
 
-The directory shows 12 collections per page, with breadcrumbs and responsive
+The directory uses 45 display slots per page, shared with listing ads, with breadcrumbs and responsive
 Prev/Next, numbered-page, and ellipsis navigation when more than one page exists.
 The first-page URL is `/collections`; `?page=1` normalizes to that clean URL.
 Later pages use `?page=N`. Cards show the collection title, description, type,
@@ -278,9 +293,84 @@ rules. Changing a slug does not create a redirect for the old URL. Deployment
 acceptance is still required for each instance.
 
 Before rollout, a read-only check against the intended database detects existing
-project slugs that collide with site routes, including `collections`. It runs
+project slugs that collide with site routes, including `about` and `collections`. It runs
 automatically before migration and blocks on any collision; operators must rename
 affected projects and recheck before deploying the matching API/web revisions.
+
+### Blogs and About
+
+`/blogs` and `/blogs/<slug>` show published editorial posts. Admins manage posts
+at `/admin/blogs` with title, slug, description, cover, Markdown, and draft or
+published status. Drafts remain private. Publication records a date and estimated
+read time; a revision check protects updates and deletion. Posts retain the
+creating writer's name and use the account's current avatar when available.
+Canonical metadata, social images, and sitemap entries follow publication state.
+Changing a slug changes the public URL without adding a redirect.
+
+`/about` is one public document with an admin editor at `/admin/about`. Its title,
+description, and Markdown body are editable; saving publishes immediately. The
+description also supplies search/social metadata. Before the first save, readers
+see the initial AltStack copy without a database write. Concurrent first saves
+and later stale updates conflict rather than overwrite another editor's work.
+The editor preserves unsaved input after failure, offers a content preview, and
+warns before leaving with changes.
+
+Both use the existing public Markdown renderer with raw HTML disabled. BlockNote
+is the admin authoring interface, not the public renderer. About has canonical
+metadata and a sitemap entry; it is not a general-purpose CMS or a draft workflow.
+
+### Advertising and guest orders
+
+`/advertise` offers one-month Core (US$15, Tier 1), Plus (US$29, Tier 2), and
+Priority (US$55, Tier 3) packages. Prices are server-owned integer cents and are
+copied into an order; renewals retain that order's agreed amount. Creating an
+order requires an email and acceptance of `/advertise/terms`, not an account.
+The response is generic and the private management link is sent only to the
+supplied mailbox. Repeated pending orders for the same email/package coalesce.
+
+The private page at `/advertise/manage` links to the matching Ko-fi package. The
+advertiser uses the same contact email and includes the order reference. Opening
+checkout does not confirm a payment. An admin verifies the receipt and amount,
+then records a unique transaction reference. This records receipt of money, not
+a charge, and concurrent/stale confirmations cannot add another paid period.
+There is no automated Ko-fi reconciliation, stored card, recurring charge, or
+automatic refund.
+
+After confirmation, the advertiser submits a name, description, HTTP(S) website,
+square logo, and horizontal artwork where required. Admins review at `/admin/ads`,
+configure the CTA and button color, and approve, request changes, or reject with
+feedback. First approval starts the campaign's rolling month; initial review
+time does not consume it. Previously approved artwork stays live while revisions
+are reviewed. Rejecting a first campaign is terminal and any refund is arranged
+manually; rejecting a later revision preserves the approved campaign.
+
+Renewal requests queue email and expose the payment instructions without
+extending dates. A confirmed payment adds a month from the current end, or from
+confirmation time if already expired. Renewals preserve explicit deactivation;
+material revisions do not reset the period. Exact [UTC periods and operating steps](deployment.md#advertising-orders-and-campaigns)
+are documented separately.
+
+| Placement                            | Core | Plus | Priority |
+| ------------------------------------ | ---- | ---- | -------- |
+| Project and collection listing cards | Yes  | Yes  | Yes      |
+| Collection detail sidebar            | Yes  | Yes  | Yes      |
+| Public corner recommendation         | Yes  | Yes  | Yes      |
+| Public header banner                 | No   | Yes  | Yes      |
+| Project detail sidebar               | No   | Yes  | Yes      |
+| Homepage sponsor grid                | No   | Yes  | Yes      |
+
+Core and Plus have equal weight on shared placements; Priority has twice the
+weight with the same dwell intervals. Deduplication and available inventory
+constrain actual selections, so a weight is not a guaranteed impression/click
+ratio. Ads are labeled, do not affect Recommended ranking or editorial featured
+order, and yield their listing slots to organic content when blocked or missing.
+There are no impression/click records or delivery guarantees.
+
+Admins may separately create draft, active, or inactive calendar campaigns with
+artwork, UTC scheduling, and revision checks. Campaigns linked to paid orders
+cannot be edited or deleted through that manual calendar editor. Private links,
+live removal, selection timing, and artwork handling are specified in
+[advertising architecture](architecture.md#advertising-inventory-and-rendering).
 
 ### Sharing, indexing, and badges
 
@@ -335,10 +425,12 @@ The dashboard has no job/retry execution controls or historical analytics.
 
 ## Scope boundaries
 
-The current product does not include paid exposure, private named bookmark lists,
-ratings, reviews/follows, a personalized feed, report conversations, or historical
-product analytics. Additional search infrastructure, SDKs, newsletters, galleries,
-and extensions require a demonstrated user problem and a separately scoped outcome.
+The current product does not include automated ad-payment confirmation,
+subscriptions/automatic renewal, automatic refunds, impression/click analytics,
+private named bookmark lists, ratings, reviews/follows, a personalized feed,
+report conversations, or historical product analytics. Additional search
+infrastructure, SDKs, newsletters, galleries, and extensions require a
+demonstrated user problem and a separately scoped outcome.
 See [conditional roadmap work](roadmap.md#conditional-product-work).
 
 ## Success signals

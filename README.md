@@ -7,13 +7,17 @@ activity; save a shortlist; and submit projects for review.
 ## Features
 
 - Searchable catalogue with hierarchical categories, tags, license filters,
-  sorting, and observed GitHub star history.
+  Recommended ranking, other sort orders, and observed GitHub star history.
 - Project pages with Markdown documentation, media, link previews, shareable
   SVG badges, and admin-curated featured projects.
 - GitHub and email Magic Link sign-in, private bookmarks, submission tracking,
   rejection feedback, and resubmission.
 - Project representative verification, scoped owner/maintainer editing, and
   membership management.
+- Public curated collections, editorial blogs, and an admin-editable About page
+  using the shared public Markdown renderer.
+- Monthly advertising with private guest order links, Ko-fi checkout links,
+  manual payment confirmation, artwork review, and explicit renewal.
 - Admin workspace for moderation, reports, taxonomy, users, recorded activity,
   and operational observations.
 
@@ -76,21 +80,17 @@ and recovery, see [deployment](docs/deployment.md).
 The five guides below cover local development, the implementation, operations,
 and product direction:
 
-| Guide                                | Contents                                                              |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| [Development](docs/development.md)   | Local setup, configuration, testing, troubleshooting, and data import |
-| [Architecture](docs/architecture.md) | Package responsibilities, request/data flow, and integrations         |
-| [Deployment](docs/deployment.md)     | Builds, migrations, scheduled workers, monitoring, and recovery       |
-| [Product requirements](docs/prd.md)  | User needs, feature behavior, permissions, and scope                  |
-| [Roadmap](docs/roadmap.md)           | Implemented scope, priorities, and conditional future work            |
+| Guide                                | Contents                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| [Development](docs/development.md)   | Local setup, configuration, testing, troubleshooting, and data import   |
+| [Architecture](docs/architecture.md) | Request/data flow, ranking formula, ad selection/privacy, and rendering |
+| [Deployment](docs/deployment.md)     | Builds, migrations, workers, advertising operations, and recovery       |
+| [Product requirements](docs/prd.md)  | User needs, feature behavior, permissions, and scope                    |
+| [Roadmap](docs/roadmap.md)           | Implemented scope, priorities, and conditional future work              |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, pull requests, and scoped
 validation, [SECURITY.md](SECURITY.md) for vulnerability reporting, and
 [CHANGELOG.md](CHANGELOG.md) for notable changes.
-
-All deployment examples use localhost or reserved example domains. Keep real
-environment files, credentials, deployment identifiers, and production records
-outside public documentation.
 
 ## License
 

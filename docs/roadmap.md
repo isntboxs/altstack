@@ -10,17 +10,32 @@ publish a live-instance inventory.
 
 - Catalogue browse/detail/search, category hierarchy, topic tags, license
   discovery, archived metadata, sorting, and observed GitHub star history.
+  Recommended is the homepage default, using stored repository metadata,
+  age/activity factors, verification eligibility, and an archived penalty.
 - GitHub/Magic Link sign-in, private intake, moderation/history, rejection
   correction, and review-decision email outbox/worker.
 - Markdown/media content, README import, metadata refresh, file imports,
   canonical metadata/sitemaps, social images, and SVG embed badges.
 - Private bookmarks, report intake/admin triage, and detail-page featured curation.
+  Featured configuration accepts up to 24 eligible projects independently of
+  homepage ranking and advertising inventory.
 - Public curated Collections: alternatives, repository lists, and ecosystems,
   with manual admin CRUD, draft/publication controls, revision checks, and ordered
   catalogue membership without ranking. Discovery includes clean first-page URLs,
   responsive numbered pagination, breadcrumbs, catalogue/source artwork, writer
   avatars, and bounded sticky project navigation and sharing. Canonical metadata
   and sitemaps share the live publication policy.
+- Editorial blogs with Markdown, cover media, draft/publication controls,
+  authorship, revision checks, and public metadata/social images. About is a
+  single public Markdown document editable at `/admin/about`, with immediate
+  publication, conflict protection, navigation links, and sitemap discovery.
+- Advertising campaigns and account-free monthly orders: private emailed links,
+  Ko-fi payment links with manual receipt confirmation, artwork review, rolling
+  paid periods, and explicit renewal. The API process delivers advertising
+  notifications from a durable outbox. Placement eligibility, weighted selection,
+  session timing, cosmetic hiding/backfill, and 45-slot project/collection
+  pagination are implemented; automated payment reconciliation and ad analytics
+  are not.
 - Representative verification/editing, member leave/administration, protected user
   actions, admin work queues, recorded activity, and operational observations.
 - Local development/test PostgreSQL separation, disposable schemas, and targeted
@@ -30,21 +45,29 @@ These items are not promises that every integration or deployed revision has
 passed acceptance. Use the [deployment guide](deployment.md) for an instance's
 migration, worker, provider, and recovery verification.
 
-Collections are implemented in source, rather than conditional future work.
-Their rollout requires a passing reserved-project-slug check on the target
-database, the Collections migration, and matching API/web revisions
-on the intended instance. Public visibility, author-avatar fallbacks, pagination,
-and sticky/mobile behavior remain part of that instance's release acceptance;
-local checks do not establish deployment acceptance.
+## v1 rollout
+
+The current source includes the product features listed above, including About,
+blogs, Recommended ranking, and advertising. The remaining v1 work is release
+and instance acceptance, rather than treating these features as future scope.
+This document does not mark v1 as released or certify a production rollout.
+
+Rollout requires a passing reserved-project-slug check, all migrations through
+`about-page`, and matching API/web revisions. Check public eligibility,
+representative access, editorial saves/conflicts, advertising order privacy,
+manual receipt/review/renewal, artwork, email delivery, and responsive pagination
+on the intended instance. Verify the Ko-fi package destinations belong to that
+instance's operator. Local/mock-provider results do not establish those live
+outcomes, and applying a migration does not start external schedules.
 
 ## Near-term priorities
 
-| Priority | Work                        | Completion criteria                                                                                                                                                    |
-| -------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1        | Public repository readiness | Select a license; establish a private vulnerability reporting channel; keep onboarding and release notes accurate                                                      |
-| 2        | Release acceptance          | Confirm matching API/web revisions, migration and audit validation, auth/session flows, representative workflows, and protected admin actions on the intended instance |
-| 3        | Operational reliability     | Verify scheduled runs, backup freshness/failure alerts, isolated restores, asset cleanup, and credential separation for the operated instance                          |
-| 4        | Provider-dependent coverage | Record selected OAuth/Magic Link expiry/replay, proxy-header, email-client/bounce, storage, and social-crawler checks without treating unrelated checks as passing     |
+| Priority | Work                        | Completion criteria                                                                                                                                                               |
+| -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Public repository readiness | Select a license; establish a private vulnerability reporting channel; keep onboarding and release notes accurate                                                                 |
+| 2        | v1 release acceptance       | Confirm matching API/web revisions, migrations, auth/session flows, representative/admin access, editorial content, and manual ad payment/review/renewal on the intended instance |
+| 3        | Operational reliability     | Verify scheduled runs, backup freshness/failure alerts, isolated restores, asset cleanup, and credential separation for the operated instance                                     |
+| 4        | Provider-dependent coverage | Verify OAuth/Magic Link expiry/replay, proxy headers, email delivery/recovery, storage, Ko-fi receipts, and social crawlers without treating unrelated checks as passing          |
 
 Operational evidence and assigned operator follow-ups belong in private tracking.
 Recheck a completed acceptance scenario when a related change or failure justifies
@@ -72,9 +95,12 @@ personalized/trending feed are separate decisions rather than implied additions.
 
 ## Deferred until justified
 
-Guest submission, profiles/follows/reviews/ratings, media galleries/video,
-newsletter/RSS, historical/product analytics, scores, SDKs, and extensions remain
-unscheduled. An external search service requires measured PostgreSQL limitations.
+Guest project submission, profiles/follows/reviews/ratings, media galleries/video,
+newsletter/RSS, historical/product or ad analytics, public ranking-score
+breakdowns, SDKs, and extensions remain unscheduled. Automated ad billing and
+recurring subscriptions would require a separately scoped provider integration;
+the existing Ko-fi links and manual confirmations do not implement them.
+An external search service requires measured PostgreSQL limitations.
 Confirmed regressions and access/data-integrity issues take priority over feature
 expansion.
 
