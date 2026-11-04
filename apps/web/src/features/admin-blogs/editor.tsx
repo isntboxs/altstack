@@ -131,7 +131,8 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 		if (!parsed.success) {
 			const fields: Record<string, string> = {}
 			for (const issue of parsed.error.issues) {
-				fields[String(issue.path[0])] ??= issue.message
+				const field = String(issue.path[0])
+				fields[field] = fields[field] ?? issue.message
 			}
 			setFieldErrors(fields)
 			document.getElementById(`blog-${Object.keys(fields)[0]}`)?.focus()
@@ -404,15 +405,15 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 							disabled={busy}
 							onClick={async () => {
 								setReloading(true)
-								try {
+								await (async () => {
 									await queryClient.invalidateQueries({
 										queryKey: orpc.admin.blog.key(),
 									})
 									await router.invalidate({ sync: true })
-								} finally {
+								})().finally(() => {
 									setReloading(false)
 									setReload(false)
-								}
+								})
 							}}
 						>
 							Reload saved version

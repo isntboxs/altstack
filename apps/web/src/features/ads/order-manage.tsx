@@ -80,16 +80,18 @@ export function AdOrderManage() {
 		if (!access) return
 		setLoading(true)
 		setError('')
-		try {
-			setOrder(await client.adBilling.get({ body: access }))
-			setLoadedAt(Date.now())
-		} catch {
-			setError(
-				'Unable to load this order. Request a fresh link if yours has expired.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				setOrder(await client.adBilling.get({ body: access }))
+				setLoadedAt(Date.now())
+			} catch {
+				setError(
+					'Unable to load this order. Request a fresh link if yours has expired.'
+				)
+			}
+		})().finally(() => {
 			setLoading(false)
-		}
+		})
 	}
 	return (
 		<article className="container mx-auto flex max-w-3xl flex-col gap-7 px-4 pt-28 pb-16">
@@ -219,23 +221,25 @@ function AdMaterialForm({
 					return
 				}
 				setSaving(true)
-				try {
-					onSaved(
-						await client.adBilling.submit({
-							body: {
-								...access,
-								material: parsed.data,
-								expectedVersion: order.version,
-							},
-						})
-					)
-				} catch {
-					setError(
-						'Unable to submit. Check uploads, or refresh the order if another change was made. Your input is retained.'
-					)
-				} finally {
+				await (async () => {
+					try {
+						onSaved(
+							await client.adBilling.submit({
+								body: {
+									...access,
+									material: parsed.data,
+									expectedVersion: order.version,
+								},
+							})
+						)
+					} catch {
+						setError(
+							'Unable to submit. Check uploads, or refresh the order if another change was made. Your input is retained.'
+						)
+					}
+				})().finally(() => {
 					setSaving(false)
-				}
+				})
 			}}
 		>
 			<FieldGroup>
@@ -481,13 +485,17 @@ function AdOrderRenewal({
 				onClick={async () => {
 					setBusy(true)
 					setError('')
-					try {
-						setOrder(await client.adBilling.requestRenewal({ body: access }))
-					} catch {
-						setError('Unable to request renewal. Please refresh and try again.')
-					} finally {
+					await (async () => {
+						try {
+							setOrder(await client.adBilling.requestRenewal({ body: access }))
+						} catch {
+							setError(
+								'Unable to request renewal. Please refresh and try again.'
+							)
+						}
+					})().finally(() => {
 						setBusy(false)
-					}
+					})
 				}}
 			>
 				{order.renewalRequestedAt

@@ -88,25 +88,27 @@ export function ProjectReportDialog({
 		}
 		setErrors({})
 		sending.current = true
-		try {
-			await mutation.mutateAsync({
-				params: { id: projectId },
-				body: parsed.data,
-			})
-			setEmail('')
-			setType('')
-			setMessage('')
-			toast.add({
-				type: 'success',
-				title: 'Report sent',
-				description: 'Thanks for helping keep AltStack accurate.',
-			})
-			onOpenChange(false)
-		} catch {
-			// Keep all entries for an explicit retry; never claim success on failure.
-		} finally {
+		await (async () => {
+			try {
+				await mutation.mutateAsync({
+					params: { id: projectId },
+					body: parsed.data,
+				})
+				setEmail('')
+				setType('')
+				setMessage('')
+				toast.add({
+					type: 'success',
+					title: 'Report sent',
+					description: 'Thanks for helping keep AltStack accurate.',
+				})
+				onOpenChange(false)
+			} catch {
+				// Keep all entries for an explicit retry; never claim success on failure.
+			}
+		})().finally(() => {
 			sending.current = false
-		}
+		})
 	}
 	const errorMessage = getReportErrorMessage(mutation.error)
 	return (

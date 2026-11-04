@@ -291,42 +291,44 @@ function useGithubMetadataPrefill({
 		setError(null)
 		setFeedback(null)
 		setPreview(null)
-		try {
-			const metadata = await mutateAsync({
-				repositoryUrl: requestedRepositoryUrl,
-			})
-			if (currentRequestId !== requestId.current) return
-			const current = getCurrentValues()
-			if (current.repositoryUrl !== requestedRepositoryUrl) {
-				setFeedback(REPOSITORY_CHANGED)
-				return
+		await (async () => {
+			try {
+				const metadata = await mutateAsync({
+					repositoryUrl: requestedRepositoryUrl,
+				})
+				if (currentRequestId !== requestId.current) return
+				const current = getCurrentValues()
+				if (current.repositoryUrl !== requestedRepositoryUrl) {
+					setFeedback(REPOSITORY_CHANGED)
+					return
+				}
+				setPreview({
+					repositoryUrl: metadata.repositoryUrl,
+					requestedRepositoryUrl,
+					description: metadata.description ?? '',
+					websiteUrl: metadata.websiteUrl ?? '',
+					hasDescription: metadata.description !== null,
+					hasWebsite: metadata.websiteUrl !== null,
+					selectDescription:
+						metadata.description !== null && isBlank(current.description),
+					selectWebsite:
+						metadata.websiteUrl !== null && isBlank(current.websiteUrl),
+				})
+			} catch (cause) {
+				if (currentRequestId !== requestId.current) return
+				if (getCurrentValues().repositoryUrl !== requestedRepositoryUrl) {
+					setFeedback(REPOSITORY_CHANGED)
+					return
+				}
+				setError(
+					cause instanceof Error
+						? cause.message
+						: 'Unable to fetch GitHub metadata. Please try again.'
+				)
 			}
-			setPreview({
-				repositoryUrl: metadata.repositoryUrl,
-				requestedRepositoryUrl,
-				description: metadata.description ?? '',
-				websiteUrl: metadata.websiteUrl ?? '',
-				hasDescription: metadata.description !== null,
-				hasWebsite: metadata.websiteUrl !== null,
-				selectDescription:
-					metadata.description !== null && isBlank(current.description),
-				selectWebsite:
-					metadata.websiteUrl !== null && isBlank(current.websiteUrl),
-			})
-		} catch (cause) {
-			if (currentRequestId !== requestId.current) return
-			if (getCurrentValues().repositoryUrl !== requestedRepositoryUrl) {
-				setFeedback(REPOSITORY_CHANGED)
-				return
-			}
-			setError(
-				cause instanceof Error
-					? cause.message
-					: 'Unable to fetch GitHub metadata. Please try again.'
-			)
-		} finally {
+		})().finally(() => {
 			if (currentRequestId === requestId.current) setPending(false)
-		}
+		})
 	}
 
 	const description = adminCreateProjectBodySchema.shape.description.safeParse(

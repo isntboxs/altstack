@@ -223,16 +223,18 @@ function OrderReview({
 		if (busy) return
 		setBusy(true)
 		setError('')
-		try {
-			await action()
-			await onSaved()
-		} catch {
-			setError(
-				'Unable to save. The order may have changed or this payment reference may already be recorded. Refresh before retrying.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				await action()
+				await onSaved()
+			} catch {
+				setError(
+					'Unable to save. The order may have changed or this payment reference may already be recorded. Refresh before retrying.'
+				)
+			}
+		})().finally(() => {
 			setBusy(false)
-		}
+		})
 	}
 	const review = (decision: 'approve' | 'revise' | 'reject') => {
 		if (decision !== 'approve' && !reason.trim()) {

@@ -17,16 +17,16 @@ export function PublicError({
 	const [retrying, setRetrying] = useState(false)
 	const retry = async () => {
 		setRetrying(true)
-		try {
+		await (async () => {
 			// Mark external cache stale before Router re-runs loaders. Do not refetch
 			// active observers early, which could throw back into the same boundary.
 			await router.options.context.queryClient.invalidateQueries({
 				refetchType: 'none',
 			})
 			await router.invalidate({ sync: true })
-		} finally {
+		})().finally(() => {
 			setRetrying(false)
-		}
+		})
 	}
 	return (
 		<div

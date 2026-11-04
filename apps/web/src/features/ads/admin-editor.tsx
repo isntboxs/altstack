@@ -271,21 +271,23 @@ function CampaignForm({
 					return
 				}
 				setSaving(true)
-				try {
-					if (campaign) {
-						await client.admin.ads.update({
-							params: { id: campaign.id },
-							body: { ...parsed.data, expectedVersion: campaign.version },
-						})
-					} else await client.admin.ads.create({ body: parsed.data })
-					await onSaved()
-				} catch {
-					setError(
-						'Unable to save. Check uploads and reload if another admin edited this campaign. Your input is retained.'
-					)
-				} finally {
+				await (async () => {
+					try {
+						if (campaign) {
+							await client.admin.ads.update({
+								params: { id: campaign.id },
+								body: { ...parsed.data, expectedVersion: campaign.version },
+							})
+						} else await client.admin.ads.create({ body: parsed.data })
+						await onSaved()
+					} catch {
+						setError(
+							'Unable to save. Check uploads and reload if another admin edited this campaign. Your input is retained.'
+						)
+					}
+				})().finally(() => {
 					setSaving(false)
-				}
+				})
 			}}
 		>
 			<div className="flex min-w-0 flex-col gap-6">
@@ -570,20 +572,22 @@ function CampaignDeletion({
 							onClick={async () => {
 								setBusy(true)
 								setError('')
-								try {
-									await client.admin.ads.delete({
-										params: { id: deleting.id },
-										body: { expectedVersion: deleting.version },
-									})
-									setDeleting(undefined)
-									await refresh()
-								} catch {
-									setError(
-										'Unable to delete. Reload campaigns if another admin changed this campaign.'
-									)
-								} finally {
+								await (async () => {
+									try {
+										await client.admin.ads.delete({
+											params: { id: deleting.id },
+											body: { expectedVersion: deleting.version },
+										})
+										setDeleting(undefined)
+										await refresh()
+									} catch {
+										setError(
+											'Unable to delete. Reload campaigns if another admin changed this campaign.'
+										)
+									}
+								})().finally(() => {
 									setBusy(false)
-								}
+								})
 							}}
 						>
 							{busy ? 'Deleting…' : 'Confirm delete'}

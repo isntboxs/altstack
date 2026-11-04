@@ -449,20 +449,22 @@ function useVerificationRequest({
 		if (githubBlocked) return
 		sending.current = true
 		setError('')
-		try {
-			await send.mutateAsync()
-			setCode('')
-			setEditing(false)
-			setNow(Date.now())
-		} catch (reason) {
-			setError(
-				reason instanceof Error
-					? reason.message
-					: 'Unable to send the code. Please try again.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				await send.mutateAsync()
+				setCode('')
+				setEditing(false)
+				setNow(Date.now())
+			} catch (reason) {
+				setError(
+					reason instanceof Error
+						? reason.message
+						: 'Unable to send the code. Please try again.'
+				)
+			}
+		})().finally(() => {
 			sending.current = false
-		}
+		})
 	}
 	async function confirm(event: React.SyntheticEvent) {
 		event.preventDefault()
@@ -473,19 +475,21 @@ function useVerificationRequest({
 		}
 		sending.current = true
 		setError('')
-		try {
-			await verify.mutateAsync(currentChallenge.challengeId)
-			await queryClient.invalidateQueries({ queryKey })
-			await router.invalidate()
-		} catch (reason) {
-			setError(
-				reason instanceof Error
-					? reason.message
-					: 'Unable to verify the code. Please try again.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				await verify.mutateAsync(currentChallenge.challengeId)
+				await queryClient.invalidateQueries({ queryKey })
+				await router.invalidate()
+			} catch (reason) {
+				setError(
+					reason instanceof Error
+						? reason.message
+						: 'Unable to verify the code. Please try again.'
+				)
+			}
+		})().finally(() => {
 			sending.current = false
-		}
+		})
 	}
 
 	return {

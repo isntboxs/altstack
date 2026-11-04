@@ -25,18 +25,20 @@ export function AdAccessRequest() {
 					setBusy(true)
 					setError('')
 					setMessage('')
-					try {
-						await client.adBilling.requestAccess({ body: { email } })
-						setMessage(
-							'If this email has advertising orders, a private link will arrive shortly. Check your spam folder too.'
-						)
-					} catch {
-						setError(
-							'Unable to request a link. Please wait a few minutes and try again.'
-						)
-					} finally {
+					await (async () => {
+						try {
+							await client.adBilling.requestAccess({ body: { email } })
+							setMessage(
+								'If this email has advertising orders, a private link will arrive shortly. Check your spam folder too.'
+							)
+						} catch {
+							setError(
+								'Unable to request a link. Please wait a few minutes and try again.'
+							)
+						}
+					})().finally(() => {
 						setBusy(false)
-					}
+					})
 				}}
 			>
 				<FieldGroup>

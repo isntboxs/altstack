@@ -246,20 +246,22 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 			return
 		}
 		setReloading(true)
-		try {
-			await router.invalidate()
-			setValue(initialValue)
-			setMembers(initial?.projects ?? [])
-			setTarget(initial?.mainProject ?? null)
-			setEditorRevision((revision) => revision + 1)
-			setError('')
-			setFieldErrors({})
-			setPreview(false)
-		} catch {
-			showError('Unable to reload. Your edits have been kept.')
-		} finally {
+		await (async () => {
+			try {
+				await router.invalidate()
+				setValue(initialValue)
+				setMembers(initial?.projects ?? [])
+				setTarget(initial?.mainProject ?? null)
+				setEditorRevision((revision) => revision + 1)
+				setError('')
+				setFieldErrors({})
+				setPreview(false)
+			} catch {
+				showError('Unable to reload. Your edits have been kept.')
+			}
+		})().finally(() => {
 			setReloading(false)
-		}
+		})
 	}
 	function togglePreview() {
 		editor.current?.flush()

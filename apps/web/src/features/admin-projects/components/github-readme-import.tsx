@@ -96,33 +96,35 @@ export function GithubReadmeImport({
 		setError(null)
 		setFeedback(null)
 		setPreview(null)
-		try {
-			const readme = await mutateAsync({
-				repositoryUrl: requestedRepositoryUrl,
-			})
-			if (currentRequest !== requestId.current) return
-			if (getRepositoryUrl() !== requestedRepositoryUrl) {
-				setFeedback(REPOSITORY_CHANGED)
-				return
-			}
-			const current = editor()
-			const mode = current.readMarkdown().trim() ? null : 'replace'
-			const conversion = current.previewImport(
-				readme.markdown,
-				mode ?? 'replace'
-			)
-			setPreview({ readme, requestedRepositoryUrl, mode, conversion })
-		} catch (cause) {
-			if (currentRequest === requestId.current) {
-				setError(
-					cause instanceof Error
-						? cause.message
-						: 'Unable to import README. Please try again.'
+		await (async () => {
+			try {
+				const readme = await mutateAsync({
+					repositoryUrl: requestedRepositoryUrl,
+				})
+				if (currentRequest !== requestId.current) return
+				if (getRepositoryUrl() !== requestedRepositoryUrl) {
+					setFeedback(REPOSITORY_CHANGED)
+					return
+				}
+				const current = editor()
+				const mode = current.readMarkdown().trim() ? null : 'replace'
+				const conversion = current.previewImport(
+					readme.markdown,
+					mode ?? 'replace'
 				)
+				setPreview({ readme, requestedRepositoryUrl, mode, conversion })
+			} catch (cause) {
+				if (currentRequest === requestId.current) {
+					setError(
+						cause instanceof Error
+							? cause.message
+							: 'Unable to import README. Please try again.'
+					)
+				}
 			}
-		} finally {
+		})().finally(() => {
 			if (currentRequest === requestId.current) setPending(false)
-		}
+		})
 	}
 	function chooseMode(mode: ReadmeImportMode) {
 		if (!preview || disabled || applying) return
@@ -156,19 +158,20 @@ export function GithubReadmeImport({
 				setFeedback(
 					'Content changed. Review the updated preview, then Apply again.'
 				)
-				return
+			} else {
+				setPreview(null)
+				setFeedback(
+					'README applied to Content. Save the project to persist it.'
+				)
 			}
-			setPreview(null)
-			setFeedback('README applied to Content. Save the project to persist it.')
 		} catch (cause) {
 			setError(
 				cause instanceof Error
 					? cause.message
 					: 'Unable to apply README. Existing content was kept.'
 			)
-		} finally {
-			setApplying(false)
 		}
+		setApplying(false)
 	}
 
 	return (
