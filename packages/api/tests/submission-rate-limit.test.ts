@@ -5,7 +5,7 @@ import {
 } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { FetchLinkTransportOptions } from '@orpc/client/fetch'
-import type { ContractRouterClient } from '@orpc/contract'
+import type { RouterContractClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi/fetch'
 import { createRouterClient } from '@orpc/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -441,7 +441,7 @@ describe.each(['rpc', 'rest'] as const)('%s transport', (transport) => {
 								: defaultError()
 						},
 					})
-		const caller: ContractRouterClient<typeof contracts> =
+		const caller: RouterContractClient<typeof contracts> =
 			createORPCClient(link)
 		return { caller, responses }
 	}
