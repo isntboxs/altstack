@@ -2,10 +2,12 @@
 
 Notable changes use the categories from
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-The pending v1 notes below cover changes since `v0.7.1`; earlier release entries
+The v1.0.0 notes below cover changes since `v0.7.1`; earlier release entries
 have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-and-releases).
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-11-04
 
 ### Added
 
@@ -63,4 +65,5 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 - Follow the [deployment guide](docs/deployment.md) for proxy `QUERY` support,
   migration/configuration checks, scheduled workers, and instance acceptance.
 
-[Unreleased]: https://github.com/isntboxs/altstack/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/isntboxs/altstack/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/isntboxs/altstack/compare/v0.7.1...v1.0.0
