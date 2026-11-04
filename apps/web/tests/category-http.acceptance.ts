@@ -1,4 +1,5 @@
 import { createRouterClient } from '@orpc/server'
+import { JSDOM } from 'jsdom'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
@@ -263,14 +264,16 @@ try {
 			main(page.html).includes(escapeHtml(detail.category.description ?? ''))
 		)
 		assert.ok(main(page.html).includes('aria-label="breadcrumb"'))
-		assert.equal(
-			(
-				main(page.html).match(
-					new RegExp('href="/' + publishedRow.slug + '"', 'g')
-				) ?? []
-			).length,
-			1
-		)
+		const cards = new JSDOM(main(page.html))
+		try {
+			const projects = cards.window.document.querySelectorAll(
+				'article[data-slot="project-card"]'
+			)
+			assert.equal(projects.length, 1)
+			assert.ok(projects[0]?.querySelector(`a[href="/${publishedRow.slug}"]`))
+		} finally {
+			cards.window.close()
+		}
 		for (const ancestor of detail.ancestors) {
 			assert.ok(
 				main(page.html).includes('href="/categories/' + ancestor.path + '"')

@@ -1,40 +1,66 @@
 # Changelog
 
-Notable changes are recorded here using the categories from
+Notable changes use the categories from
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-This file starts with the documentation refresh; earlier release notes have not
-been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-and-releases).
+The pending v1 notes below cover changes since `v0.7.1`; earlier release entries
+have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documentation-and-releases).
 
-## Unreleased
+## [Unreleased]
 
 ### Added
 
-- Public Collections directory and detail pages for admin-curated alternatives,
-  repository lists, and ecosystems, separate from private bookmarks. Includes
-  Markdown, catalogue-backed members, breadcrumbs, responsive numbered pagination
-  with clean first-page URLs, catalogue/source logo artwork, writer avatars,
-  bounded sticky navigation/sharing with active-project highlighting, mobile
-  layouts, canonical metadata, and sitemap discovery.
-- Admin Collections CRUD, publication, project selection and ordering, explicit
-  account authorship, and revision checks. Hidden/deleted projects are filtered
-  from public collection surfaces. Apply the new Collections database migration
-  before deploying matching API/web changes; deployment acceptance remains pending.
-- Contributor and security reporting guides.
-- Development, architecture, and deployment guides.
+- Public blog directory and articles with cover images, writer attribution,
+  publication/update dates, read time, heading permalinks, table of contents,
+  social images, and sitemap discovery. Admins can create, edit, publish, and
+  delete posts with rich Markdown authoring, cover uploads, and revision checks.
+- Public About page at `/about` and admin editor at `/admin/about`. Title,
+  description, and Markdown can be previewed and published immediately, with
+  stale-edit protection and the shared public Markdown renderer.
+- Sponsored campaign management with scheduling, artwork, tier eligibility,
+  weighted selection, and labeled public banner, listing, sidebar, corner,
+  and sponsor-grid placements.
+- Account-free monthly advertising orders with private emailed management links,
+  Ko-fi payment links, manual receipt confirmation, material review, renewal,
+  and a durable notification outbox. Payments and refunds are not automated.
+- Collection-based related-project suggestions on project detail pages.
 
 ### Changed
 
-- Rebuilt the project README and simplified the PRD and roadmap.
-- Consolidated documentation into five guides, with configuration/data import in
-  development, feature behavior in the PRD, and navigation in the root README.
-- Replaced deployment-specific configuration with synthetic examples and removed
-  production evidence and generated QA artifacts from public documentation.
+- Catalogue filters support selecting multiple categories and licenses while
+  preserving search state in the URL.
+- Project and collection directories use 45 display slots, sharing available
+  space with listing ads and backfilling missing or blocked ads with organic items.
+- Project cards reveal fuller descriptions on hover and keyboard focus, with
+  touch-friendly links to project details.
+- Updated oRPC to the 2.0 beta API and refreshed frontend/toolchain dependencies.
+- Added React Doctor diagnostics to the development workflow and pull requests.
+- Consolidated advertising and ranking reference material into the five main
+  guides and synchronized the README, PRD, and roadmap with current behavior.
 
 ### Fixed
 
-- Prevent project slugs from shadowing site routes across admin writes,
-  publication, imports, and generated submissions, without changing category slugs.
-  A read-only preflight blocks migration until legacy route collisions are resolved.
-- Refresh collection management after failed deletions and omit public links for
-  drafts. Keep collection detail pages available while supplemental discovery is
-  pending or fails, rendering discovery cards independently when they become available.
+- Keep the initial server/client catalogue offset consistent during hydration,
+  then restore tab-specific pagination boundaries without reusing another
+  offset's query results.
+- Preserve application-defined OpenAPI error statuses, including upload errors,
+  after the oRPC upgrade.
+- Prevent overlapping project-card links from blocking touch navigation.
+- Release busy states after failed asynchronous actions so forms can be retried.
+- Index category ancestry lookups and cancel/remove deleted-category detail
+  variants together, retaining protection against late responses.
+- Replace deprecated oRPC client types and Recharts legend positioning props.
+
+### Upgrade notes
+
+- Deploy matching API and web revisions. Apply the additive blog, advertising,
+  order, and About migrations with `vp run db:migrate` before deploying them.
+  The reserved-project-slug preflight must pass, including `/blogs` and `/about`.
+- Configure ad email delivery using `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, a
+  trusted `EMAIL_APP_URL`, and optionally `ADS_CONTACT_EMAIL`. Keep an API
+  instance running for its advertising outbox loop.
+- Review the Ko-fi destinations in `AD_PLANS` for the intended instance. Confirm
+  receipts manually; opening checkout does not record a payment or extend dates.
+- Follow the [deployment guide](docs/deployment.md) for proxy `QUERY` support,
+  migration/configuration checks, scheduled workers, and instance acceptance.
+
+[Unreleased]: https://github.com/isntboxs/altstack/compare/v0.7.1...HEAD

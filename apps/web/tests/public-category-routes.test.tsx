@@ -1626,7 +1626,12 @@ describe('L2 public affordances and recovery', () => {
 			input.focus()
 			fireEvent.change(input, { target: { value: 'absent' } })
 			expect(screen.getByText('Search update pending…')).toBeTruthy()
-			await screen.findByText(/Loading (projects|categories)…/)
+			// Home search debounces for 500ms before the route's 250ms pending delay.
+			await screen.findByText(
+				/Loading (projects|categories)…/,
+				{},
+				{ timeout: 2000 }
+			)
 			await new Promise((resolve) => setTimeout(resolve, 400))
 			expect(document.activeElement).toBe(input)
 			expect(screen.queryByRole('heading', { name: 'Zed' })).toBeNull()

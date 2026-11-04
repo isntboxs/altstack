@@ -76,10 +76,10 @@ try {
 			"insert into tags (slug, name) values ('qa-license', 'License QA') returning id"
 		)
 	).rows[0]
-	for (let index = 0; index < 21; index++) {
+	for (let index = 0; index < 51; index++) {
 		const slug = `qa-license-${index}`
-		const detected = index < 16 ? 'MIT' : index < 18 ? 'Apache-2.0' : null
-		const status = index === 20 ? 'draft' : 'published'
+		const detected = index < 46 ? 'MIT' : index < 48 ? 'Apache-2.0' : null
+		const status = index === 50 ? 'draft' : 'published'
 		const id = (
 			await pool.query<{ id: string }>(
 				`insert into projects (name, slug, repository_url, status, tagline, description, logo) values ($1,$2,$3,$4,$5,$6,$7) returning id`,
@@ -102,14 +102,14 @@ try {
 				id,
 				slug,
 				20000 + index * 100,
-				index === 20 ? 'private-only' : (detected?.toLowerCase() ?? 'other'),
-				index === 20
+				index === 50 ? 'private-only' : (detected?.toLowerCase() ?? 'other'),
+				index === 50
 					? 'Private license'
 					: detected
 						? `${detected} License`
 						: 'Other',
-				index === 20 ? 'Private-Only' : (detected ?? 'NOASSERTION'),
-				index === 20 ? 'private-only' : (detected?.toLowerCase() ?? null),
+				index === 50 ? 'Private-Only' : (detected ?? 'NOASSERTION'),
+				index === 50 ? 'private-only' : (detected?.toLowerCase() ?? null),
 				detected ? `https://spdx.org/licenses/${detected}.html` : null,
 				index === 15,
 			]
@@ -148,7 +148,7 @@ try {
 	for (const [path, status, text] of [
 		['/', 200, 'License'],
 		['/licenses', 200, 'Browse Open Source Software Licenses'],
-		['/licenses/mit', 200, '16 published projects licensed under MIT.'],
+		['/licenses/mit', 200, '46 published projects licensed under MIT.'],
 		['/licenses/mit?page=2', 200, 'License QA'],
 		['/licenses/mit?q=absentuniquetoken', 200, 'No projects found'],
 		['/licenses/mit?page=999', 200, 'No projects on this page'],
@@ -156,7 +156,7 @@ try {
 		['/licenses/private-only', 404, 'License not found'],
 		['/licenses/missing', 404, 'License not found'],
 		['/qa-license-15', 200, 'Archived'],
-		['/qa-license-18', 200, 'unknown'],
+		['/qa-license-48', 200, 'unknown'],
 		[`/categories/${category.path}`, 200, 'License'],
 		['/tags/qa-license', 200, 'License'],
 	] as const) {

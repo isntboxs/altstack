@@ -218,7 +218,7 @@ try {
 	const auxiliary = await db
 		.insert(project)
 		.values(
-			Array.from({ length: 12 }, (_, index) => {
+			Array.from({ length: 45 }, (_, index) => {
 				return {
 					name: `Synthetic pagination ${index}`,
 					slug: `test-l1-pagination-${index}`,

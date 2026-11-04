@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type * as RouterModule from '@tanstack/react-router'
 import {
+	act,
 	cleanup,
 	fireEvent,
 	render,
@@ -97,7 +98,9 @@ afterEach(() => vi.unstubAllGlobals())
 describe('role-specific navigation', () => {
 	it('recovers unavailable moderation counts through retry without hiding navigation', async () => {
 		auth.role = 'admin'
-		loadOverview.mockRejectedValueOnce(new Error('Temporary outage'))
+		const unavailable =
+			Promise.withResolvers<Awaited<ReturnType<typeof loadOverview>>>()
+		loadOverview.mockReturnValueOnce(unavailable.promise)
 		const client = new QueryClient({
 			defaultOptions: { queries: { retry: false } },
 		})
@@ -109,6 +112,10 @@ describe('role-specific navigation', () => {
 			</QueryClientProvider>
 		)
 		try {
+			await act(async () => {
+				unavailable.reject(new Error('Temporary outage'))
+				await expect(unavailable.promise).rejects.toThrow('Temporary outage')
+			})
 			const retry = await screen.findByRole('button', { name: 'Retry counts' })
 			expect(screen.getAllByLabelText('Count unavailable')).toHaveLength(3)
 			for (const name of [
@@ -132,8 +139,11 @@ describe('role-specific navigation', () => {
 			await waitFor(() => expect(loadOverview).toHaveBeenCalledTimes(2))
 			expect(screen.getByRole('link', { name: 'Submissions' })).toBeTruthy()
 			expect(screen.getAllByLabelText('Count unavailable')).toHaveLength(3)
-			pending.resolve({
-				counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
+			await act(async () => {
+				pending.resolve({
+					counts: { needsReview: 3, pendingClaims: 2, openReports: 1 },
+				})
+				await pending.promise
 			})
 			await screen.findByLabelText('3 awaiting review')
 			expect(screen.getByLabelText('2 awaiting review')).toBeTruthy()

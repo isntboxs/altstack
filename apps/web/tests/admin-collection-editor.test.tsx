@@ -11,6 +11,7 @@ import {
 	RouterProvider,
 } from '@tanstack/react-router'
 import {
+	act,
 	cleanup,
 	fireEvent,
 	render,
@@ -172,10 +173,14 @@ async function mount(existing?: typeof initial, waitForCandidates = true) {
 		history: createMemoryHistory({ initialEntries: ['/editor'] }),
 	})
 	await router.load()
-	render(
-		<QueryClientProvider client={client}>
-			<RouterProvider router={router} />
-		</QueryClientProvider>
+	await act(() =>
+		Promise.resolve(
+			render(
+				<QueryClientProvider client={client}>
+					<RouterProvider router={router} />
+				</QueryClientProvider>
+			)
+		)
 	)
 	if (waitForCandidates) {
 		await screen.findAllByRole('button', { name: 'Add member' })
