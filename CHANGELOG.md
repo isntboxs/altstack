@@ -7,6 +7,33 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
+### Added
+
+- Collection mentions in the shared Markdown editor through grouped `@`
+  autocomplete and the slash menu. Mentions save as `/collections/{slug}`
+  Markdown links and return as badges when the editor is reopened.
+- Public collection badges with hover previews showing the collection name,
+  description, type, and project count. Supported content includes project
+  pages, blogs, collection articles, and About.
+- Collection mention lookup follows public visibility rules. Draft or unavailable
+  collections do not appear in suggestions or previews; existing links remain
+  ordinary links when public metadata is unavailable.
+
+### Changed
+
+- Upgrade Vite+ and its Vite package alias from 1.4.0 to 1.5.0 and refresh
+  the dependency lockfile.
+
+### Upgrade notes
+
+- Deploy the API and web from the same `v1.1.0` tag so collection mention lookup
+  and rendering stay in sync. This release adds no database migrations or
+  environment variables.
+- Existing Markdown links to eligible public collections gain badges and hover
+  previews automatically; no content migration is required.
+
 ## [1.0.0] - 2026-11-04
 
 ### Added
@@ -65,5 +92,6 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 - Follow the [deployment guide](docs/deployment.md) for proxy `QUERY` support,
   migration/configuration checks, scheduled workers, and instance acceptance.
 
-[Unreleased]: https://github.com/isntboxs/altstack/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/isntboxs/altstack/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/isntboxs/altstack/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/isntboxs/altstack/compare/v0.7.1...v1.0.0
