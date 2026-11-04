@@ -74,6 +74,7 @@ import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { PublicContent } from '#/components/public-content'
 import { CollectionProjectSelector } from '#/features/admin-collections/project-selector'
 import type { SelectedProject } from '#/features/admin-collections/project-selector'
+import { publicContentQueryKey } from '#/features/public-content/model'
 import { orpc } from '#/utils/orpc'
 
 type Initial = ORPCRouterOutputs['admin']['collection']['getById']
@@ -232,6 +233,7 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 					queryKey: orpc.admin.collection.key(),
 				}),
 				queryClient.invalidateQueries({ queryKey: orpc.collection.key() }),
+				queryClient.invalidateQueries({ queryKey: publicContentQueryKey }),
 			])
 			toast.add({ type: 'success', title: 'Collection saved' })
 			await navigate({ to: '/admin/collections' })

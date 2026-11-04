@@ -1,4 +1,5 @@
 import { RESERVED_PROJECT_SLUGS } from '@altstack/shared/constants'
+import type { CollectionMention } from '@altstack/shared/schemas/collection'
 
 export type ProjectMention = {
 	slug: string
@@ -32,12 +33,17 @@ export type PreparedCodeBlock = {
 export type PreparedPublicContent = {
 	codeBlocks: Record<string, PreparedCodeBlock>
 	projectsBySlug: Record<string, ProjectMention>
+	collectionsBySlug: Record<string, CollectionMention>
 }
 
 export const publicContentQueryKey = ['public-content'] as const
 
 export function emptyPublicContent(): PreparedPublicContent {
-	return { codeBlocks: {}, projectsBySlug: {} }
+	return { codeBlocks: {}, projectsBySlug: {}, collectionsBySlug: {} }
+}
+
+export function collectionSlugFromPath(path: string) {
+	return /^\/collections\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(path)?.[1]
 }
 
 /** Recognizes project links while excluding the shared set of site routes. */
@@ -46,7 +52,7 @@ export function projectSlugFromPath(path: string) {
 	return match && !RESERVED_PROJECT_SLUGS.has(match[1]) ? match[1] : undefined
 }
 
-/** Resolves safe web links and recognizes explicit project mentions on this origin. */
+/** Resolves safe web links and recognizes project and collection mentions on this origin. */
 export function contentLink(href: string, slug: string, appUrl: string) {
 	if (!href || href.startsWith('#')) return null
 	try {
@@ -59,7 +65,9 @@ export function contentLink(href: string, slug: string, appUrl: string) {
 		const explicit = href.startsWith('/') || /^https?:\/\//i.test(href)
 		const projectSlug =
 			internal && explicit ? projectSlugFromPath(url.pathname) : undefined
-		return { url, internal, projectSlug }
+		const collectionSlug =
+			internal && explicit ? collectionSlugFromPath(url.pathname) : undefined
+		return { url, internal, projectSlug, collectionSlug }
 	} catch {
 		return null
 	}

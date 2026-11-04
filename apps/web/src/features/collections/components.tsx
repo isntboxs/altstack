@@ -31,6 +31,7 @@ import { ShareButtons } from '#/components/share-buttons'
 import { UserAvatar } from '#/components/user-avatar'
 import { DetailAd, AdListingGrid } from '#/features/ads/components'
 import { useAds } from '#/features/ads/context'
+import type { PreparedPublicContent } from '#/features/public-content/model'
 import { memberAnchor } from './member-anchor'
 
 type Collection = ORPCRouterOutputs['collection']['getBySlug']
@@ -215,7 +216,13 @@ function MainProjectCard({
 	)
 }
 /** Renders editorial copy and catalogue previews with article-bounded sticky UI. */
-export function CollectionArticle({ collection }: { collection: Collection }) {
+export function CollectionArticle({
+	collection,
+	prepared,
+}: {
+	collection: Collection
+	prepared?: PreparedPublicContent
+}) {
 	return (
 		<div className="collection-page container mx-auto w-full max-w-6xl px-4 pt-28 pb-10 lg:px-16">
 			<CollectionBreadcrumb name={collection.name} />
@@ -234,6 +241,7 @@ export function CollectionArticle({ collection }: { collection: Collection }) {
 						<PublicContent
 							slug={`collections/${collection.slug}`}
 							content={collection.content}
+							prepared={prepared}
 						/>
 					)}
 					{collection.sourceRepositoryUrl && (

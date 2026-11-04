@@ -10,10 +10,15 @@ import { publicContentOptions } from '#/features/public-content/queries'
 import {
 	preparePublicContent,
 	preparePublicBlogContent,
+	preparePublicPageContent,
 } from '#/features/public-content/server-function'
 
 vi.mock('#/features/public-content/server-function', () => {
-	return { preparePublicContent: vi.fn(), preparePublicBlogContent: vi.fn() }
+	return {
+		preparePublicContent: vi.fn(),
+		preparePublicBlogContent: vi.fn(),
+		preparePublicPageContent: vi.fn(),
+	}
 })
 vi.mock('evlog/client', () => {
 	return { log: { warn: vi.fn() } }
@@ -28,6 +33,9 @@ function client() {
 	return queryClient
 }
 beforeEach(() => {
+	vi.mocked(preparePublicPageContent)
+		.mockReset()
+		.mockResolvedValue(emptyPublicContent())
 	vi.mocked(preparePublicBlogContent)
 		.mockReset()
 		.mockResolvedValue(emptyPublicContent())
@@ -38,6 +46,29 @@ beforeEach(() => {
 afterEach(() => clients.splice(0).forEach((queryClient) => queryClient.clear()))
 
 describe('public content cache', () => {
+	it('loads stored collection and About metadata with distinct cache keys and preserves fallback Markdown', async () => {
+		const queryClient = client()
+		await queryClient.query(publicContentOptions('same-slug', 'Content'))
+		await queryClient.query(
+			publicContentOptions('same-slug', 'Content', 'collection')
+		)
+		await queryClient.query(publicContentOptions('about', 'Content', 'about'))
+		expect(preparePublicContent).toHaveBeenCalledTimes(1)
+		expect(preparePublicPageContent).toHaveBeenCalledWith({
+			data: { kind: 'collection', slug: 'same-slug' },
+		})
+		expect(preparePublicPageContent).toHaveBeenCalledWith({
+			data: { kind: 'about', slug: 'about' },
+		})
+		vi.mocked(preparePublicPageContent).mockRejectedValueOnce(
+			new Error('offline')
+		)
+		expect(
+			await queryClient.query(
+				publicContentOptions('missing', 'Still readable', 'collection')
+			)
+		).toEqual(emptyPublicContent())
+	})
 	it('separates blog and project cache entries and keeps blog Markdown available on enhancement failure', async () => {
 		const queryClient = client()
 		await queryClient.query(publicContentOptions('same-slug', 'Content'))

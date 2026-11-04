@@ -12,7 +12,7 @@ import type {
 	DefaultReactSuggestionItem,
 	SuggestionMenuProps,
 } from '@blocknote/react'
-import { IconAt } from '@tabler/icons-react'
+import { IconAt, IconFolders } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createElement, useCallback, useEffect, useRef } from 'react'
 
@@ -20,9 +20,9 @@ import { toast } from '@altstack/ui/components/toast'
 
 import type { ContentEditor } from '#/components/block-note/schema'
 import { ProjectLogo } from '#/components/project-media'
-import { projectORPC } from '#/utils/orpc'
+import { orpc, projectORPC } from '#/utils/orpc'
 
-function ProjectSuggestions(
+function MentionSuggestions(
 	props: SuggestionMenuProps<DefaultReactSuggestionItem>
 ) {
 	const components = useComponentsContext()
@@ -35,9 +35,21 @@ function ProjectSuggestions(
 			? createElement(
 					Menu.EmptyItem,
 					{ className: 'bn-suggestion-menu-item' },
-					'No projects found'
+					'No projects or collections found'
 				)
-			: props.items.map((item, index) =>
+			: props.items.flatMap((item, index) => [
+					...(item.group !== props.items[index - 1]?.group
+						? [
+								createElement(
+									Menu.Label,
+									{
+										key: item.group,
+										className: 'bn-suggestion-menu-label',
+									},
+									item.group
+								),
+							]
+						: []),
 					createElement(Menu.Item, {
 						key: item.subtext ?? item.title,
 						id: `bn-suggestion-menu-item-${index}`,
@@ -45,18 +57,13 @@ function ProjectSuggestions(
 						item,
 						isSelected: index === props.selectedIndex,
 						onClick: () => props.onItemClick?.(item),
-					})
-				)
+					}),
+				])
 	// These vendor components reject extra props, including the source
 	// attributes our devtools inject into JSX. Keep their props explicit.
 	return createElement(
 		Menu.Root,
 		{ id: 'bn-suggestion-menu', className: 'bn-suggestion-menu' },
-		createElement(
-			Menu.Label,
-			{ className: 'bn-suggestion-menu-label' },
-			'Projects'
-		),
 		items
 	)
 }
@@ -92,53 +99,99 @@ export function ProjectMentionMenus({ editor }: { editor: ContentEditor }) {
 		},
 		[]
 	)
-	const getProjects = useCallback(
+	const getMentions = useCallback(
 		async (query: string): Promise<Array<DefaultReactSuggestionItem>> => {
 			const current = ++request.current
 			resolvedQuery.current = null
 			await new Promise((resolve) => setTimeout(resolve, 200))
 			if (current !== request.current) return []
 			try {
-				const { projects } = await queryClient.query({
-					...projectORPC.mentions.queryOptions({
-						input: { query: { q: query.trim().slice(0, 100) } },
+				const input = { query: { q: query.trim().slice(0, 100) } }
+				const [projectResult, collectionResult] = await Promise.allSettled([
+					queryClient.query({
+						...projectORPC.mentions.queryOptions({
+							input,
+						}),
+						staleTime: 30_000,
+						retry: false,
 					}),
-					staleTime: 30_000,
-					retry: false,
-				})
-				if (current === request.current) resolvedQuery.current = query
-				return projects.map((project) => {
-					return {
-						title: project.name,
-						subtext: project.tagline
-							? `/${project.slug} · ${project.tagline}`
-							: `/${project.slug}`,
-						group: 'Projects',
-						icon: (
-							<ProjectLogo
-								src={project.logo}
-								name={project.name}
-								className="size-6"
-							/>
-						),
-						onItemClick: () => {
-							editor.insertInlineContent([
-								{
-									type: 'projectMention',
-									props: { slug: project.slug, name: project.name },
-								},
-								' ',
-							])
-						},
-					}
-				})
+					queryClient.query({
+						...orpc.collection.mentions.queryOptions({ input }),
+						staleTime: 30_000,
+						retry: false,
+					}),
+				])
+				if (current !== request.current) return []
+				resolvedQuery.current = query
+				if (
+					projectResult.status === 'rejected' ||
+					collectionResult.status === 'rejected'
+				) {
+					toast.add({
+						type: 'error',
+						title: 'Some mentions could not be loaded',
+						description: 'Try typing the project or collection name again.',
+					})
+				}
+				const projects =
+					projectResult.status === 'fulfilled'
+						? projectResult.value.projects
+						: []
+				const collections =
+					collectionResult.status === 'fulfilled'
+						? collectionResult.value.collections
+						: []
+				return [
+					...projects.map((project) => {
+						return {
+							title: project.name,
+							subtext: project.tagline
+								? `/${project.slug} · ${project.tagline}`
+								: `/${project.slug}`,
+							group: 'Projects',
+							icon: (
+								<ProjectLogo
+									src={project.logo}
+									name={project.name}
+									className="size-6"
+								/>
+							),
+							onItemClick: () => {
+								editor.insertInlineContent([
+									{
+										type: 'projectMention',
+										props: { slug: project.slug, name: project.name },
+									},
+									' ',
+								])
+							},
+						}
+					}),
+					...collections.map((collection) => {
+						return {
+							title: collection.name,
+							subtext: `/collections/${collection.slug} · ${collection.description}`,
+							group: 'Collections',
+							icon: <IconFolders aria-hidden="true" />,
+							onItemClick: () => {
+								editor.insertInlineContent([
+									{
+										type: 'collectionMention',
+										props: { slug: collection.slug, name: collection.name },
+									},
+									' ',
+								])
+							},
+						}
+					}),
+				]
 			} catch {
 				if (current === request.current) {
 					resolvedQuery.current = query
 					toast.add({
 						type: 'error',
-						title: 'Could not load projects',
-						description: 'Try typing the project name again.',
+						title: 'Could not load mentions',
+						description: 'Try typing the project or collection name again.',
 					})
 				}
 				return []
@@ -151,8 +204,8 @@ export function ProjectMentionMenus({ editor }: { editor: ContentEditor }) {
 		<>
 			<SuggestionMenuController
 				triggerCharacter="@"
-				getItems={getProjects}
-				suggestionMenuComponent={ProjectSuggestions}
+				getItems={getMentions}
+				suggestionMenuComponent={MentionSuggestions}
 			/>
 			<SuggestionMenuController
 				triggerCharacter="/"
@@ -162,9 +215,9 @@ export function ProjectMentionMenus({ editor }: { editor: ContentEditor }) {
 							[
 								...getDefaultReactSlashMenuItems(editor),
 								{
-									title: 'Project mention',
-									subtext: 'Find and mention a listed project',
-									aliases: ['mention', 'project', 'reference'],
+									title: 'Project or collection mention',
+									subtext: 'Find and mention a listed project or collection',
+									aliases: ['mention', 'project', 'collection', 'reference'],
 									group: 'References',
 									icon: <IconAt />,
 									onItemClick: () => {

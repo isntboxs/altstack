@@ -6,6 +6,7 @@ import {
 	getPublicCollection,
 	listAdminCollections,
 	listPublicCollections,
+	searchPublicCollectionMentions,
 } from '@altstack/api/queries/collection'
 import { isUniqueViolation } from '@altstack/api/queries/pg-error'
 
@@ -17,6 +18,13 @@ import {
 } from '@altstack/db/schemas'
 
 export const collectionRouter = {
+	mentions: publicProcedure.collection.mentions.handler(
+		async ({ context: { db }, input }) => {
+			return {
+				collections: await searchPublicCollectionMentions(db, input.query.q),
+			}
+		}
+	),
 	/** Returns only eligible public directory entries. */
 	list: publicProcedure.collection.list.handler(({ context: { db }, input }) =>
 		listPublicCollections(

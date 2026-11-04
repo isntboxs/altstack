@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import { publicCollectionMentions } from '@altstack/api/queries/collection'
 import { publicProjectMentions } from '@altstack/api/queries/project-mentions'
 
 import { contentLink } from '#/features/public-content/model'
@@ -9,6 +10,9 @@ import * as shiki from '#/utils/shiki.bundle'
 
 vi.mock('@altstack/api/queries/project-mentions', () => {
 	return { publicProjectMentions: vi.fn() }
+})
+vi.mock('@altstack/api/queries/collection', () => {
+	return { publicCollectionMentions: vi.fn() }
 })
 vi.mock('@altstack/env/web', () => {
 	return { env: { VITE_APP_URL: 'https://altstack.test/base' } }
@@ -19,10 +23,58 @@ vi.mock('evlog', () => {
 
 beforeEach(() => {
 	vi.mocked(publicProjectMentions).mockReset().mockResolvedValue([])
+	vi.mocked(publicCollectionMentions).mockReset().mockResolvedValue([])
 })
 afterEach(() => vi.restoreAllMocks())
 
 describe('public Markdown preparation', () => {
+	it('batches collection links separately and ignores code, images, external hosts and nested collection paths', async () => {
+		const collection = {
+			slug: 'frontend',
+			name: 'Frontend tools',
+			description: 'Tools for the web',
+			kind: 'ecosystem' as const,
+			memberCount: 3,
+			logo: null,
+		}
+		vi.mocked(publicCollectionMentions).mockResolvedValue([collection])
+		const result = await prepareContent({
+			slug: 'source',
+			content: [
+				'[one](/collections/frontend?ref=docs#members) [two](https://altstack.test/collections/frontend/)',
+				'[ref][tools] [missing](/collections/missing) [project](/vite)',
+				'[![badge](a.png)](/collections/image) [external](https://other.test/collections/external)',
+				'`[code](/collections/code)` [nested](/collections/frontend/edit)',
+				'[tools]: /collections/frontend',
+			].join('\n\n'),
+		})
+		expect(publicCollectionMentions).toHaveBeenCalledExactlyOnceWith([
+			'frontend',
+			'missing',
+		])
+		expect(publicProjectMentions).toHaveBeenCalledExactlyOnceWith(['vite'])
+		expect(result.collectionsBySlug).toEqual({ frontend: collection })
+	})
+
+	it('keeps project metadata when collection resolution fails', async () => {
+		vi.mocked(publicCollectionMentions).mockRejectedValue(new Error('offline'))
+		const project = {
+			slug: 'vite',
+			name: 'Vite',
+			logo: null,
+			tagline: null,
+			verified: false,
+			stars: 1,
+			forks: 0,
+		}
+		vi.mocked(publicProjectMentions).mockResolvedValue([project])
+		const result = await prepareContent({
+			slug: 'source',
+			content: '[Vite](/vite) [Collection](/collections/frontend)',
+		})
+		expect(result.projectsBySlug).toEqual({ vite: project })
+		expect(result.collectionsBySlug).toEqual({})
+	})
 	it('collects explicit and reference links once, skipping images, code, external and reserved routes', async () => {
 		vi.mocked(publicProjectMentions).mockResolvedValue([
 			{

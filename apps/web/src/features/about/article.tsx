@@ -1,8 +1,15 @@
 import type { AboutBody } from '@altstack/shared/schemas'
 
 import { PublicContent } from '#/components/public-content'
+import type { PreparedPublicContent } from '#/features/public-content/model'
 
-export function AboutArticle({ page }: { page: AboutBody }) {
+export function AboutArticle({
+	page,
+	prepared,
+}: {
+	page: AboutBody
+	prepared?: PreparedPublicContent
+}) {
 	return (
 		<div className="container mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 pt-28 pb-10 lg:px-16">
 			<header className="flex max-w-3xl flex-col gap-4">
@@ -17,6 +24,7 @@ export function AboutArticle({ page }: { page: AboutBody }) {
 				<PublicContent
 					slug="about"
 					content={page.content}
+					prepared={prepared}
 					headingMode="article"
 				/>
 			</div>

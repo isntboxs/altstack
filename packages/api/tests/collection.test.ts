@@ -17,6 +17,7 @@ import {
 import type { ORPCContext } from '@altstack/api/context'
 import {
 	getProjectCollectionRecommendations,
+	publicCollectionMentions,
 	sitemapCollections,
 } from '@altstack/api/queries/collection'
 import {
@@ -129,6 +130,87 @@ afterAll(async () => {
 	await postgres.close()
 })
 describe('public curated collections', () => {
+	it('finds collection mentions by partial name or slug and batches only publicly visible collections', async () => {
+		const main = await fixture('mention-main')
+		const member = await fixture('mention-member')
+		const saved = await admin().create({
+			body: body([member.id], {
+				name: 'Frontend toolkit',
+				slug: 'frontend-tools',
+				kind: 'ecosystem',
+				mainProjectId: main.id,
+				sourceRepositoryUrl: null,
+			}),
+		})
+		await admin().create({
+			body: body([member.id], { slug: 'hidden-tools', status: 'draft' }),
+		})
+		for (const q of ['END TOOL', 'end-too', ' frontend ']) {
+			expect(
+				(await publicClient().mentions({ query: { q } })).collections
+			).toEqual([
+				{
+					slug: saved.slug,
+					name: saved.name,
+					description: saved.description,
+					kind: saved.kind,
+					memberCount: 1,
+					logo: main.logo,
+				},
+			])
+		}
+		expect(
+			await publicCollectionMentions(
+				[saved.slug, saved.slug, 'hidden-tools', 'missing'],
+				scope.db
+			)
+		).toHaveLength(1)
+		expect(await publicCollectionMentions([], scope.db)).toEqual([])
+		await scope.db
+			.update(project)
+			.set({ status: 'draft' })
+			.where(eq(project.id, main.id))
+		expect((await publicClient().mentions({ query: {} })).collections).toEqual(
+			[]
+		)
+		expect(await publicCollectionMentions([saved.slug], scope.db)).toEqual([])
+		await scope.db
+			.update(project)
+			.set({ status: 'published' })
+			.where(eq(project.id, main.id))
+		await scope.db
+			.delete(githubRepository)
+			.where(eq(githubRepository.projectId, member.id))
+		expect((await publicClient().mentions({ query: {} })).collections).toEqual(
+			[]
+		)
+		expect(await publicCollectionMentions([saved.slug], scope.db)).toEqual([])
+	})
+
+	it('escapes wildcard searches, limits autocomplete and returns source-owner artwork', async () => {
+		const member = await fixture('mention-member')
+		for (let index = 0; index < 9; index++) {
+			await admin().create({
+				body: body([member.id], {
+					slug: `tools-${index}`,
+					name: index === 0 ? 'Tools %_ literal' : `Tools ${index}`,
+				}),
+			})
+		}
+		const result = await publicClient().mentions({ query: { q: '%_' } })
+		expect(result.collections).toHaveLength(1)
+		expect(result.collections[0]).toMatchObject({
+			slug: 'tools-0',
+			logo: 'https://github.com/fixtures.png?size=256',
+			memberCount: 1,
+		})
+		expect(
+			(await publicClient().mentions({ query: {} })).collections
+		).toHaveLength(8)
+		await expect(
+			publicClient().mentions({ query: { q: 'a'.repeat(101) } })
+		).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+	})
 	it('returns up to three other published members in editorial order on project detail', async () => {
 		const current = await fixture('recommendation-current')
 		const hidden = await fixture('recommendation-hidden')

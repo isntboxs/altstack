@@ -9,6 +9,8 @@ import {
 	collectionCardSchema,
 	collectionDetailSchema,
 	collectionIdInput,
+	collectionMentionsInputSchema,
+	collectionMentionsOutputSchema,
 	collectionRevisionInput,
 	collectionSlugSchema,
 } from '@altstack/shared/schemas'
@@ -35,6 +37,9 @@ function meta(
 	})
 }
 export const collectionContract = {
+	mentions: publicContract
+		.input(collectionMentionsInputSchema)
+		.output(collectionMentionsOutputSchema),
 	list: publicContract
 		.meta(meta('/collections', 'QUERY', 'listCollections'))
 		.input(page)

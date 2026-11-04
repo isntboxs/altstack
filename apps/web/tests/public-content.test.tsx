@@ -76,7 +76,14 @@ async function documentRouter(
 		),
 	})
 	const router = createRouter({
-		routeTree: root.addChildren([route]),
+		routeTree: root.addChildren([
+			route,
+			createRoute({
+				getParentRoute: () => root,
+				path: 'collections/$slug',
+				component: () => <div>Collection detail</div>,
+			}),
+		]),
 		history: createMemoryHistory({ initialEntries: ['/source'] }),
 	})
 	await router.load()
@@ -84,6 +91,59 @@ async function documentRouter(
 }
 
 describe('public Markdown rendering', () => {
+	it('renders collection badges, opens their preview on focus and navigates to the collection', async () => {
+		const prepared = emptyPublicContent()
+		prepared.collectionsBySlug.frontend = {
+			slug: 'frontend',
+			name: 'Frontend tools',
+			description: 'Tools for building web applications.',
+			kind: 'ecosystem',
+			memberCount: 12,
+			logo: null,
+		}
+		const router = await documentRouter(
+			'[old name](/collections/frontend?ref=docs#members) [ref][tools]\n\n[![badge](https://img.test/badge.svg)](/collections/frontend)\n\n[missing](/collections/missing) [external](https://other.test/collections/frontend)\n\n[tools]: https://altstack.test/collections/frontend/',
+			prepared
+		)
+		render(<RouterProvider router={router} />)
+		const chips = screen.getAllByRole('link', { name: 'Frontend tools' })
+		expect(chips).toHaveLength(2)
+		expect(chips[0].getAttribute('href')).toBe(
+			'/collections/frontend?ref=docs#members'
+		)
+		expect(chips[0].getAttribute('data-collection-mention')).toBe('frontend')
+		expect(
+			screen
+				.getByAltText('badge')
+				.closest('a')
+				?.hasAttribute('data-collection-mention')
+		).toBe(false)
+		expect(
+			screen
+				.getByRole('link', { name: 'missing' })
+				.hasAttribute('data-collection-mention')
+		).toBe(false)
+		expect(
+			screen.getByRole('link', { name: /external/ }).getAttribute('target')
+		).toBe('_blank')
+		fireEvent.focus(chips[0])
+		const details = await screen.findByRole('link', {
+			name: 'View collection details',
+		})
+		const preview = details.closest<HTMLElement>(
+			'[data-slot="hover-card-content"]'
+		)!
+		expect(preview.textContent).toContain(
+			'Tools for building web applications.'
+		)
+		expect(preview.textContent).toContain('Ecosystem / toolchain')
+		expect(preview.textContent).toContain('12 projects')
+		expect(document.querySelector('a a')).toBeNull()
+		fireEvent.click(details)
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe('/collections/frontend')
+		)
+	})
 	it('renders GFM and safe headings while discarding raw HTML and executable URLs', async () => {
 		const router = await documentRouter(
 			'# Heading\n\n~~old~~ and `inline`\n\n- [x] Done\n\n| Name | Value |\n| --- | --- |\n| A | B |\n\n<script>alert(1)</script>\n\n[unsafe](javascript:alert(1))\n\n![unsafe](data:text/html,test)'
@@ -230,6 +290,16 @@ describe('public Markdown rendering', () => {
 
 	it('includes highlighting and mentions in SSR and hydrates identical markup', async () => {
 		const prepared: PreparedPublicContent = {
+			collectionsBySlug: {
+				frontend: {
+					slug: 'frontend',
+					name: 'Frontend tools',
+					description: 'Web tools',
+					kind: 'repository',
+					logo: null,
+					memberCount: 1,
+				},
+			},
 			projectsBySlug: {
 				supabase: {
 					slug: 'supabase',
@@ -257,13 +327,14 @@ describe('public Markdown rendering', () => {
 			},
 		}
 		const router = await documentRouter(
-			'```js\nconst x = 1\n```\n\n[db](/supabase)',
+			'```js\nconst x = 1\n```\n\n[db](/supabase) [tools](/collections/frontend)',
 			prepared
 		)
 		const html = renderToString(<RouterProvider router={router} />)
 		expect(html).toContain('--code-light-color:#123456')
 		expect(html).toContain('--code-dark-color:#abcdef')
 		expect(html).toContain('data-project-mention="supabase"')
+		expect(html).toContain('data-collection-mention="frontend"')
 		const container = document.createElement('div')
 		container.innerHTML = html
 		const parsedHtml = container.innerHTML

@@ -49,6 +49,7 @@ import { toast } from '@altstack/ui/components/toast'
 import { PublicError } from '#/components/public-page-state'
 import { QueryBoundary } from '#/components/query-boundary'
 import { adminCollectionQueries } from '#/features/collections/queries'
+import { publicContentQueryKey } from '#/features/public-content/model'
 import { orpc } from '#/utils/orpc'
 
 export const Route = createFileRoute('/_main/admin/collections/')({
@@ -104,6 +105,7 @@ function CollectionList() {
 					queryKey: orpc.admin.collection.key(),
 				}),
 				queryClient.invalidateQueries({ queryKey: orpc.collection.key() }),
+				queryClient.invalidateQueries({ queryKey: publicContentQueryKey }),
 			])
 			toast.add({ type: 'success', title: 'Collection deleted' })
 		},

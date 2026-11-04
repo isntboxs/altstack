@@ -3,11 +3,20 @@ import { createFileRoute } from '@tanstack/react-router'
 import { PublicError, PublicPending } from '#/components/public-page-state'
 import { AboutArticle } from '#/features/about/article'
 import { aboutQueries } from '#/features/about/queries'
+import { publicContentOptions } from '#/features/public-content/queries'
 import { seoHead, unavailableHead, publicUrl } from '#/features/seo/meta'
 
 export const Route = createFileRoute('/_app/about')({
-	loader: ({ context }) =>
-		context.queryClient.query({ ...aboutQueries.get(), staleTime: 0 }),
+	loader: async ({ context }) => {
+		const page = await context.queryClient.query({
+			...aboutQueries.get(),
+			staleTime: 0,
+		})
+		const prepared = await context.queryClient.query(
+			publicContentOptions('about', page.content, 'about')
+		)
+		return { ...page, prepared }
+	},
 	head: ({ loaderData }) =>
 		loaderData
 			? seoHead({
@@ -32,5 +41,6 @@ export const Route = createFileRoute('/_app/about')({
 })
 
 function Page() {
-	return <AboutArticle page={Route.useLoaderData()} />
+	const page = Route.useLoaderData()
+	return <AboutArticle page={page} prepared={page.prepared} />
 }
