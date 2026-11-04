@@ -76,6 +76,13 @@ a separate recovery procedure requires otherwise.
 
 ### Reserved project slugs
 
+The About page is available at `/about` and edited by admins at `/admin/about`.
+Apply the `about-page` migration before deploying this feature. Until the first
+save, the page uses the initial AltStack copy from the shared schema module.
+Saving publishes immediately; concurrent edits are rejected rather than silently
+overwritten. The reserved-slug check also covers `about` to detect legacy project
+URLs that would conflict with this page.
+
 The static `/collections` route takes precedence over a legacy project at
 `/collections`. New-write validation does not repair existing project rows. Run
 `vp run db:check-project-slugs` with the intended instance's `DATABASE_URL`; a

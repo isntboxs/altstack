@@ -4,6 +4,7 @@ import {
 	IconArrowRight,
 	IconLicense,
 	IconMenu2,
+	IconInfoCircle,
 	IconTag,
 } from '@tabler/icons-react'
 import {
@@ -46,6 +47,7 @@ import { ThemeSwitcher } from '#/components/theme-switcher'
 import { UserAvatar } from '#/components/user-avatar'
 
 const resourceLinks = [
+	{ to: '/about', label: 'About us', icon: IconInfoCircle },
 	{ to: '/blogs', label: 'Blogs', icon: IconArticle },
 	{ to: '/tags', label: 'Tags', icon: IconTag },
 	{ to: '/licenses', label: 'Licenses', icon: IconLicense },
@@ -120,6 +122,12 @@ export const Header = ({
 										render={<Link to="/blogs" />}
 									>
 										Blogs
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setOpenNavigation(false)}
+										render={<Link to="/about" />}
+									>
+										About us
 									</DropdownMenuItem>
 									<DropdownMenuItem
 										onClick={() => setOpenNavigation(false)}

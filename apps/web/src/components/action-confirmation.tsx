@@ -22,6 +22,8 @@ export function ActionConfirmation({
 	onConfirm,
 	children,
 	disabled = false,
+	confirmLabel = 'Confirm',
+	cancelLabel = 'Cancel',
 }: {
 	open: boolean
 	title: string
@@ -32,6 +34,8 @@ export function ActionConfirmation({
 	onConfirm: () => void
 	children?: ReactNode
 	disabled?: boolean
+	confirmLabel?: string
+	cancelLabel?: string
 }) {
 	return (
 		<AlertDialog
@@ -52,9 +56,11 @@ export function ActionConfirmation({
 					</Alert>
 				)}
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+					<AlertDialogCancel disabled={pending}>
+						{cancelLabel}
+					</AlertDialogCancel>
 					<AlertDialogAction disabled={pending || disabled} onClick={onConfirm}>
-						{pending ? 'Saving…' : 'Confirm'}
+						{pending ? 'Saving…' : confirmLabel}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
