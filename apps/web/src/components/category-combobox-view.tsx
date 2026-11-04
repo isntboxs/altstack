@@ -13,7 +13,11 @@ import {
 	useComboboxAnchor,
 } from '@altstack/ui/components/combobox'
 
-import { categoryHelp, categoryLabel } from '#/features/admin-categories/model'
+import {
+	categoryHelp,
+	categoryLabel,
+	indexCategories,
+} from '#/features/admin-categories/model'
 
 const MAX_CATEGORIES = 3
 
@@ -32,6 +36,7 @@ export const CategoryComboboxView = ({
 	categories: Array<CategoryNode & { directProjectCount?: number }>
 }) => {
 	const anchor = useComboboxAnchor()
+	const categoriesById = indexCategories(categories)
 
 	const nameBySlug = new Map<string, string>(
 		categories.map((category) => [category.slug, category.name])
@@ -39,7 +44,7 @@ export const CategoryComboboxView = ({
 	const labelBySlug = new Map(
 		categories.map((category) => [
 			category.slug,
-			categoryLabel(category, categories),
+			categoryLabel(category, categoriesById),
 		])
 	)
 	const items = categories

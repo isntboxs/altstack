@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
+	categoryAncestry,
 	categoryDeletionReason,
 	categoryFormSchema,
 	categoryLabel,
@@ -8,6 +9,7 @@ import {
 	categoryPreviewPath,
 	categoryUpdatePayload,
 	eligibleParents,
+	indexCategories,
 } from '#/features/admin-categories/model'
 import {
 	assigned,
@@ -20,6 +22,42 @@ import {
 } from './fixtures/categories'
 
 describe('category hierarchy editor', () => {
+	it('resolves root-to-leaf ancestry from arrays and a shared index without changing the input', () => {
+		const unordered = [codeEditor, editors, software]
+		const byId = indexCategories(unordered)
+		expect(categoryAncestry(codeEditor, unordered)).toEqual([
+			software,
+			editors,
+			codeEditor,
+		])
+		expect(categoryLabel(codeEditor, byId)).toBe(
+			'Software / Editors / Code editor'
+		)
+		expect(categoryLabel(editors, byId)).toBe('Software / Editors')
+		expect(categoryAncestry(software, byId)).toEqual([software])
+		expect(unordered).toEqual([codeEditor, editors, software])
+	})
+	it('preserves the first matching parent when duplicate IDs are present', () => {
+		const duplicate = { ...editors, name: 'Duplicate editors', parentId: null }
+		const nodes = [software, editors, duplicate, codeEditor]
+		expect(categoryAncestry(codeEditor, indexCategories(nodes))).toEqual([
+			software,
+			editors,
+			codeEditor,
+		])
+	})
+	it('stops at missing parents and cycles without repeating categories', () => {
+		expect(categoryAncestry(codeEditor, indexCategories([codeEditor]))).toEqual(
+			[codeEditor]
+		)
+		const cyclicRoot = { ...software, parentId: codeEditor.id }
+		expect(
+			categoryAncestry(
+				codeEditor,
+				indexCategories([codeEditor, editors, cyclicRoot])
+			)
+		).toEqual([cyclicRoot, editors, codeEditor])
+	})
 	it('excludes self, descendants, assigned parents, and depth that cannot fit the subtree', () => {
 		expect(eligibleParents(categories, editors).map((node) => node.id)).toEqual(
 			[software.id, flat.id]

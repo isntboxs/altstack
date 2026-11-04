@@ -76,11 +76,11 @@ a separate recovery procedure requires otherwise.
 
 ### Reserved project slugs
 
-The static `/collections` route takes precedence over a legacy project at
-`/collections`. New-write validation does not repair existing project rows. Run
+Static routes such as `/about` and `/collections` take precedence over legacy
+projects at those paths. New-write validation does not repair existing rows. Run
 `vp run db:check-project-slugs` with the intended instance's `DATABASE_URL`; a
 local result does not certify another environment. It checks every project
-status against the shared reserved-route list, including `collections`, without
+status against the shared reserved-route list, including `about` and `collections`, without
 changing records. It also permits a fresh database before its first migration.
 
 If the check reports collisions, keep the current release running and rename
@@ -130,10 +130,92 @@ uncertain receipt, reconcile provider state privately before a manual resend;
 resetting attempts or identities can duplicate messages. Later empty runs do not
 prove earlier failed rows recovered.
 
+## Advertising orders and campaigns
+
+Apply the additive advertising migrations before starting the matching API/web
+revision. Campaigns and guest orders are managed at `/admin/ads` through the
+existing admin role. No production campaigns are seeded. Package prices, tiers,
+and Ko-fi destinations live in
+[AD_PLANS](../packages/shared/src/schemas/ad-billing.ts). Before enabling orders
+on an instance or fork, review those destinations and configure payment pages
+controlled by that operator; do not send customers to another operator's account.
+There are no payment-gateway credentials or automatic payment webhooks in this
+integration.
+
+### Payment and material review
+
+1. The advertiser chooses a package, accepts the public terms, and receives a
+   private management link by email. The link exposes the order reference and
+   matching Ko-fi checkout. Creating an order or opening Ko-fi does not confirm
+   payment. The advertiser uses the same contact email and includes that order
+   reference; checkout displays the final payable amount/conversion.
+2. An admin independently matches the Ko-fi receipt to the order and verifies
+   the amount. Record its unique transaction reference once. References are
+   case-insensitively unique; stale/concurrent confirmations cannot add a second
+   paid period. The immutable record retains order amount, initial/renewal kind,
+   confirming admin, and timestamp. This is a manual confirmation record, not
+   automatic reconciliation, a charge, or a tax invoice.
+3. After confirmation, the advertiser uploads name, description, HTTP(S) website,
+   square logo, and 3:1 horizontal artwork for Plus/Priority. Core reuses its logo
+   for the unused sponsor artwork field. Private paid-order credentials and
+   upload ownership are required before assets are promoted or replaced.
+4. Review the materials and configure CTA text/button color before approval.
+   Request changes or reject with feedback when needed. Previously approved
+   material stays available during revision review. A first rejection is terminal;
+   arrange any refund manually by email. Rejecting a later revision retains the
+   approved campaign.
+
+### UTC campaign periods
+
+A guest campaign's first rolling month starts at first material approval, not
+order creation or payment confirmation. It ends at the same UTC time/day of the
+next month, clamped to that month's last day. January 31, 2028 at 12:30 UTC ends
+February 29 at 12:30 UTC, exclusive. Initial review time does not consume the paid
+period, and later material approvals do not reset it.
+
+The advertiser requests renewal from the private page, then pays again through
+Ko-fi. The request queues email without extending dates. A confirmed payment adds
+one month from the existing end, or from confirmation time if already expired.
+Clamping is sequential: January 31 to February 28 to March 28 in a non-leap year.
+Renewal preserves explicit admin deactivation; activation is a separate control.
+Expiry is enforced by public inventory filters without an expiry cron.
+
+Manual calendar campaigns start at 00:00 UTC on the first day of `startMonth` and
+run for 1–24 calendar months. The end is exclusive at the following month
+boundary: December plus two months runs December 1 through February 1. Drafts
+and inactive inventory are ineligible. A campaign linked to a paid order cannot
+be edited/deleted through this calendar editor, which would bypass reviewed
+materials or overwrite paid dates.
+
+### Advertising email delivery
+
+Configure `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and trusted `EMAIL_APP_URL`,
+including the required `CORS_ORIGINS` entry. Set `ADS_CONTACT_EMAIL` to a monitored
+staff inbox for notifications and advertiser replies; it defaults to the sender
+address. Orders fail closed when sending configuration is missing or invalid.
+No inbound-email automation handles those replies.
+
+Unlike the scheduled review worker, advertising delivery runs inside the API
+process, draining up to ten messages every 30 seconds outside test mode. Keep
+at least one API instance running; multiple instances coordinate with database
+leases and stable provider idempotency keys. Do not add a second scheduler for
+this loop. Payloads are frozen before sending, with at most eight attempts within
+23 hours of notification creation. Exhausted notifications remain failed for
+operator inspection; a recovery request can issue a fresh management link after
+an exhausted/expired message. There is no automatic outbox retention policy.
+
+Monitor failed/old pending ad notifications separately from the admin operations
+page's review-outbox aggregates. Do not log email bodies or private links.
+Provider acceptance does not prove inbox delivery, and no application test
+verifies real receipt of money. Use synthetic orders and separately verify mail,
+payment matching, review, renewal, and asset access for the operated instance.
+The [architecture](architecture.md#private-order-access) describes link privacy
+and [artwork handling](architecture.md#layout-and-artwork) describes cleanup.
+
 ## Monitoring and storage
 
 Monitor service health, scheduler exits, successful snapshot age, due/oldest
-pending review notifications, failed/cancelled counts, backup freshness, and
+pending review/ad notifications, failed/cancelled counts, backup freshness, and
 storage growth. The admin operations page exposes aggregate snapshots, not a job
 run ledger or backup monitoring system. Alerting is an operator responsibility.
 

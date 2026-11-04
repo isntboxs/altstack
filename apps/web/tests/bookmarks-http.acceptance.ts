@@ -171,7 +171,9 @@ try {
 		'name',
 		'slug',
 		'tagline',
+		'verified',
 	])
+	assert.equal(data.bookmarks[0]?.verified, false)
 	await pool.query('UPDATE projects SET status = $1 WHERE id = $2', [
 		'removed',
 		project.id,

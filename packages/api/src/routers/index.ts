@@ -22,6 +22,7 @@ import { submissionRouter } from '@altstack/api/routers/submission'
 import { tagRouter, adminTagRouter } from '@altstack/api/routers/tag'
 import { uploadRouter } from '@altstack/api/routers/upload'
 
+import { aboutRouter, adminAboutRouter } from './about'
 import { adBillingRouter, adminAdBillingRouter } from './ad-billing'
 import { adsRouter, adminAdsRouter } from './ads'
 import { blogRouter, adminBlogRouter } from './blog'
@@ -29,6 +30,7 @@ import { collectionRouter, adminCollectionRouter } from './collection'
 import { ownershipRouter } from './ownership'
 
 export const routers = o.router({
+	about: aboutRouter,
 	ads: adsRouter,
 	adBilling: adBillingRouter,
 	blog: blogRouter,
@@ -38,6 +40,7 @@ export const routers = o.router({
 	bookmark: bookmarkRouter,
 	collection: collectionRouter,
 	admin: {
+		about: adminAboutRouter,
 		ads: adminAdsRouter,
 		adBilling: adminAdBillingRouter,
 		blog: adminBlogRouter,

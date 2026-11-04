@@ -26,6 +26,7 @@ import {
 	categoryPreviewPath,
 	categoryUpdatePayload,
 	eligibleParents,
+	indexCategories,
 } from '#/features/admin-categories/model'
 import type {
 	AdminCategory,
@@ -86,6 +87,7 @@ export function CategoryForm({
 		},
 	})
 	const parents = eligibleParents(categories, original)
+	const categoriesById = indexCategories(categories)
 	if (
 		original?.parentId &&
 		!parents.some((parent) => parent.id === original.parentId)
@@ -214,7 +216,7 @@ export function CategoryForm({
 											</NativeSelectOption>
 											{parents.map((parent) => (
 												<NativeSelectOption key={parent.id} value={parent.id}>
-													{categoryLabel(parent, categories)}
+													{categoryLabel(parent, categoriesById)}
 												</NativeSelectOption>
 											))}
 											{original?.parentId &&

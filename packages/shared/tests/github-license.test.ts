@@ -75,8 +75,20 @@ describe('GitHub license normalization', () => {
 	})
 })
 
-it('validates all ten sorts and preserves legacy query values', () => {
-	expect(searchSortSchema.options).toHaveLength(10)
+it('validates Recommended and legacy sorts while preserving query values', () => {
+	expect(searchSortSchema.options).toEqual([
+		'recommended',
+		'newest',
+		'oldest',
+		'name',
+		'most-stars',
+		'most-forks',
+		'most-popular',
+		'name-desc',
+		'trending',
+		'last-commit',
+		'repository-age',
+	])
 	for (const sort of searchSortSchema.options) {
 		expect(
 			searchProjectsQuerySchema.parse({ sort, license: 'Apache-2.0' })

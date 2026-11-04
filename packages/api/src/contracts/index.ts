@@ -15,6 +15,7 @@ import { submissionContract } from '@altstack/api/contracts/submission'
 import { tagContract, adminTagContract } from '@altstack/api/contracts/tag'
 import { uploadContract } from '@altstack/api/contracts/upload'
 
+import { aboutContract, adminAboutContract } from './about'
 import { adBillingContract, adminAdBillingContract } from './ad-billing'
 import { adsContract, adminAdsContract } from './ads'
 import { blogContract, adminBlogContract } from './blog'
@@ -22,6 +23,7 @@ import { collectionContract, adminCollectionContract } from './collection'
 import { ownershipContract } from './ownership'
 
 export const contracts = {
+	about: aboutContract,
 	adBilling: adBillingContract,
 	ads: adsContract,
 	blog: blogContract,
@@ -31,6 +33,7 @@ export const contracts = {
 	bookmark: bookmarkContract,
 	collection: collectionContract,
 	admin: {
+		about: adminAboutContract,
 		adBilling: adminAdBillingContract,
 		ads: adminAdsContract,
 		blog: adminBlogContract,

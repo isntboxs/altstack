@@ -6,6 +6,7 @@ import {
 	IconChevronDown,
 	IconFlag,
 	IconInbox,
+	IconInfoCircle,
 	IconLayoutDashboard,
 	IconPackage,
 	IconPlus,
@@ -85,6 +86,7 @@ const catalog = linkOptions([
 	{ to: '/admin/ads', icon: IconStar, label: 'Ad campaigns' },
 ])
 const administration = linkOptions([
+	{ to: '/admin/about', icon: IconInfoCircle, label: 'About us' },
 	{ to: '/admin/users', icon: IconUsers, label: 'Users' },
 	{ to: '/admin/activity', icon: IconActivity, label: 'Activity' },
 	{ to: '/admin/operations', icon: IconServer, label: 'Operations' },

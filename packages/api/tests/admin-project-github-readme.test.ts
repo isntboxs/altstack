@@ -1,6 +1,6 @@
 import { createORPCClient, createORPCErrorFromJson } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
-import type { ContractRouterClient } from '@orpc/contract'
+import type { RouterContractClient } from '@orpc/contract'
 import { OpenAPILink } from '@orpc/openapi/fetch'
 import { createRouterClient } from '@orpc/server'
 import { RequestError } from 'octokit'
@@ -269,7 +269,7 @@ describe('README wire contract', () => {
 					if (!result.response) throw new Error('Unmatched request')
 					return result.response
 				}
-				const wire = createORPCClient<ContractRouterClient<typeof contracts>>(
+				const wire = createORPCClient<RouterContractClient<typeof contracts>>(
 					transport === 'rpc'
 						? new RPCLink({
 								origin: 'http://localhost',

@@ -66,6 +66,7 @@ export async function sitemapPages() {
 	])
 	return urls([
 		{ path: '/' },
+		{ path: '/about' },
 		{ path: '/categories' },
 		{ path: '/collections' },
 		{ path: '/blogs' },

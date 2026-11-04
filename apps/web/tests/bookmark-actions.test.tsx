@@ -67,6 +67,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 	const { CatchBoundary } = await importOriginal<typeof TanStackRouter>()
 	return {
 		CatchBoundary,
+		useMatchRoute: () => () => false,
 		useLocation: () => {
 			return { href: '/example?source=test', pathname: '/example' }
 		},

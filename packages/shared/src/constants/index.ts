@@ -1,6 +1,7 @@
 export * from '@altstack/shared/constants/orpc-errors'
 
 export const RESERVED_PROJECT_SLUGS = new Set([
+	'about',
 	'activity',
 	'admin',
 	'auth',

@@ -15,6 +15,7 @@ import { SidebarTrigger } from '@altstack/ui/components/sidebar'
 import { ThemeSwitcher } from '#/components/theme-switcher'
 
 const labels: Record<string, string> = {
+	'/admin/about': 'About us',
 	'/admin': 'Overview',
 	'/admin/submissions': 'Submissions',
 	'/admin/ownership': 'Ownership requests',

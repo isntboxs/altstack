@@ -33,6 +33,8 @@ describe('slugify', () => {
 
 describe('project route reservations', () => {
 	it.each([
+		'about',
+		' About! ',
 		'blogs',
 		' Blogs! ',
 		'collections',

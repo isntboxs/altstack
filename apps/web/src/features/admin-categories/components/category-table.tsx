@@ -19,7 +19,10 @@ import {
 } from '@altstack/ui/components/table'
 
 import { CategoryActions } from '#/features/admin-categories/components/category-actions'
-import { categoryLabel } from '#/features/admin-categories/model'
+import {
+	categoryLabel,
+	indexCategories,
+} from '#/features/admin-categories/model'
 import type { AdminCategory } from '#/features/admin-categories/model'
 import { features } from '#/utils/data-table-features'
 import type { DataTableFeatures } from '#/utils/data-table-features'
@@ -39,6 +42,7 @@ export function CategoryTable({
 		pageIndex: 0,
 		pageSize: 12,
 	})
+	const categoriesById = indexCategories(categories)
 	const columns = helper.columns([
 		helper.accessor('name', {
 			header: ({ column }) => (
@@ -51,14 +55,14 @@ export function CategoryTable({
 			),
 			filterFn: (row, _id, value: unknown) =>
 				typeof value !== 'string' ||
-				`${categoryLabel(row.original, categories)} ${row.original.slug}`
+				`${categoryLabel(row.original, categoriesById)} ${row.original.slug}`
 					.toLowerCase()
 					.includes(value.trim().toLowerCase()),
 			cell: ({ row }) => (
 				<div className="max-w-64 min-w-40 whitespace-normal">
 					<p className="font-medium">{row.original.name}</p>
 					<p className="text-xs text-muted-foreground">
-						{categoryLabel(row.original, categories)}
+						{categoryLabel(row.original, categoriesById)}
 					</p>
 				</div>
 			),
@@ -72,7 +76,7 @@ export function CategoryTable({
 		helper.accessor(
 			(node) => {
 				const parent = categories.find((item) => item.id === node.parentId)
-				return parent ? categoryLabel(parent, categories) : 'Root'
+				return parent ? categoryLabel(parent, categoriesById) : 'Root'
 			},
 			{
 				id: 'parent',

@@ -39,6 +39,9 @@ vi.mock('@altstack/api/queries/seo', () => {
 })
 
 describe('sitemap serialization', () => {
+	it('includes the public About page', async () => {
+		expect(await (await sitemapPages()).text()).toContain('/about</loc>')
+	})
 	it('includes collection discovery and eligible collection revisions', async () => {
 		const xml = await (await sitemapPages()).text()
 		expect(xml).toContain('/collections</loc>')

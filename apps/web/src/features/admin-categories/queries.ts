@@ -1,8 +1,10 @@
 import {
+	matchQuery,
 	useMutation,
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
+import type { QueryFilters } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
 import type { ORPCRouterInputs } from '@altstack/api/routers'
@@ -54,13 +56,16 @@ export function useAdminCategoryDelete() {
 	return useMutation({
 		...adminCategoryQueries.remove(),
 		onSuccess: async (_, { params: { id } }) => {
-			for (const queryKey of [
+			const queryKeys = [
 				adminORPC.category.getById.key({ input: { params: { id } } }),
 				orpc.admin.category.getById.key({ input: { params: { id } } }),
-			]) {
-				await queryClient.cancelQueries({ queryKey })
-				queryClient.removeQueries({ queryKey })
+			]
+			const deletedQueries: QueryFilters = {
+				predicate: (query) =>
+					queryKeys.some((queryKey) => matchQuery({ queryKey }, query)),
 			}
+			await queryClient.cancelQueries(deletedQueries)
+			queryClient.removeQueries(deletedQueries)
 			await invalidateCatalog(queryClient)
 			toast.add({ type: 'success', title: 'Category deleted' })
 			await router.navigate({ to: '/admin/categories', replace: true })

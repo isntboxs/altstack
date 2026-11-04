@@ -14,13 +14,16 @@
 	},
 	"errorResponses": {
 		"400": {
-			"description": "Bad Request. Usually due to missing parameters, or invalid parameters.",
+			"description": "Bad Request. Usually due to missing parameters, or invalid parameters., Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again.",
 			"content": {
 				"application/json": {
 					"schema": {
 						"oneOf": [
 							{
 								"$ref": "#/components/schemas/BadRequest"
+							},
+							{
+								"$ref": "#/components/schemas/UploadExpired"
 							},
 							{
 								"$ref": "#/components/schemas/UndefinedError"
@@ -82,13 +85,16 @@
 			}
 		},
 		"409": {
-			"description": "Conflict. The request could not be completed due to a conflict with the current state of the resource.",
+			"description": "Conflict. The request could not be completed due to a conflict with the current state of the resource., Conflict after image promotion. The project slug or repository is already taken, and the uploaded images were already consumed. Please adjust and upload the images again.",
 			"content": {
 				"application/json": {
 					"schema": {
 						"oneOf": [
 							{
 								"$ref": "#/components/schemas/Conflict"
+							},
+							{
+								"$ref": "#/components/schemas/ConflictAfterPromote"
 							},
 							{
 								"$ref": "#/components/schemas/UndefinedError"
@@ -133,19 +139,13 @@
 			}
 		},
 		"500": {
-			"description": "Upload expired. The temporary upload was not found or is no longer valid. Please upload the images again., Upload consumed. The request failed after the uploaded images were already consumed. Please upload the images again and retry., Conflict after image promotion. The project slug or repository is already taken, and the uploaded images were already consumed. Please adjust and upload the images again., Internal Server Error. This is a problem with the server that you cannot fix.",
+			"description": "Upload consumed. The request failed after the uploaded images were already consumed. Please upload the images again and retry., Internal Server Error. This is a problem with the server that you cannot fix.",
 			"content": {
 				"application/json": {
 					"schema": {
 						"oneOf": [
 							{
-								"$ref": "#/components/schemas/UploadExpired"
-							},
-							{
 								"$ref": "#/components/schemas/UploadConsumed"
-							},
-							{
-								"$ref": "#/components/schemas/ConflictAfterPromote"
 							},
 							{
 								"$ref": "#/components/schemas/InternalServerError"

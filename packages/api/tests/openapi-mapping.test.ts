@@ -1,5 +1,5 @@
 import { createORPCClient } from '@orpc/client'
-import type { ContractRouterClient } from '@orpc/contract'
+import type { RouterContractClient } from '@orpc/contract'
 import { SmartCoercionHandlerPlugin } from '@orpc/json-schema'
 import { getOpenAPIMeta, OpenAPIGenerator } from '@orpc/openapi'
 import { OpenAPIHandler, OpenAPILink } from '@orpc/openapi/fetch'
@@ -9,6 +9,7 @@ import { ZodToJsonSchemaConverter } from '@orpc/zod'
 import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { contracts } from '@altstack/api/contracts'
+import { ERROR_STATUS_MAP } from '@altstack/api/openapi-errors'
 
 import metadataFixture from './fixtures/github-metadata.json'
 import readmeFixture from './fixtures/github-readme.json'
@@ -379,6 +380,7 @@ const probes = {
 	},
 }
 const handler = new OpenAPIHandler(probes, {
+	errorStatusMap: ERROR_STATUS_MAP,
 	filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 	plugins: [
 		new SmartCoercionHandlerPlugin({
@@ -724,7 +726,7 @@ describe('detailed REST mapping', () => {
 	})
 	it('sends QUERY through OpenAPILink with path/query inputs in the URL and no body', async () => {
 		const requests: Array<{ method: string; url: string; body: string }> = []
-		const client = createORPCClient<ContractRouterClient<typeof contracts>>(
+		const client = createORPCClient<RouterContractClient<typeof contracts>>(
 			new OpenAPILink(contracts, {
 				origin: 'http://localhost',
 				url: '/',
@@ -958,6 +960,7 @@ describe('generated OpenAPI compatibility', () => {
 		const spec = await new OpenAPIGenerator({
 			converters: [new ZodToJsonSchemaConverter()],
 		}).generate(contracts, {
+			errorStatusMap: ERROR_STATUS_MAP,
 			filter: (procedure) => getOpenAPIMeta(procedure)?.path !== undefined,
 			base: {
 				info: { title: 'Altstack API', version: '0.0.0' },
@@ -1061,7 +1064,20 @@ describe('generated OpenAPI compatibility', () => {
 					}
 				)
 			)
-		expect(operations).toHaveLength(89)
+		expect(operations).toHaveLength(92)
+		expect(paths['/about']?.query).toMatchObject({
+			operationId: 'getAbout',
+			security: [],
+		})
+		for (const [method, operationId] of [
+			['query', 'getAdminAbout'],
+			['put', 'updateAbout'],
+		] as const) {
+			expect(paths['/admin/about']?.[method]).toMatchObject({ operationId })
+			expect(
+				paths['/admin/about']?.[method]?.security ?? spec.security
+			).toEqual(baseline.security)
+		}
 		expect(paths['/ads']?.query).toMatchObject({
 			operationId: 'listEligibleAds',
 			security: [],
@@ -1198,7 +1214,7 @@ describe('generated OpenAPI compatibility', () => {
 		})
 		expect(operations.filter(({ method }) => method === 'get')).toEqual([])
 		expect(operations.filter(({ method }) => method === 'query')).toHaveLength(
-			46
+			48
 		)
 		for (const name of ['category', 'license']) {
 			expect(paths['/projects/search']?.query?.parameters).toContainEqual(
