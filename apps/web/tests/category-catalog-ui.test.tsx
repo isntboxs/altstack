@@ -458,6 +458,47 @@ describe('CRUD cache callbacks with real oRPC query keys', () => {
 			)
 		).toBeTruthy()
 	})
+	it('cancels in-flight detail variants before deletion so late responses cannot restore them', async () => {
+		const { wrapper, queryClient } = provider()
+		const keys = [
+			adminCategoryQueries.get({ id: flat.id }).queryKey,
+			orpc.admin.category.getById.queryOptions({
+				input: { params: { id: flat.id } },
+			}).queryKey,
+		]
+		const signals: Array<AbortSignal> = []
+		const complete: Array<(value: string) => void> = []
+		const requests = keys.map((queryKey) =>
+			queryClient.query({
+				queryKey,
+				queryFn: ({ signal }) => {
+					signals.push(signal)
+					return new Promise<string>((resolve) => complete.push(resolve))
+				},
+			})
+		)
+		const settled = Promise.allSettled(requests)
+		const { result } = renderHook(useAdminCategoryDelete, { wrapper })
+		try {
+			await act(async () => {
+				await result.current.mutateAsync({ params: { id: flat.id } })
+			})
+			expect(signals).toHaveLength(2)
+			expect(signals.every((signal) => signal.aborted)).toBe(true)
+			for (const resolve of complete) resolve('late response')
+			expect(
+				(await settled).every((entry) => entry.status === 'rejected')
+			).toBe(true)
+			for (const queryKey of keys) {
+				expect(queryClient.getQueryState(queryKey)).toBeUndefined()
+			}
+			expect(navigate).toHaveBeenCalledTimes(1)
+		} finally {
+			queryClient.clear()
+			for (const resolve of complete) resolve('cleanup')
+			await settled
+		}
+	})
 	it('a rejected category write leaves data cached and does not navigate', async () => {
 		rpc.mockRejectedValueOnce(new Error('Conflict'))
 		const { wrapper, queryClient } = provider()

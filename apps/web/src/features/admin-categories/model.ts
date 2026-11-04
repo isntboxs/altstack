@@ -16,15 +16,28 @@ export type AdminCategory =
 	ORPCRouterOutputs['admin']['category']['list']['categories'][number]
 export type CategoryFormValues = z.input<typeof adminCreateCategoryBodySchema>
 
+type CategoryLookup = Array<CategoryNode> | ReadonlyMap<string, CategoryNode>
+
+export function indexCategories(categories: Array<CategoryNode>) {
+	const byId = new Map<string, CategoryNode>()
+	for (const category of categories) {
+		if (!byId.has(category.id)) byId.set(category.id, category)
+	}
+	return byId
+}
+
 export function categoryAncestry(
 	category: CategoryNode,
-	categories: Array<CategoryNode>
+	categories: CategoryLookup
 ) {
+	const byId = Array.isArray(categories)
+		? indexCategories(categories)
+		: categories
 	const chain = [category]
 	const seen = new Set([category.id])
 	let parentId = category.parentId
 	while (parentId) {
-		const parent = categories.find((node) => node.id === parentId)
+		const parent = byId.get(parentId)
 		if (!parent || seen.has(parent.id)) break
 		chain.unshift(parent)
 		seen.add(parent.id)
@@ -35,7 +48,7 @@ export function categoryAncestry(
 
 export function categoryLabel(
 	category: CategoryNode,
-	categories: Array<CategoryNode>
+	categories: CategoryLookup
 ) {
 	return categoryAncestry(category, categories)
 		.map((node) => node.name)
