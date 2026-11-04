@@ -149,6 +149,27 @@ describe('owner submission table', () => {
 			).toBeNull()
 		}
 	})
+	it('uses the latest resubmit callback after a parent update', () => {
+		const props = callbacks()
+		const submissions = data([row('Rejected', 'rejected')])
+		const view = render(
+			<SubmissionDataTable data={submissions} query="" {...props} />
+		)
+		const onResubmit = vi.fn()
+		view.rerender(
+			<SubmissionDataTable
+				data={submissions}
+				query=""
+				{...props}
+				onResubmit={onResubmit}
+			/>
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Edit & Resubmit Rejected' })
+		)
+		expect(onResubmit).toHaveBeenCalledExactlyOnceWith('Rejected')
+		expect(props.onResubmit).not.toHaveBeenCalled()
+	})
 	it('sends search and page requests to server-controlled navigation', () => {
 		const props = callbacks()
 		render(

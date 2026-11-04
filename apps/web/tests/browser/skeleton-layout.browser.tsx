@@ -1,3 +1,6 @@
+import { createORPCClient } from '@orpc/client'
+import { createTanstackQueryUtils } from '@orpc/tanstack-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
 	createMemoryHistory,
 	createRootRoute,
@@ -9,6 +12,8 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { page } from 'vite-plus/test/browser'
 
+import type { ORPCRouterClient } from '@altstack/api/routers'
+
 import { CategoryComboboxView } from '#/components/category-combobox-view'
 import { ProjectListSection } from '#/components/project-list-section'
 import { ProjectResultsSkeleton } from '#/components/public-skeletons'
@@ -16,12 +21,24 @@ import { CategoryComboboxSkeleton } from '#/components/workspace-skeletons'
 import { homeProjectPageLink } from '#/features/project/page-links'
 import '#/styles.css'
 
+vi.mock('#/utils/orpc', () => {
+	const client = createORPCClient<ORPCRouterClient>({
+		call: () =>
+			Promise.reject(new Error('Layout fixtures must not make RPC requests')),
+	})
+	const orpc = createTanstackQueryUtils(client)
+	return { client, orpc, projectORPC: orpc.project, adminORPC: orpc.admin }
+})
 vi.mock('@altstack/env/web', () => {
 	return {
 		env: { VITE_S3_PUBLIC_URL: 'https://storage.test' },
 	}
 })
-afterEach(cleanup)
+const queryClients: Array<QueryClient> = []
+afterEach(() => {
+	cleanup()
+	for (const queryClient of queryClients.splice(0)) queryClient.clear()
+})
 
 async function mount(children: ReactNode) {
 	const root = createRootRoute({ component: () => children })
@@ -30,7 +47,13 @@ async function mount(children: ReactNode) {
 		history: createMemoryHistory({ initialEntries: ['/'] }),
 	})
 	await router.load()
-	render(<RouterProvider router={router} />)
+	const queryClient = new QueryClient()
+	queryClients.push(queryClient)
+	render(
+		<QueryClientProvider client={queryClient}>
+			<RouterProvider router={router} />
+		</QueryClientProvider>
+	)
 	await document.fonts.ready
 }
 

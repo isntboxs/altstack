@@ -164,8 +164,6 @@ function ClaimInboxContent({
 		id: string
 		decision: 'approve' | 'reject'
 	} | null>(null)
-	const selected = query.data.claims.find((claim) => claim.id === decision?.id)
-	const noteLength = selected ? (notes[selected.id]?.trim().length ?? 0) : 0
 	const review = useMutation({
 		mutationFn: (input: {
 			id: string
@@ -401,81 +399,138 @@ function ClaimInboxContent({
 				Admins review a project’s first representative; existing representatives
 				review additional requests. Your own requests cannot be reviewed here.
 			</p>
-			<Dialog
-				open={!!decision}
-				onOpenChange={(open) => {
-					if (!open && !review.isPending) setDecision(null)
-				}}
-			>
-				<DialogContent showCloseButton={!review.isPending}>
-					<DialogHeader>
-						<DialogTitle>
-							{decision?.decision === 'approve'
-								? 'Approve project access?'
-								: 'Decline access request?'}
-						</DialogTitle>
-						<DialogDescription>
-							{selected
-								? `${selected.name} is requesting ${selected.role} access to ${selected.projectName}.`
-								: 'This request is no longer in the current queue.'}
-						</DialogDescription>
-					</DialogHeader>
-					<p className="text-sm">
-						{decision?.decision === 'approve'
-							? 'Approval grants permission to edit the published project and review future access requests. Confirm independent verification before continuing.'
-							: 'This person will not receive project access from this request.'}
-					</p>
-					{selected && decision?.decision === 'approve' && (
-						<VerificationNotes
-							id="decision-verification-notes"
-							label="Verification notes"
-							value={notes[selected.id] ?? ''}
-							required={selected.githubEvidence?.status !== 'verified'}
-							disabled={review.isPending}
-							onChange={(value) => updateNote(selected.id, value)}
-						/>
-					)}
-					{review.isError && (
-						<Alert variant="destructive">
-							<AlertTitle>Unable to review request</AlertTitle>
-							<AlertDescription>{review.error.message}</AlertDescription>
-						</Alert>
-					)}
-					<DialogFooter>
-						<Button
-							variant="outline"
-							disabled={review.isPending}
-							onClick={() => setDecision(null)}
-						>
-							Cancel
-						</Button>
-						<Button
-							variant={
-								decision?.decision === 'reject' ? 'destructive' : 'default'
-							}
-							disabled={
-								!selected ||
-								review.isPending ||
-								(decision?.decision === 'approve' &&
-									(selected.githubEvidence?.status !== 'verified' ||
-										noteLength > 0) &&
-									noteLength < 20)
-							}
-							onClick={() => {
-								if (!decision) return
-								const note = notes[decision.id]?.trim()
-								review.mutate({
-									...decision,
-									manualEvidence:
-										decision.decision === 'approve' && note ? note : undefined,
-								})
-							}}
-						>
-							{review.isPending ? 'Saving…' : 'Confirm decision'}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<ClaimDecisionDialog
+				claims={query.data.claims}
+				decision={decision}
+				setDecision={setDecision}
+				notes={notes}
+				updateNote={updateNote}
+				review={review}
+			/>
 		</section>
+	)
+}
+
+function ClaimDecisionDialog({
+	claims,
+	decision,
+	setDecision,
+	notes,
+	updateNote,
+	review,
+}: {
+	claims: Awaited<ReturnType<typeof client.ownership.inbox>>['claims']
+	decision: { id: string; decision: 'approve' | 'reject' } | null
+	setDecision: (
+		decision: { id: string; decision: 'approve' | 'reject' } | null
+	) => void
+	notes: Partial<Record<string, string>>
+	updateNote: (id: string, value: string) => void
+	review: {
+		isPending: boolean
+		isError: boolean
+		error: Error | null
+		mutate: (input: {
+			id: string
+			decision: 'approve' | 'reject'
+			manualEvidence?: string
+		}) => void
+	}
+}) {
+	const selected = claims.find((claim) => claim.id === decision?.id)
+	return (
+		<Dialog
+			open={!!decision}
+			onOpenChange={(open) => {
+				if (!open && !review.isPending) setDecision(null)
+			}}
+		>
+			<DialogContent showCloseButton={!review.isPending}>
+				<DialogHeader>
+					<DialogTitle>
+						{decision?.decision === 'approve'
+							? 'Approve project access?'
+							: 'Decline access request?'}
+					</DialogTitle>
+					<DialogDescription>
+						{selected
+							? `${selected.name} is requesting ${selected.role} access to ${selected.projectName}.`
+							: 'This request is no longer in the current queue.'}
+					</DialogDescription>
+				</DialogHeader>
+				<p className="text-sm">
+					{decision?.decision === 'approve'
+						? 'Approval grants permission to edit the published project and review future access requests. Confirm independent verification before continuing.'
+						: 'This person will not receive project access from this request.'}
+				</p>
+				{selected && decision?.decision === 'approve' && (
+					<VerificationNotes
+						id="decision-verification-notes"
+						label="Verification notes"
+						value={notes[selected.id] ?? ''}
+						required={selected.githubEvidence?.status !== 'verified'}
+						disabled={review.isPending}
+						onChange={(value) => updateNote(selected.id, value)}
+					/>
+				)}
+				{review.isError && (
+					<Alert variant="destructive">
+						<AlertTitle>Unable to review request</AlertTitle>
+						<AlertDescription>{review.error!.message}</AlertDescription>
+					</Alert>
+				)}
+				<DialogFooter>
+					<Button
+						variant="outline"
+						disabled={review.isPending}
+						onClick={() => setDecision(null)}
+					>
+						Cancel
+					</Button>
+					<Button
+						variant={
+							decision?.decision === 'reject' ? 'destructive' : 'default'
+						}
+						disabled={
+							!canConfirmClaimDecision(
+								selected,
+								decision?.decision,
+								notes,
+								review.isPending
+							)
+						}
+						onClick={() => {
+							if (!decision) return
+							const note = notes[decision.id]?.trim()
+							review.mutate({
+								...decision,
+								manualEvidence:
+									decision.decision === 'approve' && note ? note : undefined,
+							})
+						}}
+					>
+						{review.isPending ? 'Saving…' : 'Confirm decision'}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	)
+}
+
+function canConfirmClaimDecision(
+	selected:
+		| Awaited<ReturnType<typeof client.ownership.inbox>>['claims'][number]
+		| undefined,
+	decision: 'approve' | 'reject' | undefined,
+	notes: Partial<Record<string, string>>,
+	pending: boolean
+) {
+	const noteLength = selected ? (notes[selected.id]?.trim().length ?? 0) : 0
+	return !(
+		!selected ||
+		pending ||
+		(decision === 'approve' &&
+			(selected.githubEvidence?.status !== 'verified' || noteLength > 0) &&
+			noteLength < 20)
 	)
 }

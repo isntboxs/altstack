@@ -176,7 +176,7 @@ describe('shared auth form', () => {
 		expect(magicLink).toHaveBeenCalledTimes(2)
 	})
 	it('keeps the dialog open and reports delivery failure without exposing provider details', async () => {
-		magicLink.mockResolvedValue({
+		magicLink.mockResolvedValueOnce({
 			error: { status: 503, message: 'sensitive provider details' },
 		})
 		const close = vi.fn()
@@ -186,7 +186,42 @@ describe('shared auth form', () => {
 		expect(close).not.toHaveBeenCalled()
 		expect(screen.queryByText('sensitive provider details')).toBeNull()
 		expect(screen.queryByText('Check your inbox')).toBeNull()
+		submit()
+		await screen.findByText('Check your inbox')
+		expect(magicLink).toHaveBeenCalledTimes(2)
 	})
+	it.each(['email', 'github'] as const)(
+		'releases the busy state after a rejected %s request so sign-in can be retried',
+		async (method) => {
+			const request = method === 'email' ? magicLink : social
+			request.mockRejectedValueOnce(new Error('Network unavailable'))
+			render(<SignInForm />)
+			const send = () => {
+				if (method === 'email') submit()
+				else {
+					fireEvent.click(
+						screen.getByRole('button', { name: 'Continue with GitHub' })
+					)
+				}
+			}
+			send()
+			await screen.findByText(
+				'Unable to connect. Check your connection and try again.'
+			)
+			expect(
+				screen
+					.getByRole('button', { name: 'Send me a magic link' })
+					.hasAttribute('disabled')
+			).toBe(false)
+			expect(
+				screen
+					.getByRole('button', { name: 'Continue with GitHub' })
+					.hasAttribute('disabled')
+			).toBe(false)
+			send()
+			await waitFor(() => expect(request).toHaveBeenCalledTimes(2))
+		}
+	)
 	it('honors the server retry delay and leaves GitHub available', async () => {
 		magicLink.mockImplementation(
 			(options: {

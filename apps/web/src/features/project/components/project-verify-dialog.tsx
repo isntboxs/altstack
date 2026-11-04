@@ -191,6 +191,166 @@ function VerificationFormContent({
 }: VerificationFormProps & {
 	github?: ReturnType<typeof useGithubVerification>
 }) {
+	const {
+		id,
+		href,
+		selectedEmail,
+		selectedRole,
+		currentChallenge,
+		cooldown,
+		codeRef,
+		emailRef,
+		link,
+		githubBlocked,
+		expired,
+		pending,
+		requestCode,
+		confirm,
+		code,
+		setCode,
+		setEditing,
+		error,
+		setError,
+		now,
+		setEmail,
+		setRole,
+		send,
+		verify,
+	} = useVerificationRequest({ projectId, userId, state, github })
+	if (state.isError) {
+		return (
+			<div className="flex flex-col gap-3">
+				<p role="alert">Unable to load your request.</p>
+				<Button variant="outline" onClick={() => void state.refetch()}>
+					Retry
+				</Button>
+			</div>
+		)
+	}
+	if (state.data.membership) {
+		return (
+			<div className="flex flex-col gap-4">
+				<output>
+					You are an approved {state.data.membership} of this project.
+				</output>
+				<Button render={<Link to="/managed/$id" params={{ id: projectId }} />}>
+					Manage project
+				</Button>
+			</div>
+		)
+	}
+	if (state.data.claim?.status === 'pending') {
+		return (
+			<PendingVerificationRequest state={state} link={link} onClose={onClose} />
+		)
+	}
+	return (
+		<form
+			onSubmit={currentChallenge ? confirm : requestCode}
+			className="flex min-w-0 flex-col gap-5"
+			aria-busy={pending}
+		>
+			{!currentChallenge && (
+				<GithubVerificationAccess github={github} link={link} href={href} />
+			)}
+			{state.data.claim?.status === 'rejected' && (
+				<p className="text-sm text-muted-foreground">
+					Your previous request was declined. Confirm your details before
+					requesting access again.
+				</p>
+			)}
+			{currentChallenge ? (
+				<VerificationCodeEntry
+					id={id}
+					selectedEmail={selectedEmail}
+					selectedRole={selectedRole}
+					codeRef={codeRef}
+					code={code}
+					setCode={setCode}
+					pending={pending}
+					expired={expired}
+					currentChallenge={currentChallenge}
+					now={now}
+					cooldown={cooldown}
+					requestCode={requestCode}
+					setEditing={setEditing}
+					setError={setError}
+				/>
+			) : (
+				<FieldGroup>
+					<Field>
+						<FieldLabel htmlFor={`${id}-email`}>Email address</FieldLabel>
+						<Input
+							ref={emailRef}
+							id={`${id}-email`}
+							type="email"
+							autoComplete="email"
+							required
+							maxLength={254}
+							placeholder="Your project contact email"
+							value={selectedEmail}
+							onChange={(event) => setEmail(event.target.value)}
+							disabled={pending}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor={`${id}-role`}>Your role</FieldLabel>
+						<Select
+							value={selectedRole}
+							items={[
+								{ label: 'Owner', value: 'owner' },
+								{ label: 'Maintainer', value: 'maintainer' },
+							]}
+							onValueChange={(value) => {
+								const parsed = projectMemberRoleSchema.safeParse(value)
+								if (parsed.success) setRole(parsed.data)
+							}}
+							disabled={pending}
+						>
+							<SelectTrigger id={`${id}-role`}>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectGroup>
+									<SelectItem value="owner">Owner</SelectItem>
+									<SelectItem value="maintainer">Maintainer</SelectItem>
+								</SelectGroup>
+							</SelectContent>
+						</Select>
+						<p className="text-xs text-muted-foreground">
+							Both roles have the same permissions for this project.
+						</p>
+					</Field>
+				</FieldGroup>
+			)}
+			{error && (
+				<Alert variant="destructive">
+					<AlertDescription>{error}</AlertDescription>
+				</Alert>
+			)}
+			<VerificationSubmitActions
+				onClose={onClose}
+				pending={pending}
+				currentChallenge={currentChallenge}
+				expired={expired}
+				cooldown={cooldown}
+				githubBlocked={githubBlocked}
+				link={link}
+				verify={verify}
+				send={send}
+			/>
+		</form>
+	)
+}
+
+function useVerificationRequest({
+	projectId,
+	userId,
+	state,
+	github,
+}: Omit<VerificationFormProps, 'onClose'> & {
+	github?: ReturnType<typeof useGithubVerification>
+}) {
 	const id = useId()
 	const queryClient = useQueryClient()
 	const router = useRouter()
@@ -227,15 +387,8 @@ function VerificationFormContent({
 		const timer = window.setInterval(() => setNow(Date.now()), 1000)
 		return () => window.clearInterval(timer)
 	}, [])
-	const selectedEmail = email ?? state.data.claim?.email ?? ''
-	const selectedRole = role ?? state.data.claim?.role ?? 'owner'
-	const currentChallenge = !editing
-		? (send.data ?? state.data.claim?.challenge)
-		: null
-	const resendAt = send.data?.resendAt ?? state.data.claim?.challenge?.resendAt
-	const cooldown = resendAt
-		? Math.max(0, Math.ceil((resendAt.getTime() - now) / 1000))
-		: 0
+	const { selectedEmail, selectedRole, currentChallenge, cooldown } =
+		getVerificationChallenge(email, role, state, send.data, editing, now)
 	const codeRef = useRef<HTMLInputElement>(null)
 	const emailRef = useRef<HTMLInputElement>(null)
 	const challengeId = currentChallenge?.challengeId
@@ -296,20 +449,22 @@ function VerificationFormContent({
 		if (githubBlocked) return
 		sending.current = true
 		setError('')
-		try {
-			await send.mutateAsync()
-			setCode('')
-			setEditing(false)
-			setNow(Date.now())
-		} catch (reason) {
-			setError(
-				reason instanceof Error
-					? reason.message
-					: 'Unable to send the code. Please try again.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				await send.mutateAsync()
+				setCode('')
+				setEditing(false)
+				setNow(Date.now())
+			} catch (reason) {
+				setError(
+					reason instanceof Error
+						? reason.message
+						: 'Unable to send the code. Please try again.'
+				)
+			}
+		})().finally(() => {
 			sending.current = false
-		}
+		})
 	}
 	async function confirm(event: React.SyntheticEvent) {
 		event.preventDefault()
@@ -320,255 +475,297 @@ function VerificationFormContent({
 		}
 		sending.current = true
 		setError('')
-		try {
-			await verify.mutateAsync(currentChallenge.challengeId)
-			await queryClient.invalidateQueries({ queryKey })
-			await router.invalidate()
-		} catch (reason) {
-			setError(
-				reason instanceof Error
-					? reason.message
-					: 'Unable to verify the code. Please try again.'
-			)
-		} finally {
+		await (async () => {
+			try {
+				await verify.mutateAsync(currentChallenge.challengeId)
+				await queryClient.invalidateQueries({ queryKey })
+				await router.invalidate()
+			} catch (reason) {
+				setError(
+					reason instanceof Error
+						? reason.message
+						: 'Unable to verify the code. Please try again.'
+				)
+			}
+		})().finally(() => {
 			sending.current = false
-		}
+		})
 	}
-	if (state.isError) {
-		return (
-			<div className="flex flex-col gap-3">
-				<p role="alert">Unable to load your request.</p>
-				<Button variant="outline" onClick={() => void state.refetch()}>
-					Retry
-				</Button>
-			</div>
-		)
+
+	return {
+		id,
+		href,
+		selectedEmail,
+		selectedRole,
+		currentChallenge,
+		cooldown,
+		codeRef,
+		emailRef,
+		link,
+		githubBlocked,
+		expired,
+		pending,
+		requestCode,
+		confirm,
+		code,
+		setCode,
+		setEditing,
+		error,
+		setError,
+		now,
+		setEmail,
+		setRole,
+		send,
+		verify,
 	}
-	if (state.data.membership) {
-		return (
-			<div className="flex flex-col gap-4">
-				<output>
-					You are an approved {state.data.membership} of this project.
-				</output>
-				<Button render={<Link to="/managed/$id" params={{ id: projectId }} />}>
-					Manage project
-				</Button>
-			</div>
-		)
-	}
-	if (state.data.claim?.status === 'pending') {
-		return (
-			<div className="flex flex-col gap-4">
-				<ClaimGithubEvidenceView evidence={state.data.claim.githubEvidence} />
+}
+
+function GithubVerificationAccess({
+	github,
+	link,
+	href,
+}: {
+	github?: ReturnType<typeof useGithubVerification>
+	link: ReturnType<typeof useVerificationRequest>['link']
+	href: string
+}) {
+	return (
+		<div className="flex flex-col gap-3">
+			{github?.isError ? (
+				<Alert variant="destructive">
+					<AlertDescription>
+						Unable to check GitHub access. Retry before requesting a code.
+					</AlertDescription>
+				</Alert>
+			) : (
+				<ClaimGithubEvidenceView evidence={github?.data ?? null} />
+			)}
+			<div className="flex flex-wrap gap-2">
+				{github?.data.status !== 'verified' &&
+					github?.data.status !== 'limited' && (
+						<Button
+							type="button"
+							variant="outline"
+							disabled={link.isPending}
+							onClick={() => link.mutate()}
+						>
+							{link.isPending && <Spinner />}
+							{github?.data.status === 'disconnected'
+								? 'Connect GitHub'
+								: 'Reconnect GitHub'}
+						</Button>
+					)}
 				<Button
 					type="button"
-					variant="outline"
-					disabled={link.isPending}
-					onClick={() => link.mutate()}
+					variant="ghost"
+					disabled={!github || github.isFetching}
+					onClick={() => void github?.refetch()}
 				>
-					Connect or refresh GitHub
-				</Button>
-				{link.isError && <p role="alert">{link.error.message}</p>}
-				<output>
-					Email confirmed. Your {state.data.claim.role} request is awaiting
-					approval. Access and the project badge activate after approval.
-				</output>
-				<Button variant="outline" onClick={onClose}>
-					Done
+					Check GitHub again
 				</Button>
 			</div>
-		)
-	}
-	return (
-		<form
-			onSubmit={currentChallenge ? confirm : requestCode}
-			className="flex min-w-0 flex-col gap-5"
-			aria-busy={pending}
-		>
-			{!currentChallenge && (
-				<div className="flex flex-col gap-3">
-					{github?.isError ? (
-						<Alert variant="destructive">
-							<AlertDescription>
-								Unable to check GitHub access. Retry before requesting a code.
-							</AlertDescription>
-						</Alert>
-					) : (
-						<ClaimGithubEvidenceView evidence={github?.data ?? null} />
-					)}
-					<div className="flex flex-wrap gap-2">
-						{github?.data.status !== 'verified' &&
-							github?.data.status !== 'limited' && (
-								<Button
-									type="button"
-									variant="outline"
-									disabled={link.isPending}
-									onClick={() => link.mutate()}
-								>
-									{link.isPending && <Spinner />}
-									{github?.data.status === 'disconnected'
-										? 'Connect GitHub'
-										: 'Reconnect GitHub'}
-								</Button>
-							)}
-						<Button
-							type="button"
-							variant="ghost"
-							disabled={!github || github.isFetching}
-							onClick={() => void github?.refetch()}
-						>
-							Check GitHub again
-						</Button>
-					</div>
-					{link.isError && (
-						<p role="alert" className="text-sm text-destructive">
-							{link.error.message}
-						</p>
-					)}
-					{new URLSearchParams(href.split('?')[1]?.split('#')[0]).has(
-						'error'
-					) && (
-						<p role="alert" className="text-sm text-destructive">
-							GitHub connection failed. Use the same verified email as your
-							AltStack account and try again.
-						</p>
-					)}
-				</div>
-			)}
-			{state.data.claim?.status === 'rejected' && (
-				<p className="text-sm text-muted-foreground">
-					Your previous request was declined. Confirm your details before
-					requesting access again.
+			{link.isError && (
+				<p role="alert" className="text-sm text-destructive">
+					{link.error.message}
 				</p>
 			)}
-			{currentChallenge ? (
-				<>
-					<p className="text-sm wrap-anywhere">
-						Enter the code sent to <strong>{selectedEmail}</strong> for your{' '}
-						{selectedRole} request.
-					</p>
-					<Field>
-						<FieldLabel htmlFor={`${id}-code`}>Verification code</FieldLabel>
-						<Input
-							ref={codeRef}
-							id={`${id}-code`}
-							inputMode="numeric"
-							autoComplete="one-time-code"
-							pattern="[0-9]{6}"
-							maxLength={6}
-							required
-							value={code}
-							onChange={(event) =>
-								setCode(event.target.value.replace(/\D/g, ''))
-							}
-							disabled={pending}
-						/>
-					</Field>
-					<p className="text-sm text-muted-foreground">
-						{expired
-							? 'This code has expired. Request a new code.'
-							: `Code expires in ${Math.max(1, Math.ceil((currentChallenge.expiresAt.getTime() - now) / 60000))} minutes.`}
-					</p>
-					<div className="flex flex-wrap gap-2">
-						<Button
-							type="button"
-							size="sm"
-							variant="ghost"
-							disabled={pending || cooldown > 0}
-							onClick={() => void requestCode()}
-						>
-							{cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="ghost"
-							disabled={pending}
-							onClick={() => {
-								setEditing(true)
-								setCode('')
-								setError('')
-							}}
-						>
-							Change email or role
-						</Button>
-					</div>
-				</>
-			) : (
-				<FieldGroup>
-					<Field>
-						<FieldLabel htmlFor={`${id}-email`}>Email address</FieldLabel>
-						<Input
-							ref={emailRef}
-							id={`${id}-email`}
-							type="email"
-							autoComplete="email"
-							required
-							maxLength={254}
-							placeholder="Your project contact email"
-							value={selectedEmail}
-							onChange={(event) => setEmail(event.target.value)}
-							disabled={pending}
-						/>
-					</Field>
-					<Field>
-						<FieldLabel htmlFor={`${id}-role`}>Your role</FieldLabel>
-						<Select
-							value={selectedRole}
-							items={[
-								{ label: 'Owner', value: 'owner' },
-								{ label: 'Maintainer', value: 'maintainer' },
-							]}
-							onValueChange={(value) => {
-								const parsed = projectMemberRoleSchema.safeParse(value)
-								if (parsed.success) setRole(parsed.data)
-							}}
-							disabled={pending}
-						>
-							<SelectTrigger id={`${id}-role`}>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectGroup>
-									<SelectItem value="owner">Owner</SelectItem>
-									<SelectItem value="maintainer">Maintainer</SelectItem>
-								</SelectGroup>
-							</SelectContent>
-						</Select>
-						<p className="text-xs text-muted-foreground">
-							Both roles have the same permissions for this project.
-						</p>
-					</Field>
-				</FieldGroup>
+			{new URLSearchParams(href.split('?')[1]?.split('#')[0]).has('error') && (
+				<p role="alert" className="text-sm text-destructive">
+					GitHub connection failed. Use the same verified email as your AltStack
+					account and try again.
+				</p>
 			)}
-			{error && (
-				<Alert variant="destructive">
-					<AlertDescription>{error}</AlertDescription>
-				</Alert>
-			)}
-			<DialogFooter className="flex-row justify-between sm:justify-between">
-				<Button type="button" variant="outline" onClick={onClose}>
-					Cancel
+		</div>
+	)
+}
+
+function getVerificationChallenge(
+	email: string | undefined,
+	role: 'owner' | 'maintainer' | undefined,
+	state: VerificationFormProps['state'],
+	sent: Awaited<ReturnType<typeof client.ownership.request>> | undefined,
+	editing: boolean,
+	now: number
+) {
+	const selectedEmail = email ?? state.data.claim?.email ?? ''
+	const selectedRole = role ?? state.data.claim?.role ?? 'owner'
+	const currentChallenge = !editing
+		? (sent ?? state.data.claim?.challenge)
+		: null
+	const resendAt = sent?.resendAt ?? state.data.claim?.challenge?.resendAt
+	const cooldown = resendAt
+		? Math.max(0, Math.ceil((resendAt.getTime() - now) / 1000))
+		: 0
+
+	return { selectedEmail, selectedRole, currentChallenge, cooldown }
+}
+
+function VerificationCodeEntry({
+	id,
+	selectedEmail,
+	selectedRole,
+	codeRef,
+	code,
+	setCode,
+	pending,
+	expired,
+	currentChallenge,
+	now,
+	cooldown,
+	requestCode,
+	setEditing,
+	setError,
+}: Pick<
+	ReturnType<typeof useVerificationRequest>,
+	| 'id'
+	| 'selectedEmail'
+	| 'selectedRole'
+	| 'codeRef'
+	| 'code'
+	| 'setCode'
+	| 'pending'
+	| 'expired'
+	| 'now'
+	| 'cooldown'
+	| 'requestCode'
+	| 'setEditing'
+	| 'setError'
+> & {
+	currentChallenge: NonNullable<
+		ReturnType<typeof useVerificationRequest>['currentChallenge']
+	>
+}) {
+	return (
+		<>
+			<p className="text-sm wrap-anywhere">
+				Enter the code sent to <strong>{selectedEmail}</strong> for your{' '}
+				{selectedRole} request.
+			</p>
+			<Field>
+				<FieldLabel htmlFor={`${id}-code`}>Verification code</FieldLabel>
+				<Input
+					ref={codeRef}
+					id={`${id}-code`}
+					inputMode="numeric"
+					autoComplete="one-time-code"
+					pattern="[0-9]{6}"
+					maxLength={6}
+					required
+					value={code}
+					onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+					disabled={pending}
+				/>
+			</Field>
+			<p className="text-sm text-muted-foreground">
+				{expired
+					? 'This code has expired. Request a new code.'
+					: `Code expires in ${Math.max(1, Math.ceil((currentChallenge.expiresAt.getTime() - now) / 60000))} minutes.`}
+			</p>
+			<div className="flex flex-wrap gap-2">
+				<Button
+					type="button"
+					size="sm"
+					variant="ghost"
+					disabled={pending || cooldown > 0}
+					onClick={() => void requestCode()}
+				>
+					{cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
 				</Button>
 				<Button
-					type="submit"
-					disabled={
-						pending ||
-						(currentChallenge
-							? expired
-							: cooldown > 0 || githubBlocked || link.isPending)
-					}
+					type="button"
+					size="sm"
+					variant="ghost"
+					disabled={pending}
+					onClick={() => {
+						setEditing(true)
+						setCode('')
+						setError('')
+					}}
 				>
-					{pending && <Spinner />}
-					{currentChallenge
-						? verify.isPending
-							? 'Confirming…'
-							: 'Confirm code'
-						: send.isPending
-							? 'Sending…'
-							: 'Send verification code'}
+					Change email or role
 				</Button>
-			</DialogFooter>
-		</form>
+			</div>
+		</>
+	)
+}
+
+function PendingVerificationRequest({
+	state,
+	link,
+	onClose,
+}: {
+	state: VerificationFormProps['state']
+	link: ReturnType<typeof useVerificationRequest>['link']
+	onClose: () => void
+}) {
+	const claim = state.data.claim!
+	return (
+		<div className="flex flex-col gap-4">
+			<ClaimGithubEvidenceView evidence={claim.githubEvidence} />
+			<Button
+				type="button"
+				variant="outline"
+				disabled={link.isPending}
+				onClick={() => link.mutate()}
+			>
+				Connect or refresh GitHub
+			</Button>
+			{link.isError && <p role="alert">{link.error.message}</p>}
+			<output>
+				Email confirmed. Your {claim.role} request is awaiting approval. Access
+				and the project badge activate after approval.
+			</output>
+			<Button variant="outline" onClick={onClose}>
+				Done
+			</Button>
+		</div>
+	)
+}
+
+function VerificationSubmitActions({
+	onClose,
+	pending,
+	currentChallenge,
+	expired,
+	cooldown,
+	githubBlocked,
+	link,
+	verify,
+	send,
+}: { onClose: () => void } & Pick<
+	ReturnType<typeof useVerificationRequest>,
+	| 'pending'
+	| 'currentChallenge'
+	| 'expired'
+	| 'cooldown'
+	| 'githubBlocked'
+	| 'link'
+	| 'verify'
+	| 'send'
+>) {
+	return (
+		<DialogFooter className="flex-row justify-between sm:justify-between">
+			<Button type="button" variant="outline" onClick={onClose}>
+				Cancel
+			</Button>
+			<Button
+				type="submit"
+				disabled={
+					pending ||
+					(currentChallenge
+						? expired
+						: cooldown > 0 || githubBlocked || link.isPending)
+				}
+			>
+				{pending && <Spinner />}
+				{currentChallenge
+					? verify.isPending
+						? 'Confirming…'
+						: 'Confirm code'
+					: send.isPending
+						? 'Sending…'
+						: 'Send verification code'}
+			</Button>
+		</DialogFooter>
 	)
 }

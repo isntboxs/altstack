@@ -87,13 +87,13 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 	}
 
 	if (currentPage <= 3) {
-		return [1, 2, 3, 4, 'ellipsis' as const, totalPages]
+		return [1, 2, 3, 4, 'ellipsis-end' as const, totalPages]
 	}
 
 	if (currentPage >= totalPages - 2) {
 		return [
 			1,
-			'ellipsis' as const,
+			'ellipsis-start' as const,
 			totalPages - 3,
 			totalPages - 2,
 			totalPages - 1,
@@ -103,14 +103,16 @@ function getPaginationItems(currentPage: number, totalPages: number) {
 
 	return [
 		1,
-		'ellipsis' as const,
+		'ellipsis-start' as const,
 		currentPage - 1,
 		currentPage,
 		currentPage + 1,
-		'ellipsis' as const,
+		'ellipsis-end' as const,
 		totalPages,
 	]
 }
+
+const numberFormatter = new Intl.NumberFormat('en-US', { notation: 'standard' })
 
 export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 	const Heading = projectData.headingLevel ?? 'h2'
@@ -118,9 +120,7 @@ export const ProjectCard: FC<ProjectCardProps> = (projectData) => {
 		{
 			icon: IconStar,
 			label: 'Stars',
-			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-				projectData.github.stars
-			),
+			value: numberFormatter.format(projectData.github.stars),
 		},
 		{
 			icon: IconGitCommit,
@@ -282,24 +282,8 @@ export const ProjectListSection = ({
 	})
 	const data = query.data ?? loaded
 	const [consumed, setConsumed] = useState(45)
-	const { pagination } = data
-	const currentPage = pagination.page || 1
-	const offset = data.query?.offset ?? (currentPage - 1) * 45
-	const totalPages = Math.max(
-		currentPage,
-		currentPage +
-			Math.ceil(
-				(pagination.totalItems -
-					offset -
-					Math.min(consumed, data.projects.length)) /
-					45
-			)
-	)
-	const outOfRange =
-		data.projects.length === 0 &&
-		currentPage > 1 &&
-		offset >= pagination.totalItems
-	const paginationItems = getPaginationItems(currentPage, totalPages)
+	const { pagination, currentPage, offset, totalPages, outOfRange } =
+		getCataloguePagination(data, consumed)
 	const handlePageClick = createPaginationScrollHandler(scrollTargetId, router)
 	if (loaded.query && !query.data && loaded.query.offset !== expectedOffset) {
 		if (query.isError) {
@@ -321,28 +305,13 @@ export const ProjectListSection = ({
 			className="container mx-auto mb-10 w-full max-w-6xl space-y-4 px-4 lg:px-16"
 		>
 			{data.projects.length === 0 ? (
-				<div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-4 py-12 text-center">
-					<h2 className="text-lg font-medium">
-						{outOfRange ? 'No projects on this page' : 'No projects found'}
-					</h2>
-					<p className="text-sm text-muted-foreground">
-						{outOfRange
-							? 'This page is beyond the available results. Return to the first page.'
-							: emptyMessage}
-					</p>
-					{outOfRange ? (
-						<Link
-							{...pageLinkOptions(1)}
-							resetScroll={false}
-							onClick={handlePageClick}
-							className="inline-flex items-center underline underline-offset-4"
-						>
-							First page
-						</Link>
-					) : (
-						emptyAction
-					)}
-				</div>
+				<ProjectResultsEmpty
+					outOfRange={outOfRange}
+					emptyMessage={emptyMessage}
+					emptyAction={emptyAction}
+					pageLinkOptions={pageLinkOptions}
+					onPageClick={handlePageClick}
+				/>
 			) : (
 				<AdListingGrid
 					onConsumed={setConsumed}
@@ -360,60 +329,145 @@ export const ProjectListSection = ({
 				/>
 			)}
 			{totalPages > 1 && !outOfRange && (
-				<Pagination className="mt-8">
-					<PaginationContent className="flex-wrap justify-center">
-						<PaginationItem>
-							{pagination.hasPreviousPage ? (
-								<CustomPaginationPrevious
-									{...pageLinkOptions(currentPage - 1)}
-									resetScroll={false}
-									onClick={handlePageClick}
-									viewTransition
-								/>
-							) : (
-								<Button
-									disabled
-									variant="ghost"
-									aria-label="Go to previous page"
-								>
-									Previous
-								</Button>
-							)}
-						</PaginationItem>
-						{paginationItems.map((item, idx) => (
-							<PaginationItem key={idx}>
-								{item === 'ellipsis' ? (
-									<PaginationEllipsis />
-								) : (
-									<CustomPaginationLink
-										{...pageLinkOptions(item)}
-										resetScroll={false}
-										onClick={handlePageClick}
-										isActive={item === currentPage}
-										viewTransition
-									>
-										{item}
-									</CustomPaginationLink>
-								)}
-							</PaginationItem>
-						))}
-						<PaginationItem>
-							{currentPage < totalPages ? (
-								<CustomPaginationNext
-									{...pageLinkOptions(currentPage + 1)}
-									resetScroll={false}
-									onClick={handlePageClick}
-									viewTransition
-								/>
-							) : (
-								<Button disabled variant="ghost" aria-label="Go to next page">
-									Next
-								</Button>
-							)}
-						</PaginationItem>
-					</PaginationContent>
-				</Pagination>
+				<ProjectPagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					hasPreviousPage={pagination.hasPreviousPage}
+					pageLinkOptions={pageLinkOptions}
+					onPageClick={handlePageClick}
+				/>
 			)}
 		</section>
 	)
+}
+
+type CatalogueNavigation = {
+	pageLinkOptions: (page: number) => ProjectPageLinkOptions
+	onPageClick: ReturnType<typeof createPaginationScrollHandler>
+}
+
+function ProjectPagination({
+	currentPage,
+	totalPages,
+	hasPreviousPage,
+	pageLinkOptions,
+	onPageClick,
+}: CatalogueNavigation & {
+	currentPage: number
+	totalPages: number
+	hasPreviousPage: boolean
+}) {
+	const paginationItems = getPaginationItems(currentPage, totalPages)
+	return (
+		<Pagination className="mt-8">
+			<PaginationContent className="flex-wrap justify-center">
+				<PaginationItem>
+					{hasPreviousPage ? (
+						<CustomPaginationPrevious
+							{...pageLinkOptions(currentPage - 1)}
+							resetScroll={false}
+							onClick={onPageClick}
+							viewTransition
+						/>
+					) : (
+						<Button disabled variant="ghost" aria-label="Go to previous page">
+							Previous
+						</Button>
+					)}
+				</PaginationItem>
+				{paginationItems.map((item) => (
+					<PaginationItem key={item}>
+						{typeof item === 'string' ? (
+							<PaginationEllipsis />
+						) : (
+							<CustomPaginationLink
+								{...pageLinkOptions(item)}
+								resetScroll={false}
+								onClick={onPageClick}
+								isActive={item === currentPage}
+								viewTransition
+							>
+								{item}
+							</CustomPaginationLink>
+						)}
+					</PaginationItem>
+				))}
+				<PaginationItem>
+					{currentPage < totalPages ? (
+						<CustomPaginationNext
+							{...pageLinkOptions(currentPage + 1)}
+							resetScroll={false}
+							onClick={onPageClick}
+							viewTransition
+						/>
+					) : (
+						<Button disabled variant="ghost" aria-label="Go to next page">
+							Next
+						</Button>
+					)}
+				</PaginationItem>
+			</PaginationContent>
+		</Pagination>
+	)
+}
+
+function ProjectResultsEmpty({
+	outOfRange,
+	emptyMessage,
+	emptyAction,
+	pageLinkOptions,
+	onPageClick,
+}: CatalogueNavigation & {
+	outOfRange: boolean
+	emptyMessage: string
+	emptyAction?: ReactNode
+}) {
+	return (
+		<div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-4 py-12 text-center">
+			<h2 className="text-lg font-medium">
+				{outOfRange ? 'No projects on this page' : 'No projects found'}
+			</h2>
+			<p className="text-sm text-muted-foreground">
+				{outOfRange
+					? 'This page is beyond the available results. Return to the first page.'
+					: emptyMessage}
+			</p>
+			{outOfRange ? (
+				<Link
+					{...pageLinkOptions(1)}
+					resetScroll={false}
+					onClick={onPageClick}
+					className="inline-flex items-center underline underline-offset-4"
+				>
+					First page
+				</Link>
+			) : (
+				emptyAction
+			)}
+		</div>
+	)
+}
+
+function getCataloguePagination(
+	data: ORPCRouterOutputs['project']['search'],
+	consumed: number
+) {
+	const { pagination } = data
+	const currentPage = pagination.page || 1
+	const offset = data.query?.offset ?? (currentPage - 1) * 45
+	const totalPages = Math.max(
+		currentPage,
+		currentPage +
+			Math.ceil(
+				(pagination.totalItems -
+					offset -
+					Math.min(consumed, data.projects.length)) /
+					45
+			)
+	)
+	const outOfRange =
+		data.projects.length === 0 &&
+		currentPage > 1 &&
+		offset >= pagination.totalItems
+	return { pagination, currentPage, offset, totalPages, outOfRange }
 }

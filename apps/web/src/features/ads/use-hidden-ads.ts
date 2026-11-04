@@ -28,11 +28,11 @@ export function useHiddenAds(
 					)
 				})
 				.map((element) => element.dataset.adId!)
-			setHidden((old) =>
-				next.every((id) => old.includes(id))
-					? old
-					: [...new Set([...old, ...next])]
-			)
+			setHidden((old) => {
+				const merged = new Set(old)
+				for (const id of next) merged.add(id)
+				return merged.size === old.length ? old : [...merged]
+			})
 		}
 		const timer = window.setInterval(check, 1000)
 		const observer = new MutationObserver(check)

@@ -75,18 +75,20 @@ function OrderForm({ plan }: { plan: AdPlan }) {
 						if (!accepted || busy) return
 						setBusy(true)
 						setError('')
-						try {
-							await client.adBilling.create({
-								body: { plan, email, termsAccepted: true },
-							})
-							setSent(true)
-						} catch {
-							setError(
-								'Unable to request an order. Your input is retained; wait a few minutes and try again.'
-							)
-						} finally {
+						await (async () => {
+							try {
+								await client.adBilling.create({
+									body: { plan, email, termsAccepted: true },
+								})
+								setSent(true)
+							} catch {
+								setError(
+									'Unable to request an order. Your input is retained; wait a few minutes and try again.'
+								)
+							}
+						})().finally(() => {
 							setBusy(false)
-						}
+						})
 					}}
 				>
 					<FieldGroup>

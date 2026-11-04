@@ -406,44 +406,46 @@ export const useImageUpload = ({
 			return
 		}
 
-		try {
-			setIsDeleting(true)
-			setErrorMessage(null)
+		await (async () => {
+			try {
+				setIsDeleting(true)
+				setErrorMessage(null)
 
-			if (managedFile.fileKey) {
-				await deleteManagedFile(managedFile.fileKey)
-			}
+				if (managedFile.fileKey) {
+					await deleteManagedFile(managedFile.fileKey)
+				}
 
-			onChange?.('')
-			onDisplayUrlChange?.(null)
-			setManagedFile(null)
-			setPendingFile(null)
-			setProgress(0)
-			setErrorMessage(null)
+				onChange?.('')
+				onDisplayUrlChange?.(null)
+				setManagedFile(null)
+				setPendingFile(null)
+				setProgress(0)
+				setErrorMessage(null)
 
-			toast.add({
-				type: 'success',
-				title: `${copy.noun} image removed successfully`,
-				description: `${copy.noun} image removed successfully`,
-			})
-		} catch (error) {
-			setErrorMessage(
-				error instanceof Error
-					? error.message
-					: 'Error while deleting file, please try again'
-			)
-
-			toast.add({
-				type: 'error',
-				title: `Delete ${copy.noun.toLowerCase()} image failed`,
-				description:
+				toast.add({
+					type: 'success',
+					title: `${copy.noun} image removed successfully`,
+					description: `${copy.noun} image removed successfully`,
+				})
+			} catch (error) {
+				setErrorMessage(
 					error instanceof Error
 						? error.message
-						: 'Error while deleting file, please try again',
-			})
-		} finally {
+						: 'Error while deleting file, please try again'
+				)
+
+				toast.add({
+					type: 'error',
+					title: `Delete ${copy.noun.toLowerCase()} image failed`,
+					description:
+						error instanceof Error
+							? error.message
+							: 'Error while deleting file, please try again',
+				})
+			}
+		})().finally(() => {
 			setIsDeleting(false)
-		}
+		})
 	}
 
 	const rejectedFile = (fileRejection: Array<FileRejection>) => {

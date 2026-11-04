@@ -45,7 +45,8 @@ export const CategoryComboboxView = ({
 	const items = categories
 		.filter((category) => category.isLeaf)
 		.map((category) => category.slug)
-	const stale = value.filter((slug) => !items.includes(slug))
+	const itemSlugs = new Set(items)
+	const stale = value.filter((slug) => !itemSlugs.has(slug))
 
 	return (
 		<div className="space-y-2">

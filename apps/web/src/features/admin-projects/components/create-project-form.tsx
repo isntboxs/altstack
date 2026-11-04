@@ -1,4 +1,4 @@
-import { IconArrowLeft, IconBrandGithub, IconPhoto } from '@tabler/icons-react'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form-start'
 import { ClientOnly, Link } from '@tanstack/react-router'
 import { Suspense, useRef, useState } from 'react'
@@ -8,7 +8,6 @@ import { slugify } from '@altstack/shared/lib/slug'
 import { adminCreateProjectBodySchema } from '@altstack/shared/schemas/admin-project'
 
 import { Button } from '@altstack/ui/components/button'
-import { Card, CardContent } from '@altstack/ui/components/card'
 import {
 	Field,
 	FieldDescription,
@@ -35,10 +34,13 @@ import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
-import { ProjectCategoryBadges } from '#/components/project-category-badges'
 import { CategoryComboboxSkeleton } from '#/components/workspace-skeletons'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
+import {
+	ProjectPreviewCard,
+	SectionHeading,
+} from '#/features/admin-projects/components/project-form-preview'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
 
 // Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
@@ -61,8 +63,6 @@ const defaultValues: z.input<typeof adminCreateProjectBodySchema> = {
 	// `.default('published')` in adminCreateProjectBodySchema.
 	status: 'published',
 }
-
-type CreateProjectValues = z.input<typeof adminCreateProjectBodySchema>
 
 function isUploadExpiredError(error: unknown): boolean {
 	return (
@@ -88,110 +88,6 @@ function isUploadConsumedError(error: unknown): boolean {
 		error !== null &&
 		'code' in error &&
 		(error as { code?: unknown }).code === 'UPLOAD_CONSUMED'
-	)
-}
-
-function SectionHeading({
-	title,
-	description,
-}: {
-	title: string
-	description?: string
-}) {
-	return (
-		<div className="space-y-1">
-			<h2 className="text-sm font-semibold">{title}</h2>
-			{description ? (
-				<p className="text-sm text-muted-foreground">{description}</p>
-			) : null}
-		</div>
-	)
-}
-
-function ProjectPreviewCard({
-	values,
-	logoUrl,
-	screenshotUrl,
-}: {
-	values: CreateProjectValues
-	logoUrl: string | null
-	screenshotUrl: string | null
-}) {
-	const name = values.name.trim() || 'Untitled project'
-	const slug = values.slug.trim() || 'your-slug'
-	const tagline = (values.tagline ?? '').trim()
-	const description = (values.description ?? '').trim()
-	const repository = values.repositoryUrl.trim()
-
-	return (
-		<Card className="overflow-hidden">
-			<CardContent className="space-y-4">
-				<div className="flex items-center gap-3">
-					{logoUrl ? (
-						<img
-							src={logoUrl}
-							alt=""
-							className="size-10 shrink-0 rounded-md border object-cover"
-						/>
-					) : (
-						<div
-							aria-hidden="true"
-							className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-semibold text-muted-foreground"
-						>
-							{name.charAt(0).toUpperCase()}
-						</div>
-					)}
-
-					<div className="min-w-0">
-						<p className="truncate text-sm font-semibold">{name}</p>
-						<p className="truncate font-mono text-xs text-muted-foreground">
-							/{slug}
-						</p>
-					</div>
-				</div>
-
-				{screenshotUrl ? (
-					<img
-						src={screenshotUrl}
-						alt=""
-						className="aspect-video w-full rounded-md border object-cover"
-					/>
-				) : (
-					<div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed text-muted-foreground">
-						<IconPhoto className="size-5" />
-						<p className="text-xs">16:9 screenshot preview</p>
-					</div>
-				)}
-
-				<div className="space-y-1">
-					<p className={tagline ? 'text-sm' : 'text-sm text-muted-foreground'}>
-						{tagline || 'Tagline will appear here.'}
-					</p>
-					<p
-						className={
-							description
-								? 'line-clamp-3 text-sm text-muted-foreground'
-								: 'text-sm text-muted-foreground/60'
-						}
-					>
-						{description || 'Short description will appear here.'}
-					</p>
-				</div>
-
-				<div className="flex flex-wrap gap-1.5">
-					<ProjectCategoryBadges slugs={values.categorySlugs ?? []} />
-				</div>
-
-				<div className="flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
-					<IconBrandGithub className="size-3.5 shrink-0" />
-					<span className="truncate font-mono">
-						{repository
-							? `github.com/${repository}`
-							: 'github.com/owner/repository'}
-					</span>
-				</div>
-			</CardContent>
-		</Card>
 	)
 }
 

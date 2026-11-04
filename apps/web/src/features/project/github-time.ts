@@ -1,3 +1,9 @@
+const fullDateFormatter = new Intl.DateTimeFormat('en-US', {
+	dateStyle: 'full',
+	timeStyle: 'long',
+	timeZone: 'UTC',
+})
+
 const UNITS = [
 	['day', 24 * 60 * 60],
 	['hour', 60 * 60],
@@ -7,11 +13,7 @@ const UNITS = [
 
 // Explicit English and UTC keep SSR and hydration independent of host locale/TZ.
 export function githubFullDate(date: Date) {
-	return new Intl.DateTimeFormat('en-US', {
-		dateStyle: 'full',
-		timeStyle: 'long',
-		timeZone: 'UTC',
-	}).format(date)
+	return fullDateFormatter.format(date)
 }
 
 export function githubElapsed(date: Date, now: number, relative = false) {

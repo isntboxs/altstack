@@ -8,7 +8,7 @@ import {
 import { Link } from '@tanstack/react-router'
 import { createColumnHelper, useTable } from '@tanstack/react-table'
 import { formatDate } from 'date-fns'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -157,9 +157,8 @@ export function SubmissionDataTable({
 	onResubmit?: (id: string) => void
 }) {
 	const [rowSelection, setRowSelection] = useState({})
-	const table = useTable({
-		features,
-		columns: [
+	const tableColumns = useMemo(
+		() => [
 			...columns,
 			column.display({
 				id: 'actions',
@@ -179,6 +178,11 @@ export function SubmissionDataTable({
 					) : null,
 			}),
 		],
+		[onResubmit]
+	)
+	const table = useTable({
+		features,
+		columns: tableColumns,
 		data: data.submissions,
 		manualPagination: true,
 		manualFiltering: true,

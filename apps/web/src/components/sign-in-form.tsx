@@ -78,45 +78,49 @@ export function SignInForm({
 		setEmailError(null)
 		setRequestError(null)
 		setPending('email')
-		try {
-			const { error } = await authClient.signIn.magicLink({
-				email: parsed.data,
-				callbackURL,
-				newUserCallbackURL: callbackURL,
-				errorCallbackURL,
-				fetchOptions: {
-					onError: ({ response }) => {
-						if (response.status === 429) {
-							const seconds = Number(
-								response.headers.get('X-Retry-After') ??
-									response.headers.get('Retry-After')
-							)
-							setRetryIn(
-								Number.isFinite(seconds) && seconds > 0
-									? Math.ceil(seconds)
-									: 60
-							)
-						}
+		await (async () => {
+			try {
+				const { error } = await authClient.signIn.magicLink({
+					email: parsed.data,
+					callbackURL,
+					newUserCallbackURL: callbackURL,
+					errorCallbackURL,
+					fetchOptions: {
+						onError: ({ response }) => {
+							if (response.status === 429) {
+								const seconds = Number(
+									response.headers.get('X-Retry-After') ??
+										response.headers.get('Retry-After')
+								)
+								setRetryIn(
+									Number.isFinite(seconds) && seconds > 0
+										? Math.ceil(seconds)
+										: 60
+								)
+							}
+						},
 					},
-				},
-			})
-			if (error) {
+				})
+				if (error) {
+					setRequestError(
+						error.status === 429
+							? 'Too many requests. Wait before requesting another link.'
+							: 'Unable to send a sign-in email. Try again later or continue with GitHub.'
+					)
+					return
+				}
+				setEmail(parsed.data)
+				setSentTo(parsed.data)
+				setRetryIn(60)
+			} catch {
 				setRequestError(
-					error.status === 429
-						? 'Too many requests. Wait before requesting another link.'
-						: 'Unable to send a sign-in email. Try again later or continue with GitHub.'
+					'Unable to connect. Check your connection and try again.'
 				)
-				return
 			}
-			setEmail(parsed.data)
-			setSentTo(parsed.data)
-			setRetryIn(60)
-		} catch {
-			setRequestError('Unable to connect. Check your connection and try again.')
-		} finally {
+		})().finally(() => {
 			busy.current = false
 			setPending(null)
-		}
+		})
 	}
 
 	const signInWithGithub = async () => {
@@ -124,21 +128,25 @@ export function SignInForm({
 		busy.current = true
 		setPending('github')
 		setRequestError(null)
-		try {
-			const { error } = await authClient.signIn.social({
-				provider: 'github',
-				callbackURL,
-				errorCallbackURL,
-			})
-			if (error) {
-				setRequestError('Unable to continue with GitHub. Please try again.')
+		await (async () => {
+			try {
+				const { error } = await authClient.signIn.social({
+					provider: 'github',
+					callbackURL,
+					errorCallbackURL,
+				})
+				if (error) {
+					setRequestError('Unable to continue with GitHub. Please try again.')
+				}
+			} catch {
+				setRequestError(
+					'Unable to connect. Check your connection and try again.'
+				)
 			}
-		} catch {
-			setRequestError('Unable to connect. Check your connection and try again.')
-		} finally {
+		})().finally(() => {
 			busy.current = false
 			setPending(null)
-		}
+		})
 	}
 
 	const error = requestError ?? (sentTo ? null : verificationError(authError))

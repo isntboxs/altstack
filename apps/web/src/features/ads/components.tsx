@@ -109,7 +109,7 @@ export function AdBanner() {
 			<a
 				{...external}
 				href={ad.websiteUrl}
-				className="group relative block rounded-md border border-border p-1 transition-all duration-300 ease-in-out hover:border-foreground/20"
+				className="group relative block rounded-md border border-border p-1 transition-colors duration-300 ease-in-out hover:border-foreground/20"
 			>
 				<div className="absolute inset-0 -z-1 rounded-md bg-background" />
 				<span className="mx-auto flex max-w-6xl items-start gap-4 rounded-md bg-muted/30 px-3 py-2 text-xs group-hover:bg-muted/50 sm:items-center sm:text-sm">
@@ -262,7 +262,8 @@ export function AdListingGrid<T extends { id: string }>({
 		media.addEventListener('change', update)
 		return () => media.removeEventListener('change', update)
 	}, [])
-	const ads = selected.filter((ad) => !hidden.includes(ad.id))
+	const hiddenIds = new Set(hidden)
+	const ads = selected.filter((ad) => !hiddenIds.has(ad.id))
 	const slots = listingSlots(items, ads, mobile)
 	const consumed = slots.filter((slot) => 'item' in slot).length
 	useEffect(() => {

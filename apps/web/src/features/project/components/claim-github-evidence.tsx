@@ -19,19 +19,7 @@ export function ClaimGithubEvidenceView({
 		>
 			<AlertTitle>GitHub access</AlertTitle>
 			<AlertDescription>
-				{!evidence
-					? 'GitHub access has not been checked. It will be checked before approval.'
-					: status === 'disconnected'
-						? 'Connect your GitHub account before requesting project access. Use the same verified email as your AltStack account.'
-						: status === 'denied'
-							? evidence.reason === 'insufficient_access'
-								? 'This GitHub account does not have write or maintainer access to the project repository.'
-								: 'The GitHub account or repository identity changed. Reconnect GitHub or ask an admin to check the listing.'
-							: status === 'verified'
-								? `${evidence.login ?? 'Your GitHub account'} has ${evidence.permission} access. Independent project approval is still required.`
-								: status === 'limited'
-									? `${evidence.login ?? 'Your GitHub account'} has write access. A reviewer must independently confirm that you represent the project.`
-									: 'GitHub could not confirm repository access. Reconnect or retry. A reviewer can consider independent evidence manually.'}
+				{githubEvidenceMessage(evidence)}
 				{evidence?.login && (
 					<a
 						href={`https://github.com/${encodeURIComponent(evidence.login)}`}
@@ -45,4 +33,24 @@ export function ClaimGithubEvidenceView({
 			</AlertDescription>
 		</Alert>
 	)
+}
+
+function githubEvidenceMessage(evidence: ClaimGithubEvidence | null) {
+	if (!evidence) {
+		return 'GitHub access has not been checked. It will be checked before approval.'
+	}
+	switch (evidence.status) {
+		case 'disconnected':
+			return 'Connect your GitHub account before requesting project access. Use the same verified email as your AltStack account.'
+		case 'denied':
+			return evidence.reason === 'insufficient_access'
+				? 'This GitHub account does not have write or maintainer access to the project repository.'
+				: 'The GitHub account or repository identity changed. Reconnect GitHub or ask an admin to check the listing.'
+		case 'verified':
+			return `${evidence.login ?? 'Your GitHub account'} has ${evidence.permission} access. Independent project approval is still required.`
+		case 'limited':
+			return `${evidence.login ?? 'Your GitHub account'} has write access. A reviewer must independently confirm that you represent the project.`
+		case 'unavailable':
+			return 'GitHub could not confirm repository access. Reconnect or retry. A reviewer can consider independent evidence manually.'
+	}
 }

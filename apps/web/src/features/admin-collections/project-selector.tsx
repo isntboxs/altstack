@@ -417,54 +417,84 @@ function ProjectSearchResults({
 				>
 					Submit a missing project
 				</Link>
-				<nav
-					aria-label="Project search pagination"
-					aria-busy={changing || candidates.isFetching}
-					className="flex items-center gap-2"
-				>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						disabled={busy || !candidates.data.pagination.hasPreviousPage}
-						className="aria-disabled:opacity-50"
-						aria-disabled={
-							busy ||
-							changing ||
-							candidates.isFetching ||
-							!candidates.data.pagination.hasPreviousPage
-						}
-						onClick={() => {
-							if (!changing && !candidates.isFetching) {
-								startTransition(() => setPage(page - 1))
-							}
-						}}
-					>
-						Previous
-					</Button>
-					<span className="text-xs text-muted-foreground">Page {page}</span>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						disabled={busy || !candidates.data.pagination.hasNextPage}
-						className="aria-disabled:opacity-50"
-						aria-disabled={
-							busy ||
-							changing ||
-							candidates.isFetching ||
-							!candidates.data.pagination.hasNextPage
-						}
-						onClick={() => {
-							if (!changing && !candidates.isFetching) {
-								startTransition(() => setPage(page + 1))
-							}
-						}}
-					>
-						Next
-					</Button>
-				</nav>
+				<ProjectSearchPagination
+					busy={busy}
+					changing={changing}
+					candidates={candidates}
+					page={page}
+					startTransition={startTransition}
+					setPage={setPage}
+				/>
 			</div>
 		</section>
+	)
+}
+
+function ProjectSearchPagination({
+	busy,
+	changing,
+	candidates,
+	page,
+	startTransition,
+	setPage,
+}: {
+	busy: boolean
+	changing: boolean
+	candidates: {
+		isFetching: boolean
+		data: { pagination: { hasPreviousPage: boolean; hasNextPage: boolean } }
+	}
+	page: number
+	startTransition: React.TransitionStartFunction
+	setPage: (page: number) => void
+}) {
+	return (
+		<nav
+			aria-label="Project search pagination"
+			aria-busy={changing || candidates.isFetching}
+			className="flex items-center gap-2"
+		>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy || !candidates.data.pagination.hasPreviousPage}
+				className="aria-disabled:opacity-50"
+				aria-disabled={
+					busy ||
+					changing ||
+					candidates.isFetching ||
+					!candidates.data.pagination.hasPreviousPage
+				}
+				onClick={() => {
+					if (!changing && !candidates.isFetching) {
+						startTransition(() => setPage(page - 1))
+					}
+				}}
+			>
+				Previous
+			</Button>
+			<span className="text-xs text-muted-foreground">Page {page}</span>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy || !candidates.data.pagination.hasNextPage}
+				className="aria-disabled:opacity-50"
+				aria-disabled={
+					busy ||
+					changing ||
+					candidates.isFetching ||
+					!candidates.data.pagination.hasNextPage
+				}
+				onClick={() => {
+					if (!changing && !candidates.isFetching) {
+						startTransition(() => setPage(page + 1))
+					}
+				}}
+			>
+				Next
+			</Button>
+		</nav>
 	)
 }

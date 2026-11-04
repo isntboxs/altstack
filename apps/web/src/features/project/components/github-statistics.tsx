@@ -25,6 +25,8 @@ import { GithubStarsHistory } from '#/features/project/components/github-stars-h
 import { LicenseLabel } from '#/features/project/components/license-label'
 import { githubElapsed, githubFullDate } from '#/features/project/github-time'
 
+const numberFormatter = new Intl.NumberFormat('en-US', { notation: 'standard' })
+
 export const GithubStatistics = ({
 	github,
 	history,
@@ -43,9 +45,7 @@ export const GithubStatistics = ({
 		{
 			icon: IconGitFork,
 			label: 'Forks',
-			value: new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-				github.forks
-			),
+			value: numberFormatter.format(github.forks),
 		},
 		{
 			icon: IconGitCommit,
@@ -85,9 +85,7 @@ export const GithubStatistics = ({
 					<CardTitle className="flex items-center gap-1.5 font-normal">
 						<Star className="size-4 shrink-0 fill-amber-500/20 text-amber-500" />
 						<span className="text-xl font-semibold">
-							{new Intl.NumberFormat('en-US', { notation: 'standard' }).format(
-								github.stars
-							)}
+							{numberFormatter.format(github.stars)}
 						</span>
 						<span className="text-sm">Stars</span>
 					</CardTitle>
@@ -98,8 +96,11 @@ export const GithubStatistics = ({
 
 				<CardContent className="grid grid-cols-1 gap-2.5">
 					<GithubStarsHistory history={history} />
-					{githubStatsItem.map((item, idx) => (
-						<div key={idx} className="flex items-center justify-between gap-2">
+					{githubStatsItem.map((item) => (
+						<div
+							key={item.label}
+							className="flex items-center justify-between gap-2"
+						>
 							<div className="flex shrink-0 items-center gap-1.5">
 								<item.icon className="size-4 shrink-0 text-muted-foreground" />
 								<span className="text-sm whitespace-nowrap text-muted-foreground">

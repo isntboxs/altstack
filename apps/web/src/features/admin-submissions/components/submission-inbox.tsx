@@ -326,71 +326,109 @@ function SubmissionInboxContent({
 							))}
 						</ul>
 					) : (
-						<Empty className="min-h-64 border bg-muted/20">
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<IconInbox />
-								</EmptyMedia>
-								<EmptyTitle>
-									{search.name
-										? 'No matching submissions'
-										: page > 1
-											? 'No submissions on this page'
-											: 'No submissions awaiting review'}
-								</EmptyTitle>
-								<EmptyDescription>
-									{search.name
-										? 'Try a different project name or clear your search.'
-										: page > 1
-											? 'Go to the previous page to continue reviewing.'
-											: 'New community submissions will appear here when they are ready for review.'}
-								</EmptyDescription>
-							</EmptyHeader>
-							{search.name && (
-								<Button
-									variant="outline"
-									onClick={() =>
-										updateSearch({ ...search, page: 1, name: undefined })
-									}
-								>
-									Show all submissions
-								</Button>
-							)}
-						</Empty>
+						<SubmissionsEmpty
+							search={search}
+							page={page}
+							updateSearch={updateSearch}
+						/>
 					)}
 				</CardContent>
-				<CardFooter className="flex-wrap justify-between gap-3">
-					<p className="text-xs text-muted-foreground">
-						Page {page}
-						{` · ${query.data.pagination.totalItems} ${search.name ? 'matching ' : ''}${query.data.pagination.totalItems === 1 ? 'submission' : 'submissions'}`}
-					</p>
-					<nav
-						aria-label="Submission pages"
-						className="flex items-center gap-2"
-					>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={page <= 1 || query.isFetching}
-							onClick={() => updateSearch({ ...search, page: page - 1 })}
-						>
-							Previous
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={
-								!query.data.pagination.hasNextPage ||
-								query.isFetching ||
-								query.isError
-							}
-							onClick={() => updateSearch({ ...search, page: page + 1 })}
-						>
-							Next
-						</Button>
-					</nav>
-				</CardFooter>
+				<SubmissionsPagination
+					page={page}
+					query={query}
+					search={search}
+					updateSearch={updateSearch}
+				/>
 			</Card>
 		</div>
+	)
+}
+
+function SubmissionsEmpty({
+	search,
+	page,
+	updateSearch,
+}: {
+	search: AdminProjectSearch
+	page: number
+	updateSearch: (search: AdminProjectSearch) => void
+}) {
+	return (
+		<Empty className="min-h-64 border bg-muted/20">
+			<EmptyHeader>
+				<EmptyMedia variant="icon">
+					<IconInbox />
+				</EmptyMedia>
+				<EmptyTitle>
+					{search.name
+						? 'No matching submissions'
+						: page > 1
+							? 'No submissions on this page'
+							: 'No submissions awaiting review'}
+				</EmptyTitle>
+				<EmptyDescription>
+					{search.name
+						? 'Try a different project name or clear your search.'
+						: page > 1
+							? 'Go to the previous page to continue reviewing.'
+							: 'New community submissions will appear here when they are ready for review.'}
+				</EmptyDescription>
+			</EmptyHeader>
+			{search.name && (
+				<Button
+					variant="outline"
+					onClick={() => updateSearch({ ...search, page: 1, name: undefined })}
+				>
+					Show all submissions
+				</Button>
+			)}
+		</Empty>
+	)
+}
+
+function SubmissionsPagination({
+	page,
+	query,
+	search,
+	updateSearch,
+}: {
+	page: number
+	query: {
+		isFetching: boolean
+		isError: boolean
+		data: { pagination: { totalItems: number; hasNextPage: boolean } }
+	}
+	search: AdminProjectSearch
+	updateSearch: (search: AdminProjectSearch) => void
+}) {
+	return (
+		<CardFooter className="flex-wrap justify-between gap-3">
+			<p className="text-xs text-muted-foreground">
+				Page {page}
+				{` · ${query.data.pagination.totalItems} ${search.name ? 'matching ' : ''}${query.data.pagination.totalItems === 1 ? 'submission' : 'submissions'}`}
+			</p>
+			<nav aria-label="Submission pages" className="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={page <= 1 || query.isFetching}
+					onClick={() => updateSearch({ ...search, page: page - 1 })}
+				>
+					Previous
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={
+						!query.data.pagination.hasNextPage ||
+						query.isFetching ||
+						query.isError
+					}
+					onClick={() => updateSearch({ ...search, page: page + 1 })}
+				>
+					Next
+				</Button>
+			</nav>
+		</CardFooter>
 	)
 }

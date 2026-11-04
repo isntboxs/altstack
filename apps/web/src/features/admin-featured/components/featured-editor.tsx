@@ -89,7 +89,7 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	const [changing, startTransition] = useTransition()
 	const queryClient = useQueryClient()
 	const [projects, setProjects] = useState(initial)
-	const [baseline, setBaseline] = useState(initial.map(({ id }) => id))
+	const [baseline, setBaseline] = useState(() => initial.map(({ id }) => id))
 	const [error, setError] = useState<{
 		operation: 'save' | 'reload'
 		message: string
@@ -125,24 +125,26 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 	async function reload() {
 		setConfirmReload(false)
 		setReloading(true)
-		try {
-			await queryClient.invalidateQueries({
-				queryKey: adminORPC.featured.list.key(),
-				refetchType: 'none',
-			})
-			const data = await queryClient.query(adminFeaturedQueries.list())
-			setProjects(data.projects)
-			setBaseline(data.projects.map(({ id }) => id))
-			setError(null)
-		} catch {
-			setError({
-				operation: 'reload',
-				message:
-					'Unable to reload the selection. Your unsaved changes have been kept.',
-			})
-		} finally {
+		await (async () => {
+			try {
+				await queryClient.invalidateQueries({
+					queryKey: adminORPC.featured.list.key(),
+					refetchType: 'none',
+				})
+				const data = await queryClient.query(adminFeaturedQueries.list())
+				setProjects(data.projects)
+				setBaseline(data.projects.map(({ id }) => id))
+				setError(null)
+			} catch {
+				setError({
+					operation: 'reload',
+					message:
+						'Unable to reload the selection. Your unsaved changes have been kept.',
+				})
+			}
+		})().finally(() => {
 			setReloading(false)
-		}
+		})
 	}
 	function move(index: number, delta: number) {
 		setProjects((previous) => {

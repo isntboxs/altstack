@@ -77,34 +77,37 @@ export function MemberProjectEditor({
 		}
 		saving.current = true
 		setError('')
-		try {
-			await mutation.mutateAsync(parsed.data)
-			toast.add({
-				type: 'success',
-				title: 'Project updated',
-				description: 'Your changes are now public.',
-			})
-			await invalidateCatalog(queryClient)
-			await queryClient.invalidateQueries({ queryKey: ownershipKey })
-			await router.invalidate()
-		} catch (reason) {
-			setError(
-				reason instanceof Error
-					? reason.message
-					: 'Unable to update the project. Please try again.'
-			)
-			if (
-				reason &&
-				typeof reason === 'object' &&
-				'code' in reason &&
-				(reason.code === 'UPLOAD_CONSUMED' || reason.code === 'UPLOAD_EXPIRED')
-			) {
-				setLogo(undefined)
-				setScreenshot(undefined)
+		await (async () => {
+			try {
+				await mutation.mutateAsync(parsed.data)
+				toast.add({
+					type: 'success',
+					title: 'Project updated',
+					description: 'Your changes are now public.',
+				})
+				await invalidateCatalog(queryClient)
+				await queryClient.invalidateQueries({ queryKey: ownershipKey })
+				await router.invalidate()
+			} catch (reason) {
+				setError(
+					reason instanceof Error
+						? reason.message
+						: 'Unable to update the project. Please try again.'
+				)
+				if (
+					reason &&
+					typeof reason === 'object' &&
+					'code' in reason &&
+					(reason.code === 'UPLOAD_CONSUMED' ||
+						reason.code === 'UPLOAD_EXPIRED')
+				) {
+					setLogo(undefined)
+					setScreenshot(undefined)
+				}
 			}
-		} finally {
+		})().finally(() => {
 			saving.current = false
-		}
+		})
 	}
 	return (
 		<form
