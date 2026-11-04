@@ -241,6 +241,7 @@ afterEach(() => {
 		router.options.context.queryClient.clear()
 	}
 	vi.restoreAllMocks()
+	vi.unstubAllEnvs()
 })
 async function routerAt(path: string) {
 	const router = getRouter()
@@ -257,6 +258,8 @@ async function routerAt(path: string) {
 }
 describe('admin users and project membership journeys', () => {
 	it('shows the UTC join date even when the host timezone is behind UTC', async () => {
+		vi.stubEnv('TZ', 'America/Los_Angeles')
+		expect(person.createdAt.toLocaleDateString('en-GB')).toBe('30/09/2026')
 		await routerAt(`/admin/users/${targetId}`)
 		expect(await screen.findByText('01/10/2026')).toBeTruthy()
 	})
