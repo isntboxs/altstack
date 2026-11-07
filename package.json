@@ -39,7 +39,7 @@
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"oxlint-plugin-react-doctor": "^0.9.22",
 		"react-doctor": "^0.9.22",
-		"tsrs": "0.20.1-ts7.1.0-beta",
+		"tsrs": "0.23.0-ts7.1.0-beta",
 		"typescript": "catalog:",
 		"vite": "catalog:",
 		"vite-plus": "catalog:"
