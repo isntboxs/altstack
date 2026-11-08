@@ -16,6 +16,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from '@testing-library/react'
 import { useImperativeHandle, useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
@@ -93,6 +94,43 @@ async function mount(existing?: typeof initial) {
 	return router
 }
 describe('admin blog editor', () => {
+	it('previews link favicons and saves the original Markdown after changing a failed destination', async () => {
+		await mount({
+			...initial,
+			content: '[Docs](https://example.com/guide) [About](/about)',
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Preview content' }))
+		const preview = screen.getByRole('region', { name: 'Markdown preview' })
+		const docs = within(preview).getByRole('link', { name: /Docs/ })
+		expect(docs.querySelector('img')?.getAttribute('src')).toContain(
+			'domain=example.com'
+		)
+		expect(
+			within(preview)
+				.getByRole('link', { name: 'About' })
+				.querySelector('img')
+				?.getAttribute('src')
+		).toBe('/favicon.svg')
+		fireEvent.error(docs.querySelector('img')!)
+		expect(docs.querySelector('img')).toBeNull()
+
+		const content = '[Docs](https://docs.example.org/start) [About](/about)'
+		fireEvent.change(screen.getByLabelText('Markdown editor'), {
+			target: { value: content },
+		})
+		expect(
+			within(preview)
+				.getByRole('link', { name: /Docs/ })
+				.querySelector('img')
+				?.getAttribute('src')
+		).toContain('domain=docs.example.org')
+		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+		await screen.findByText('Blog directory')
+		expect(
+			rpc.mock.calls.find(([path]) => path.at(-1) === 'update')?.[1]
+		).toMatchObject({ body: { content } })
+	})
+
 	it('confirms deletion with the displayed revision and refreshes the admin list', async () => {
 		let posts = [initial]
 		rpc.mockImplementation((path) => {
