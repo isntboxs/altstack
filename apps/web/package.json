@@ -31,6 +31,8 @@
 		"@blocknote/core": "^0.57.0",
 		"@blocknote/react": "^0.57.0",
 		"@blocknote/shadcn": "^0.57.0",
+		"@dicebear/core": "^10.7.0",
+		"@dicebear/styles": "^10.6.0",
 		"@orpc/client": "catalog:",
 		"@orpc/server": "catalog:",
 		"@orpc/tanstack-query": "catalog:",

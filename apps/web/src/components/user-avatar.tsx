@@ -6,7 +6,8 @@ import {
 	AvatarImage,
 } from '@altstack/ui/components/avatar'
 
-/** Shows an account image at the requested size, with initials as a fallback. */
+import { useGenerateAvatar } from '#/hooks/use-generate-avatar'
+
 export const UserAvatar = ({
 	image,
 	name,
@@ -16,18 +17,7 @@ export const UserAvatar = ({
 	name: string
 	size?: ComponentProps<typeof Avatar>['size']
 }) => {
-	if (!image) {
-		return (
-			<Avatar
-				size={size}
-				className="rounded-[min(var(--radius-md),12px)] after:rounded-[min(var(--radius-md),12px)]"
-			>
-				<AvatarFallback className="rounded-[min(var(--radius-md),12px)]">
-					{name.slice(0, 2).toUpperCase()}
-				</AvatarFallback>
-			</Avatar>
-		)
-	}
+	const generatedAvatar = useGenerateAvatar({ seed: name })
 
 	return (
 		<Avatar
@@ -35,7 +25,7 @@ export const UserAvatar = ({
 			className="rounded-[min(var(--radius-md),12px)] after:rounded-[min(var(--radius-md),12px)]"
 		>
 			<AvatarImage
-				src={image}
+				src={image?.trim() ? image : generatedAvatar}
 				alt={name}
 				className="rounded-[min(var(--radius-md),12px)]"
 			/>
