@@ -150,6 +150,47 @@ describe('public Markdown preparation', () => {
 		expect(result.projectsBySlug).toEqual({})
 	})
 
+	it.each(['powershell', 'ps1'] as const)(
+		'loads %s on demand for editor and public highlighting',
+		async (language) => {
+			const code = '$name = "AltStack"\nWrite-Host $name -ForegroundColor Green'
+			const highlighter = await shiki.createHighlighter({
+				themes: [shiki.CODE_BLOCK_SHIKI_THEME],
+				langs: [],
+			})
+			try {
+				await highlighter.loadLanguage(language)
+				const { tokens } = highlighter.codeToTokens(code, {
+					lang: language,
+					theme: shiki.CODE_BLOCK_SHIKI_THEME,
+				})
+				expect(
+					new Set(tokens.flat().map((token) => token.color)).size
+				).toBeGreaterThan(1)
+			} finally {
+				highlighter.dispose()
+			}
+
+			const result = await prepareContent({
+				slug: 'source',
+				content: `\`\`\`${language}\n${code}\n\`\`\``,
+			})
+			const block = result.codeBlocks[0]
+			expect(block.language).toBe(language)
+			expect(
+				block.tokens
+					?.map((line) => line.map((token) => token.content).join(''))
+					.join('\n')
+			).toBe(code)
+			expect(
+				new Set(block.tokens?.flat().map((token) => token.light.color)).size
+			).toBeGreaterThan(1)
+			expect(
+				new Set(block.tokens?.flat().map((token) => token.dark.color)).size
+			).toBeGreaterThan(1)
+		}
+	)
+
 	it('falls back per block when the highlighter fails', async () => {
 		vi.spyOn(shiki, 'getSingletonHighlighter').mockRejectedValueOnce(
 			new Error('grammar unavailable')

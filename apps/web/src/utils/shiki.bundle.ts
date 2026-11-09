@@ -64,6 +64,8 @@ type BundledLanguage =
 	| 'php'
 	| 'plsql'
 	| 'postcss'
+	| 'powershell'
+	| 'ps1'
 	| 'prisma'
 	| 'python'
 	| 'py'
@@ -163,6 +165,7 @@ export const SHIKI_BUNDLED_LANGUAGE_GROUPS = [
 	{ id: 'php', name: 'PHP' },
 	{ id: 'plsql', name: 'PL/SQL' },
 	{ id: 'postcss', name: 'PostCSS' },
+	{ id: 'powershell', name: 'PowerShell', aliases: ['ps1'] },
 	{ id: 'prisma', name: 'Prisma' },
 	{ id: 'python', name: 'Python', aliases: ['py'] },
 	{ id: 'ruby', name: 'Ruby', aliases: ['rb'] },
@@ -270,6 +273,8 @@ const bundledLanguages = {
 	php: () => import('@shikijs/langs/php'),
 	plsql: () => import('@shikijs/langs/plsql'),
 	postcss: () => import('@shikijs/langs/postcss'),
+	powershell: () => import('@shikijs/langs/powershell'),
+	ps1: () => import('@shikijs/langs/powershell'),
 	prisma: () => import('@shikijs/langs/prisma'),
 	python: () => import('@shikijs/langs/python'),
 	py: () => import('@shikijs/langs/python'),
