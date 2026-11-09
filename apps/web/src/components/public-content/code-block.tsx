@@ -50,7 +50,7 @@ export function PublicCodeBlock({ block }: { block: PreparedCodeBlock }) {
 			className="not-prose my-6 overflow-hidden rounded-lg border border-border"
 			data-code-block
 		>
-			<div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2">
+			<div className="flex items-center justify-between gap-3 border-b border-border bg-transparent px-3 py-2">
 				<span className="truncate font-mono text-xs text-muted-foreground">
 					{block.language}
 				</span>

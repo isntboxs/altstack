@@ -6,7 +6,7 @@
 .public-code,
 .public-code-token {
 	color: var(--code-light-color, var(--foreground));
-	background-color: var(--code-light-bg, transparent);
+	background-color: transparent;
 	font-style: var(--code-light-style, normal);
 	font-weight: var(--code-light-weight, 400);
 	text-decoration: var(--code-light-decoration, none);
@@ -15,7 +15,6 @@
 .dark .public-code,
 .dark .public-code-token {
 	color: var(--code-dark-color, var(--foreground));
-	background-color: var(--code-dark-bg, transparent);
 	font-style: var(--code-dark-style, normal);
 	font-weight: var(--code-dark-weight, 400);
 	text-decoration: var(--code-dark-decoration, none);
