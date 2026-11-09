@@ -87,7 +87,7 @@ describe('blog article HTML and anchors', () => {
 		container.innerHTML = renderToString(<RouterProvider router={router} />)
 		expect(
 			container
-				.querySelector('[data-code-block] button')
+				.querySelector('[data-code-block] button[aria-label="Copy code"]')
 				?.getAttribute('aria-label')
 		).toBe('Copy code')
 		expect(

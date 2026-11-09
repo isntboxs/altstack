@@ -22,6 +22,7 @@ export default defineConfig({
 				optimizeDeps: {
 					include: [
 						'reicon-react',
+						'@shikijs/langs/powershell',
 						'@altstack/ui > @base-ui/react/accordion',
 						'@altstack/ui > @base-ui/react/avatar',
 						'@altstack/ui > @base-ui/react/checkbox',

@@ -116,6 +116,20 @@ describe('public Markdown preparation', () => {
 
 	it('highlights with both themes and preserves code including tabs and trailing blank lines', async () => {
 		const code = '\tconst value = render("<script>");  \n\n'
+		const themes = {
+			light: shiki.CODE_BLOCK_SHIKI_LIGHT_THEME,
+			dark: shiki.CODE_BLOCK_SHIKI_THEME,
+		} as const
+		const highlighter = await shiki.getSingletonHighlighter({
+			themes: Object.values(themes),
+			langs: ['ts'],
+		})
+		// Cold regex compilation can exhaust Shiki's 500 ms token budget.
+		highlighter.codeToTokensWithThemes(code, {
+			lang: 'ts',
+			themes,
+			tokenizeTimeLimit: 0,
+		})
 		const content = `Intro\n\n\`\`\`ts\n${code}\n\`\`\``
 		const result = await prepareContent({ slug: 'source', content })
 		const block = result.codeBlocks[content.indexOf('```')]
@@ -134,17 +148,13 @@ describe('public Markdown preparation', () => {
 			light: { color: '#383A42', bgColor: '#FAFAFA' },
 			dark: { color: '#abb2bf', bgColor: '#282c34' },
 		})
-		expect(
-			block.tokens
-				?.flat()
-				.some(
-					(token) =>
-						token.content === 'render' &&
-						[token.light, token.dark].every(
-							(style) => ((style.fontStyle ?? 0) & 2) !== 0
-						)
-				)
-		).toBe(true)
+		const functionToken = block.tokens
+			?.flat()
+			.find((token) => token.content.includes('render'))
+		expect(functionToken).toMatchObject({
+			light: { fontStyle: 2 },
+			dark: { fontStyle: 2 },
+		})
 		expect(JSON.parse(JSON.stringify(result))).toEqual(result)
 	})
 
