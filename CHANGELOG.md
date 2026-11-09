@@ -7,6 +7,8 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-09
+
 ### Added
 
 - Favicons beside ordinary internal and external Markdown links in public content
@@ -34,8 +36,9 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 
 ### Upgrade notes
 
-- Deploy matching API and web revisions. Changes since `v1.1.0` add no database
-  migrations or environment variables; existing Markdown needs no migration.
+- Deploy the API and web from the same `v1.2.0` tag. Changes since `v1.1.0` add
+  no database migrations or environment variables; existing Markdown needs no
+  migration.
 - External-link favicons use Google S2 with only the destination hostname and no
   referrer. If that service is unavailable, links remain usable without icons.
 
@@ -124,6 +127,7 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 - Follow the [deployment guide](docs/deployment.md) for proxy `QUERY` support,
   migration/configuration checks, scheduled workers, and instance acceptance.
 
-[Unreleased]: https://github.com/isntboxs/altstack/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/isntboxs/altstack/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/isntboxs/altstack/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/isntboxs/altstack/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/isntboxs/altstack/compare/v0.7.1...v1.0.0
