@@ -319,6 +319,15 @@ Both use the existing public Markdown renderer with raw HTML disabled. BlockNote
 is the admin authoring interface, not the public renderer. About has canonical
 metadata and a sitemap entry; it is not a general-purpose CMS or a draft workflow.
 
+Public Markdown and admin previews show favicons beside ordinary web links and
+reveal link underlines on hover. Catalogue mentions retain their badges. Public
+code blocks use transparent headers and bodies with custom One Light/One Dark Pro
+syntax highlighting, including bold tokens and PowerShell support. Every block
+has equally sized icon-only copy and word-wrap controls with tooltips. Wrapping
+is off initially, is independent for each block, and preserves the copied source.
+The editor's Paragraph menu supports changing a partially selected block to a
+heading using the pointer or keyboard.
+
 ### Advertising and guest orders
 
 `/advertise` offers one-month Core (US$15, Tier 1), Plus (US$29, Tier 2), and
