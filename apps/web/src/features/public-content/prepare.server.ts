@@ -15,10 +15,19 @@ import {
 	emptyPublicContent,
 } from '#/features/public-content/model'
 import type { PreparedCodeBlock } from '#/features/public-content/model'
-import { bundledLanguages, getSingletonHighlighter } from '#/utils/shiki.bundle'
+import {
+	CODE_BLOCK_SHIKI_LIGHT_THEME,
+	CODE_BLOCK_SHIKI_THEME,
+	bundledLanguages,
+	getSingletonHighlighter,
+} from '#/utils/shiki.bundle'
 import type { BundledLanguage } from '#/utils/shiki.bundle'
 
 const parser = unified().use(remarkParse).use(remarkGfm)
+const codeThemes = {
+	light: CODE_BLOCK_SHIKI_LIGHT_THEME,
+	dark: CODE_BLOCK_SHIKI_THEME,
+} as const
 
 function isBundledLanguage(language: string): language is BundledLanguage {
 	return Object.hasOwn(bundledLanguages, language)
@@ -30,12 +39,12 @@ async function highlight(node: Code): Promise<PreparedCodeBlock> {
 	if (!isBundledLanguage(language)) return block
 	try {
 		const highlighter = await getSingletonHighlighter({
-			themes: ['github-light', 'github-dark'],
+			themes: Object.values(codeThemes),
 			langs: [language],
 		})
 		const tokens = highlighter.codeToTokensWithThemes(node.value, {
 			lang: language,
-			themes: { light: 'github-light', dark: 'github-dark' },
+			themes: codeThemes,
 		})
 		block.tokens = tokens.map((line) =>
 			line.map((token) => {
@@ -46,8 +55,8 @@ async function highlight(node: Code): Promise<PreparedCodeBlock> {
 				}
 			})
 		)
-		const light = highlighter.getTheme('github-light')
-		const dark = highlighter.getTheme('github-dark')
+		const light = highlighter.getTheme(codeThemes.light)
+		const dark = highlighter.getTheme(codeThemes.dark)
 		block.colors = {
 			light: { color: light.fg, bgColor: light.bg },
 			dark: { color: dark.fg, bgColor: dark.bg },

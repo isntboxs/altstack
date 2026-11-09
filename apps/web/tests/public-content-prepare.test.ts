@@ -115,7 +115,21 @@ describe('public Markdown preparation', () => {
 	})
 
 	it('highlights with both themes and preserves code including tabs and trailing blank lines', async () => {
-		const code = '\tconst value = "<script>";  \n\n'
+		const code = '\tconst value = render("<script>");  \n\n'
+		const themes = {
+			light: shiki.CODE_BLOCK_SHIKI_LIGHT_THEME,
+			dark: shiki.CODE_BLOCK_SHIKI_THEME,
+		} as const
+		const highlighter = await shiki.getSingletonHighlighter({
+			themes: Object.values(themes),
+			langs: ['ts'],
+		})
+		// Cold regex compilation can exhaust Shiki's 500 ms token budget.
+		highlighter.codeToTokensWithThemes(code, {
+			lang: 'ts',
+			themes,
+			tokenizeTimeLimit: 0,
+		})
 		const content = `Intro\n\n\`\`\`ts\n${code}\n\`\`\``
 		const result = await prepareContent({ slug: 'source', content })
 		const block = result.codeBlocks[content.indexOf('```')]
@@ -130,7 +144,17 @@ describe('public Markdown preparation', () => {
 				?.flat()
 				.some((token) => token.light.color !== token.dark.color)
 		).toBe(true)
-		expect(block.colors?.light.bgColor).not.toBe(block.colors?.dark.bgColor)
+		expect(block.colors).toEqual({
+			light: { color: '#383A42', bgColor: '#FAFAFA' },
+			dark: { color: '#abb2bf', bgColor: '#282c34' },
+		})
+		const functionToken = block.tokens
+			?.flat()
+			.find((token) => token.content.includes('render'))
+		expect(functionToken).toMatchObject({
+			light: { fontStyle: 2 },
+			dark: { fontStyle: 2 },
+		})
 		expect(JSON.parse(JSON.stringify(result))).toEqual(result)
 	})
 
@@ -149,6 +173,47 @@ describe('public Markdown preparation', () => {
 		expect(blocks[2].tokens?.length).toBeGreaterThan(0)
 		expect(result.projectsBySlug).toEqual({})
 	})
+
+	it.each(['powershell', 'ps1'] as const)(
+		'loads %s on demand for editor and public highlighting',
+		async (language) => {
+			const code = '$name = "AltStack"\nWrite-Host $name -ForegroundColor Green'
+			const highlighter = await shiki.createHighlighter({
+				themes: [shiki.CODE_BLOCK_SHIKI_THEME],
+				langs: [],
+			})
+			try {
+				await highlighter.loadLanguage(language)
+				const { tokens } = highlighter.codeToTokens(code, {
+					lang: language,
+					theme: shiki.CODE_BLOCK_SHIKI_THEME,
+				})
+				expect(
+					new Set(tokens.flat().map((token) => token.color)).size
+				).toBeGreaterThan(1)
+			} finally {
+				highlighter.dispose()
+			}
+
+			const result = await prepareContent({
+				slug: 'source',
+				content: `\`\`\`${language}\n${code}\n\`\`\``,
+			})
+			const block = result.codeBlocks[0]
+			expect(block.language).toBe(language)
+			expect(
+				block.tokens
+					?.map((line) => line.map((token) => token.content).join(''))
+					.join('\n')
+			).toBe(code)
+			expect(
+				new Set(block.tokens?.flat().map((token) => token.light.color)).size
+			).toBeGreaterThan(1)
+			expect(
+				new Set(block.tokens?.flat().map((token) => token.dark.color)).size
+			).toBeGreaterThan(1)
+		}
+	)
 
 	it('falls back per block when the highlighter fails', async () => {
 		vi.spyOn(shiki, 'getSingletonHighlighter').mockRejectedValueOnce(

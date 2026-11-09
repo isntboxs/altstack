@@ -147,10 +147,25 @@ do not replace API authorization.
 Markdown rendering supports GFM, project mentions, and server-prepared highlighted
 code through [PublicContent](../apps/web/src/components/public-content/index.tsx).
 Public blog, collection, and About bodies use that renderer with raw HTML disabled;
-BlockNote is used for admin authoring. README import normalizes repository-relative links and drops unsupported
-unsafe markup. Storage uploads start as temporary objects and are validated and
-promoted before final keys are persisted; member grants bind uploads to account
-and project.
+BlockNote is used for admin authoring. Ordinary web links receive favicons at
+render time without changing stored Markdown. Internal links use the local
+favicon; external icons use Google S2 with only the destination hostname and
+`no-referrer`. Icon failures leave the text link intact. Project and collection
+mentions keep their own icons; anchors, email/telephone targets, and image links
+do not receive favicons.
+
+The shared Shiki bundle supplies PowerShell and its `ps1` alias to both editor and
+public code blocks. Public blocks receive custom One Light and One Dark Pro token
+palettes during server preparation, with the same bold-token scopes in both.
+CSS switches palettes with the site theme while keeping code backgrounds
+transparent. Per-block word wrapping is local presentation state; the copy action
+always writes the original source. Tooltip-backed copy and wrap controls retain
+accessible names. The shared Select forwards its portal container so BlockNote's
+formatting menu stays inside the editor UI when focus leaves the selected text.
+
+README import normalizes repository-relative links and drops unsupported unsafe
+markup. Storage uploads start as temporary objects and are validated and promoted
+before final keys are persisted; member grants bind uploads to account and project.
 
 The [SEO feature](../apps/web/src/features/seo) builds canonical URLs from public
 configuration, serves sitemap/robots routes, and renders social images with local

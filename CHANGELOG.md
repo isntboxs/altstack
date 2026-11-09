@@ -7,6 +7,38 @@ have not been reconstructed. See [release note guidance](CONTRIBUTING.md#documen
 
 ## [Unreleased]
 
+### Added
+
+- Favicons beside ordinary internal and external Markdown links in public content
+  and admin previews, with a text-only fallback when an icon cannot load.
+- PowerShell syntax highlighting, including the `ps1` alias, in the shared editor
+  language picker and public Markdown renderer.
+- An independent word-wrap toggle on every public code block, including short
+  blocks. Wrapping changes presentation without changing copied code.
+
+### Changed
+
+- Public Markdown links reveal their underline on hover with a 300 ms transition.
+  Project and collection mentions retain their existing badges and icons.
+- Public code blocks use custom One Light and One Dark Pro syntax palettes with
+  matching bold-token rules, transparent bodies and headers, and equally sized
+  icon-only copy and wrap controls with hover and keyboard-focus tooltips.
+- Update oRPC to `2.0.0-beta.49` and tsrs to `0.23.0-ts7.1.0-beta`.
+
+### Fixed
+
+- Keep BlockNote's block-style select inside its editor portal so selecting part
+  of a paragraph and opening the toolbar menu does not dismiss it. Heading
+  changes remain available through the pointer and keyboard.
+- Generate a name-based avatar when an account has no image.
+
+### Upgrade notes
+
+- Deploy matching API and web revisions. Changes since `v1.1.0` add no database
+  migrations or environment variables; existing Markdown needs no migration.
+- External-link favicons use Google S2 with only the destination hostname and no
+  referrer. If that service is unavailable, links remain usable without icons.
+
 ## [1.1.0] - 2026-11-05
 
 ### Added

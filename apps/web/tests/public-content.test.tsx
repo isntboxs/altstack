@@ -91,6 +91,76 @@ async function documentRouter(
 }
 
 describe('public Markdown rendering', () => {
+	it('decorates ordinary web links without changing their names or destinations', async () => {
+		const router = await documentRouter(
+			'[internal](/about?ref=docs#team) [same origin](https://altstack.test/blogs) [relative](./guide) [external](https://docs.example.com:8443/guide?ref=docs#setup) [protocol relative](//docs.example.com/other)'
+		)
+		render(<RouterProvider router={router} />)
+		for (const name of ['internal', 'same origin', 'relative']) {
+			const link = screen.getByRole('link', { name })
+			const icon = link.querySelector('img')!
+			expect(icon.getAttribute('src')).toBe('/favicon.svg')
+			expect(icon.getAttribute('alt')).toBe('')
+			expect(icon.getAttribute('aria-hidden')).toBe('true')
+			expect(icon.getAttribute('width')).toBe('16')
+			expect(icon.getAttribute('height')).toBe('16')
+			expect(link.firstElementChild).toBe(icon)
+		}
+		for (const name of ['external', 'protocol relative']) {
+			const link = screen.getByRole('link', {
+				name: new RegExp(`^${name}\\s*\\(opens in a new tab\\)$`),
+			})
+			const icon = link.querySelector('img')!
+			const source = new URL(icon.src)
+			expect(source.origin).toBe('https://www.google.com')
+			expect([...source.searchParams]).toEqual([
+				['domain', 'docs.example.com'],
+				['sz', '32'],
+			])
+			expect(icon.getAttribute('referrerpolicy')).toBe('no-referrer')
+			expect(link.firstElementChild).toBe(icon)
+			expect(link.getAttribute('target')).toBe('_blank')
+			expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+		}
+		expect(
+			screen.getByRole('link', { name: /external/ }).getAttribute('href')
+		).toBe('https://docs.example.com:8443/guide?ref=docs#setup')
+		fireEvent.click(screen.getByRole('link', { name: 'internal' }))
+		await waitFor(() => expect(router.state.location.pathname).toBe('/about'))
+		expect(router.state.location.search).toEqual({ ref: 'docs' })
+		expect(router.state.location.hash).toBe('team')
+	})
+
+	it('leaves anchors, email, telephone and image links undecorated', async () => {
+		const router = await documentRouter(
+			'[section](#section) [email](mailto:hello@example.com) [phone](tel:+123456789)\n\n[![internal badge](https://img.test/internal.svg)](/about)\n\n[![external badge](https://img.test/external.svg)](https://example.com)\n\n[text ![mixed badge](https://img.test/mixed.svg)](https://example.com/mixed)'
+		)
+		render(<RouterProvider router={router} />)
+		for (const name of ['section', 'email']) {
+			expect(screen.getByRole('link', { name }).querySelector('img')).toBeNull()
+		}
+		expect(
+			screen.getByText('phone').closest('a')?.querySelector('img')
+		).toBeNull()
+		for (const name of ['internal badge', 'external badge', 'mixed badge']) {
+			const badge = screen.getByAltText(name)
+			expect(badge.closest('a')?.querySelectorAll('img')).toHaveLength(1)
+		}
+	})
+
+	it.each(['/about', 'https://example.com'])(
+		'falls back to an ordinary link when its favicon fails: %s',
+		async (href) => {
+			const router = await documentRouter(`[destination](${href})`)
+			render(<RouterProvider router={router} />)
+			const link = screen.getByRole('link', { name: /destination/ })
+			fireEvent.error(link.querySelector('img')!)
+			expect(link.querySelector('img')).toBeNull()
+			expect(link.textContent).toContain('destination')
+			expect(link.getAttribute('href')).toBe(href)
+		}
+	)
+
 	it('renders collection badges, opens their preview on focus and navigates to the collection', async () => {
 		const prepared = emptyPublicContent()
 		prepared.collectionsBySlug.frontend = {
@@ -112,6 +182,7 @@ describe('public Markdown rendering', () => {
 			'/collections/frontend?ref=docs#members'
 		)
 		expect(chips[0].getAttribute('data-collection-mention')).toBe('frontend')
+		expect(chips[0].querySelector('img')).toBeNull()
 		expect(
 			screen
 				.getByAltText('badge')
@@ -186,6 +257,7 @@ describe('public Markdown rendering', () => {
 		expect(chips[0].querySelector('img')?.getAttribute('src')).toBe(
 			'https://storage.test/projects/supabase/logo.png'
 		)
+		expect(chips[0].querySelectorAll('img')).toHaveLength(1)
 		fireEvent.error(chips[0].querySelector('img')!)
 		expect(chips[0].querySelector('img')).toBeNull()
 		expect(chips[0].textContent).toContain('S')
@@ -277,14 +349,15 @@ describe('public Markdown rendering', () => {
 		const router = await documentRouter(`\`\`\`unknown\n${code}\n\`\`\``)
 		render(<RouterProvider router={router} />)
 		expect(screen.getByLabelText('unknown code').textContent).toBe(code)
+		fireEvent.click(screen.getByRole('button', { name: 'Word wrap' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Copy code' }))
-		await screen.findByText('Copied')
+		await screen.findByText('Code copied to clipboard.')
 		expect(writeText).toHaveBeenCalledExactlyOnceWith(code)
 		writeText.mockRejectedValueOnce(new Error('denied'))
 		fireEvent.click(screen.getByRole('button', { name: 'Copy code' }))
 		await screen.findByText('Unable to copy code. Select and copy it manually.')
 		expect(screen.getByRole('button', { name: 'Copy code' }).textContent).toBe(
-			'Copy failed'
+			''
 		)
 	})
 
@@ -327,7 +400,7 @@ describe('public Markdown rendering', () => {
 			},
 		}
 		const router = await documentRouter(
-			'```js\nconst x = 1\n```\n\n[db](/supabase) [tools](/collections/frontend)',
+			'```js\nconst x = 1\n```\n\n[db](/supabase) [tools](/collections/frontend) [about](/about) [docs](https://docs.example.com/start)',
 			prepared
 		)
 		const html = renderToString(<RouterProvider router={router} />)
@@ -335,6 +408,10 @@ describe('public Markdown rendering', () => {
 		expect(html).toContain('--code-dark-color:#abcdef')
 		expect(html).toContain('data-project-mention="supabase"')
 		expect(html).toContain('data-collection-mention="frontend"')
+		expect(html).toContain('src="/favicon.svg"')
+		expect(html).toContain(
+			'src="https://www.google.com/s2/favicons?domain=docs.example.com&amp;sz=32"'
+		)
 		const container = document.createElement('div')
 		container.innerHTML = html
 		const parsedHtml = container.innerHTML

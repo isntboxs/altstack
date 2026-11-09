@@ -1,6 +1,7 @@
 import { IconExternalLink, IconFolders } from '@tabler/icons-react'
 import { Link, useRouter } from '@tanstack/react-router'
 import type { Element, ElementContent } from 'hast'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { env } from '@altstack/env/web'
@@ -47,10 +48,20 @@ export function ContentLink({
 			</a>
 		)
 	}
+	const imageLink = node && containsImage(node)
+	const faviconSrc = target.internal
+		? '/favicon.svg'
+		: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(target.url.hostname)}&sz=32`
+	const linkContent = (
+		<>
+			{!imageLink && <LinkFavicon key={faviconSrc} src={faviconSrc} />}
+			{children}
+		</>
+	)
 	if (!target.internal) {
 		return (
 			<a href={href} title={title} target="_blank" rel="noopener noreferrer">
-				{children}
+				{linkContent}
 				<IconExternalLink
 					className="ml-0.5 inline size-3.5 align-baseline"
 					aria-hidden="true"
@@ -67,7 +78,6 @@ export function ContentLink({
 		target.collectionSlug && Object.hasOwn(collections, target.collectionSlug)
 			? collections[target.collectionSlug]
 			: undefined
-	const imageLink = node && containsImage(node)
 	return (
 		<InternalContentLink
 			url={target.url}
@@ -75,8 +85,32 @@ export function ContentLink({
 			project={imageLink ? undefined : project}
 			collection={imageLink ? undefined : collection}
 		>
-			{children}
+			{linkContent}
 		</InternalContentLink>
+	)
+}
+
+function LinkFavicon({ src }: { src: string }) {
+	const [failed, setFailed] = useState(false)
+	if (failed) return null
+	return (
+		<img
+			src={src}
+			alt=""
+			aria-hidden="true"
+			width={16}
+			height={16}
+			loading="lazy"
+			decoding="async"
+			referrerPolicy="no-referrer"
+			className="not-prose me-1 inline-block size-4 object-contain align-[-0.125em]"
+			ref={(element) => {
+				if (element?.complete) {
+					void element.decode().catch(() => setFailed(true))
+				}
+			}}
+			onError={() => setFailed(true)}
+		/>
 	)
 }
 
