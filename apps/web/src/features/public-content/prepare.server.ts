@@ -16,6 +16,7 @@ import {
 } from '#/features/public-content/model'
 import type { PreparedCodeBlock } from '#/features/public-content/model'
 import {
+	CODE_BLOCK_SHIKI_LIGHT_THEME,
 	CODE_BLOCK_SHIKI_THEME,
 	bundledLanguages,
 	getSingletonHighlighter,
@@ -23,7 +24,10 @@ import {
 import type { BundledLanguage } from '#/utils/shiki.bundle'
 
 const parser = unified().use(remarkParse).use(remarkGfm)
-const codeThemes = { light: 'one-light', dark: CODE_BLOCK_SHIKI_THEME } as const
+const codeThemes = {
+	light: CODE_BLOCK_SHIKI_LIGHT_THEME,
+	dark: CODE_BLOCK_SHIKI_THEME,
+} as const
 
 function isBundledLanguage(language: string): language is BundledLanguage {
 	return Object.hasOwn(bundledLanguages, language)

@@ -4,6 +4,7 @@ import {
 } from '@shikijs/core'
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
 import oneDarkProTheme from '@shikijs/themes/one-dark-pro'
+import oneLightTheme from '@shikijs/themes/one-light'
 /* Generate by @shikijs/codegen */
 import type {
 	DynamicImportLanguageRegistration,
@@ -14,6 +15,7 @@ import type {
 } from '@shikijs/types'
 
 export const CODE_BLOCK_SHIKI_THEME = 'altstack-code-dark'
+export const CODE_BLOCK_SHIKI_LIGHT_THEME = 'altstack-code-light'
 
 type BundledLanguage =
 	| 'angular-html'
@@ -101,6 +103,7 @@ type BundledTheme =
 	| 'github-light'
 	| 'github-dark'
 	| typeof CODE_BLOCK_SHIKI_THEME
+	| typeof CODE_BLOCK_SHIKI_LIGHT_THEME
 type Highlighter = HighlighterGeneric<BundledLanguage, BundledTheme>
 
 const CODE_BLOCK_BOLD_SCOPES = [
@@ -210,19 +213,30 @@ export type ShikiBundledLanguageCoverage = AssertNever<
 	Exclude<BundledLanguage, ShikiLanguageGroupAlias>
 >
 
-const codeBlockShikiTheme = Object.freeze({
-	...oneDarkProTheme,
-	name: CODE_BLOCK_SHIKI_THEME,
-	tokenColors: [
-		...(oneDarkProTheme.tokenColors ?? []),
-		{
-			scope: [...CODE_BLOCK_BOLD_SCOPES],
-			settings: {
-				fontStyle: 'bold',
+function withCodeBlockBoldTokens(theme: ThemeRegistration, name: string) {
+	return Object.freeze({
+		...theme,
+		name,
+		tokenColors: [
+			...(theme.tokenColors ?? []),
+			{
+				scope: [...CODE_BLOCK_BOLD_SCOPES],
+				settings: {
+					fontStyle: 'bold',
+				},
 			},
-		},
-	],
-}) satisfies ThemeRegistration
+		],
+	}) satisfies ThemeRegistration
+}
+
+const codeBlockShikiTheme = withCodeBlockBoldTokens(
+	oneDarkProTheme,
+	CODE_BLOCK_SHIKI_THEME
+)
+const codeBlockShikiLightTheme = withCodeBlockBoldTokens(
+	oneLightTheme,
+	CODE_BLOCK_SHIKI_LIGHT_THEME
+)
 
 const bundledLanguages = {
 	'angular-html': () => import('@shikijs/langs/angular-html'),
@@ -314,6 +328,10 @@ const bundledThemes = {
 	[CODE_BLOCK_SHIKI_THEME]: () =>
 		Promise.resolve({
 			default: codeBlockShikiTheme,
+		}),
+	[CODE_BLOCK_SHIKI_LIGHT_THEME]: () =>
+		Promise.resolve({
+			default: codeBlockShikiLightTheme,
 		}),
 } as Record<BundledTheme, DynamicImportThemeRegistration>
 

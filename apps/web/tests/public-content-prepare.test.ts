@@ -140,7 +140,9 @@ describe('public Markdown preparation', () => {
 				.some(
 					(token) =>
 						token.content === 'render' &&
-						((token.dark.fontStyle ?? 0) & 2) !== 0
+						[token.light, token.dark].every(
+							(style) => ((style.fontStyle ?? 0) & 2) !== 0
+						)
 				)
 		).toBe(true)
 		expect(JSON.parse(JSON.stringify(result))).toEqual(result)
