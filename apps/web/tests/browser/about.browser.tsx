@@ -172,4 +172,51 @@ describe('About page in Chromium', () => {
 		await screen.findByRole('heading', { name: defaultAboutPage.title })
 		expect(screen.queryByRole('alertdialog')).toBeNull()
 	})
+	it.each(['pointer', 'keyboard'] as const)(
+		'opens the block style menu for a partial selection with %s and saves the heading',
+		async (interaction) => {
+			await page.viewport(1440, 900)
+			await mount(true, interaction === 'pointer' ? 'light' : 'dark')
+			const editor = document.querySelector<HTMLElement>(
+				'.bn-editor[contenteditable="true"]'
+			)!
+			editor.focus()
+			await userEvent.keyboard(
+				'{Control>}{End}{/Control}{Shift>}{ArrowLeft}{ArrowLeft}{ArrowLeft}{/Shift}'
+			)
+			expect(window.getSelection()?.toString()).toMatch(/^\w{1,3}\.$/)
+			const blockStyle = page.getByRole('toolbar').getByRole('combobox')
+			if (interaction === 'pointer') {
+				await blockStyle.click()
+			} else {
+				blockStyle.element().focus()
+				await userEvent.keyboard('{ArrowDown}')
+			}
+			const list = page.getByRole('listbox')
+			await expect.element(list).toBeVisible()
+			expect(editor.closest('.bn-container')?.contains(list.element())).toBe(
+				true
+			)
+			if (interaction === 'pointer') {
+				await page
+					.getByRole('option', { name: 'Heading 2', exact: true })
+					.click()
+			} else {
+				await userEvent.keyboard('{Home}{ArrowDown}{ArrowDown}{Enter}')
+			}
+			await waitFor(() => {
+				expect(editor.querySelector('h2')?.textContent).toBe('Our directory')
+				expect(editor.querySelectorAll('h2')).toHaveLength(2)
+				expect(editor.querySelectorAll('h2')[1]?.textContent).toBe(
+					'Find useful software.'
+				)
+			})
+			await page.getByRole('button', { name: 'Save changes' }).click()
+			await screen.findByText('About us saved. Your changes are live.')
+			const request = z
+				.object({ body: aboutUpdateSchema })
+				.parse(rpc.mock.calls[0]?.[1])
+			expect(request.body.content).toContain('## Find useful software.')
+		}
+	)
 })
