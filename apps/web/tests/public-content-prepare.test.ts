@@ -115,7 +115,7 @@ describe('public Markdown preparation', () => {
 	})
 
 	it('highlights with both themes and preserves code including tabs and trailing blank lines', async () => {
-		const code = '\tconst value = "<script>";  \n\n'
+		const code = '\tconst value = render("<script>");  \n\n'
 		const content = `Intro\n\n\`\`\`ts\n${code}\n\`\`\``
 		const result = await prepareContent({ slug: 'source', content })
 		const block = result.codeBlocks[content.indexOf('```')]
@@ -130,7 +130,19 @@ describe('public Markdown preparation', () => {
 				?.flat()
 				.some((token) => token.light.color !== token.dark.color)
 		).toBe(true)
-		expect(block.colors?.light.bgColor).not.toBe(block.colors?.dark.bgColor)
+		expect(block.colors).toEqual({
+			light: { color: '#383A42', bgColor: '#FAFAFA' },
+			dark: { color: '#abb2bf', bgColor: '#282c34' },
+		})
+		expect(
+			block.tokens
+				?.flat()
+				.some(
+					(token) =>
+						token.content === 'render' &&
+						((token.dark.fontStyle ?? 0) & 2) !== 0
+				)
+		).toBe(true)
 		expect(JSON.parse(JSON.stringify(result))).toEqual(result)
 	})
 
