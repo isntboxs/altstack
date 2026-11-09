@@ -1,8 +1,15 @@
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconTextWrap, IconX } from '@tabler/icons-react'
+import { cn } from 'cn'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import { Button } from '@altstack/ui/components/button'
+import { Toggle } from '@altstack/ui/components/toggle'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@altstack/ui/components/tooltip'
 
 import type {
 	CodeTokenStyle,
@@ -26,6 +33,7 @@ function themeStyles(light: CodeTokenStyle, dark: CodeTokenStyle) {
 }
 
 export function PublicCodeBlock({ block }: { block: PreparedCodeBlock }) {
+	const [wordWrap, setWordWrap] = useState(false)
 	const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
 		'idle'
 	)
@@ -54,24 +62,55 @@ export function PublicCodeBlock({ block }: { block: PreparedCodeBlock }) {
 				<span className="truncate font-mono text-xs text-muted-foreground">
 					{block.language}
 				</span>
-				<Button
-					type="button"
-					variant="ghost"
-					size="xs"
-					onClick={copyCode}
-					aria-label="Copy code"
-				>
-					{copyState === 'copied' ? (
-						<IconCheck data-icon="inline-start" />
-					) : (
-						<IconCopy data-icon="inline-start" />
-					)}
-					{copyState === 'copied'
-						? 'Copied'
-						: copyState === 'failed'
-							? 'Copy failed'
-							: 'Copy'}
-				</Button>
+				<div className="flex shrink-0 items-center gap-1">
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Toggle
+									size="sm"
+									className="size-7 p-0"
+									pressed={wordWrap}
+									onPressedChange={setWordWrap}
+									aria-label="Word wrap"
+								/>
+							}
+						>
+							<IconTextWrap aria-hidden="true" />
+						</TooltipTrigger>
+						<TooltipContent>
+							{wordWrap ? 'Disable word wrap' : 'Enable word wrap'}
+						</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="size-7 p-0"
+									onClick={copyCode}
+									aria-label="Copy code"
+								/>
+							}
+						>
+							{copyState === 'copied' ? (
+								<IconCheck aria-hidden="true" />
+							) : copyState === 'failed' ? (
+								<IconX aria-hidden="true" />
+							) : (
+								<IconCopy aria-hidden="true" />
+							)}
+						</TooltipTrigger>
+						<TooltipContent>
+							{copyState === 'copied'
+								? 'Copied'
+								: copyState === 'failed'
+									? 'Copy failed'
+									: 'Copy code'}
+						</TooltipContent>
+					</Tooltip>
+				</div>
 				<output className="sr-only">
 					{copyState === 'copied'
 						? 'Code copied to clipboard.'
@@ -81,7 +120,10 @@ export function PublicCodeBlock({ block }: { block: PreparedCodeBlock }) {
 				</output>
 			</div>
 			<pre
-				className="public-code m-0 overflow-x-auto p-4 text-sm leading-6"
+				className={cn(
+					'public-code m-0 overflow-x-auto p-4 text-sm leading-6',
+					wordWrap ? 'wrap-anywhere whitespace-pre-wrap' : 'whitespace-pre'
+				)}
 				style={
 					block.colors
 						? themeStyles(block.colors.light, block.colors.dark)

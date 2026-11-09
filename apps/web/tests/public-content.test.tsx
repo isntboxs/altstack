@@ -349,14 +349,15 @@ describe('public Markdown rendering', () => {
 		const router = await documentRouter(`\`\`\`unknown\n${code}\n\`\`\``)
 		render(<RouterProvider router={router} />)
 		expect(screen.getByLabelText('unknown code').textContent).toBe(code)
+		fireEvent.click(screen.getByRole('button', { name: 'Word wrap' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Copy code' }))
-		await screen.findByText('Copied')
+		await screen.findByText('Code copied to clipboard.')
 		expect(writeText).toHaveBeenCalledExactlyOnceWith(code)
 		writeText.mockRejectedValueOnce(new Error('denied'))
 		fireEvent.click(screen.getByRole('button', { name: 'Copy code' }))
 		await screen.findByText('Unable to copy code. Select and copy it manually.')
 		expect(screen.getByRole('button', { name: 'Copy code' }).textContent).toBe(
-			'Copy failed'
+			''
 		)
 	})
 
