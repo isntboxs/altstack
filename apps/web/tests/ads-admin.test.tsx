@@ -123,12 +123,30 @@ describe('admin campaign form', () => {
 		]) {
 			fireEvent.change(screen.getByLabelText(name), { target: { value } })
 		}
-		fireEvent.change(screen.getByLabelText('Tier'), {
+		const tier = screen.getByRole<HTMLSelectElement>('combobox', {
+			name: 'Tier',
+		})
+		const status = screen.getByRole<HTMLSelectElement>('combobox', {
+			name: 'Status',
+		})
+		expect(tier.labels).toHaveLength(1)
+		expect(status.labels).toHaveLength(1)
+		expect(tier.labels[0].control).toBe(tier)
+		expect(status.labels[0].control).toBe(status)
+		fireEvent.change(tier, {
 			target: { value: 'tier3' },
 		})
-		fireEvent.change(screen.getByLabelText('Status'), {
+		fireEvent.change(status, {
 			target: { value: 'active' },
 		})
+		expect(screen.getByRole('combobox', { name: 'Tier' })).toHaveProperty(
+			'value',
+			'tier3'
+		)
+		expect(screen.getByRole('combobox', { name: 'Status' })).toHaveProperty(
+			'value',
+			'active'
+		)
 		fireEvent.click(screen.getByRole('button', { name: 'Upload test logo' }))
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Upload test wordmark' })

@@ -20,6 +20,12 @@ storage access elsewhere.
 `ad-order-status` is a false positive while each select's ID matches its adjacent
 `FieldLabel.htmlFor`. The shared FieldLabel renders a native label. The advertising
 admin and order tests exercise these controls using their accessible labels.
+Their role-based queries must also find the visible selects as `combobox` with
+the names `Tier`, `Status` and `Status`. Each select must have exactly one native
+label whose `control` resolves to that select. The tests check that the same
+accessible names remain after changing the campaign tier/status or order filter,
+and that the selected values update. This does not exempt custom labels that
+fail to forward `htmlFor` or selects with missing or duplicate IDs.
 
 ## Member project form drafts
 
