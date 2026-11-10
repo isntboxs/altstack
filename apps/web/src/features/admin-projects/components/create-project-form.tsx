@@ -1,7 +1,6 @@
-import { IconArrowLeft } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form-start'
-import { ClientOnly, Link } from '@tanstack/react-router'
-import { Suspense, useRef, useState } from 'react'
+import { ClientOnly } from '@tanstack/react-router'
+import { useRef, useState } from 'react'
 import type { z } from 'zod'
 
 import { slugify } from '@altstack/shared/lib/slug'
@@ -27,25 +26,25 @@ import {
 	NativeSelectOption,
 } from '@altstack/ui/components/native-select'
 import { Spinner } from '@altstack/ui/components/spinner'
-import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
-import { CategoryCombobox } from '#/components/category-combobox'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
-import { CategoryComboboxSkeleton } from '#/components/workspace-skeletons'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
 import {
+	ProjectDescriptionSection,
+	ProjectCopyField,
+	ProjectCategoriesSection,
+} from '#/features/admin-projects/components/project-form-fields'
+import { ProjectFormHeader } from '#/features/admin-projects/components/project-form-header'
+import {
 	ProjectPreviewCard,
+	ProjectPreviewPanel,
 	SectionHeading,
 } from '#/features/admin-projects/components/project-form-preview'
 import { useAdminProjectCreate } from '#/features/admin-projects/queries'
-
-// Mirrors the max() in adminCreateProjectBodySchema; display-only counters.
-const TAGLINE_MAX_LENGTH = 100
-const DESCRIPTION_MAX_LENGTH = 300
 
 const defaultValues: z.input<typeof adminCreateProjectBodySchema> = {
 	name: '',
@@ -172,24 +171,10 @@ export function CreateProjectForm() {
 
 	return (
 		<div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
-			<div className="space-y-3">
-				<Link
-					to="/projects"
-					className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					<IconArrowLeft className="size-4" />
-					Projects
-				</Link>
-
-				<div className="space-y-1">
-					<h1 className="text-xl font-semibold tracking-tight">
-						Create project
-					</h1>
-					<p className="text-sm text-muted-foreground">
-						Add a new project to the catalogue. The preview updates as you type.
-					</p>
-				</div>
-			</div>
+			<ProjectFormHeader
+				title="Create project"
+				description="Add a new project to the catalogue. The preview updates as you type."
+			/>
 
 			<div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
 				<form
@@ -462,74 +447,34 @@ function CreateProjectDescription({
 	form,
 }: Pick<CreateProjectFormState, 'form'>) {
 	return (
-		<section className="space-y-4">
-			<SectionHeading
-				title="Description"
-				description="Short copy shown in the catalogue listing."
-			/>
-
+		<ProjectDescriptionSection>
 			<form.Field
 				name="tagline"
-				children={(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid
-
-					return (
-						<Field data-invalid={isInvalid}>
-							<div className="flex items-baseline justify-between gap-2">
-								<FieldLabel htmlFor={field.name}>Tagline</FieldLabel>
-								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-									{(field.state.value ?? '').length}/{TAGLINE_MAX_LENGTH}
-								</span>
-							</div>
-
-							<Input
-								id={field.name}
-								name={field.name}
-								value={field.state.value ?? ''}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								aria-invalid={isInvalid}
-								placeholder="Tagline"
-							/>
-
-							{isInvalid && <FieldError errors={field.state.meta.errors} />}
-						</Field>
-					)
-				}}
+				children={(field) => (
+					<ProjectCopyField
+						name={field.name}
+						value={field.state.value}
+						onBlur={field.handleBlur}
+						onChange={(value) => field.handleChange(value)}
+						invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+						errors={field.state.meta.errors}
+					/>
+				)}
 			/>
-
 			<form.Field
 				name="description"
-				children={(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid
-
-					return (
-						<Field data-invalid={isInvalid}>
-							<div className="flex items-baseline justify-between gap-2">
-								<FieldLabel htmlFor={field.name}>Description</FieldLabel>
-								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-									{(field.state.value ?? '').length}/{DESCRIPTION_MAX_LENGTH}
-								</span>
-							</div>
-
-							<Textarea
-								id={field.name}
-								name={field.name}
-								value={field.state.value ?? ''}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								aria-invalid={isInvalid}
-								placeholder="Short description"
-							/>
-
-							{isInvalid && <FieldError errors={field.state.meta.errors} />}
-						</Field>
-					)
-				}}
+				children={(field) => (
+					<ProjectCopyField
+						name={field.name}
+						value={field.state.value}
+						onBlur={field.handleBlur}
+						onChange={(value) => field.handleChange(value)}
+						invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+						errors={field.state.meta.errors}
+					/>
+				)}
 			/>
-		</section>
+		</ProjectDescriptionSection>
 	)
 }
 
@@ -665,32 +610,18 @@ function CreateProjectCategories({
 	form,
 }: Pick<CreateProjectFormState, 'form'>) {
 	return (
-		<section className="space-y-4">
-			<SectionHeading title="Categories" />
-
-			<form.Field
-				name="categorySlugs"
-				children={(field) => {
-					const isInvalid =
-						field.state.meta.isTouched && !field.state.meta.isValid
-
-					return (
-						<Field data-invalid={isInvalid}>
-							<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
-							<Suspense fallback={<CategoryComboboxSkeleton />}>
-								<CategoryCombobox
-									id={field.name}
-									value={field.state.value ?? []}
-									onValueChange={(next) => field.handleChange(next)}
-								/>
-							</Suspense>
-
-							{isInvalid && <FieldError errors={field.state.meta.errors} />}
-						</Field>
-					)
-				}}
-			/>
-		</section>
+		<form.Field
+			name="categorySlugs"
+			children={(field) => (
+				<ProjectCategoriesSection
+					id={field.name}
+					value={field.state.value ?? []}
+					onValueChange={(value) => field.handleChange(value)}
+					invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+					errors={field.state.meta.errors}
+				/>
+			)}
+		/>
 	)
 }
 
@@ -755,26 +686,17 @@ function CreateProjectPreview({
 	'logoDisplayUrl' | 'screenshotDisplayUrl' | 'form'
 >) {
 	return (
-		<aside className="min-w-0 lg:sticky lg:top-16">
-			<div className="space-y-3">
-				<div className="space-y-1">
-					<h2 className="text-sm font-semibold">Preview</h2>
-					<p className="text-sm text-muted-foreground">
-						How this project will appear in the catalogue.
-					</p>
-				</div>
-
-				<form.Subscribe
-					selector={(state) => state.values}
-					children={(values) => (
-						<ProjectPreviewCard
-							values={values}
-							logoUrl={logoDisplayUrl}
-							screenshotUrl={screenshotDisplayUrl}
-						/>
-					)}
-				/>
-			</div>
-		</aside>
+		<ProjectPreviewPanel>
+			<form.Subscribe
+				selector={(state) => state.values}
+				children={(values) => (
+					<ProjectPreviewCard
+						values={values}
+						logoUrl={logoDisplayUrl}
+						screenshotUrl={screenshotDisplayUrl}
+					/>
+				)}
+			/>
+		</ProjectPreviewPanel>
 	)
 }

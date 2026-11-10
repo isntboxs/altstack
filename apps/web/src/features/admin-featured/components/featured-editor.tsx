@@ -62,6 +62,7 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { toast } from '@altstack/ui/components/toast'
 
+import { ActionConfirmation } from '#/components/action-confirmation'
 import { ProjectLogo } from '#/components/project-media'
 import { QueryBoundary } from '#/components/query-boundary'
 import { adminFeaturedQueries } from '#/features/admin-featured/queries'
@@ -245,31 +246,17 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-			<AlertDialog
+			<ActionConfirmation
 				open={blocker.status === 'blocked'}
-				onOpenChange={(open) => {
-					if (!open) blocker.reset?.()
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-						<AlertDialogDescription>
-							Your featured selection has unsaved changes. Save them before
-							leaving to keep this order.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Keep editing</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							onClick={() => blocker.proceed?.()}
-						>
-							Discard changes
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+				title="Leave without saving?"
+				description="Your featured selection has unsaved changes. Save them before leaving to keep this order."
+				pending={false}
+				onClose={() => blocker.reset?.()}
+				onConfirm={() => blocker.proceed?.()}
+				confirmLabel="Discard changes"
+				cancelLabel="Keep editing"
+				confirmVariant="destructive"
+			/>
 		</div>
 	)
 }

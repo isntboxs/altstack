@@ -64,3 +64,24 @@ with no browser reconciliation or row-local state. Commit-message lines likewise
 belong to an immutable commit keyed by commit identity. These predicates do not
 exempt editable, reorderable, filterable or stateful lists. The interactive
 catalogue pagination and GitHub statistics now use semantic keys.
+
+## Admin editor client-side submission
+
+`react-doctor/no-prevent-default` on the collection, create-project and
+edit-project forms is intentional while they own the client-side submission
+lifecycle. Collection submission flushes the BlockNote editor, validates the
+current selection and content, sends the expected revision, and preserves edits
+on conflict. Project submission flushes deferred Markdown before TanStack Form
+validation and mutation; upload errors restore or clear temporary image keys
+without losing the other fields. The edit form also uses explicit review actions
+to choose the next status before submission.
+
+`admin-collection-editor.test.tsx`, `admin-project-review-form.test.tsx`,
+`github-readme-import.test.tsx` and `github-metadata-prefill.test.tsx` exercise
+validation, same-task editor flushing, explicit save, conflicts and retained
+drafts. The canonical rule recipe specifically retains `onSubmit` with
+`preventDefault` for deliberate client-side validation, uploads and SPA flows.
+Moving the call to another handler or replacing it with a client-only action
+would hide the diagnostic without adding progressive enhancement. Review again
+if these forms gain a native/server-action submission contract. This note does
+not exempt unrelated forms or anchor click handlers.

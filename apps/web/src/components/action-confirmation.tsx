@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { Alert, AlertDescription } from '@altstack/ui/components/alert'
 import {
@@ -24,6 +24,7 @@ export function ActionConfirmation({
 	disabled = false,
 	confirmLabel = 'Confirm',
 	cancelLabel = 'Cancel',
+	confirmVariant,
 }: {
 	open: boolean
 	title: string
@@ -36,6 +37,7 @@ export function ActionConfirmation({
 	disabled?: boolean
 	confirmLabel?: string
 	cancelLabel?: string
+	confirmVariant?: ComponentProps<typeof AlertDialogAction>['variant']
 }) {
 	return (
 		<AlertDialog
@@ -59,7 +61,11 @@ export function ActionConfirmation({
 					<AlertDialogCancel disabled={pending}>
 						{cancelLabel}
 					</AlertDialogCancel>
-					<AlertDialogAction disabled={pending || disabled} onClick={onConfirm}>
+					<AlertDialogAction
+						variant={confirmVariant}
+						disabled={pending || disabled}
+						onClick={onConfirm}
+					>
 						{pending ? 'Saving…' : confirmLabel}
 					</AlertDialogAction>
 				</AlertDialogFooter>

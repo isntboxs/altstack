@@ -1,4 +1,5 @@
 import { IconBrandGithub, IconPhoto } from '@tabler/icons-react'
+import type { ReactNode } from 'react'
 
 import { Card, CardContent } from '@altstack/ui/components/card'
 
@@ -20,6 +21,22 @@ function previewText(values: ProjectPreviewValues) {
 	const description = (values.description ?? '').trim()
 	const repository = (values.repositoryUrl ?? '').trim()
 	return { name, slug, tagline, description, repository }
+}
+
+export function ProjectPreviewPanel({ children }: { children: ReactNode }) {
+	return (
+		<aside className="min-w-0 lg:sticky lg:top-16">
+			<div className="space-y-3">
+				<div className="space-y-1">
+					<h2 className="text-sm font-semibold">Preview</h2>
+					<p className="text-sm text-muted-foreground">
+						How this project will appear in the catalogue.
+					</p>
+				</div>
+				{children}
+			</div>
+		</aside>
+	)
 }
 
 export function SectionHeading({

@@ -21,12 +21,11 @@ import {
 	Table,
 	TableBody,
 	TableCell,
-	TableHead,
-	TableHeader,
 	TableRow,
 } from '@altstack/ui/components/table'
 
 import { PublicError } from '#/components/public-page-state'
+import { TableColumnHeadings } from '#/components/table-column-headings'
 import { adminUserQueries } from '#/features/admin-users/queries'
 import { seoHead } from '#/features/seo/meta'
 
@@ -140,15 +139,9 @@ function UsersPage() {
 				Refresh users
 			</Button>
 			<Table aria-label="Users">
-				<TableHeader>
-					<TableRow>
-						<TableHead>Name</TableHead>
-						<TableHead>Email</TableHead>
-						<TableHead>Account role</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>Actions</TableHead>
-					</TableRow>
-				</TableHeader>
+				<TableColumnHeadings
+					headings={['Name', 'Email', 'Account role', 'Status', 'Actions']}
+				/>
 				<TableBody>
 					{users.map((user) => (
 						<TableRow key={user.id}>

@@ -33,16 +33,6 @@ import {
 	AlertDescription,
 	AlertTitle,
 } from '@altstack/ui/components/alert'
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from '@altstack/ui/components/alert-dialog'
 import { Badge } from '@altstack/ui/components/badge'
 import { Button, buttonVariants } from '@altstack/ui/components/button'
 import {
@@ -69,6 +59,7 @@ import { Skeleton } from '@altstack/ui/components/skeleton'
 import { Textarea } from '@altstack/ui/components/textarea'
 import { toast } from '@altstack/ui/components/toast'
 
+import { ActionConfirmation } from '#/components/action-confirmation'
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import { PublicContent } from '#/components/public-content'
@@ -401,31 +392,17 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 					reload={reload}
 				/>
 			</form>
-			<AlertDialog
+			<ActionConfirmation
 				open={blocker.status === 'blocked'}
-				onOpenChange={(open) => {
-					if (!open) blocker.reset?.()
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-						<AlertDialogDescription>
-							Your collection has unsaved changes. Save your work before leaving
-							to keep these edits.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Keep editing</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							onClick={() => blocker.proceed?.()}
-						>
-							Discard changes
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+				title="Leave without saving?"
+				description="Your collection has unsaved changes. Save your work before leaving to keep these edits."
+				pending={false}
+				onClose={() => blocker.reset?.()}
+				onConfirm={() => blocker.proceed?.()}
+				confirmLabel="Discard changes"
+				cancelLabel="Keep editing"
+				confirmVariant="destructive"
+			/>
 		</div>
 	)
 }

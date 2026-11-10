@@ -1,8 +1,8 @@
-import { IconArrowLeft } from '@tabler/icons-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { ProjectFormPending } from '#/components/workspace-skeletons'
 import { EditProjectForm } from '#/features/admin-projects/components/edit-project-form'
+import { ProjectFormHeader } from '#/features/admin-projects/components/project-form-header'
 import { ProjectReviewHistory } from '#/features/admin-projects/components/project-review-history'
 import {
 	adminProjectQueries,
@@ -25,22 +25,10 @@ function RouteComponent() {
 
 	return (
 		<div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
-			<div className="space-y-3">
-				<Link
-					to="/projects"
-					className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					<IconArrowLeft className="size-4" />
-					Projects
-				</Link>
-
-				<div className="space-y-1">
-					<h1 className="text-xl font-semibold tracking-tight">Edit project</h1>
-					<p className="text-sm text-muted-foreground">
-						Edit project details. The preview updates as you type.
-					</p>
-				</div>
-			</div>
+			<ProjectFormHeader
+				title="Edit project"
+				description="Edit project details. The preview updates as you type."
+			/>
 
 			<Link
 				to="/managed/$id/members"

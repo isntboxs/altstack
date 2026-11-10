@@ -37,12 +37,11 @@ import {
 	Table,
 	TableBody,
 	TableCell,
-	TableHead,
-	TableHeader,
 	TableRow,
 } from '@altstack/ui/components/table'
 
 import { QueryBoundary } from '#/components/query-boundary'
+import { TableColumnHeadings } from '#/components/table-column-headings'
 import {
 	AdminEmpty,
 	AdminError,
@@ -295,15 +294,9 @@ function ActivityEvents({ events, search, navigate }: ActivityEventsProps) {
 	return (
 		<div className="overflow-hidden rounded-xl border">
 			<Table aria-label="Recorded audit activity">
-				<TableHeader>
-					<TableRow>
-						<TableHead>Action</TableHead>
-						<TableHead>Actor</TableHead>
-						<TableHead>Target</TableHead>
-						<TableHead>Time</TableHead>
-						<TableHead>Details</TableHead>
-					</TableRow>
-				</TableHeader>
+				<TableColumnHeadings
+					headings={['Action', 'Actor', 'Target', 'Time', 'Details']}
+				/>
 				<TableBody>
 					{events.map((event) => (
 						<TableRow key={event.id}>
