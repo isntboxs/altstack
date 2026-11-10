@@ -580,6 +580,12 @@ describe('admin manual confirmation and material review', () => {
 		]
 		mount(<AdvertisingAdmin />)
 		await screen.findByText('second@example.test')
+		const statusFilter = screen.getByRole<HTMLSelectElement>('combobox', {
+			name: 'Status',
+		})
+		expect(statusFilter.labels).toHaveLength(1)
+		expect(statusFilter.labels[0].control).toBe(statusFilter)
+		expect(statusFilter.value).toBe('all')
 		expect(screen.queryByLabelText('Initial payment reference')).toBeNull()
 		fireEvent.click(screen.getByRole('button', { name: 'Review order' }))
 		expect(screen.getByLabelText('Initial payment reference')).toBeTruthy()
@@ -588,9 +594,13 @@ describe('admin manual confirmation and material review', () => {
 		expect(
 			screen.getAllByRole('button', { name: 'Close details' })
 		).toHaveLength(1)
-		fireEvent.change(screen.getByLabelText('Status'), {
+		fireEvent.change(statusFilter, {
 			target: { value: 'attention' },
 		})
+		expect(screen.getByRole('combobox', { name: 'Status' })).toHaveProperty(
+			'value',
+			'attention'
+		)
 		expect(screen.queryByText('second@example.test')).toBeNull()
 		fireEvent.change(screen.getByLabelText('Search orders'), {
 			target: { value: 'second' },

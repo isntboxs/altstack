@@ -41,17 +41,37 @@ const REPOSITORY_CHANGED =
 	'Repository changed. Fetch from GitHub again to preview its metadata.'
 const isBlank = (value: string | null | undefined) => !value?.trim()
 
-export function GithubMetadataPrefill({
-	repositoryUrl,
-	disabled,
-	getCurrentValues,
-	onApply,
-}: {
+type GithubMetadataPrefillProps = {
 	repositoryUrl: string
 	disabled: boolean
 	getCurrentValues: () => CurrentValues
 	onApply: (values: MetadataFields) => void
-}) {
+}
+type GithubMetadataPrefillSessionProps = GithubMetadataPrefillProps & {
+	hasRequested: boolean
+	onRequest: () => void
+}
+
+export function GithubMetadataPrefill(props: GithubMetadataPrefillProps) {
+	const [hasRequested, setHasRequested] = useState(false)
+	return (
+		<GithubMetadataPrefillSession
+			key={props.repositoryUrl}
+			{...props}
+			hasRequested={hasRequested}
+			onRequest={() => setHasRequested(true)}
+		/>
+	)
+}
+
+function GithubMetadataPrefillSession({
+	repositoryUrl,
+	disabled,
+	getCurrentValues,
+	onApply,
+	hasRequested,
+	onRequest,
+}: GithubMetadataPrefillSessionProps) {
 	const {
 		id,
 		pending,
@@ -69,6 +89,8 @@ export function GithubMetadataPrefill({
 		disabled,
 		getCurrentValues,
 		onApply,
+		hasRequested,
+		onRequest,
 	})
 
 	return (
@@ -248,28 +270,22 @@ function useGithubMetadataPrefill({
 	disabled,
 	getCurrentValues,
 	onApply,
-}: Parameters<typeof GithubMetadataPrefill>[0]) {
+	hasRequested,
+	onRequest,
+}: GithubMetadataPrefillSessionProps) {
 	const { mutateAsync } = useAdminProjectGithubMetadata()
 	const id = useId()
 	const requestId = useRef(0)
-	const activeRepository = useRef(repositoryUrl)
 	const [pending, setPending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [feedback, setFeedback] = useState<string | null>(null)
+	const [feedbackValue, setFeedback] = useState<string | null>()
+	const feedback =
+		feedbackValue === undefined
+			? hasRequested
+				? REPOSITORY_CHANGED
+				: null
+			: feedbackValue
 	const [preview, setPreview] = useState<Preview | null>(null)
-
-	useEffect(() => {
-		if (activeRepository.current === repositoryUrl) return
-		activeRepository.current = repositoryUrl
-		if (requestId.current === 0) return
-		requestId.current += 1
-		// Synchronize an external form field with the request/dialog lifecycle.
-		// oxlint-disable-next-line react-hooks-js/set-state-in-effect
-		setPending(false)
-		setError(null)
-		setPreview(null)
-		setFeedback(REPOSITORY_CHANGED)
-	}, [repositoryUrl])
 	useEffect(
 		() => () => {
 			if (requestId.current > 0) requestId.current += 1
@@ -287,6 +303,7 @@ function useGithubMetadataPrefill({
 		}
 		const requestedRepositoryUrl = repositoryUrl
 		const currentRequestId = ++requestId.current
+		onRequest()
 		setPending(true)
 		setError(null)
 		setFeedback(null)

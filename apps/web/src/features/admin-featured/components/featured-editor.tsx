@@ -62,6 +62,7 @@ import {
 import { Skeleton } from '@altstack/ui/components/skeleton'
 import { toast } from '@altstack/ui/components/toast'
 
+import { ActionConfirmation } from '#/components/action-confirmation'
 import { ProjectLogo } from '#/components/project-media'
 import { QueryBoundary } from '#/components/query-boundary'
 import { adminFeaturedQueries } from '#/features/admin-featured/queries'
@@ -85,7 +86,7 @@ export function FeaturedEditor() {
 	return <SelectionEditor initial={data.projects} />
 }
 
-function SelectionEditor({ initial }: { initial: Selection }) {
+function useFeaturedSelection(initial: Selection) {
 	const [changing, startTransition] = useTransition()
 	const queryClient = useQueryClient()
 	const [projects, setProjects] = useState(initial)
@@ -162,6 +163,37 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 			setPage(1)
 		})
 	}
+	return {
+		changing,
+		startTransition,
+		projects,
+		setProjects,
+		baseline,
+		error,
+		reloading,
+		confirmReload,
+		setConfirmReload,
+		search,
+		setSearch,
+		text,
+		setText,
+		page,
+		setPage,
+		save,
+		busy,
+		dirty,
+		unavailable,
+		blocker,
+		reload,
+		move,
+		clearSearch,
+	}
+}
+
+function SelectionEditor({ initial }: { initial: Selection }) {
+	const state = useFeaturedSelection(initial)
+	const { error, confirmReload, setConfirmReload, blocker, reload } = state
+
 	return (
 		<div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
 			<header className="flex flex-col gap-2">
@@ -189,319 +221,10 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 			)}
 			<div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
 				<div className="flex min-w-0 flex-col gap-6">
-					<section aria-labelledby="featured-selection-title">
-						<Card>
-							<CardHeader className="border-b">
-								<CardTitle>
-									<h2 id="featured-selection-title">
-										Selected projects ({projects.length}/{MAX_FEATURED_PROJECTS}
-										)
-									</h2>
-								</CardTitle>
-								<CardDescription>
-									Read left to right, then top to bottom. Use the arrows to
-									change the display order.
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
-								{projects.length > 0 ? (
-									<ol
-										aria-label="Featured selection"
-										className="max-h-128 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border"
-									>
-										{projects.map((project, index) => (
-											<li
-												key={project.id}
-												className="grid grid-cols-[1.25rem_2.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 p-3 sm:flex sm:flex-wrap sm:gap-3"
-											>
-												<span className="w-5 shrink-0 text-center text-xs text-muted-foreground">
-													{index + 1}
-												</span>
-												<ProjectLogo
-													src={project.logo}
-													name={project.name}
-													className="size-9 shrink-0 rounded-lg"
-												/>
-												<div className="flex min-w-0 flex-1 flex-col gap-1">
-													<Link
-														to="/projects/$id/edit"
-														params={{ id: project.id }}
-														className="w-fit rounded-sm text-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-													>
-														{project.name}
-													</Link>
-													<p className="truncate text-xs text-muted-foreground">
-														{websiteHost(project.websiteUrl) ??
-															'No valid website'}
-													</p>
-													{!available(project) && (
-														<p className="text-xs text-destructive">
-															Unavailable. Remove before saving.
-														</p>
-													)}
-												</div>
-												<div className="col-start-3 ml-auto flex items-center gap-1">
-													<Button
-														variant="ghost"
-														size="icon-sm"
-														aria-label={`Move ${project.name} up`}
-														className="size-11 sm:size-7"
-														disabled={busy || index === 0}
-														onClick={() => move(index, -1)}
-													>
-														<IconArrowUp />
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon-sm"
-														aria-label={`Move ${project.name} down`}
-														className="size-11 sm:size-7"
-														disabled={busy || index === projects.length - 1}
-														onClick={() => move(index, 1)}
-													>
-														<IconArrowDown />
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon-sm"
-														disabled={busy}
-														aria-label={`Remove ${project.name} from featured`}
-														className="size-11 sm:size-7"
-														onClick={() =>
-															setProjects((previous) =>
-																previous.filter(({ id }) => id !== project.id)
-															)
-														}
-													>
-														<IconX />
-													</Button>
-												</div>
-											</li>
-										))}
-									</ol>
-								) : (
-									<Empty className="border bg-muted/20 py-8">
-										<EmptyHeader>
-											<EmptyTitle>No featured projects selected</EmptyTitle>
-											<EmptyDescription>
-												Add projects below, then save the selection. Saving an
-												empty selection hides the Featured Projects panel.
-											</EmptyDescription>
-										</EmptyHeader>
-									</Empty>
-								)}
-								{unavailable > 0 && (
-									<Alert variant="destructive" className="mt-4">
-										<AlertTitle>Review unavailable projects</AlertTitle>
-										<AlertDescription>
-											Remove {unavailable} unavailable{' '}
-											{unavailable === 1 ? 'project' : 'projects'} before
-											saving. Only published projects with a valid website can
-											appear.
-										</AlertDescription>
-									</Alert>
-								)}
-							</CardContent>
-						</Card>
-					</section>
-					<section aria-labelledby="featured-candidates-title">
-						<Card>
-							<CardHeader className="border-b">
-								<CardTitle>
-									<h2 id="featured-candidates-title">Add projects</h2>
-								</CardTitle>
-								<CardDescription>
-									Search the published catalogue. Projects need a website to be
-									featured.
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="flex flex-col gap-4">
-								<form
-									onSubmit={(event) => {
-										event.preventDefault()
-										startTransition(() => {
-											setSearch(text.trim())
-											setPage(1)
-										})
-									}}
-								>
-									<Field>
-										<FieldLabel htmlFor="featured-search">
-											Search published projects
-										</FieldLabel>
-										<div className="flex gap-2">
-											<InputGroup>
-												<InputGroupAddon>
-													<IconSearch aria-hidden="true" />
-												</InputGroupAddon>
-												<InputGroupInput
-													id="featured-search"
-													disabled={busy}
-													placeholder="Search by project name…"
-													value={text}
-													onChange={(event) => setText(event.target.value)}
-												/>
-											</InputGroup>
-											<Button variant="outline" type="submit" disabled={busy}>
-												Search
-											</Button>
-										</div>
-									</Field>
-								</form>
-								{search && (
-									<div className="flex flex-wrap items-center justify-between gap-2">
-										<p className="min-w-0 text-xs wrap-anywhere text-muted-foreground">
-											Results for “{search}”
-										</p>
-										<Button
-											variant="ghost"
-											size="sm"
-											disabled={busy}
-											onClick={clearSearch}
-										>
-											Clear search
-										</Button>
-									</div>
-								)}
-								{projects.length === MAX_FEATURED_PROJECTS && (
-									<Alert>
-										<AlertTitle>
-											All {MAX_FEATURED_PROJECTS} slots are filled
-										</AlertTitle>
-										<AlertDescription>
-											Remove a selected project to make room for another.
-										</AlertDescription>
-									</Alert>
-								)}
-								<Candidates
-									search={search}
-									page={page}
-									onPageChange={(nextPage) =>
-										startTransition(() => setPage(nextPage))
-									}
-									projects={projects}
-									disabled={busy}
-									loading={changing}
-									onClearSearch={clearSearch}
-									onAdd={(project) =>
-										setProjects((previous) =>
-											previous.some(({ id }) => id === project.id) ||
-											previous.length >= MAX_FEATURED_PROJECTS
-												? previous
-												: [...previous, project]
-										)
-									}
-								/>
-							</CardContent>
-						</Card>
-					</section>
+					<FeaturedSelectedProjects {...state} />
+					<FeaturedProjectSearch {...state} />
 				</div>
-				<aside
-					aria-label="Featured layout and publishing"
-					className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20"
-				>
-					<Card>
-						<CardHeader className="border-b">
-							<CardTitle>
-								<h2>Layout preview</h2>
-							</CardTitle>
-							<CardDescription>6 columns × 4 rows</CardDescription>
-							<CardAction>
-								<Badge variant="secondary">
-									{projects.length}/{MAX_FEATURED_PROJECTS}
-								</Badge>
-							</CardAction>
-						</CardHeader>
-						<CardContent className="flex flex-col gap-5">
-							<div className="flex flex-col gap-3">
-								<h3 className="text-sm font-medium">Featured Projects</h3>
-								<ol
-									aria-label="Featured layout preview"
-									className="grid grid-cols-6 gap-2"
-								>
-									{Array.from({ length: MAX_FEATURED_PROJECTS }, (_, index) => {
-										const project = projects.at(index)
-										return (
-											<li
-												key={project?.id ?? `slot-${index}`}
-												title={
-													project
-														? `${index + 1}. ${project.name}`
-														: `Empty slot ${index + 1}`
-												}
-												className="flex aspect-square min-w-0 items-center justify-center rounded-lg border bg-background/50"
-											>
-												{project ? (
-													<ProjectLogo
-														src={project.logo}
-														name={project.name}
-														className="size-7 rounded-md bg-transparent"
-													/>
-												) : (
-													<span className="text-xs text-muted-foreground">
-														{index + 1}
-													</span>
-												)}
-												<span className="sr-only">
-													{project
-														? `${index + 1}. ${project.name}${available(project) ? '' : ' (unavailable)'}`
-														: `Empty slot ${index + 1}`}
-												</span>
-											</li>
-										)
-									})}
-								</ol>
-								<p className="text-xs leading-relaxed text-muted-foreground">
-									The current project is hidden automatically on its own page.
-									Narrow panels use fewer columns.
-								</p>
-							</div>
-							<div className="flex flex-col gap-3 border-t pt-4">
-								<div className="flex items-center justify-between gap-2 text-sm">
-									<span>Selection</span>
-									<span className="text-muted-foreground">
-										{MAX_FEATURED_PROJECTS - projects.length} slots available
-									</span>
-								</div>
-								<Button
-									disabled={busy || !dirty || unavailable > 0}
-									onClick={() =>
-										save.mutate({
-											body: {
-												projectIds: projects.map(({ id }) => id),
-												expectedProjectIds: baseline,
-											},
-										})
-									}
-								>
-									<IconDeviceFloppy data-icon="inline-start" />
-									{save.isPending ? 'Saving…' : 'Save changes'}
-								</Button>
-								<Button
-									variant="outline"
-									disabled={busy}
-									onClick={() => {
-										if (dirty) setConfirmReload(true)
-										else void reload()
-									}}
-								>
-									{reloading
-										? 'Reloading…'
-										: dirty
-											? 'Discard changes and reload'
-											: 'Reload selection'}
-								</Button>
-								<output className="text-center text-xs text-muted-foreground">
-									{dirty ? 'You have unsaved changes' : 'No unsaved changes'}
-								</output>
-							</div>
-						</CardContent>
-					</Card>
-					<p className="px-1 text-xs leading-relaxed text-muted-foreground">
-						Changes go live after saving. Featuring a project does not change
-						its catalogue position.
-					</p>
-				</aside>
+				<FeaturedPublishing {...state} />
 			</div>
 			<AlertDialog open={confirmReload} onOpenChange={setConfirmReload}>
 				<AlertDialogContent>
@@ -523,32 +246,401 @@ function SelectionEditor({ initial }: { initial: Selection }) {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-			<AlertDialog
+			<ActionConfirmation
 				open={blocker.status === 'blocked'}
-				onOpenChange={(open) => {
-					if (!open) blocker.reset?.()
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-						<AlertDialogDescription>
-							Your featured selection has unsaved changes. Save them before
-							leaving to keep this order.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Keep editing</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							onClick={() => blocker.proceed?.()}
-						>
-							Discard changes
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+				title="Leave without saving?"
+				description="Your featured selection has unsaved changes. Save them before leaving to keep this order."
+				pending={false}
+				onClose={() => blocker.reset?.()}
+				onConfirm={() => blocker.proceed?.()}
+				confirmLabel="Discard changes"
+				cancelLabel="Keep editing"
+				confirmVariant="destructive"
+			/>
 		</div>
+	)
+}
+
+type FeaturedSelectionState = ReturnType<typeof useFeaturedSelection>
+
+function FeaturedSelectedProjects({
+	projects,
+	setProjects,
+	busy,
+	unavailable,
+	move,
+}: Pick<
+	FeaturedSelectionState,
+	'projects' | 'setProjects' | 'text' | 'save' | 'busy' | 'unavailable' | 'move'
+>) {
+	return (
+		<section aria-labelledby="featured-selection-title">
+			<Card>
+				<CardHeader className="border-b">
+					<CardTitle>
+						<h2 id="featured-selection-title">
+							Selected projects ({projects.length}/{MAX_FEATURED_PROJECTS})
+						</h2>
+					</CardTitle>
+					<CardDescription>
+						Read left to right, then top to bottom. Use the arrows to change the
+						display order.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					{projects.length > 0 ? (
+						<ol
+							aria-label="Featured selection"
+							className="max-h-128 scroll-py-2 divide-y overflow-y-auto overscroll-contain rounded-lg border"
+						>
+							{projects.map((project, index) => (
+								<li
+									key={project.id}
+									className="grid grid-cols-[1.25rem_2.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 p-3 sm:flex sm:flex-wrap sm:gap-3"
+								>
+									<span className="w-5 shrink-0 text-center text-xs text-muted-foreground">
+										{index + 1}
+									</span>
+									<ProjectLogo
+										src={project.logo}
+										name={project.name}
+										className="size-9 shrink-0 rounded-lg"
+									/>
+									<div className="flex min-w-0 flex-1 flex-col gap-1">
+										<Link
+											to="/projects/$id/edit"
+											params={{ id: project.id }}
+											className="w-fit rounded-sm text-sm font-medium wrap-anywhere underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+										>
+											{project.name}
+										</Link>
+										<p className="truncate text-xs text-muted-foreground">
+											{websiteHost(project.websiteUrl) ?? 'No valid website'}
+										</p>
+										{!available(project) && (
+											<p className="text-xs text-destructive">
+												Unavailable. Remove before saving.
+											</p>
+										)}
+									</div>
+									<div className="col-start-3 ml-auto flex items-center gap-1">
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											aria-label={`Move ${project.name} up`}
+											className="size-11 sm:size-7"
+											disabled={busy || index === 0}
+											onClick={() => move(index, -1)}
+										>
+											<IconArrowUp />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											aria-label={`Move ${project.name} down`}
+											className="size-11 sm:size-7"
+											disabled={busy || index === projects.length - 1}
+											onClick={() => move(index, 1)}
+										>
+											<IconArrowDown />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon-sm"
+											disabled={busy}
+											aria-label={`Remove ${project.name} from featured`}
+											className="size-11 sm:size-7"
+											onClick={() =>
+												setProjects((previous) =>
+													previous.filter(({ id }) => id !== project.id)
+												)
+											}
+										>
+											<IconX />
+										</Button>
+									</div>
+								</li>
+							))}
+						</ol>
+					) : (
+						<Empty className="border bg-muted/20 py-8">
+							<EmptyHeader>
+								<EmptyTitle>No featured projects selected</EmptyTitle>
+								<EmptyDescription>
+									Add projects below, then save the selection. Saving an empty
+									selection hides the Featured Projects panel.
+								</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
+					)}
+					{unavailable > 0 && (
+						<Alert variant="destructive" className="mt-4">
+							<AlertTitle>Review unavailable projects</AlertTitle>
+							<AlertDescription>
+								Remove {unavailable} unavailable{' '}
+								{unavailable === 1 ? 'project' : 'projects'} before saving. Only
+								published projects with a valid website can appear.
+							</AlertDescription>
+						</Alert>
+					)}
+				</CardContent>
+			</Card>
+		</section>
+	)
+}
+
+function FeaturedProjectSearch({
+	changing,
+	startTransition,
+	projects,
+	setProjects,
+	search,
+	setSearch,
+	text,
+	setText,
+	page,
+	setPage,
+	busy,
+	clearSearch,
+}: Pick<
+	FeaturedSelectionState,
+	| 'changing'
+	| 'startTransition'
+	| 'projects'
+	| 'setProjects'
+	| 'search'
+	| 'setSearch'
+	| 'text'
+	| 'setText'
+	| 'page'
+	| 'setPage'
+	| 'busy'
+	| 'clearSearch'
+>) {
+	return (
+		<section aria-labelledby="featured-candidates-title">
+			<Card>
+				<CardHeader className="border-b">
+					<CardTitle>
+						<h2 id="featured-candidates-title">Add projects</h2>
+					</CardTitle>
+					<CardDescription>
+						Search the published catalogue. Projects need a website to be
+						featured.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="flex flex-col gap-4">
+					<form
+						onSubmit={(event) => {
+							event.preventDefault()
+							startTransition(() => {
+								setSearch(text.trim())
+								setPage(1)
+							})
+						}}
+					>
+						<Field>
+							<FieldLabel htmlFor="featured-search">
+								Search published projects
+							</FieldLabel>
+							<div className="flex gap-2">
+								<InputGroup>
+									<InputGroupAddon>
+										<IconSearch aria-hidden="true" />
+									</InputGroupAddon>
+									<InputGroupInput
+										id="featured-search"
+										disabled={busy}
+										placeholder="Search by project name…"
+										value={text}
+										onChange={(event) => setText(event.target.value)}
+									/>
+								</InputGroup>
+								<Button variant="outline" type="submit" disabled={busy}>
+									Search
+								</Button>
+							</div>
+						</Field>
+					</form>
+					{search && (
+						<div className="flex flex-wrap items-center justify-between gap-2">
+							<p className="min-w-0 text-xs wrap-anywhere text-muted-foreground">
+								Results for “{search}”
+							</p>
+							<Button
+								variant="ghost"
+								size="sm"
+								disabled={busy}
+								onClick={clearSearch}
+							>
+								Clear search
+							</Button>
+						</div>
+					)}
+					{projects.length === MAX_FEATURED_PROJECTS && (
+						<Alert>
+							<AlertTitle>
+								All {MAX_FEATURED_PROJECTS} slots are filled
+							</AlertTitle>
+							<AlertDescription>
+								Remove a selected project to make room for another.
+							</AlertDescription>
+						</Alert>
+					)}
+					<Candidates
+						search={search}
+						page={page}
+						onPageChange={(nextPage) =>
+							startTransition(() => setPage(nextPage))
+						}
+						projects={projects}
+						disabled={busy}
+						loading={changing}
+						onClearSearch={clearSearch}
+						onAdd={(project) =>
+							setProjects((previous) =>
+								previous.some(({ id }) => id === project.id) ||
+								previous.length >= MAX_FEATURED_PROJECTS
+									? previous
+									: [...previous, project]
+							)
+						}
+					/>
+				</CardContent>
+			</Card>
+		</section>
+	)
+}
+
+function FeaturedPublishing({
+	projects,
+	baseline,
+	reloading,
+	setConfirmReload,
+	save,
+	busy,
+	dirty,
+	unavailable,
+	reload,
+}: Pick<
+	FeaturedSelectionState,
+	| 'projects'
+	| 'baseline'
+	| 'reloading'
+	| 'setConfirmReload'
+	| 'save'
+	| 'busy'
+	| 'dirty'
+	| 'unavailable'
+	| 'reload'
+>) {
+	return (
+		<aside
+			aria-label="Featured layout and publishing"
+			className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20"
+		>
+			<Card>
+				<CardHeader className="border-b">
+					<CardTitle>
+						<h2>Layout preview</h2>
+					</CardTitle>
+					<CardDescription>6 columns × 4 rows</CardDescription>
+					<CardAction>
+						<Badge variant="secondary">
+							{projects.length}/{MAX_FEATURED_PROJECTS}
+						</Badge>
+					</CardAction>
+				</CardHeader>
+				<CardContent className="flex flex-col gap-5">
+					<div className="flex flex-col gap-3">
+						<h3 className="text-sm font-medium">Featured Projects</h3>
+						<ol
+							aria-label="Featured layout preview"
+							className="grid grid-cols-6 gap-2"
+						>
+							{Array.from({ length: MAX_FEATURED_PROJECTS }, (_, index) => {
+								const project = projects.at(index)
+								return (
+									<li
+										key={project?.id ?? `slot-${index}`}
+										title={
+											project
+												? `${index + 1}. ${project.name}`
+												: `Empty slot ${index + 1}`
+										}
+										className="flex aspect-square min-w-0 items-center justify-center rounded-lg border bg-background/50"
+									>
+										{project ? (
+											<ProjectLogo
+												src={project.logo}
+												name={project.name}
+												className="size-7 rounded-md bg-transparent"
+											/>
+										) : (
+											<span className="text-xs text-muted-foreground">
+												{index + 1}
+											</span>
+										)}
+										<span className="sr-only">
+											{project
+												? `${index + 1}. ${project.name}${available(project) ? '' : ' (unavailable)'}`
+												: `Empty slot ${index + 1}`}
+										</span>
+									</li>
+								)
+							})}
+						</ol>
+						<p className="text-xs leading-relaxed text-muted-foreground">
+							The current project is hidden automatically on its own page.
+							Narrow panels use fewer columns.
+						</p>
+					</div>
+					<div className="flex flex-col gap-3 border-t pt-4">
+						<div className="flex items-center justify-between gap-2 text-sm">
+							<span>Selection</span>
+							<span className="text-muted-foreground">
+								{MAX_FEATURED_PROJECTS - projects.length} slots available
+							</span>
+						</div>
+						<Button
+							disabled={busy || !dirty || unavailable > 0}
+							onClick={() =>
+								save.mutate({
+									body: {
+										projectIds: projects.map(({ id }) => id),
+										expectedProjectIds: baseline,
+									},
+								})
+							}
+						>
+							<IconDeviceFloppy data-icon="inline-start" />
+							{save.isPending ? 'Saving…' : 'Save changes'}
+						</Button>
+						<Button
+							variant="outline"
+							disabled={busy}
+							onClick={() => {
+								if (dirty) setConfirmReload(true)
+								else void reload()
+							}}
+						>
+							{reloading
+								? 'Reloading…'
+								: dirty
+									? 'Discard changes and reload'
+									: 'Reload selection'}
+						</Button>
+						<output className="text-center text-xs text-muted-foreground">
+							{dirty ? 'You have unsaved changes' : 'No unsaved changes'}
+						</output>
+					</div>
+				</CardContent>
+			</Card>
+			<p className="px-1 text-xs leading-relaxed text-muted-foreground">
+				Changes go live after saving. Featuring a project does not change its
+				catalogue position.
+			</p>
+		</aside>
 	)
 }
 

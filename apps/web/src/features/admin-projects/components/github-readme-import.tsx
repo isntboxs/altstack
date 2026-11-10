@@ -34,39 +34,50 @@ type Preview = {
 const REPOSITORY_CHANGED =
 	'Repository changed. Import README again to fetch its content.'
 
-export function GithubReadmeImport({
-	repositoryUrl,
-	disabled,
-	getRepositoryUrl,
-	getEditor,
-}: {
+type GithubReadmeImportProps = {
 	repositoryUrl: string
 	disabled: boolean
 	getRepositoryUrl: () => string
 	getEditor: () => BlockNoteEditorHandle | null
+}
+
+export function GithubReadmeImport(props: GithubReadmeImportProps) {
+	const [hasRequested, setHasRequested] = useState(false)
+	return (
+		<GithubReadmeImportSession
+			key={props.repositoryUrl}
+			{...props}
+			hasRequested={hasRequested}
+			onRequest={() => setHasRequested(true)}
+		/>
+	)
+}
+
+function GithubReadmeImportSession({
+	repositoryUrl,
+	disabled,
+	getRepositoryUrl,
+	getEditor,
+	hasRequested,
+	onRequest,
+}: GithubReadmeImportProps & {
+	hasRequested: boolean
+	onRequest: () => void
 }) {
 	const { mutateAsync } = useAdminProjectGithubReadme()
 	const id = useId()
 	const requestId = useRef(0)
-	const activeRepository = useRef(repositoryUrl)
 	const [pending, setPending] = useState(false)
 	const [applying, setApplying] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [feedback, setFeedback] = useState<string | null>(null)
+	const [feedbackValue, setFeedback] = useState<string | null>()
+	const feedback =
+		feedbackValue === undefined
+			? hasRequested
+				? REPOSITORY_CHANGED
+				: null
+			: feedbackValue
 	const [preview, setPreview] = useState<Preview | null>(null)
-
-	useEffect(() => {
-		if (activeRepository.current === repositoryUrl) return
-		activeRepository.current = repositoryUrl
-		if (requestId.current === 0) return
-		requestId.current += 1
-		// Synchronize this request lifecycle with the external repository form field.
-		// oxlint-disable-next-line react-hooks-js/set-state-in-effect
-		setPending(false)
-		setPreview(null)
-		setError(null)
-		setFeedback(REPOSITORY_CHANGED)
-	}, [repositoryUrl])
 	useEffect(
 		() => () => {
 			requestId.current += 1
@@ -92,6 +103,7 @@ export function GithubReadmeImport({
 		}
 		const requestedRepositoryUrl = repositoryUrl
 		const currentRequest = ++requestId.current
+		onRequest()
 		setPending(true)
 		setError(null)
 		setFeedback(null)

@@ -1,6 +1,4 @@
 import {
-	IconArrowLeft,
-	IconArrowRight,
 	IconExternalLink,
 	IconArticle,
 	IconPencil,
@@ -46,6 +44,7 @@ import { toast } from '@altstack/ui/components/toast'
 
 import { PublicError } from '#/components/public-page-state'
 import { QueryBoundary } from '#/components/query-boundary'
+import { ListPaginationControls } from '#/features/admin-dashboard/components/list-pagination-controls'
 import { adminBlogQueries } from '#/features/blogs/queries'
 import { orpc } from '#/utils/orpc'
 
@@ -275,29 +274,14 @@ function BlogList() {
 							Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, total)} of{' '}
 							{total}
 						</p>
-						<div className="flex items-center gap-3">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={page === 1 || query.isFetching}
-								onClick={() => startTransition(() => setPage(page - 1))}
-							>
-								<IconArrowLeft data-icon="inline-start" />
-								Previous
-							</Button>
-							<span className="text-xs text-muted-foreground">
-								{page} / {pageCount}
-							</span>
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={page >= pageCount || query.isFetching}
-								onClick={() => startTransition(() => setPage(page + 1))}
-							>
-								Next
-								<IconArrowRight data-icon="inline-end" />
-							</Button>
-						</div>
+						<ListPaginationControls
+							page={page}
+							pageCount={pageCount}
+							fetching={query.isFetching}
+							onPageChange={(nextPage) =>
+								startTransition(() => setPage(nextPage))
+							}
+						/>
 					</nav>
 				)}
 			</section>
