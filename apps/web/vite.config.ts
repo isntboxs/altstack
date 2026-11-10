@@ -25,8 +25,6 @@ const config = defineConfig({
 	environments: {
 		client: {
 			build: {
-				// Shiki's C++ grammar alone minifies to ~501 kB and cannot be split.
-				chunkSizeWarningLimit: 512,
 				rolldownOptions: {
 					output: {
 						codeSplitting: {

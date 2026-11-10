@@ -87,6 +87,7 @@
         "remark-gfm": "4.0.1",
         "remark-parse": "^11.0.0",
         "sharp": "0.35.5",
+        "tm-grammars": "1.32.22",
         "unified": "^11.0.5",
         "unist-util-visit": "^5.2.0",
         "zod": "catalog:",
@@ -2883,6 +2884,8 @@
     "tldts": ["tldts@7.4.10", "https://registry-bridge.viteplus.dev/tldts/-/tldts-7.4.10.tgz", { "dependencies": { "tldts-core": "^7.4.10" }, "bin": { "tldts": "bin/cli.js" } }, "sha512-GgouD1B+sWwvkaEq8vXC15DjQitxbvs12oIXELpconwm+Tg3zfcEv4jgzq3vtKverDXsg3VI8aRgNL2Nra0Iog=="],
 
     "tldts-core": ["tldts-core@7.4.10", "https://registry-bridge.viteplus.dev/tldts-core/-/tldts-core-7.4.10.tgz", {}, "sha512-KnQjp53ZekKgm/r3l+u8kJGGzYgrWdP8+Mql7a4vijh2WE0IrZWspQj/TpTxDho/YxO+AnOZnIjQcCD+q6iJsw=="],
+
+    "tm-grammars": ["tm-grammars@1.32.22", "", {}, "sha512-VKWL+UiqlGqbGHonRbrBc0kkqDIHUUiVO/A2rBTBz5LBXKA8Fe2f34O1YiBI7ED37tTUlT3MGmLf9+0F/H4/Ww=="],
 
     "to-regex-range": ["to-regex-range@5.0.1", "https://registry-bridge.viteplus.dev/to-regex-range/-/to-regex-range-5.0.1.tgz", { "dependencies": { "is-number": "^7.0.0" } }, "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ=="],
 
