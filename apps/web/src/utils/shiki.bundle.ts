@@ -3,8 +3,6 @@ import {
 	createSingletonShorthands,
 } from '@shikijs/core'
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
-import oneDarkProTheme from '@shikijs/themes/one-dark-pro'
-import oneLightTheme from '@shikijs/themes/one-light'
 /* Generate by @shikijs/codegen */
 import type {
 	DynamicImportLanguageRegistration,
@@ -22,8 +20,6 @@ type BundledLanguage =
 	| 'angular-ts'
 	| 'astro'
 	| 'c'
-	| 'cpp'
-	| 'c++'
 	| 'csharp'
 	| 'c#'
 	| 'cs'
@@ -136,7 +132,6 @@ export const SHIKI_BUNDLED_LANGUAGE_GROUPS = [
 	{ id: 'angular-ts', name: 'Angular TypeScript' },
 	{ id: 'astro', name: 'Astro' },
 	{ id: 'c', name: 'C' },
-	{ id: 'cpp', name: 'C++', aliases: ['c++'] },
 	{ id: 'csharp', name: 'C#', aliases: ['c#', 'cs'] },
 	{ id: 'css', name: 'CSS' },
 	{ id: 'csv', name: 'CSV' },
@@ -229,22 +224,11 @@ function withCodeBlockBoldTokens(theme: ThemeRegistration, name: string) {
 	}) satisfies ThemeRegistration
 }
 
-const codeBlockShikiTheme = withCodeBlockBoldTokens(
-	oneDarkProTheme,
-	CODE_BLOCK_SHIKI_THEME
-)
-const codeBlockShikiLightTheme = withCodeBlockBoldTokens(
-	oneLightTheme,
-	CODE_BLOCK_SHIKI_LIGHT_THEME
-)
-
 const bundledLanguages = {
 	'angular-html': () => import('@shikijs/langs/angular-html'),
 	'angular-ts': () => import('@shikijs/langs/angular-ts'),
 	astro: () => import('@shikijs/langs/astro'),
 	c: () => import('@shikijs/langs/c'),
-	cpp: () => import('@shikijs/langs/cpp'),
-	'c++': () => import('@shikijs/langs/cpp'),
 	csharp: () => import('@shikijs/langs/csharp'),
 	'c#': () => import('@shikijs/langs/csharp'),
 	cs: () => import('@shikijs/langs/csharp'),
@@ -292,8 +276,8 @@ const bundledLanguages = {
 	prisma: () => import('@shikijs/langs/prisma'),
 	python: () => import('@shikijs/langs/python'),
 	py: () => import('@shikijs/langs/python'),
-	ruby: () => import('@shikijs/langs/ruby'),
-	rb: () => import('@shikijs/langs/ruby'),
+	ruby: () => import('#/utils/shiki-ruby'),
+	rb: () => import('#/utils/shiki-ruby'),
 	rust: () => import('@shikijs/langs/rust'),
 	rs: () => import('@shikijs/langs/rust'),
 	sass: () => import('@shikijs/langs/sass'),
@@ -325,14 +309,22 @@ const bundledThemes = {
 	'one-light': () => import('@shikijs/themes/one-light'),
 	'github-light': () => import('@shikijs/themes/github-light'),
 	'github-dark': () => import('@shikijs/themes/github-dark'),
-	[CODE_BLOCK_SHIKI_THEME]: () =>
-		Promise.resolve({
-			default: codeBlockShikiTheme,
-		}),
-	[CODE_BLOCK_SHIKI_LIGHT_THEME]: () =>
-		Promise.resolve({
-			default: codeBlockShikiLightTheme,
-		}),
+	[CODE_BLOCK_SHIKI_THEME]: async () => {
+		return {
+			default: withCodeBlockBoldTokens(
+				(await import('@shikijs/themes/one-dark-pro')).default,
+				CODE_BLOCK_SHIKI_THEME
+			),
+		}
+	},
+	[CODE_BLOCK_SHIKI_LIGHT_THEME]: async () => {
+		return {
+			default: withCodeBlockBoldTokens(
+				(await import('@shikijs/themes/one-light')).default,
+				CODE_BLOCK_SHIKI_LIGHT_THEME
+			),
+		}
+	},
 } as Record<BundledTheme, DynamicImportThemeRegistration>
 
 function getFontStyleHtmlStyle(token: ThemedToken) {

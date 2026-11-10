@@ -22,6 +22,36 @@ const config = defineConfig({
 	resolve: { tsconfigPaths: true },
 	server: { port: 3010 },
 	ssr: { external: ['@vercel/og', 'sharp'] },
+	environments: {
+		client: {
+			build: {
+				rolldownOptions: {
+					output: {
+						codeSplitting: {
+							groups: [
+								{
+									name: 'react',
+									test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+								},
+								{
+									name: 'editor',
+									test: /node_modules[\\/](?:@blocknote|@tiptap|prosemirror-[^\\/]+)[\\/]/,
+									entriesAware: true,
+									maxSize: 500_000,
+								},
+								{
+									name: 'shiki-languages',
+									test: /node_modules[\\/]@shikijs[\\/]langs[\\/]/,
+									entriesAware: true,
+									maxSize: 500_000,
+								},
+							],
+						},
+					},
+				},
+			},
+		},
+	},
 	optimizeDeps: {
 		include: ['@tanstack/react-form-start'],
 	},
