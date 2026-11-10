@@ -131,7 +131,7 @@ function EditorSection({
 	)
 }
 
-export function CollectionEditor({ initial }: { initial?: Initial }) {
+function useCollectionEditor(initial: Initial | undefined) {
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 	const router = useRouter()
@@ -197,6 +197,19 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 	function showError(message: string) {
 		setError(message)
 		requestAnimationFrame(() => errorsRef.current?.focus())
+	}
+	function onNameChange(name: string) {
+		setValue({
+			...value,
+			name,
+			slug: customizedSlug.current
+				? value.slug
+				: slugify(name).slice(0, 100).replace(/-+$/, ''),
+		})
+	}
+	function onSlugChange(slug: string) {
+		customizedSlug.current = true
+		setValue({ ...value, slug })
 	}
 
 	async function save() {
@@ -276,6 +289,53 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 		setPreview(!preview)
 	}
 
+	return {
+		initial,
+		editor,
+		onNameChange,
+		onSlugChange,
+		errorsRef,
+		value,
+		setValue,
+		fieldErrors,
+		reloading,
+		editorRevision,
+		members,
+		setMembers,
+		target,
+		setTarget,
+		error,
+		preview,
+		busy,
+		dirty,
+		blocker,
+		readiness,
+		ready,
+		fieldProps,
+		fieldError,
+		save,
+		reload,
+		togglePreview,
+	}
+}
+
+export function CollectionEditor({ initial }: { initial?: Initial }) {
+	const state = useCollectionEditor(initial)
+	const {
+		errorsRef,
+		value,
+		setValue,
+		reloading,
+		error,
+		busy,
+		dirty,
+		blocker,
+		readiness,
+		ready,
+		save,
+		reload,
+	} = state
+
 	return (
 		<div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
 			<header className="flex flex-col gap-4">
@@ -324,225 +384,10 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 			>
 				<fieldset disabled={busy} className="flex min-w-0 flex-col gap-6">
 					<legend className="sr-only">Collection details and projects</legend>
-					<EditorSection
-						number="1"
-						title="Collection details"
-						description="Help readers understand what this collection is about."
-					>
-						<FieldGroup>
-							<Field data-invalid={!!fieldErrors.name}>
-								<FieldLabel htmlFor="collection-name">Title</FieldLabel>
-								<Input
-									id="collection-name"
-									{...fieldProps('name')}
-									required
-									maxLength={120}
-									placeholder="Name your collection"
-									value={value.name}
-									onChange={(e) => {
-										const name = e.target.value
-										setValue({
-											...value,
-											name,
-											slug: customizedSlug.current
-												? value.slug
-												: slugify(name).slice(0, 100).replace(/-+$/, ''),
-										})
-									}}
-								/>
-								<FieldDescription id="collection-name-help">
-									A clear, specific title makes your collection easier to find.
-								</FieldDescription>
-								{fieldError('name')}
-							</Field>
-							<Field data-invalid={!!fieldErrors.slug}>
-								<FieldLabel htmlFor="collection-slug">Slug</FieldLabel>
-								<Input
-									id="collection-slug"
-									{...fieldProps('slug')}
-									required
-									maxLength={100}
-									pattern="[a-z0-9]+(-[a-z0-9]+)*"
-									placeholder="your-collection"
-									value={value.slug}
-									onChange={(e) => {
-										customizedSlug.current = true
-										setValue({ ...value, slug: e.target.value })
-									}}
-								/>
-								<FieldDescription
-									id="collection-slug-help"
-									className="wrap-anywhere"
-								>
-									/collections/{value.slug || 'your-collection'}
-									<br />
-									{initial
-										? 'Changing this slug changes the public URL.'
-										: 'Suggested from the title. You can customize it.'}
-								</FieldDescription>
-								{fieldError('slug')}
-							</Field>
-							<Field data-invalid={!!fieldErrors.description}>
-								<div className="flex items-center justify-between gap-2">
-									<FieldLabel htmlFor="collection-description">
-										Description
-									</FieldLabel>
-									<span className="text-xs text-muted-foreground">
-										{value.description.length}/300
-									</span>
-								</div>
-								<Textarea
-									id="collection-description"
-									{...fieldProps('description')}
-									required
-									maxLength={300}
-									rows={3}
-									placeholder="What will readers find in this collection?"
-									value={value.description}
-									onChange={(e) =>
-										setValue({ ...value, description: e.target.value })
-									}
-								/>
-								<FieldDescription id="collection-description-help">
-									A short summary shown on the collection’s discovery card.
-								</FieldDescription>
-								{fieldError('description')}
-							</Field>
-						</FieldGroup>
-					</EditorSection>
-					<EditorSection
-						number="2"
-						title="Type & source"
-						description="Choose how this collection connects its projects."
-					>
-						<FieldGroup>
-							<Field>
-								<FieldLabel htmlFor="collection-kind">Type</FieldLabel>
-								<NativeSelect
-									id="collection-kind"
-									className="w-full"
-									value={value.kind}
-									aria-describedby="collection-kind-help"
-									onChange={(e) => {
-										const kind = collectionBodySchema.shape.kind.parse(
-											e.target.value
-										)
-										setTarget(null)
-										setValue({
-											...value,
-											kind,
-											mainProjectId: null,
-											sourceRepositoryUrl: kind === 'repository' ? '' : null,
-										})
-									}}
-								>
-									{collectionKinds.map((kind) => (
-										<NativeSelectOption key={kind} value={kind}>
-											{collectionKindLabels[kind]}
-										</NativeSelectOption>
-									))}
-								</NativeSelect>
-								<FieldDescription id="collection-kind-help">
-									{kindDescriptions[value.kind]}
-								</FieldDescription>
-							</Field>
-							<CollectionSourceField
-								value={value}
-								setValue={setValue}
-								fieldErrors={fieldErrors}
-								fieldProps={fieldProps}
-								fieldError={fieldError}
-							/>
-						</FieldGroup>
-					</EditorSection>
-					<EditorSection
-						number="3"
-						title="Collection projects"
-						description="Add published projects, then arrange them in the order readers will see."
-					>
-						<CollectionProjectSelector
-							members={members}
-							target={target}
-							needsMainProject={value.kind !== 'repository'}
-							busy={busy}
-							onMembersChange={setMembers}
-							onTargetChange={(project) => {
-								setTarget(project)
-								setValue({ ...value, mainProjectId: project.id })
-							}}
-						/>
-					</EditorSection>
-					<EditorSection
-						number="4"
-						title="Editorial content"
-						description="Add context, recommendations, or a guide for your readers. Optional."
-						action={
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								aria-expanded={preview}
-								aria-controls="collection-content-preview"
-								onClick={togglePreview}
-							>
-								{preview ? (
-									<IconPencil data-icon="inline-start" />
-								) : (
-									<IconEye data-icon="inline-start" />
-								)}
-								{preview ? 'Hide public preview' : 'Show public preview'}
-							</Button>
-						}
-					>
-						<div className="flex min-w-0 flex-col gap-4">
-							<div className="min-w-0 rounded-lg border p-4 sm:p-5">
-								<ClientOnly
-									fallback={
-										<div className="flex min-h-40 flex-col gap-3 p-4">
-											<output className="text-sm text-muted-foreground">
-												Loading editor…
-											</output>
-											<Skeleton className="h-4 w-3/4" />
-											<Skeleton className="h-4 w-1/2" />
-										</div>
-									}
-								>
-									<BlockNoteEditor
-										key={editorRevision}
-										ref={editor}
-										value={value.content}
-										onChange={(content) =>
-											setValue((previous) => {
-												return { ...previous, content }
-											})
-										}
-									/>
-								</ClientOnly>
-							</div>
-							{preview && (
-								<section
-									id="collection-content-preview"
-									aria-label="Public content preview"
-									className="min-w-0 overflow-hidden rounded-lg border bg-background p-4"
-								>
-									<p className="mb-4 text-xs font-medium text-muted-foreground">
-										Public content preview
-									</p>
-									{value.content.trim() ? (
-										<PublicContent
-											slug={`collections/${value.slug}`}
-											content={value.content}
-										/>
-									) : (
-										<p className="text-sm text-muted-foreground">
-											Write some content above to see how it will look to
-											readers.
-										</p>
-									)}
-								</section>
-							)}
-						</div>
-					</EditorSection>
+					<CollectionDetails {...state} />
+					<CollectionTypeAndSource {...state} />
+					<CollectionProjects {...state} />
+					<CollectionEditorialContent {...state} />
 				</fieldset>
 				<CollectionPublication
 					value={value}
@@ -582,6 +427,295 @@ export function CollectionEditor({ initial }: { initial?: Initial }) {
 				</AlertDialogContent>
 			</AlertDialog>
 		</div>
+	)
+}
+
+type CollectionEditorState = ReturnType<typeof useCollectionEditor>
+
+function CollectionDetails({
+	initial,
+	onNameChange,
+	onSlugChange,
+	value,
+	setValue,
+	fieldErrors,
+	fieldProps,
+	fieldError,
+}: Pick<
+	CollectionEditorState,
+	| 'initial'
+	| 'onNameChange'
+	| 'onSlugChange'
+	| 'value'
+	| 'setValue'
+	| 'fieldErrors'
+	| 'fieldProps'
+	| 'fieldError'
+>) {
+	return (
+		<EditorSection
+			number="1"
+			title="Collection details"
+			description="Help readers understand what this collection is about."
+		>
+			<FieldGroup>
+				<Field data-invalid={!!fieldErrors.name}>
+					<FieldLabel htmlFor="collection-name">Title</FieldLabel>
+					<Input
+						id="collection-name"
+						{...fieldProps('name')}
+						required
+						maxLength={120}
+						placeholder="Name your collection"
+						value={value.name}
+						onChange={(e) => onNameChange(e.target.value)}
+					/>
+					<FieldDescription id="collection-name-help">
+						A clear, specific title makes your collection easier to find.
+					</FieldDescription>
+					{fieldError('name')}
+				</Field>
+				<Field data-invalid={!!fieldErrors.slug}>
+					<FieldLabel htmlFor="collection-slug">Slug</FieldLabel>
+					<Input
+						id="collection-slug"
+						{...fieldProps('slug')}
+						required
+						maxLength={100}
+						pattern="[a-z0-9]+(-[a-z0-9]+)*"
+						placeholder="your-collection"
+						value={value.slug}
+						onChange={(e) => onSlugChange(e.target.value)}
+					/>
+					<FieldDescription id="collection-slug-help" className="wrap-anywhere">
+						/collections/{value.slug || 'your-collection'}
+						<br />
+						{initial
+							? 'Changing this slug changes the public URL.'
+							: 'Suggested from the title. You can customize it.'}
+					</FieldDescription>
+					{fieldError('slug')}
+				</Field>
+				<Field data-invalid={!!fieldErrors.description}>
+					<div className="flex items-center justify-between gap-2">
+						<FieldLabel htmlFor="collection-description">
+							Description
+						</FieldLabel>
+						<span className="text-xs text-muted-foreground">
+							{value.description.length}/300
+						</span>
+					</div>
+					<Textarea
+						id="collection-description"
+						{...fieldProps('description')}
+						required
+						maxLength={300}
+						rows={3}
+						placeholder="What will readers find in this collection?"
+						value={value.description}
+						onChange={(e) =>
+							setValue({ ...value, description: e.target.value })
+						}
+					/>
+					<FieldDescription id="collection-description-help">
+						A short summary shown on the collection’s discovery card.
+					</FieldDescription>
+					{fieldError('description')}
+				</Field>
+			</FieldGroup>
+		</EditorSection>
+	)
+}
+
+function CollectionTypeAndSource({
+	value,
+	setValue,
+	fieldErrors,
+	setTarget,
+	fieldProps,
+	fieldError,
+}: Pick<
+	CollectionEditorState,
+	| 'value'
+	| 'setValue'
+	| 'fieldErrors'
+	| 'setTarget'
+	| 'fieldProps'
+	| 'fieldError'
+>) {
+	return (
+		<EditorSection
+			number="2"
+			title="Type & source"
+			description="Choose how this collection connects its projects."
+		>
+			<FieldGroup>
+				<Field>
+					<FieldLabel htmlFor="collection-kind">Type</FieldLabel>
+					<NativeSelect
+						id="collection-kind"
+						className="w-full"
+						value={value.kind}
+						aria-describedby="collection-kind-help"
+						onChange={(e) => {
+							const kind = collectionBodySchema.shape.kind.parse(e.target.value)
+							setTarget(null)
+							setValue({
+								...value,
+								kind,
+								mainProjectId: null,
+								sourceRepositoryUrl: kind === 'repository' ? '' : null,
+							})
+						}}
+					>
+						{collectionKinds.map((kind) => (
+							<NativeSelectOption key={kind} value={kind}>
+								{collectionKindLabels[kind]}
+							</NativeSelectOption>
+						))}
+					</NativeSelect>
+					<FieldDescription id="collection-kind-help">
+						{kindDescriptions[value.kind]}
+					</FieldDescription>
+				</Field>
+				<CollectionSourceField
+					value={value}
+					setValue={setValue}
+					fieldErrors={fieldErrors}
+					fieldProps={fieldProps}
+					fieldError={fieldError}
+				/>
+			</FieldGroup>
+		</EditorSection>
+	)
+}
+
+function CollectionProjects({
+	value,
+	setValue,
+	members,
+	setMembers,
+	target,
+	setTarget,
+	busy,
+}: Pick<
+	CollectionEditorState,
+	| 'value'
+	| 'setValue'
+	| 'members'
+	| 'setMembers'
+	| 'target'
+	| 'setTarget'
+	| 'busy'
+>) {
+	return (
+		<EditorSection
+			number="3"
+			title="Collection projects"
+			description="Add published projects, then arrange them in the order readers will see."
+		>
+			<CollectionProjectSelector
+				members={members}
+				target={target}
+				needsMainProject={value.kind !== 'repository'}
+				busy={busy}
+				onMembersChange={setMembers}
+				onTargetChange={(project) => {
+					setTarget(project)
+					setValue({ ...value, mainProjectId: project.id })
+				}}
+			/>
+		</EditorSection>
+	)
+}
+
+function CollectionEditorialContent({
+	editor,
+	value,
+	setValue,
+	editorRevision,
+	preview,
+	togglePreview,
+}: Pick<
+	CollectionEditorState,
+	| 'editor'
+	| 'value'
+	| 'setValue'
+	| 'editorRevision'
+	| 'preview'
+	| 'togglePreview'
+>) {
+	return (
+		<EditorSection
+			number="4"
+			title="Editorial content"
+			description="Add context, recommendations, or a guide for your readers. Optional."
+			action={
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					aria-expanded={preview}
+					aria-controls="collection-content-preview"
+					onClick={togglePreview}
+				>
+					{preview ? (
+						<IconPencil data-icon="inline-start" />
+					) : (
+						<IconEye data-icon="inline-start" />
+					)}
+					{preview ? 'Hide public preview' : 'Show public preview'}
+				</Button>
+			}
+		>
+			<div className="flex min-w-0 flex-col gap-4">
+				<div className="min-w-0 rounded-lg border p-4 sm:p-5">
+					<ClientOnly
+						fallback={
+							<div className="flex min-h-40 flex-col gap-3 p-4">
+								<output className="text-sm text-muted-foreground">
+									Loading editor…
+								</output>
+								<Skeleton className="h-4 w-3/4" />
+								<Skeleton className="h-4 w-1/2" />
+							</div>
+						}
+					>
+						<BlockNoteEditor
+							key={editorRevision}
+							ref={editor}
+							value={value.content}
+							onChange={(content) =>
+								setValue((previous) => {
+									return { ...previous, content }
+								})
+							}
+						/>
+					</ClientOnly>
+				</div>
+				{preview && (
+					<section
+						id="collection-content-preview"
+						aria-label="Public content preview"
+						className="min-w-0 overflow-hidden rounded-lg border bg-background p-4"
+					>
+						<p className="mb-4 text-xs font-medium text-muted-foreground">
+							Public content preview
+						</p>
+						{value.content.trim() ? (
+							<PublicContent
+								slug={`collections/${value.slug}`}
+								content={value.content}
+							/>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Write some content above to see how it will look to readers.
+							</p>
+						)}
+					</section>
+				)}
+			</div>
+		</EditorSection>
 	)
 }
 

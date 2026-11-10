@@ -91,7 +91,7 @@ function isUploadConsumedError(error: unknown): boolean {
 	)
 }
 
-export function CreateProjectForm() {
+function useCreateProjectForm() {
 	const createProject = useAdminProjectCreate()
 	const [submitError, setSubmitError] = useState<string | null>(null)
 	const [logoDisplayUrl, setLogoDisplayUrl] = useState<string | null>(null)
@@ -153,6 +153,23 @@ export function CreateProjectForm() {
 	// the last keystroke.
 	const editorRef = useRef<BlockNoteEditorHandle | null>(null)
 
+	return {
+		createProject,
+		submitError,
+		logoDisplayUrl,
+		setLogoDisplayUrl,
+		screenshotDisplayUrl,
+		setScreenshotDisplayUrl,
+		form,
+		isSlugCustomized,
+		editorRef,
+	}
+}
+
+export function CreateProjectForm() {
+	const controller = useCreateProjectForm()
+	const { submitError, form, editorRef } = controller
+
 	return (
 		<div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6">
 			<div className="space-y-3">
@@ -185,481 +202,17 @@ export function CreateProjectForm() {
 					}}
 				>
 					<div className="space-y-8">
-						<section className="space-y-4">
-							<SectionHeading
-								title="Basics"
-								description="Identity and links for the project."
-							/>
+						<CreateProjectBasics {...controller} />
 
-							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<form.Field
-									name="name"
-									listeners={{
-										onChange: ({ value }) => {
-											if (!isSlugCustomized.current) {
-												form.setFieldValue('slug', slugify(value), {
-													dontUpdateMeta: true,
-												})
-											}
-										},
-									}}
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
+						<CreateProjectDescription {...controller} />
 
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>Name</FieldLabel>
+						<CreateProjectContent {...controller} />
 
-												<Input
-													id={field.name}
-													name={field.name}
-													value={field.state.value}
-													onBlur={field.handleBlur}
-													onChange={(e) => field.handleChange(e.target.value)}
-													aria-invalid={isInvalid}
-													placeholder="Name Project"
-												/>
+						<CreateProjectMedia {...controller} />
 
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
+						<CreateProjectCategories {...controller} />
 
-								<form.Field
-									name="slug"
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
-
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>Slug</FieldLabel>
-
-												<Input
-													id={field.name}
-													name={field.name}
-													value={field.state.value}
-													onBlur={field.handleBlur}
-													onChange={(e) => {
-														isSlugCustomized.current = true
-														field.handleChange(e.target.value)
-													}}
-													aria-invalid={isInvalid}
-													placeholder="my-project"
-													className="font-mono"
-												/>
-
-												<FieldDescription>
-													Auto-filled from the name. Edit to customize.
-												</FieldDescription>
-
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
-							</div>
-
-							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<form.Field
-									name="repositoryUrl"
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
-
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>
-													Repository URL
-												</FieldLabel>
-												<InputGroup>
-													<InputGroupAddon className="h-full rounded-l-lg border-r bg-accent pr-1.5">
-														<InputGroupText>https://github.com/</InputGroupText>
-													</InputGroupAddon>
-													<InputGroupInput
-														id={field.name}
-														name={field.name}
-														value={field.state.value}
-														onBlur={field.handleBlur}
-														onChange={(e) => field.handleChange(e.target.value)}
-														aria-invalid={isInvalid}
-														placeholder="owner/repository"
-														className="font-mono"
-													/>
-												</InputGroup>
-
-												<form.Subscribe
-													selector={(state) =>
-														[
-															state.values.repositoryUrl,
-															state.isSubmitting,
-														] as const
-													}
-												>
-													{([repositoryUrl, isSubmitting]) => (
-														<GithubMetadataPrefill
-															repositoryUrl={repositoryUrl}
-															disabled={isSubmitting || createProject.isPending}
-															getCurrentValues={() => {
-																return {
-																	repositoryUrl:
-																		form.getFieldValue('repositoryUrl'),
-																	description:
-																		form.getFieldValue('description'),
-																	websiteUrl: form.getFieldValue('websiteUrl'),
-																}
-															}}
-															onApply={(values) => {
-																if ('description' in values) {
-																	form.setFieldValue(
-																		'description',
-																		values.description
-																	)
-																	void form.validateField(
-																		'description',
-																		'change'
-																	)
-																}
-																if ('websiteUrl' in values) {
-																	form.setFieldValue(
-																		'websiteUrl',
-																		values.websiteUrl
-																	)
-																	void form.validateField(
-																		'websiteUrl',
-																		'change'
-																	)
-																}
-															}}
-														/>
-													)}
-												</form.Subscribe>
-
-												<FieldDescription>
-													Must be a public, actively maintained repository with
-													at least 10 stars.
-												</FieldDescription>
-
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
-
-								<form.Field
-									name="websiteUrl"
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
-
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>
-													Website URL
-												</FieldLabel>
-												<Input
-													id={field.name}
-													name={field.name}
-													value={field.state.value ?? ''}
-													onBlur={field.handleBlur}
-													onChange={(e) => {
-														const next = e.target.value
-														field.handleChange(next === '' ? undefined : next)
-													}}
-													aria-invalid={isInvalid}
-													placeholder="Website URL"
-												/>
-
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
-							</div>
-						</section>
-
-						<section className="space-y-4">
-							<SectionHeading
-								title="Description"
-								description="Short copy shown in the catalogue listing."
-							/>
-
-							<form.Field
-								name="tagline"
-								children={(field) => {
-									const isInvalid =
-										field.state.meta.isTouched && !field.state.meta.isValid
-
-									return (
-										<Field data-invalid={isInvalid}>
-											<div className="flex items-baseline justify-between gap-2">
-												<FieldLabel htmlFor={field.name}>Tagline</FieldLabel>
-												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{(field.state.value ?? '').length}/
-													{TAGLINE_MAX_LENGTH}
-												</span>
-											</div>
-
-											<Input
-												id={field.name}
-												name={field.name}
-												value={field.state.value ?? ''}
-												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												placeholder="Tagline"
-											/>
-
-											{isInvalid && (
-												<FieldError errors={field.state.meta.errors} />
-											)}
-										</Field>
-									)
-								}}
-							/>
-
-							<form.Field
-								name="description"
-								children={(field) => {
-									const isInvalid =
-										field.state.meta.isTouched && !field.state.meta.isValid
-
-									return (
-										<Field data-invalid={isInvalid}>
-											<div className="flex items-baseline justify-between gap-2">
-												<FieldLabel htmlFor={field.name}>
-													Description
-												</FieldLabel>
-												<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-													{(field.state.value ?? '').length}/
-													{DESCRIPTION_MAX_LENGTH}
-												</span>
-											</div>
-
-											<Textarea
-												id={field.name}
-												name={field.name}
-												value={field.state.value ?? ''}
-												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												placeholder="Short description"
-											/>
-
-											{isInvalid && (
-												<FieldError errors={field.state.meta.errors} />
-											)}
-										</Field>
-									)
-								}}
-							/>
-						</section>
-
-						<section className="space-y-4">
-							<SectionHeading
-								title="Content"
-								description="Type @ to mention a listed project, or find Project mention in the / menu."
-							/>
-
-							<form.Subscribe
-								selector={(state) =>
-									[state.values.repositoryUrl, state.isSubmitting] as const
-								}
-							>
-								{([repositoryUrl, isSubmitting]) => (
-									<ClientOnly>
-										<GithubReadmeImport
-											repositoryUrl={repositoryUrl}
-											disabled={isSubmitting || createProject.isPending}
-											getRepositoryUrl={() =>
-												form.getFieldValue('repositoryUrl')
-											}
-											getEditor={() => editorRef.current}
-										/>
-									</ClientOnly>
-								)}
-							</form.Subscribe>
-
-							<form.Field
-								name="content"
-								children={(field) => {
-									const isInvalid =
-										field.state.meta.isTouched && !field.state.meta.isValid
-
-									return (
-										<Field data-invalid={isInvalid}>
-											<ClientOnly>
-												<BlockNoteEditor
-													ref={editorRef}
-													value={field.state.value ?? ''}
-													onBlur={field.handleBlur}
-													onChange={(e) => field.handleChange(e)}
-													className="rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
-												/>
-											</ClientOnly>
-
-											{isInvalid && (
-												<FieldError errors={field.state.meta.errors} />
-											)}
-										</Field>
-									)
-								}}
-							/>
-						</section>
-
-						<section className="@container/media space-y-4">
-							<SectionHeading
-								title="Media"
-								description="Logo is required to publish. Screenshots are cropped to 16:9."
-							/>
-
-							<div className="grid grid-cols-1 items-start gap-4 @lg/media:grid-cols-[14rem_minmax(0,1fr)]">
-								<form.Field
-									name="logo"
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
-
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
-
-												<LogoUploader
-													value={field.state.value ?? ''}
-													onChange={(next) =>
-														field.handleChange(next === '' ? undefined : next)
-													}
-													onDisplayUrlChange={setLogoDisplayUrl}
-												/>
-
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
-
-								<form.Field
-									name="screenshot"
-									children={(field) => {
-										const isInvalid =
-											field.state.meta.isTouched && !field.state.meta.isValid
-
-										return (
-											<Field data-invalid={isInvalid}>
-												<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
-
-												<ScreenshotUploader
-													value={field.state.value ?? ''}
-													onChange={(next) =>
-														field.handleChange(next === '' ? undefined : next)
-													}
-													onDisplayUrlChange={setScreenshotDisplayUrl}
-												/>
-
-												<FieldDescription>
-													Optional landing page capture in 16:9.
-												</FieldDescription>
-
-												{isInvalid && (
-													<FieldError errors={field.state.meta.errors} />
-												)}
-											</Field>
-										)
-									}}
-								/>
-							</div>
-						</section>
-
-						<section className="space-y-4">
-							<SectionHeading title="Categories" />
-
-							<form.Field
-								name="categorySlugs"
-								children={(field) => {
-									const isInvalid =
-										field.state.meta.isTouched && !field.state.meta.isValid
-
-									return (
-										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
-											<Suspense fallback={<CategoryComboboxSkeleton />}>
-												<CategoryCombobox
-													id={field.name}
-													value={field.state.value ?? []}
-													onValueChange={(next) => field.handleChange(next)}
-												/>
-											</Suspense>
-
-											{isInvalid && (
-												<FieldError errors={field.state.meta.errors} />
-											)}
-										</Field>
-									)
-								}}
-							/>
-						</section>
-
-						<section className="space-y-4">
-							<SectionHeading
-								title="Publishing"
-								description="Draft projects stay hidden from the public catalogue."
-							/>
-
-							<form.Field
-								name="status"
-								children={(field) => {
-									const isInvalid =
-										field.state.meta.isTouched && !field.state.meta.isValid
-
-									return (
-										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Status</FieldLabel>
-
-											<NativeSelect
-												id={field.name}
-												name={field.name}
-												value={field.state.value ?? 'published'}
-												onBlur={field.handleBlur}
-												onChange={(e) =>
-													field.handleChange(
-														e.target.value as 'draft' | 'published'
-													)
-												}
-												aria-invalid={isInvalid}
-												className="w-full"
-											>
-												<NativeSelectOption value="draft">
-													Draft — hidden from catalogue
-												</NativeSelectOption>
-												<NativeSelectOption value="published">
-													Published — visible in catalogue
-												</NativeSelectOption>
-											</NativeSelect>
-
-											<FieldDescription>
-												New projects publish immediately unless saved as draft.
-											</FieldDescription>
-
-											{isInvalid && (
-												<FieldError errors={field.state.meta.errors} />
-											)}
-										</Field>
-									)
-								}}
-							/>
-						</section>
+						<CreateProjectPublishing {...controller} />
 
 						{submitError && (
 							<p role="alert" className="text-sm text-destructive">
@@ -712,28 +265,516 @@ export function CreateProjectForm() {
 					</div>
 				</form>
 
-				<aside className="min-w-0 lg:sticky lg:top-16">
-					<div className="space-y-3">
-						<div className="space-y-1">
-							<h2 className="text-sm font-semibold">Preview</h2>
-							<p className="text-sm text-muted-foreground">
-								How this project will appear in the catalogue.
-							</p>
-						</div>
-
-						<form.Subscribe
-							selector={(state) => state.values}
-							children={(values) => (
-								<ProjectPreviewCard
-									values={values}
-									logoUrl={logoDisplayUrl}
-									screenshotUrl={screenshotDisplayUrl}
-								/>
-							)}
-						/>
-					</div>
-				</aside>
+				<CreateProjectPreview {...controller} />
 			</div>
 		</div>
+	)
+}
+
+type CreateProjectFormState = ReturnType<typeof useCreateProjectForm>
+
+function CreateProjectBasics({
+	createProject,
+	form,
+	isSlugCustomized,
+}: Pick<
+	CreateProjectFormState,
+	'createProject' | 'form' | 'isSlugCustomized'
+>) {
+	return (
+		<section className="space-y-4">
+			<SectionHeading
+				title="Basics"
+				description="Identity and links for the project."
+			/>
+
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<form.Field
+					name="name"
+					listeners={{
+						onChange: ({ value }) => {
+							if (!isSlugCustomized.current) {
+								form.setFieldValue('slug', slugify(value), {
+									dontUpdateMeta: true,
+								})
+							}
+						},
+					}}
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Name</FieldLabel>
+
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value)}
+									aria-invalid={isInvalid}
+									placeholder="Name Project"
+								/>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+
+				<form.Field
+					name="slug"
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Slug</FieldLabel>
+
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										isSlugCustomized.current = true
+										field.handleChange(e.target.value)
+									}}
+									aria-invalid={isInvalid}
+									placeholder="my-project"
+									className="font-mono"
+								/>
+
+								<FieldDescription>
+									Auto-filled from the name. Edit to customize.
+								</FieldDescription>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+			</div>
+
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<form.Field
+					name="repositoryUrl"
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Repository URL</FieldLabel>
+								<InputGroup>
+									<InputGroupAddon className="h-full rounded-l-lg border-r bg-accent pr-1.5">
+										<InputGroupText>https://github.com/</InputGroupText>
+									</InputGroupAddon>
+									<InputGroupInput
+										id={field.name}
+										name={field.name}
+										value={field.state.value}
+										onBlur={field.handleBlur}
+										onChange={(e) => field.handleChange(e.target.value)}
+										aria-invalid={isInvalid}
+										placeholder="owner/repository"
+										className="font-mono"
+									/>
+								</InputGroup>
+
+								<form.Subscribe
+									selector={(state) =>
+										[state.values.repositoryUrl, state.isSubmitting] as const
+									}
+								>
+									{([repositoryUrl, isSubmitting]) => (
+										<GithubMetadataPrefill
+											repositoryUrl={repositoryUrl}
+											disabled={isSubmitting || createProject.isPending}
+											getCurrentValues={() => {
+												return {
+													repositoryUrl: form.getFieldValue('repositoryUrl'),
+													description: form.getFieldValue('description'),
+													websiteUrl: form.getFieldValue('websiteUrl'),
+												}
+											}}
+											onApply={(values) => {
+												if ('description' in values) {
+													form.setFieldValue('description', values.description)
+													void form.validateField('description', 'change')
+												}
+												if ('websiteUrl' in values) {
+													form.setFieldValue('websiteUrl', values.websiteUrl)
+													void form.validateField('websiteUrl', 'change')
+												}
+											}}
+										/>
+									)}
+								</form.Subscribe>
+
+								<FieldDescription>
+									Must be a public, actively maintained repository with at least
+									10 stars.
+								</FieldDescription>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+
+				<form.Field
+					name="websiteUrl"
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Website URL</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const next = e.target.value
+										field.handleChange(next === '' ? undefined : next)
+									}}
+									aria-invalid={isInvalid}
+									placeholder="Website URL"
+								/>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+			</div>
+		</section>
+	)
+}
+
+function CreateProjectDescription({
+	form,
+}: Pick<CreateProjectFormState, 'form'>) {
+	return (
+		<section className="space-y-4">
+			<SectionHeading
+				title="Description"
+				description="Short copy shown in the catalogue listing."
+			/>
+
+			<form.Field
+				name="tagline"
+				children={(field) => {
+					const isInvalid =
+						field.state.meta.isTouched && !field.state.meta.isValid
+
+					return (
+						<Field data-invalid={isInvalid}>
+							<div className="flex items-baseline justify-between gap-2">
+								<FieldLabel htmlFor={field.name}>Tagline</FieldLabel>
+								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+									{(field.state.value ?? '').length}/{TAGLINE_MAX_LENGTH}
+								</span>
+							</div>
+
+							<Input
+								id={field.name}
+								name={field.name}
+								value={field.state.value ?? ''}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								aria-invalid={isInvalid}
+								placeholder="Tagline"
+							/>
+
+							{isInvalid && <FieldError errors={field.state.meta.errors} />}
+						</Field>
+					)
+				}}
+			/>
+
+			<form.Field
+				name="description"
+				children={(field) => {
+					const isInvalid =
+						field.state.meta.isTouched && !field.state.meta.isValid
+
+					return (
+						<Field data-invalid={isInvalid}>
+							<div className="flex items-baseline justify-between gap-2">
+								<FieldLabel htmlFor={field.name}>Description</FieldLabel>
+								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+									{(field.state.value ?? '').length}/{DESCRIPTION_MAX_LENGTH}
+								</span>
+							</div>
+
+							<Textarea
+								id={field.name}
+								name={field.name}
+								value={field.state.value ?? ''}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								aria-invalid={isInvalid}
+								placeholder="Short description"
+							/>
+
+							{isInvalid && <FieldError errors={field.state.meta.errors} />}
+						</Field>
+					)
+				}}
+			/>
+		</section>
+	)
+}
+
+function CreateProjectContent({
+	createProject,
+	form,
+	editorRef,
+}: Pick<CreateProjectFormState, 'createProject' | 'form' | 'editorRef'>) {
+	return (
+		<section className="space-y-4">
+			<SectionHeading
+				title="Content"
+				description="Type @ to mention a listed project, or find Project mention in the / menu."
+			/>
+
+			<form.Subscribe
+				selector={(state) =>
+					[state.values.repositoryUrl, state.isSubmitting] as const
+				}
+			>
+				{([repositoryUrl, isSubmitting]) => (
+					<ClientOnly>
+						<GithubReadmeImport
+							repositoryUrl={repositoryUrl}
+							disabled={isSubmitting || createProject.isPending}
+							getRepositoryUrl={() => form.getFieldValue('repositoryUrl')}
+							getEditor={() => editorRef.current}
+						/>
+					</ClientOnly>
+				)}
+			</form.Subscribe>
+
+			<form.Field
+				name="content"
+				children={(field) => {
+					const isInvalid =
+						field.state.meta.isTouched && !field.state.meta.isValid
+
+					return (
+						<Field data-invalid={isInvalid}>
+							<ClientOnly>
+								<BlockNoteEditor
+									ref={editorRef}
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e)}
+									className="rounded-lg border border-input bg-transparent px-2.5 py-2 transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+								/>
+							</ClientOnly>
+
+							{isInvalid && <FieldError errors={field.state.meta.errors} />}
+						</Field>
+					)
+				}}
+			/>
+		</section>
+	)
+}
+
+function CreateProjectMedia({
+	setLogoDisplayUrl,
+	setScreenshotDisplayUrl,
+	form,
+}: Pick<
+	CreateProjectFormState,
+	'setLogoDisplayUrl' | 'setScreenshotDisplayUrl' | 'form'
+>) {
+	return (
+		<section className="@container/media space-y-4">
+			<SectionHeading
+				title="Media"
+				description="Logo is required to publish. Screenshots are cropped to 16:9."
+			/>
+
+			<div className="grid grid-cols-1 items-start gap-4 @lg/media:grid-cols-[14rem_minmax(0,1fr)]">
+				<form.Field
+					name="logo"
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Logo</FieldLabel>
+
+								<LogoUploader
+									value={field.state.value ?? ''}
+									onChange={(next) =>
+										field.handleChange(next === '' ? undefined : next)
+									}
+									onDisplayUrlChange={setLogoDisplayUrl}
+								/>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+
+				<form.Field
+					name="screenshot"
+					children={(field) => {
+						const isInvalid =
+							field.state.meta.isTouched && !field.state.meta.isValid
+
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Screenshot</FieldLabel>
+
+								<ScreenshotUploader
+									value={field.state.value ?? ''}
+									onChange={(next) =>
+										field.handleChange(next === '' ? undefined : next)
+									}
+									onDisplayUrlChange={setScreenshotDisplayUrl}
+								/>
+
+								<FieldDescription>
+									Optional landing page capture in 16:9.
+								</FieldDescription>
+
+								{isInvalid && <FieldError errors={field.state.meta.errors} />}
+							</Field>
+						)
+					}}
+				/>
+			</div>
+		</section>
+	)
+}
+
+function CreateProjectCategories({
+	form,
+}: Pick<CreateProjectFormState, 'form'>) {
+	return (
+		<section className="space-y-4">
+			<SectionHeading title="Categories" />
+
+			<form.Field
+				name="categorySlugs"
+				children={(field) => {
+					const isInvalid =
+						field.state.meta.isTouched && !field.state.meta.isValid
+
+					return (
+						<Field data-invalid={isInvalid}>
+							<FieldLabel htmlFor={field.name}>Categories</FieldLabel>
+							<Suspense fallback={<CategoryComboboxSkeleton />}>
+								<CategoryCombobox
+									id={field.name}
+									value={field.state.value ?? []}
+									onValueChange={(next) => field.handleChange(next)}
+								/>
+							</Suspense>
+
+							{isInvalid && <FieldError errors={field.state.meta.errors} />}
+						</Field>
+					)
+				}}
+			/>
+		</section>
+	)
+}
+
+function CreateProjectPublishing({
+	form,
+}: Pick<CreateProjectFormState, 'form'>) {
+	return (
+		<section className="space-y-4">
+			<SectionHeading
+				title="Publishing"
+				description="Draft projects stay hidden from the public catalogue."
+			/>
+
+			<form.Field
+				name="status"
+				children={(field) => {
+					const isInvalid =
+						field.state.meta.isTouched && !field.state.meta.isValid
+
+					return (
+						<Field data-invalid={isInvalid}>
+							<FieldLabel htmlFor={field.name}>Status</FieldLabel>
+
+							<NativeSelect
+								id={field.name}
+								name={field.name}
+								value={field.state.value ?? 'published'}
+								onBlur={field.handleBlur}
+								onChange={(e) =>
+									field.handleChange(e.target.value as 'draft' | 'published')
+								}
+								aria-invalid={isInvalid}
+								className="w-full"
+							>
+								<NativeSelectOption value="draft">
+									Draft — hidden from catalogue
+								</NativeSelectOption>
+								<NativeSelectOption value="published">
+									Published — visible in catalogue
+								</NativeSelectOption>
+							</NativeSelect>
+
+							<FieldDescription>
+								New projects publish immediately unless saved as draft.
+							</FieldDescription>
+
+							{isInvalid && <FieldError errors={field.state.meta.errors} />}
+						</Field>
+					)
+				}}
+			/>
+		</section>
+	)
+}
+
+function CreateProjectPreview({
+	logoDisplayUrl,
+	screenshotDisplayUrl,
+	form,
+}: Pick<
+	CreateProjectFormState,
+	'logoDisplayUrl' | 'screenshotDisplayUrl' | 'form'
+>) {
+	return (
+		<aside className="min-w-0 lg:sticky lg:top-16">
+			<div className="space-y-3">
+				<div className="space-y-1">
+					<h2 className="text-sm font-semibold">Preview</h2>
+					<p className="text-sm text-muted-foreground">
+						How this project will appear in the catalogue.
+					</p>
+				</div>
+
+				<form.Subscribe
+					selector={(state) => state.values}
+					children={(values) => (
+						<ProjectPreviewCard
+							values={values}
+							logoUrl={logoDisplayUrl}
+							screenshotUrl={screenshotDisplayUrl}
+						/>
+					)}
+				/>
+			</div>
+		</aside>
 	)
 }

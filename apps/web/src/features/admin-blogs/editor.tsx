@@ -68,7 +68,7 @@ const empty: BlogBody = {
 	status: 'draft',
 }
 
-export function BlogEditor({ initial }: { initial?: Initial }) {
+function useBlogEditor(initial: Initial | undefined) {
 	const queryClient = useQueryClient()
 	const navigate = useNavigate()
 	const router = useRouter()
@@ -119,6 +119,27 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 		return fieldErrors[name] ? (
 			<FieldError id={`blog-${name}-error`}>{fieldErrors[name]}</FieldError>
 		) : null
+	}
+	function onTitleChange(title: string) {
+		setValue((previous) => {
+			return {
+				...previous,
+				title,
+				...(!customizedSlug.current
+					? {
+							slug: slugify(title)
+								.replace(/[^a-z0-9]+/g, '-')
+								.replace(/^-+/, '')
+								.slice(0, 160)
+								.replace(/-+$/, ''),
+						}
+					: {}),
+			}
+		})
+	}
+	function onSlugChange(slug: string) {
+		customizedSlug.current = true
+		setField('slug', slug)
 	}
 	async function submit(event: React.SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -180,6 +201,52 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 		})
 		await navigate({ to: '/admin/blogs' })
 	}
+	return {
+		initial,
+		queryClient,
+		router,
+		editor,
+		onTitleChange,
+		onSlugChange,
+		value,
+		fieldErrors,
+		error,
+		conflict,
+		reload,
+		setReload,
+		setReloading,
+		coverBusy,
+		setCoverBusy,
+		coverRevision,
+		saving,
+		busy,
+		blocker,
+		setField,
+		fieldProps,
+		fieldError,
+		submit,
+	}
+}
+
+export function BlogEditor({ initial }: { initial?: Initial }) {
+	const state = useBlogEditor(initial)
+	const {
+		queryClient,
+		router,
+		editor,
+		value,
+		error,
+		conflict,
+		reload,
+		setReload,
+		setReloading,
+		coverBusy,
+		saving,
+		busy,
+		blocker,
+		submit,
+	} = state
+
 	return (
 		<div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
 			<Link
@@ -219,140 +286,7 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 						</AlertDescription>
 					</Alert>
 				)}
-				<FieldGroup>
-					<Field data-invalid={!!fieldErrors.title}>
-						<FieldLabel htmlFor="blog-title">Title</FieldLabel>
-						<Input
-							id="blog-title"
-							maxLength={200}
-							value={value.title}
-							disabled={busy}
-							{...fieldProps('title')}
-							onChange={(event) => {
-								const title = event.target.value
-								setValue((previous) => {
-									return {
-										...previous,
-										title,
-										...(!customizedSlug.current
-											? {
-													slug: slugify(title)
-														.replace(/[^a-z0-9]+/g, '-')
-														.replace(/^-+/, '')
-														.slice(0, 160)
-														.replace(/-+$/, ''),
-												}
-											: {}),
-									}
-								})
-							}}
-						/>
-						{fieldError('title')}
-					</Field>
-					<Field data-invalid={!!fieldErrors.slug}>
-						<FieldLabel htmlFor="blog-slug">Slug</FieldLabel>
-						<Input
-							id="blog-slug"
-							maxLength={160}
-							value={value.slug}
-							disabled={busy}
-							{...fieldProps('slug')}
-							onChange={(event) => {
-								customizedSlug.current = true
-								setField('slug', event.target.value)
-							}}
-						/>
-						<FieldDescription>
-							Public URL: /blogs/{value.slug || 'your-post-slug'}. Generated
-							from the title until you customize it.
-						</FieldDescription>
-						{fieldError('slug')}
-					</Field>
-					<Field data-invalid={!!fieldErrors.description}>
-						<FieldLabel htmlFor="blog-description">Description</FieldLabel>
-						<Textarea
-							id="blog-description"
-							maxLength={500}
-							value={value.description}
-							disabled={busy}
-							{...fieldProps('description')}
-							onChange={(event) => setField('description', event.target.value)}
-						/>
-						<FieldDescription>
-							A short summary for the blog card and article introduction.
-						</FieldDescription>
-						{fieldError('description')}
-					</Field>
-					<Field data-invalid={!!fieldErrors.coverUrl}>
-						<FieldLabel>Cover image</FieldLabel>
-						<BlogCoverInput
-							key={coverRevision}
-							value={value.coverUrl}
-							onChange={(coverUrl) => setField('coverUrl', coverUrl)}
-							onBusyChange={setCoverBusy}
-							disabled={saving}
-							invalid={!!fieldErrors.coverUrl}
-							errorId={fieldErrors.coverUrl ? 'blog-coverUrl-error' : undefined}
-						/>
-						{fieldError('coverUrl')}
-					</Field>
-					<Field data-invalid={!!fieldErrors.content}>
-						<FieldLabel id="blog-content-label">Content (Markdown)</FieldLabel>
-						<fieldset
-							id="blog-content"
-							aria-labelledby="blog-content-label"
-							{...fieldProps('content')}
-							tabIndex={-1}
-							inert={saving}
-							className="min-w-0 rounded-lg border p-4 sm:p-5"
-						>
-							<ClientOnly
-								fallback={
-									<div className="flex min-h-40 flex-col gap-3">
-										<output>Loading editor…</output>
-										<Skeleton className="h-4 w-3/4" />
-										<Skeleton className="h-4 w-1/2" />
-									</div>
-								}
-							>
-								<BlockNoteEditor
-									ref={editor}
-									value={value.content}
-									onChange={(content) => setField('content', content)}
-								/>
-							</ClientOnly>
-						</fieldset>
-						<FieldDescription>
-							Use ## headings for sections and ### for subsections. The table of
-							contents and read time are generated automatically. Estimated read
-							time: {blogReadTime(value.content)} min.
-						</FieldDescription>
-						{fieldError('content')}
-					</Field>
-					<Field>
-						<FieldLabel htmlFor="blog-status">Status</FieldLabel>
-						<NativeSelect
-							id="blog-status"
-							value={value.status}
-							disabled={busy}
-							onChange={(event) =>
-								setField(
-									'status',
-									event.target.value === 'published' ? 'published' : 'draft'
-								)
-							}
-						>
-							<NativeSelectOption value="draft">Draft</NativeSelectOption>
-							<NativeSelectOption value="published">
-								Published
-							</NativeSelectOption>
-						</NativeSelect>
-						<FieldDescription>
-							Drafts are only visible to admins. Publishing makes the post
-							available at its public URL.
-						</FieldDescription>
-					</Field>
-				</FieldGroup>
+				<BlogFields {...state} />
 				<BlogContentPreview editor={editor} value={value} />
 				<div className="flex flex-wrap justify-end gap-3 border-t pt-4">
 					<Link
@@ -422,6 +356,152 @@ export function BlogEditor({ initial }: { initial?: Initial }) {
 				</AlertDialogContent>
 			</AlertDialog>
 		</div>
+	)
+}
+
+type BlogEditorState = ReturnType<typeof useBlogEditor>
+
+function BlogFields({
+	editor,
+	onTitleChange,
+	onSlugChange,
+	value,
+	fieldErrors,
+	setCoverBusy,
+	coverRevision,
+	saving,
+	busy,
+	setField,
+	fieldProps,
+	fieldError,
+}: Pick<
+	BlogEditorState,
+	| 'editor'
+	| 'onTitleChange'
+	| 'onSlugChange'
+	| 'value'
+	| 'fieldErrors'
+	| 'setCoverBusy'
+	| 'coverRevision'
+	| 'saving'
+	| 'busy'
+	| 'setField'
+	| 'fieldProps'
+	| 'fieldError'
+>) {
+	return (
+		<FieldGroup>
+			<Field data-invalid={!!fieldErrors.title}>
+				<FieldLabel htmlFor="blog-title">Title</FieldLabel>
+				<Input
+					id="blog-title"
+					maxLength={200}
+					value={value.title}
+					disabled={busy}
+					{...fieldProps('title')}
+					onChange={(event) => onTitleChange(event.target.value)}
+				/>
+				{fieldError('title')}
+			</Field>
+			<Field data-invalid={!!fieldErrors.slug}>
+				<FieldLabel htmlFor="blog-slug">Slug</FieldLabel>
+				<Input
+					id="blog-slug"
+					maxLength={160}
+					value={value.slug}
+					disabled={busy}
+					{...fieldProps('slug')}
+					onChange={(event) => onSlugChange(event.target.value)}
+				/>
+				<FieldDescription>
+					Public URL: /blogs/{value.slug || 'your-post-slug'}. Generated from
+					the title until you customize it.
+				</FieldDescription>
+				{fieldError('slug')}
+			</Field>
+			<Field data-invalid={!!fieldErrors.description}>
+				<FieldLabel htmlFor="blog-description">Description</FieldLabel>
+				<Textarea
+					id="blog-description"
+					maxLength={500}
+					value={value.description}
+					disabled={busy}
+					{...fieldProps('description')}
+					onChange={(event) => setField('description', event.target.value)}
+				/>
+				<FieldDescription>
+					A short summary for the blog card and article introduction.
+				</FieldDescription>
+				{fieldError('description')}
+			</Field>
+			<Field data-invalid={!!fieldErrors.coverUrl}>
+				<FieldLabel>Cover image</FieldLabel>
+				<BlogCoverInput
+					key={coverRevision}
+					value={value.coverUrl}
+					onChange={(coverUrl) => setField('coverUrl', coverUrl)}
+					onBusyChange={setCoverBusy}
+					disabled={saving}
+					invalid={!!fieldErrors.coverUrl}
+					errorId={fieldErrors.coverUrl ? 'blog-coverUrl-error' : undefined}
+				/>
+				{fieldError('coverUrl')}
+			</Field>
+			<Field data-invalid={!!fieldErrors.content}>
+				<FieldLabel id="blog-content-label">Content (Markdown)</FieldLabel>
+				<fieldset
+					id="blog-content"
+					aria-labelledby="blog-content-label"
+					{...fieldProps('content')}
+					tabIndex={-1}
+					inert={saving}
+					className="min-w-0 rounded-lg border p-4 sm:p-5"
+				>
+					<ClientOnly
+						fallback={
+							<div className="flex min-h-40 flex-col gap-3">
+								<output>Loading editor…</output>
+								<Skeleton className="h-4 w-3/4" />
+								<Skeleton className="h-4 w-1/2" />
+							</div>
+						}
+					>
+						<BlockNoteEditor
+							ref={editor}
+							value={value.content}
+							onChange={(content) => setField('content', content)}
+						/>
+					</ClientOnly>
+				</fieldset>
+				<FieldDescription>
+					Use ## headings for sections and ### for subsections. The table of
+					contents and read time are generated automatically. Estimated read
+					time: {blogReadTime(value.content)} min.
+				</FieldDescription>
+				{fieldError('content')}
+			</Field>
+			<Field>
+				<FieldLabel htmlFor="blog-status">Status</FieldLabel>
+				<NativeSelect
+					id="blog-status"
+					value={value.status}
+					disabled={busy}
+					onChange={(event) =>
+						setField(
+							'status',
+							event.target.value === 'published' ? 'published' : 'draft'
+						)
+					}
+				>
+					<NativeSelectOption value="draft">Draft</NativeSelectOption>
+					<NativeSelectOption value="published">Published</NativeSelectOption>
+				</NativeSelect>
+				<FieldDescription>
+					Drafts are only visible to admins. Publishing makes the post available
+					at its public URL.
+				</FieldDescription>
+			</Field>
+		</FieldGroup>
 	)
 }
 
