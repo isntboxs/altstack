@@ -3,8 +3,6 @@ import {
 	createSingletonShorthands,
 } from '@shikijs/core'
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
-import oneDarkProTheme from '@shikijs/themes/one-dark-pro'
-import oneLightTheme from '@shikijs/themes/one-light'
 /* Generate by @shikijs/codegen */
 import type {
 	DynamicImportLanguageRegistration,
@@ -229,15 +227,6 @@ function withCodeBlockBoldTokens(theme: ThemeRegistration, name: string) {
 	}) satisfies ThemeRegistration
 }
 
-const codeBlockShikiTheme = withCodeBlockBoldTokens(
-	oneDarkProTheme,
-	CODE_BLOCK_SHIKI_THEME
-)
-const codeBlockShikiLightTheme = withCodeBlockBoldTokens(
-	oneLightTheme,
-	CODE_BLOCK_SHIKI_LIGHT_THEME
-)
-
 const bundledLanguages = {
 	'angular-html': () => import('@shikijs/langs/angular-html'),
 	'angular-ts': () => import('@shikijs/langs/angular-ts'),
@@ -325,14 +314,22 @@ const bundledThemes = {
 	'one-light': () => import('@shikijs/themes/one-light'),
 	'github-light': () => import('@shikijs/themes/github-light'),
 	'github-dark': () => import('@shikijs/themes/github-dark'),
-	[CODE_BLOCK_SHIKI_THEME]: () =>
-		Promise.resolve({
-			default: codeBlockShikiTheme,
-		}),
-	[CODE_BLOCK_SHIKI_LIGHT_THEME]: () =>
-		Promise.resolve({
-			default: codeBlockShikiLightTheme,
-		}),
+	[CODE_BLOCK_SHIKI_THEME]: async () => {
+		return {
+			default: withCodeBlockBoldTokens(
+				(await import('@shikijs/themes/one-dark-pro')).default,
+				CODE_BLOCK_SHIKI_THEME
+			),
+		}
+	},
+	[CODE_BLOCK_SHIKI_LIGHT_THEME]: async () => {
+		return {
+			default: withCodeBlockBoldTokens(
+				(await import('@shikijs/themes/one-light')).default,
+				CODE_BLOCK_SHIKI_LIGHT_THEME
+			),
+		}
+	},
 } as Record<BundledTheme, DynamicImportThemeRegistration>
 
 function getFontStyleHtmlStyle(token: ThemedToken) {
