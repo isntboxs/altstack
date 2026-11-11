@@ -119,3 +119,32 @@ export const changeScreenshotUploadInputSchema = z.object({
 export const changeScreenshotUploadOutputSchema = z.object({
 	success: z.literal(true),
 })
+
+export const contentImageUploadKeySchema = z
+	.string()
+	.regex(
+		/^tmp\/content-images\/[a-f0-9]{64}\/[a-f0-9-]{36}\.(png|jpg|webp|gif)$/,
+		'Invalid content image upload key'
+	)
+
+export const requestContentImageUploadInputSchema = z.object({
+	body: requestScreenshotUploadBodySchema.extend({
+		projectId: z.uuid().optional(),
+	}),
+})
+
+export const requestContentImageUploadOutputSchema = z.object({
+	key: contentImageUploadKeySchema,
+	presignedUrl: z.url(),
+})
+
+export const completeContentImageUploadInputSchema = z.object({
+	body: z.object({
+		key: contentImageUploadKeySchema,
+		projectId: z.uuid().optional(),
+	}),
+})
+
+export const completeContentImageUploadOutputSchema = z.object({
+	url: z.url(),
+})

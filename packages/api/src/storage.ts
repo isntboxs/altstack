@@ -16,6 +16,7 @@ import {
 } from '@altstack/shared/constants'
 import { blogCoverKeySchema } from '@altstack/shared/schemas/blog'
 import {
+	contentImageUploadKeySchema,
 	projectLogoKeySchema,
 	projectScreenshotKeySchema,
 	screenshotKeySchema,
@@ -176,6 +177,20 @@ export async function promoteTempImageToBlogCover({
 	})
 }
 
+export async function promoteContentImage(tmpKey: string) {
+	if (!contentImageUploadKeySchema.safeParse(tmpKey).success) {
+		throw new StorageError('Invalid content image upload.')
+	}
+	// Keep the same destination on retries, including a lost completion response.
+	const finalKey = tmpKey.replace('tmp/content-images/', 'content/images/')
+	return promoteTempImage({
+		tmpKey,
+		finalKey,
+		kind: 'screenshot',
+		consumeSource: false,
+	})
+}
+
 export async function promoteTempImageToAd(
 	tmpKey: string,
 	adId: string,
@@ -216,7 +231,7 @@ async function promoteTempImage({
 		const allowedMime = ALLOWED_MIME_BY_KIND[kind] as ReadonlyArray<string>
 		const storedSize = head.ContentLength
 		const storedType = head.ContentType
-		const sizeOk = storedSize != null && storedSize <= maxSize
+		const sizeOk = storedSize != null && storedSize > 0 && storedSize <= maxSize
 		const typeOk = !!storedType && allowedMime.includes(storedType)
 		if (!sizeOk || !typeOk) {
 			await s3

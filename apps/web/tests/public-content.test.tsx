@@ -91,6 +91,33 @@ async function documentRouter(
 }
 
 describe('public Markdown rendering', () => {
+	it('renders permanent storage images with alt text, title and responsive lazy loading', async () => {
+		const router = await documentRouter(
+			'![Architecture](https://storage.test/content/images/diagram.png "System diagram")'
+		)
+		render(<RouterProvider router={router} />)
+		const image = screen.getByRole('img', { name: 'Architecture' })
+		expect(image.getAttribute('src')).toBe(
+			'https://storage.test/content/images/diagram.png'
+		)
+		expect(image.getAttribute('title')).toBe('System diagram')
+		expect(image.getAttribute('loading')).toBe('lazy')
+		expect(image.getAttribute('decoding')).toBe('async')
+		expect(image.classList.contains('max-w-full')).toBe(true)
+		fireEvent.error(image)
+		expect(screen.getByText('Image unavailable: Architecture')).toBeTruthy()
+		expect(screen.queryByRole('img', { name: 'Architecture' })).toBeNull()
+	})
+
+	it('does not render unsafe image URLs or raw image HTML', async () => {
+		const router = await documentRouter(
+			'![Unsafe](javascript:alert%281%29)\n\n<img src="https://evil.test/track.png" onerror="alert(1)">'
+		)
+		render(<RouterProvider router={router} />)
+		expect(document.querySelector('article img')).toBeNull()
+		expect(screen.getByText('Image unavailable: Unsafe')).toBeTruthy()
+	})
+
 	it('decorates ordinary web links without changing their names or destinations', async () => {
 		const router = await documentRouter(
 			'[internal](/about?ref=docs#team) [same origin](https://altstack.test/blogs) [relative](./guide) [external](https://docs.example.com:8443/guide?ref=docs#setup) [protocol relative](//docs.example.com/other)'

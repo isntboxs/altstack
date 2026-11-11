@@ -113,6 +113,40 @@ web origins and upload methods/headers used by
 [storage.ts](../packages/api/src/storage.ts). Configure lifecycle cleanup for
 temporary `tmp/*` uploads; keep database backups in separate private storage.
 
+Markdown editors accept PNG, JPEG, WebP and GIF images up to 5 MB through the
+BlockNote image block (`/image`, paste or drag and drop). The authenticated API
+issues a ten-minute presigned PUT URL, verifies the stored size and content type,
+then copies the image into `content/images/*`. Markdown stores the permanent
+public URL, so viewing public content does not need a session or an expiring
+signed GET URL. Admins can upload in all content editors; project members need
+current editing access to their published project. Upload requests are limited
+to 40 per account per ten minutes. Saving is blocked while an upload is pending.
+
+For R2, enable a public custom domain for the bucket and use it as both
+`S3_PUBLIC_URL` and `VITE_S3_PUBLIC_URL`. The S3 API endpoint is for signed uploads,
+not public image delivery. For local development, an example bucket CORS policy is:
+
+```json
+[
+	{
+		"AllowedOrigins": ["http://localhost:3010"],
+		"AllowedMethods": ["PUT"],
+		"AllowedHeaders": ["Content-Type"],
+		"MaxAgeSeconds": 3600
+	}
+]
+```
+
+Replace the origin with your deployed web origin in production. Keep lifecycle
+expiry scoped to `tmp/`; never expire `content/images/`. Completion keeps the
+temporary source until lifecycle cleanup so retries use the same permanent URL.
+Published images are retained when removed from a document because another
+document may reference them. Images uploaded into abandoned drafts also remain;
+permanent unreferenced image cleanup is manual.
+
+References: [BlockNote S3 uploads](https://www.blocknotejs.org/examples/backend/s3)
+and [R2 bucket CORS](https://developers.cloudflare.com/r2/buckets/cors/).
+
 **Email:** configure a Resend-verified sender domain and both email credentials.
 GitHub-only local sign-in can run without them; email requests return a generic
 retryable error until configured. Disable click tracking for authentication

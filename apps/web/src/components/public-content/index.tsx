@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { PublicCodeBlock } from '#/components/public-content/code-block'
 import { ContentLink } from '#/components/public-content/content-link'
 import { ContentHeading } from '#/components/public-content/heading'
+import { ContentImage } from '#/components/public-content/image'
 import { remarkArticleHeadings } from '#/features/public-content/headings'
 import { emptyPublicContent } from '#/features/public-content/model'
 import type { PreparedPublicContent } from '#/features/public-content/model'
@@ -55,6 +56,9 @@ export function PublicContent({
 				}
 				skipHtml
 				components={{
+					img: ({ src, alt, title }) => (
+						<ContentImage src={src} alt={alt} title={title} />
+					),
 					h1: ({ node, children, ...props }) => (
 						<ContentHeading
 							as="h2"

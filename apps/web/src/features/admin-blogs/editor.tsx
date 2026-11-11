@@ -54,6 +54,7 @@ import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
+import { canSaveEditorContent } from '#/components/block-note/upload-image'
 import { PublicContent } from '#/components/public-content'
 import { BlogCoverInput } from '#/features/admin-blogs/cover-input'
 import { orpc } from '#/utils/orpc'
@@ -144,6 +145,7 @@ function useBlogEditor(initial: Initial | undefined) {
 	async function submit(event: React.SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (busy) return
+		if (!canSaveEditorContent(editor.current)) return
 		editor.current?.flush()
 		const parsed = blogBodySchema.safeParse({
 			...value,

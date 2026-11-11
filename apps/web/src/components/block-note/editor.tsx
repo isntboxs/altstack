@@ -68,8 +68,10 @@ import type {
 	ReadmeImportMode,
 	ReadmeImportPreview,
 } from '#/components/block-note/schema'
+import { uploadEditorImage } from '#/components/block-note/upload-image'
 
 interface Props {
+	projectId?: string
 	value?: string
 	onChange?: (value: string) => void
 	onBlur?: () => void
@@ -78,6 +80,7 @@ interface Props {
 }
 
 export interface BlockNoteEditorHandle {
+	isUploading?: () => boolean
 	// Runs the scheduled markdown export immediately. Call before reading
 	// the field value (e.g. form submit) so the latest edits are included.
 	// Safe outside BlockNote's change callback, where React is idle.
@@ -95,6 +98,7 @@ export interface BlockNoteEditorHandle {
 }
 
 export default function BlockNoteEditor({
+	projectId,
 	value,
 	onChange,
 	onBlur,
@@ -102,9 +106,11 @@ export default function BlockNoteEditor({
 	ref,
 }: Props) {
 	const { resolvedTheme } = useTheme()
+	const pendingUploads = useRef(0)
 	const editor = useCreateBlockNote({
 		schema: blockNoteSchema,
 		extensions: contentExtensions(),
+		uploadFile: (file) => uploadEditorImage(file, projectId, pendingUploads),
 	})
 
 	// Initial content loads once: re-running on every parent value change
@@ -166,6 +172,7 @@ export default function BlockNoteEditor({
 			onChangeRef.current?.(editor.blocksToMarkdownLossy(editor.document))
 		}
 		return {
+			isUploading: () => pendingUploads.current > 0,
 			flush,
 			readMarkdown: () => {
 				flush()

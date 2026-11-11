@@ -30,6 +30,7 @@ import { toast } from '@altstack/ui/components/toast'
 
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
 import BlockNoteEditor from '#/components/block-note/editor'
+import { canSaveEditorContent } from '#/components/block-note/upload-image'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { GithubMetadataPrefill } from '#/features/admin-projects/components/github-metadata-prefill'
 import { GithubReadmeImport } from '#/features/admin-projects/components/github-readme-import'
@@ -245,6 +246,7 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 				className="min-w-0"
 				onSubmit={(e) => {
 					e.preventDefault()
+					if (!canSaveEditorContent(editorRef.current)) return
 					editorRef.current?.flush()
 					void form.handleSubmit()
 				}}
@@ -278,6 +280,7 @@ export function EditProjectForm({ project }: { project: AdminProject }) {
 									disabled={false}
 									pending={isSubmitting}
 									onAction={(status) => {
+										if (!canSaveEditorContent(editorRef.current)) return
 										form.setFieldValue('status', status)
 										editorRef.current?.flush()
 										void form.handleSubmit()

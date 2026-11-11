@@ -16,6 +16,7 @@ import { toast } from '@altstack/ui/components/toast'
 
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
+import { canSaveEditorContent } from '#/components/block-note/upload-image'
 import { CategoryComboboxView } from '#/components/category-combobox-view'
 import { LogoUploader, ScreenshotUploader } from '#/components/image-uploader'
 import { memberUploadApi, ownershipKey } from '#/features/project/ownership'
@@ -60,6 +61,7 @@ export function MemberProjectEditor({
 	async function save(event: React.SyntheticEvent) {
 		event.preventDefault()
 		if (saving.current) return
+		if (!canSaveEditorContent(editor.current)) return
 		const parsed = memberProjectUpdateBodySchema.safeParse({
 			revision: project.revision,
 			name,
@@ -198,6 +200,7 @@ export function MemberProjectEditor({
 					<FieldLabel>Project content</FieldLabel>
 					<ClientOnly>
 						<BlockNoteEditor
+							projectId={project.id}
 							ref={editor}
 							value={content}
 							onChange={setContent}

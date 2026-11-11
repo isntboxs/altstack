@@ -13,7 +13,10 @@ import { projectContract } from '@altstack/api/contracts/project'
 import { reportContract } from '@altstack/api/contracts/report'
 import { submissionContract } from '@altstack/api/contracts/submission'
 import { tagContract, adminTagContract } from '@altstack/api/contracts/tag'
-import { uploadContract } from '@altstack/api/contracts/upload'
+import {
+	uploadContract,
+	contentImageUploadContract,
+} from '@altstack/api/contracts/upload'
 
 import { aboutContract, adminAboutContract } from './about'
 import { adBillingContract, adminAdBillingContract } from './ad-billing'
@@ -23,6 +26,7 @@ import { collectionContract, adminCollectionContract } from './collection'
 import { ownershipContract } from './ownership'
 
 export const contracts = {
+	contentImageUpload: contentImageUploadContract,
 	about: aboutContract,
 	adBilling: adBillingContract,
 	ads: adsContract,
