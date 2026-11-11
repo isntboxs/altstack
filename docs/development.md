@@ -140,6 +140,8 @@ not public image delivery. For local development, an example bucket CORS policy 
 Replace the origin with your deployed web origin in production. Keep lifecycle
 expiry scoped to `tmp/`; never expire `content/images/`. Completion keeps the
 temporary source until lifecycle cleanup so retries use the same permanent URL.
+Completion reuses an existing published image even after the temporary source
+expires. Failed or concurrent completion attempts never delete that shared URL.
 Published images are retained when removed from a document because another
 document may reference them. Images uploaded into abandoned drafts also remain;
 permanent unreferenced image cleanup is manual.

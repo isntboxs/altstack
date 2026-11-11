@@ -103,13 +103,20 @@ describe('content image uploads', () => {
 			expiresIn: 600,
 			signableHeaders: new Set(['content-type']),
 		})
+		send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 404 } })
 		const result = await rpc.complete({ body: { key: upload.key } })
 		expect(result.url).toBe(
 			`https://cdn.test/${upload.key.replace('tmp/content-images/', 'content/images/')}`
 		)
 		expect(result.url).not.toContain('signed')
 		expect(send.mock.calls[0]?.[0]).toBeInstanceOf(HeadObjectCommand)
-		expect(send.mock.calls[1]?.[0]).toBeInstanceOf(CopyObjectCommand)
+		expect(send.mock.calls[0]?.[0]).toMatchObject({
+			input: {
+				Key: upload.key.replace('tmp/content-images/', 'content/images/'),
+			},
+		})
+		expect(send.mock.calls[1]?.[0]).toBeInstanceOf(HeadObjectCommand)
+		expect(send.mock.calls[2]?.[0]).toBeInstanceOf(CopyObjectCommand)
 		expect(
 			send.mock.calls.some(([cmd]) => cmd instanceof DeleteObjectCommand)
 		).toBe(false)
@@ -191,7 +198,9 @@ describe('content image uploads', () => {
 		'rejects invalid stored metadata before publishing: %j',
 		async (metadata) => {
 			const upload = await client().request({ body })
-			send.mockResolvedValueOnce(metadata)
+			send
+				.mockRejectedValueOnce({ $metadata: { httpStatusCode: 404 } })
+				.mockResolvedValueOnce(metadata)
 			await expect(
 				client().complete({ body: { key: upload.key } })
 			).rejects.toMatchObject({ code: 'BAD_REQUEST' })
@@ -203,7 +212,9 @@ describe('content image uploads', () => {
 
 	it('reports an expired upload and blocks signing when quota is exhausted', async () => {
 		const upload = await client().request({ body })
-		send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 404 } })
+		send
+			.mockRejectedValueOnce({ $metadata: { httpStatusCode: 404 } })
+			.mockRejectedValueOnce({ $metadata: { httpStatusCode: 404 } })
 		await expect(
 			client().complete({ body: { key: upload.key } })
 		).rejects.toMatchObject({ code: 'UPLOAD_EXPIRED' })

@@ -188,6 +188,7 @@ export async function promoteContentImage(tmpKey: string) {
 		finalKey,
 		kind: 'screenshot',
 		consumeSource: false,
+		reuseDestination: true,
 	})
 }
 
@@ -213,12 +214,25 @@ async function promoteTempImage({
 	finalKey,
 	kind,
 	consumeSource,
+	reuseDestination = false,
 }: {
 	tmpKey: string
 	finalKey: string
 	kind: ProjectImageKind
 	consumeSource: boolean
+	reuseDestination?: boolean
 }): Promise<string> {
+	if (reuseDestination) {
+		try {
+			await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: finalKey }))
+			return finalKey
+		} catch (error) {
+			if (!isS3NotFoundError(error)) {
+				throw new StorageError('Failed to read promoted image')
+			}
+		}
+	}
+
 	let contentType: string | undefined
 	try {
 		const head = await s3.send(
@@ -270,13 +284,14 @@ async function promoteTempImage({
 			})
 		)
 	} catch {
-		await deleteFinalKeysBestEffort([finalKey])
+		// A concurrent completion may have already published a reusable key.
+		if (!reuseDestination) await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to promote temporary ${kind}`)
 	}
 	try {
 		await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: finalKey }))
 	} catch {
-		await deleteFinalKeysBestEffort([finalKey])
+		if (!reuseDestination) await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to verify promoted ${kind}`)
 	}
 	if (consumeSource) {
