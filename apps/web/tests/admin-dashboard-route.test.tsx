@@ -428,6 +428,7 @@ describe('admin dashboard routes', () => {
 		expect(
 			screen.getByText('Current project distribution by status')
 		).toBeTruthy()
+		await screen.findByLabelText('Project status distribution')
 	})
 	it('keeps catalog filters across reload and history navigation', async () => {
 		const router = await routerAt(

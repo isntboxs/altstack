@@ -45,7 +45,7 @@ export function PublicContent({
 			aria-label={
 				headingMode === 'article' ? 'Article content' : 'Project documentation'
 			}
-			className="prose max-w-none min-w-0 wrap-anywhere prose-neutral dark:prose-invert prose-a:decoration-transparent prose-a:transition-all prose-a:duration-300 prose-a:ease-in-out prose-a:hover:decoration-current prose-a:motion-reduce:transition-none"
+			className="prose max-w-none min-w-0 wrap-anywhere prose-neutral dark:prose-invert prose-a:decoration-transparent prose-a:transition-[text-decoration-color] prose-a:duration-300 prose-a:ease-in-out prose-a:hover:decoration-current prose-a:motion-reduce:transition-none"
 		>
 			<Markdown
 				remarkPlugins={
