@@ -16,6 +16,7 @@ import {
 } from '@altstack/shared/constants'
 import { blogCoverKeySchema } from '@altstack/shared/schemas/blog'
 import {
+	contentImageUploadKeySchema,
 	projectLogoKeySchema,
 	projectScreenshotKeySchema,
 	screenshotKeySchema,
@@ -176,6 +177,21 @@ export async function promoteTempImageToBlogCover({
 	})
 }
 
+export async function promoteContentImage(tmpKey: string) {
+	if (!contentImageUploadKeySchema.safeParse(tmpKey).success) {
+		throw new StorageError('Invalid content image upload.')
+	}
+	// Keep the same destination on retries, including a lost completion response.
+	const finalKey = tmpKey.replace('tmp/content-images/', 'content/images/')
+	return promoteTempImage({
+		tmpKey,
+		finalKey,
+		kind: 'screenshot',
+		consumeSource: false,
+		reuseDestination: true,
+	})
+}
+
 export async function promoteTempImageToAd(
 	tmpKey: string,
 	adId: string,
@@ -198,12 +214,25 @@ async function promoteTempImage({
 	finalKey,
 	kind,
 	consumeSource,
+	reuseDestination = false,
 }: {
 	tmpKey: string
 	finalKey: string
 	kind: ProjectImageKind
 	consumeSource: boolean
+	reuseDestination?: boolean
 }): Promise<string> {
+	if (reuseDestination) {
+		try {
+			await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: finalKey }))
+			return finalKey
+		} catch (error) {
+			if (!isS3NotFoundError(error)) {
+				throw new StorageError('Failed to read promoted image')
+			}
+		}
+	}
+
 	let contentType: string | undefined
 	try {
 		const head = await s3.send(
@@ -216,7 +245,7 @@ async function promoteTempImage({
 		const allowedMime = ALLOWED_MIME_BY_KIND[kind] as ReadonlyArray<string>
 		const storedSize = head.ContentLength
 		const storedType = head.ContentType
-		const sizeOk = storedSize != null && storedSize <= maxSize
+		const sizeOk = storedSize != null && storedSize > 0 && storedSize <= maxSize
 		const typeOk = !!storedType && allowedMime.includes(storedType)
 		if (!sizeOk || !typeOk) {
 			await s3
@@ -255,13 +284,14 @@ async function promoteTempImage({
 			})
 		)
 	} catch {
-		await deleteFinalKeysBestEffort([finalKey])
+		// A concurrent completion may have already published a reusable key.
+		if (!reuseDestination) await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to promote temporary ${kind}`)
 	}
 	try {
 		await s3.send(new HeadObjectCommand({ Bucket: S3_BUCKET, Key: finalKey }))
 	} catch {
-		await deleteFinalKeysBestEffort([finalKey])
+		if (!reuseDestination) await deleteFinalKeysBestEffort([finalKey])
 		throw new StorageError(`Failed to verify promoted ${kind}`)
 	}
 	if (consumeSource) {

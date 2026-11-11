@@ -5,9 +5,20 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { ORPCErrorConstructorMap } from '@orpc/server'
+import { createHash, randomUUID } from 'node:crypto'
 
-import { adminProcedure } from '@altstack/api/procedures'
-import { s3, S3_BUCKET } from '@altstack/api/s3'
+import { enforceClaimQuota } from '@altstack/api/ownership-otp'
+import { adminProcedure, protectedProcedure } from '@altstack/api/procedures'
+import { requireActiveAccount } from '@altstack/api/queries/account-access'
+import { requireProjectMember } from '@altstack/api/queries/ownership'
+import { s3, S3_BUCKET, publicUrlForKey } from '@altstack/api/s3'
+import {
+	promoteContentImage,
+	InvalidTempUploadError,
+	TempUploadMissingError,
+} from '@altstack/api/storage'
+
+import { env } from '@altstack/env/server'
 
 import {
 	TMP_LOGO_PREFIX,
@@ -191,4 +202,72 @@ export const uploadRouter = {
 		remove: removeScreenshotUploadHandler,
 		change: changeScreenshotUploadHandler,
 	},
+}
+
+const contentImageProcedure = protectedProcedure.use(
+	async ({ context, next, errors }) => {
+		const origin = context.requestHeaders?.get('origin')
+		if (
+			(origin && !env.CORS_ORIGINS.includes(origin)) ||
+			context.requestHeaders?.get('sec-fetch-site') === 'cross-site'
+		) {
+			throw errors.FORBIDDEN()
+		}
+		const account = await requireActiveAccount(context.db, context.auth.user.id)
+		return next({ context: { account } })
+	}
+)
+
+function contentImagePrefix(userId: string, projectId?: string) {
+	const scope = createHash('sha256')
+		.update(JSON.stringify([userId, projectId ?? null]))
+		.digest('hex')
+	return `tmp/content-images/${scope}/`
+}
+
+export const contentImageUploadRouter = {
+	request: contentImageProcedure.contentImageUpload.request.handler(
+		async ({ context: { db, auth, account }, input: { body }, errors }) => {
+			if (account.role !== 'admin') {
+				if (!body.projectId) throw errors.FORBIDDEN()
+				await requireProjectMember(db, body.projectId, auth.user.id)
+			}
+			await enforceClaimQuota(db, `content-image:${auth.user.id}`, 40)
+			const key = `${contentImagePrefix(auth.user.id, body.projectId)}${randomUUID()}.${EXT_BY_MIME[body.contentType]}`
+			const presignedUrl = await getSignedUrl(
+				s3,
+				new PutObjectCommand({
+					Bucket: S3_BUCKET,
+					Key: key,
+					ContentType: body.contentType,
+					ContentLength: body.size,
+				}),
+				{ expiresIn: 600, signableHeaders: new Set(['content-type']) }
+			)
+			return { key, presignedUrl }
+		}
+	),
+	complete: contentImageProcedure.contentImageUpload.complete.handler(
+		async ({ context: { db, auth, account }, input: { body }, errors }) => {
+			if (account.role !== 'admin') {
+				if (!body.projectId) throw errors.FORBIDDEN()
+				await requireProjectMember(db, body.projectId, auth.user.id)
+			}
+			if (
+				!body.key.startsWith(contentImagePrefix(auth.user.id, body.projectId))
+			) {
+				throw errors.NOT_FOUND()
+			}
+			try {
+				const key = await promoteContentImage(body.key)
+				return { url: publicUrlForKey(key) }
+			} catch (error) {
+				if (error instanceof TempUploadMissingError) {
+					throw errors.UPLOAD_EXPIRED()
+				}
+				if (error instanceof InvalidTempUploadError) throw errors.BAD_REQUEST()
+				throw errors.INTERNAL_SERVER_ERROR()
+			}
+		}
+	),
 }

@@ -3,6 +3,10 @@ import { openapi } from '@orpc/openapi'
 import { baseContract } from '@altstack/api/contracts/base'
 
 import {
+	requestContentImageUploadInputSchema,
+	requestContentImageUploadOutputSchema,
+	completeContentImageUploadInputSchema,
+	completeContentImageUploadOutputSchema,
 	changeLogoUploadInputSchema,
 	changeLogoUploadOutputSchema,
 	changeScreenshotUploadInputSchema,
@@ -16,6 +20,37 @@ import {
 	requestScreenshotUploadInputSchema,
 	requestScreenshotUploadOutputSchema,
 } from '@altstack/shared'
+
+export const contentImageUploadContract = {
+	request: baseContract
+		.meta(
+			openapi({
+				path: '/uploads/content-image',
+				method: 'POST',
+				inputStructure: 'detailed',
+				outputStructure: 'compact',
+				summary: 'Request a Markdown image upload URL',
+				tags: ['Uploads'],
+				operationId: 'requestContentImageUpload',
+			})
+		)
+		.input(requestContentImageUploadInputSchema)
+		.output(requestContentImageUploadOutputSchema),
+	complete: baseContract
+		.meta(
+			openapi({
+				path: '/uploads/content-image/complete',
+				method: 'POST',
+				inputStructure: 'detailed',
+				outputStructure: 'compact',
+				summary: 'Verify and publish a Markdown image upload',
+				tags: ['Uploads'],
+				operationId: 'completeContentImageUpload',
+			})
+		)
+		.input(completeContentImageUploadInputSchema)
+		.output(completeContentImageUploadOutputSchema),
+} as const
 
 const requestLogoUploadContract = baseContract
 	.meta(

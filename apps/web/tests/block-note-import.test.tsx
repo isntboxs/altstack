@@ -165,6 +165,20 @@ describe('real BlockNote import and export', () => {
 			editor._tiptapEditor.destroy()
 		}
 	})
+	it('round-trips permanent image URLs and captions through saved Markdown', () => {
+		const editor = CoreEditor.create({ schema: blockNoteSchema })
+		const url = 'https://cdn.test/content/images/diagram.png'
+		editor.replaceBlocks(editor.document, [
+			{ type: 'image', props: { url, caption: 'Architecture diagram' } },
+		])
+		const markdown = editor.blocksToMarkdownLossy(editor.document)
+		expect(markdown).toContain(url)
+		const image = editor
+			.tryParseMarkdownToBlocks(markdown)
+			.find((block) => block.type === 'image')
+		expect(image?.props.url).toBe(url)
+		expect(image?.props.caption).toBe('Architecture diagram')
+	})
 	it('empty conversion fails without replacing existing document or form content', () => {
 		const ref = createRef<BlockNoteEditorHandle>()
 		const change = vi.fn()

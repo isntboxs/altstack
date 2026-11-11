@@ -62,6 +62,7 @@ import { toast } from '@altstack/ui/components/toast'
 import { ActionConfirmation } from '#/components/action-confirmation'
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
+import { canSaveEditorContent } from '#/components/block-note/upload-image'
 import { PublicContent } from '#/components/public-content'
 import { CollectionProjectSelector } from '#/features/admin-collections/project-selector'
 import type { SelectedProject } from '#/features/admin-collections/project-selector'
@@ -205,6 +206,7 @@ function useCollectionEditor(initial: Initial | undefined) {
 
 	async function save() {
 		if (busy) return
+		if (!canSaveEditorContent(editor.current)) return
 		editor.current?.flush()
 		const parsed = collectionBodySchema.safeParse({
 			...value,

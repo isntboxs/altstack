@@ -29,6 +29,7 @@ import { Textarea } from '@altstack/ui/components/textarea'
 import { ActionConfirmation } from '#/components/action-confirmation'
 import BlockNoteEditor from '#/components/block-note/editor'
 import type { BlockNoteEditorHandle } from '#/components/block-note/editor'
+import { canSaveEditorContent } from '#/components/block-note/upload-image'
 import { PublicContent } from '#/components/public-content'
 import { aboutQueries } from '#/features/about/queries'
 import { orpc } from '#/utils/orpc'
@@ -72,6 +73,7 @@ export function AboutEditor({ initial }: { initial: AboutPage }) {
 
 	async function submit() {
 		if (busy) return
+		if (!canSaveEditorContent(editor.current)) return
 		const current = {
 			...value,
 			content: editor.current?.readMarkdown() ?? value.content,

@@ -10,6 +10,8 @@ export const s3 = new S3Client({
 		secretAccessKey: env.S3_SECRET_ACCESS_KEY,
 	},
 	forcePathStyle: false,
+	// Presigned PUTs have no body here; the browser supplies it after signing.
+	requestChecksumCalculation: 'WHEN_REQUIRED',
 })
 
 export const S3_BUCKET = env.S3_BUCKET
