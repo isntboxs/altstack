@@ -136,6 +136,11 @@ describe('admin overview in Chromium', () => {
 			await page.viewport(width, 900)
 			for (const theme of ['light', 'dark']) {
 				await mount(theme)
+				await screen.findByLabelText(
+					'Project status distribution',
+					{},
+					{ timeout: 10_000 }
+				)
 				expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width)
 				expect(
 					screen

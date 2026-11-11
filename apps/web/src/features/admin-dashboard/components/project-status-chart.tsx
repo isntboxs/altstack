@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { lazy, Suspense } from 'react'
 
 import type { ORPCRouterOutputs } from '@altstack/api/routers'
 
@@ -11,11 +11,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@altstack/ui/components/card'
-import {
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from '@altstack/ui/components/chart'
 
 import { AdminEmpty } from '#/features/admin-dashboard/components/dashboard-state'
 
@@ -29,6 +24,82 @@ const labels = {
 }
 const number = new Intl.NumberFormat('en-US')
 
+const StatusDistribution = lazy(async () => {
+	const [
+		{ Bar, BarChart, CartesianGrid, XAxis, YAxis },
+		{ ChartContainer, ChartTooltip, ChartTooltipContent },
+	] = await Promise.all([
+		import('recharts').then((module) => {
+			return {
+				Bar: module.Bar,
+				BarChart: module.BarChart,
+				CartesianGrid: module.CartesianGrid,
+				XAxis: module.XAxis,
+				YAxis: module.YAxis,
+			}
+		}),
+		import('@altstack/ui/components/chart').then((module) => {
+			return {
+				ChartContainer: module.ChartContainer,
+				ChartTooltip: module.ChartTooltip,
+				ChartTooltipContent: module.ChartTooltipContent,
+			}
+		}),
+	])
+	return {
+		default: function LoadedStatusDistribution({
+			statuses,
+		}: {
+			statuses: Overview['statuses']
+		}) {
+			const distribution = statuses.map((item) => {
+				return { ...item, label: labels[item.status] }
+			})
+			return (
+				<ChartContainer
+					config={config}
+					className="h-40 min-h-40 w-full"
+					aria-label="Project status distribution"
+				>
+					<BarChart
+						accessibilityLayer
+						data={distribution}
+						layout="vertical"
+						margin={{ left: 0, right: 8, top: 0, bottom: 0 }}
+					>
+						<CartesianGrid horizontal={false} />
+						<XAxis
+							type="number"
+							allowDecimals={false}
+							tickLine={false}
+							axisLine={false}
+							fontSize={11}
+							tick={{ fill: 'var(--muted-foreground)' }}
+						/>
+						<YAxis
+							type="category"
+							dataKey="label"
+							width={72}
+							tickLine={false}
+							axisLine={false}
+							fontSize={11}
+							tick={{ fill: 'var(--muted-foreground)' }}
+						/>
+						<ChartTooltip content={<ChartTooltipContent />} />
+						<Bar
+							dataKey="count"
+							fill="var(--color-count)"
+							radius={[0, 4, 4, 0]}
+							maxBarSize={18}
+							isAnimationActive={false}
+						/>
+					</BarChart>
+				</ChartContainer>
+			)
+		},
+	}
+})
+
 export function ProjectStatusChart({
 	statuses,
 	counts,
@@ -36,9 +107,6 @@ export function ProjectStatusChart({
 	statuses: Overview['statuses']
 	counts: Overview['counts']
 }) {
-	const distribution = statuses.map((item) => {
-		return { ...item, label: labels[item.status] }
-	})
 	return (
 		<Card className="min-w-0">
 			<CardHeader>
@@ -90,45 +158,15 @@ export function ProjectStatusChart({
 					</div>
 				</dl>
 				{statuses.some((item) => item.count > 0) ? (
-					<ChartContainer
-						config={config}
-						className="h-40 min-h-40 w-full"
-						aria-label="Project status distribution"
+					<Suspense
+						fallback={
+							<output className="flex h-40 min-h-40 items-center justify-center text-xs text-muted-foreground">
+								Loading status chart…
+							</output>
+						}
 					>
-						<BarChart
-							accessibilityLayer
-							data={distribution}
-							layout="vertical"
-							margin={{ left: 0, right: 8, top: 0, bottom: 0 }}
-						>
-							<CartesianGrid horizontal={false} />
-							<XAxis
-								type="number"
-								allowDecimals={false}
-								tickLine={false}
-								axisLine={false}
-								fontSize={11}
-								tick={{ fill: 'var(--muted-foreground)' }}
-							/>
-							<YAxis
-								type="category"
-								dataKey="label"
-								width={72}
-								tickLine={false}
-								axisLine={false}
-								fontSize={11}
-								tick={{ fill: 'var(--muted-foreground)' }}
-							/>
-							<ChartTooltip content={<ChartTooltipContent />} />
-							<Bar
-								dataKey="count"
-								fill="var(--color-count)"
-								radius={[0, 4, 4, 0]}
-								maxBarSize={18}
-								isAnimationActive={false}
-							/>
-						</BarChart>
-					</ChartContainer>
+						<StatusDistribution statuses={statuses} />
+					</Suspense>
 				) : (
 					<AdminEmpty
 						title="No projects yet"
